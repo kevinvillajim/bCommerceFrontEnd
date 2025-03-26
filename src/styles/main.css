@@ -1,0 +1,50 @@
+/* Import Tailwind configuration */
+@import "./tailwind.css";
+
+/* Additional global styles */
+:root {
+  --toastify-color-info: var(--color-primary-500);
+  --toastify-color-success: var(--color-green-500);
+  --toastify-color-warning: var(--color-amber-500);
+  --toastify-color-error: var(--color-red-500);
+}
+
+/* Scrollbar styles */
+@utility scrollbar-thin {
+  &::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: var(--color-gray-100);
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: var(--color-gray-300);
+    border-radius: 3px;
+  }
+  
+  &::-webkit-scrollbar-thumb:hover {
+    background: var(--color-gray-400);
+  }
+}
+
+/* Custom animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from { transform: translateY(10px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.slide-in {
+  animation: slideIn 0.3s ease-in-out;
+}
