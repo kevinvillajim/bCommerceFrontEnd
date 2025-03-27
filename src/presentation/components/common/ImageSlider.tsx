@@ -40,7 +40,7 @@ const ImageSlider: React.FC<ImageSliderProps> = ({
   };
   
   return (
-    <div className="relative w-full h-[40vh] overflow-hidden">
+    <div className="relative w-full h-[45vh] overflow-hidden">
       {/* Images */}
       <div className="relative w-full h-full">
         {images.map((image, index) => (
