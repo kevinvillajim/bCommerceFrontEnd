@@ -1,14 +1,14 @@
-// app/routes/AppRoutes.tsx
-import React from 'react';
 import { type RouteObject } from 'react-router';
 
 // Importa tus componentes aquí
 import MainLayout from '../presentation/layouts/MainLayout';
 import HomePage from '../presentation/pages/HomePage';
+import ProductItemPage from '../presentation/pages/ProductItemPage';
 import ProductPage from '../presentation/pages/ProductPage';
 import LoginPage from '../presentation/pages/LoginPage';
 import RegisterPage from '../presentation/pages/RegisterPage';
 import NotFoundPage from '../presentation/pages/NotFoundPage';
+import CategoryPage from '../presentation/pages/CategoryPage';
 import Test from '../presentation/pages/Test';
 import DashboardLayout from '../presentation/layouts/DashboardLayout';
 
@@ -31,7 +31,15 @@ const appRoutes: RouteObject[] = [
       },
       {
         path: "products/:id",
+        element: <ProductItemPage />
+      },
+      {
+        path: "products",
         element: <ProductPage />
+      },
+      {
+        path: "categories",
+        element: <CategoryPage />
       },
       {
         path: "test",

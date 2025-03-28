@@ -36,7 +36,7 @@ const ProductGrid: React.FC<ProductGridProps> = ({
   return (
     <section className="mb-12">
       <h2 className="text-2xl font-bold mb-6">{title}</h2>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
         {products.map((product) => {
           const discountedPrice = calculateDiscountedPrice(product.price, product.discount);
           const hasDiscount = product.discount && product.discount > 0;
@@ -94,7 +94,7 @@ const ProductGrid: React.FC<ProductGridProps> = ({
                     className="cursor-pointer bg-primary-600 text-white px-3 py-2 rounded-lg text-sm flex items-center hover:bg-primary-700 transition-colors"
                   >
                     <ShoppingCart size={16} className="mr-1" />
-                    Añadir al Carrito
+                    <span className='hidden md:block'>Añadir al Carrito</span>
                   </button>
                 </div>
               </div>

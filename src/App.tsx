@@ -7,9 +7,11 @@ import MainLayout from './presentation/layouts/MainLayout';
 // Lazy load components for better performance
 const HomePage = lazy(() => import('./presentation/pages/HomePage'));
 const ProductPage = lazy(() => import('./presentation/pages/ProductPage'));
+const ProductItemPage = lazy(() => import('./presentation/pages/ProductItemPage'));
 const LoginPage = lazy(() => import('./presentation/pages/LoginPage'));
 const RegisterPage = lazy(() => import('./presentation/pages/RegisterPage'));
 const NotFoundPage = lazy(() => import('./presentation/pages/NotFoundPage'));
+const CategoryPage = lazy(() => import('./presentation/pages/CategoryPage'));
 const DashboardLayout = lazy(() => import('./presentation/layouts/DashboardLayout'));
 
 // Loading fallback for lazy-loaded components
@@ -40,7 +42,9 @@ const App: React.FC = () => {
       <Routes>
         <Route path="/" element={<MainLayout />}>
           <Route index element={<HomePage />} />
-          <Route path="products/:id" element={<ProductPage />} />
+          <Route path="products/:id" element={<ProductItemPage />} />
+          <Route path="products" element={<ProductPage />} />
+          <Route path="categories" element={<CategoryPage />} />
           <Route 
             path="login" 
             element={
