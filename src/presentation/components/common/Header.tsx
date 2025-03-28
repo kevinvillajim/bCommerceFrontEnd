@@ -54,8 +54,8 @@ const Header: React.FC<HeaderProps> = ({
               <a href="#" className="hover:underline">Seguimiento de pedido</a>
               <span>|</span>
               <a href="#" className="hover:underline">Ayuda</a>
-              <span>|</span>
-              <a href="#" className="hover:underline">ES</a>
+              {/* <span>|</span>
+              <a href="#" className="hover:underline">ES</a> */}
             </div>
           </div>
         </div>
