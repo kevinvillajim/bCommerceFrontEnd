@@ -160,7 +160,7 @@ const ContactPage = () => {
                     value={formValues.name}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
                     placeholder="Tu nombre"
                     disabled={formStatus !== 'idle'}
                   />
@@ -177,7 +177,7 @@ const ContactPage = () => {
                     value={formValues.email}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
                     placeholder="tu@email.com"
                     disabled={formStatus !== 'idle'}
                   />
@@ -194,7 +194,7 @@ const ContactPage = () => {
                     value={formValues.subject}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
                     placeholder="¿En qué podemos ayudarte?"
                     disabled={formStatus !== 'idle'}
                   />
@@ -211,7 +211,7 @@ const ContactPage = () => {
                     onChange={handleChange}
                     required
                     rows={4}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors"
                     placeholder="Describe tu consulta en detalle..."
                     disabled={formStatus !== 'idle'}
                   />
@@ -224,7 +224,7 @@ const ContactPage = () => {
                     className={`w-full py-3 px-6 rounded-lg flex items-center justify-center font-medium transition-colors ${
                       formStatus === 'success' 
                         ? 'bg-green-600 text-white' 
-                        : 'bg-blue-600 hover:bg-blue-700 text-white'
+                        : 'bg-primary-600 hover:bg-primary-700 text-white'
                     }`}
                   >
                     {formStatus === 'idle' && (
@@ -262,7 +262,7 @@ const ContactPage = () => {
               <div className="absolute inset-0 bg-gray-200 flex items-center justify-center">
                 {/* Mapa de Ubicación */}
                 <div className="hidden md:block text-center p-6 w-full">
-                  <MapPin size={48} className="mx-auto mb-6 text-blue-600" />          
+                  <MapPin size={48} className="mx-auto mb-6 text-primary-600" />          
                   {/* Contenedor Responsivo del Mapa */}
                   <div className="w-full max-w-4xl mx-auto h-[450px] rounded-lg overflow-hidden shadow-lg">
                     <iframe
@@ -317,7 +317,7 @@ const ContactPage = () => {
                 }}
               >
                 <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-start">
-                  <MessageSquare size={20} className="text-blue-600 mr-2 flex-shrink-0 mt-1" />
+                  <MessageSquare size={20} className="text-primary-600 mr-2 flex-shrink-0 mt-1" />
                   {faq.q}
                 </h3>
                 <p className="text-gray-600 ml-7">{faq.a}</p>
@@ -326,7 +326,7 @@ const ContactPage = () => {
           </div>
           
           <div className="text-center mt-8">
-            <a href="#" className="text-blue-600 hover:text-blue-800 font-medium">
+            <a href="faq" className="text-primary-600 hover:text-primary-800 font-medium">
               Ver todas las preguntas frecuentes →
             </a>
           </div>

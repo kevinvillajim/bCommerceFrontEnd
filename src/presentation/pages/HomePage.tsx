@@ -3,6 +3,7 @@ import ImageSlider from '../components/common/ImageSlider.tsx';
 import Categories from '../components/common/Categories.tsx';
 import TextSlider from '../components/common/TextSlider.tsx';
 import ProductCards from '../components/common/ProductCards.tsx';
+import ProductCarousel from '../components/product/ProductCarousel.tsx';
 import WhyUs from '../components/common/WhyUs.tsx';
 import { Smartphone, Tv, Laptop, Monitor } from 'lucide-react';
 import { Truck, ShieldCheck, Headphones, Zap, Award, CreditCard } from 'lucide-react';
@@ -138,6 +139,158 @@ const HomePage: React.FC = () => {
       icon: CreditCard,
       color: 'bg-indigo-50 text-indigo-600'
     }]
+  
+  //Carusel de recomendación
+  
+   const personalizedProducts = [
+    {
+      id: 1,
+      name: "Auriculares Bluetooth Pro",
+      price: 129.99,
+      discount: 15,
+      rating: 4.7,
+      reviews: 253,
+      image: "https://thumbs.ielectro.es/product/med/23714.webp",
+      category: "Electrónica",
+      isNew: false
+    },
+    {
+      id: 2,
+      name: "Smartwatch Fitness Tracker",
+      price: 89.99,
+      discount: 0,
+      rating: 4.5,
+      reviews: 187,
+      image: "https://m.media-amazon.com/images/I/71JU-bUt-sL.__AC_SX300_SY300_QL70_FMwebp_.jpg",
+      category: "Accesorios",
+      isNew: true
+    },
+    {
+      id: 3,
+      name: "Cámara Instantánea Retro",
+      price: 75.50,
+      discount: 10,
+      rating: 4.2,
+      reviews: 142,
+      image: "https://www.lovetendencias.com/wp-content/uploads/2018/07/camara-instantanea-retro.jpg",
+      category: "Fotografía",
+      isNew: false
+    },
+    {
+      id: 4,
+      name: "Altavoz Portátil Impermeable",
+      price: 59.99,
+      discount: 0,
+      rating: 4.4,
+      reviews: 98,
+      image: "https://m.media-amazon.com/images/I/71gl+Y4RWRL._AC_SY300_SX300_.jpg",
+      category: "Audio",
+      isNew: false
+    },
+    {
+      id: 5,
+      name: "Zapatillas Inteligentes",
+      price: 119.95,
+      discount: 0,
+      rating: 4.8,
+      reviews: 312,
+      image: "https://m.media-amazon.com/images/I/61roIO6ktcL._AC_SX695_.jpg",
+      category: "Deportes",
+      isNew: true
+    },
+    {
+      id: 6,
+      name: "Cafetera Automática Gourmet",
+      price: 149.99,
+      discount: 20,
+      rating: 4.6,
+      reviews: 178,
+      image: "https://images.fravega.com/f300/12945d3cf8cfe771f437816579c197bd.jpg.webp",
+      category: "Cocina",
+      isNew: false
+    }
+];
+
+const trendingProducts = [
+    {
+      id: 7,
+      name: "Tablet Pro 11 pulgadas",
+      price: 499.99,
+      discount: 30,
+      rating: 4.9,
+      reviews: 423,
+      image: "https://store.storeimages.cdn-apple.com/1/as-images.apple.com/is/ipad-pro-model-select-gallery-1-202405?wid=5120&hei=2880&fmt=webp&qlt=70&.v=cXN0QTVTNDBtbGIzcy91THBPRThnNE5sSFgwakNWNmlhZ2d5NGpHdllWY09WV3R2ZHdZMXRzTjZIcWdMTlg4eUJQYkhSV3V1dC9oa0s5K3lqMGtUaFMvR01EVDlzK0hIS1J2bTdpY0pVeTF1Yy9kL1dQa3EzdWh4Nzk1ZnZTYWY&traceId=1",
+      category: "Electrónica",
+      isNew: false
+    },
+    {
+      id: 8,
+      name: "Drone Plegable HD",
+      price: 299.99,
+      discount: 25,
+      rating: 4.7,
+      reviews: 203,
+      image: "https://imagedelivery.net/4fYuQyy-r8_rpBpcY7lH_A/falabellaCO/35423836_1/w=800,h=800,fit=pad",
+      category: "Tecnología",
+      isNew: true
+    },
+    {
+      id: 9,
+      name: "Consola de Videojuegos PS5",
+      price: 399.99,
+      discount: 20,
+      rating: 4.8,
+      reviews: 347,
+      image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTXeKeIiyTOGM4Ql5ddSZSBLSDPXfilUNRLBA&s",
+      category: "Gaming",
+      isNew: false
+    },
+    {
+      id: 10,
+      name: "Mochila Smart Impermeable",
+      price: 79.99,
+      discount: 40,
+      rating: 4.6,
+      reviews: 156,
+      image: "https://m.media-amazon.com/images/I/612Rw7W9H0L._AC_SX679_.jpg",
+      category: "Accesorios",
+      isNew: false
+    },
+    {
+      id: 11,
+      name: "Robot Aspirador Inteligente",
+      price: 349.99,
+      discount: 35,
+      rating: 4.7,
+      reviews: 289,
+      image: "https://www.zonamovilidad.es/fotos/2/8LTHs-W0_thumb_1280.jpeg",
+      category: "Hogar",
+      isNew: true
+    },
+    {
+      id: 12,
+      name: "Silla Ergonómica Gamer",
+      price: 259.99,
+      discount: 30,
+      rating: 4.5,
+      reviews: 176,
+      image: "https://www.ofisillas.es/images/product/1/large/pl_1_1_5892.jpg",
+      category: "Muebles",
+      isNew: false
+    }
+];
+
+  // Manejadores de eventos
+  const handleAddToCart = (id: number) => {
+    console.log(`Producto ${id} añadido al carrito`);
+    // Implementar lógica real para añadir al carrito
+  };
+
+  const handleAddToWishlist = (id: number) => {
+    console.log(`Producto ${id} añadido a la lista de deseos`);
+    // Implementar lógica real para añadir a la lista de deseos
+  };
+  
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -158,6 +311,16 @@ const HomePage: React.FC = () => {
           <TextSlider slides={slidesData} interval={4000} />         
         </section>
 
+        <div className="container mx-auto px-4 py-8">
+          <h1 className="text-2xl font-bold mb-8">Descubre productos para ti</h1>
+          <ProductCarousel
+            personalizedProducts={personalizedProducts}
+            trendingProducts={trendingProducts}
+            onAddToCart={handleAddToCart}
+            onAddToWishlist={handleAddToWishlist}
+            color={false}
+          />
+        </div>
         <section className="mb-12">
           <ProductCards products={products} title = "Productos destacados" onClick = {(id: number) => console.log(`Added product ${id} to cart`)}/>
         </section>

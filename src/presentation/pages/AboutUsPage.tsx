@@ -129,15 +129,15 @@ const AboutUs: React.FC = () => {
               <h2 className="text-3xl font-bold text-gray-900 mb-2">Nuestros Valores</h2>
               <ul className="text-gray-600 space-y-2">
                 <li className="flex items-start">
-                  <ChevronRight className="text-blue-600 mt-1 mr-2 flex-shrink-0" size={16} />
+                  <ChevronRight className="text-primary-600 mt-1 mr-2 flex-shrink-0" size={16} />
                   <span>Innovación constante en nuestro catálogo y servicios</span>
                 </li>
                 <li className="flex items-start">
-                  <ChevronRight className="text-blue-600 mt-1 mr-2 flex-shrink-0" size={16} />
+                  <ChevronRight className="text-primary-600 mt-1 mr-2 flex-shrink-0" size={16} />
                   <span>Integridad y transparencia en todas nuestras operaciones</span>
                 </li>
                 <li className="flex items-start">
-                  <ChevronRight className="text-blue-600 mt-1 mr-2 flex-shrink-0" size={16} />
+                  <ChevronRight className="text-primary-600 mt-1 mr-2 flex-shrink-0" size={16} />
                   <span>Compromiso con la calidad y satisfacción del cliente</span>
                 </li>
               </ul>
@@ -156,7 +156,7 @@ const AboutUs: React.FC = () => {
                 className="w-full h-auto object-cover"
               />
             </div>
-            <div className="absolute -top-4 -right-4 w-64 h-64 bg-blue-100 rounded-full opacity-50 z-0" />
+            <div className="absolute -top-4 -right-4 w-64 h-64 bg-primary-100 rounded-full opacity-50 z-0" />
             <div className="absolute -bottom-8 -left-8 w-40 h-40 bg-cyan-100 rounded-full opacity-50 z-0" />
           </div>
         </div>
@@ -180,7 +180,7 @@ const AboutUs: React.FC = () => {
                 transition: `opacity 0.8s ease, transform 0.8s ease`,
                 transitionDelay: `${index * 0.1}s`
               }}>
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-white/10 rounded-full mb-4 text-blue-400">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-white/10 rounded-full mb-4 text-primary-400">
                   {stat.icon}
                 </div>
                 <div className="text-4xl font-bold text-white mb-1">
@@ -219,7 +219,7 @@ const AboutUs: React.FC = () => {
                   />
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-1">{member.name}</h3>
-                <p className="text-blue-600">{member.position}</p>
+                <p className="text-primary-600">{member.position}</p>
               </div>
             ))}
           </div>
@@ -242,7 +242,7 @@ const AboutUs: React.FC = () => {
               transition: 'opacity 0.8s ease',
               transitionDelay: '0s'
             }}>
-              <MapPin size={32} className="text-blue-600 mb-4" />
+              <MapPin size={32} className="text-primary-600 mb-4" />
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Dirección</h3>
               <p className="text-gray-600 text-center">Gil R. Dávalos y Av. Amazonas - Edificio Centro Amazonas - #402 Quito, Ecuador</p>
             </div>
@@ -252,7 +252,7 @@ const AboutUs: React.FC = () => {
               transition: 'opacity 0.8s ease',
               transitionDelay: '0.2s'
             }}>
-              <Phone size={32} className="text-blue-600 mb-4" />
+              <Phone size={32} className="text-primary-600 mb-4" />
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Teléfono</h3>
               <p className="text-gray-600 text-center">+593 96 296 6301</p>
               <p className="text-gray-600 text-center">Lun - Vie: 9am - 6pm</p>
@@ -263,7 +263,7 @@ const AboutUs: React.FC = () => {
               transition: 'opacity 0.8s ease',
               transitionDelay: '0.4s'
             }}>
-              <Mail size={32} className="text-blue-600 mb-4" />
+              <Mail size={32} className="text-primary-600 mb-4" />
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Email</h3>
               <p className="text-gray-600 text-center">info@bcommerce.com</p>
               <p className="text-gray-600 text-center">soporte@bcommerce.com</p>

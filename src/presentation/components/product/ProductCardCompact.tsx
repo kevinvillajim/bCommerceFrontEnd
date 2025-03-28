@@ -12,6 +12,7 @@ interface ProductCardProps {
   image: string;
   category?: string;
   isNew?: boolean;
+  color?: boolean;
   onAddToCart?: (id: number) => void;
   onAddToWishlist?: (id: number) => void;
 }
@@ -26,6 +27,7 @@ const ProductCardCompact: React.FC<ProductCardProps> = ({
   image,
   category,
   isNew = false,
+  color = true,
   onAddToCart = () => {},
   onAddToWishlist = () => {},
 }) => {
@@ -44,14 +46,14 @@ const ProductCardCompact: React.FC<ProductCardProps> = ({
         
         {/* Discount Tag */}
         {discount && (
-          <div className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold py-1 px-2 rounded">
+          <div className={`absolute top-2 left-2 ${color ? "bg-red-500" : "bg-primary-600"} text-white text-xs font-bold py-1 px-2 rounded`}>
             -{discount}%
           </div>
         )}
         
         {/* New Product Tag */}
         {isNew && (
-          <div className="absolute top-2 right-2 bg-green-500 text-white text-xs font-bold py-1 px-2 rounded">
+          <div className={`absolute top-2 right-2 ${color ? "bg-green-500" : "bg-primary-800"} text-white text-xs font-bold py-1 px-2 rounded`}>
             Nuevo
           </div>
         )}
