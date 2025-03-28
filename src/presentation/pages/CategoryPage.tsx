@@ -4,7 +4,6 @@ const secciones = [
   {
     title: "Computadoras",
     description: "Descubre nuestra selección de equipos para trabajo y gaming",
-    icon: "💻",
     subtitles: [
       { label: "Laptops", link: "/categoria/laptops" },
       { label: "Computadoras de escritorio", link: "/categoria/desktops" },
@@ -16,7 +15,6 @@ const secciones = [
   {
     title: "Componentes",
     description: "Actualiza tu equipo con los mejores componentes del mercado",
-    icon: "🔧",
     subtitles: [
       { label: "Procesadores", link: "/categoria/procesadores" },
       { label: "Tarjetas gráficas", link: "/categoria/tarjetas-graficas" },
@@ -28,7 +26,6 @@ const secciones = [
   {
     title: "Dispositivos Móviles",
     description: "Smartphones, tablets y accesorios de última generación",
-    icon: "📱",
     subtitles: [
       { label: "Smartphones", link: "/categoria/smartphones" },
       { label: "Tablets", link: "/categoria/tablets" },
@@ -40,7 +37,6 @@ const secciones = [
   {
     title: "Periféricos",
     description: "Mejora tu experiencia con periféricos de alta calidad",
-    icon: "🖱️",
     subtitles: [
       { label: "Teclados", link: "/categoria/teclados" },
       { label: "Ratones", link: "/categoria/ratones" },
@@ -52,7 +48,6 @@ const secciones = [
   {
     title: "Gaming",
     description: "Todo lo que necesitas para una experiencia de juego inmersiva",
-    icon: "🎮",
     subtitles: [
       { label: "Laptops gaming", link: "/categoria/laptops-gaming" },
       { label: "Monitores gaming", link: "/categoria/monitores-gaming" },
@@ -64,7 +59,6 @@ const secciones = [
   {
     title: "Almacenamiento",
     description: "Soluciones de almacenamiento para tus datos más importantes",
-    icon: "💾",
     subtitles: [
       { label: "Discos duros externos", link: "/categoria/discos-externos" },
       { label: "Unidades SSD", link: "/categoria/ssd" },
@@ -76,7 +70,6 @@ const secciones = [
   {
     title: "Smart Home",
     description: "Dispositivos inteligentes para automatizar tu hogar",
-    icon: "🏠",
     subtitles: [
       { label: "Asistentes de voz", link: "/categoria/asistentes-voz" },
       { label: "Iluminación inteligente", link: "/categoria/iluminacion-inteligente" },
@@ -88,7 +81,6 @@ const secciones = [
   {
     title: "Redes",
     description: "Equipos para mejorar tu conectividad y redes domésticas",
-    icon: "📶",
     subtitles: [
       { label: "Routers", link: "/categoria/routers" },
       { label: "Repetidores WiFi", link: "/categoria/repetidores" },
@@ -112,7 +104,7 @@ const ContentPage = () => {
       <div className="grid md:grid-cols-2 gap-8">
         {secciones.map((section, index) => (
           <div key={index} className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
-            <div className={"bg-gradient-to-bl from-primary-900 to-primary-400 px-6 py-8 text-white"}>
+            <div className={"bg-gradient-to-bl from-primary-700 to-black px-6 py-8 opacity-90 text-white"}>
               <div className="flex items-center mb-4">
                 <h2 className="text-2xl font-bold">{section.title}</h2>
               </div>

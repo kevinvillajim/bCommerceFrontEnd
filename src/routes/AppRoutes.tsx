@@ -9,6 +9,7 @@ import LoginPage from '../presentation/pages/LoginPage';
 import RegisterPage from '../presentation/pages/RegisterPage';
 import NotFoundPage from '../presentation/pages/NotFoundPage';
 import CategoryPage from '../presentation/pages/CategoryPage';
+import ContactPage from '../presentation/pages/ContactPage';
 import Test from '../presentation/pages/Test';
 import DashboardLayout from '../presentation/layouts/DashboardLayout';
 
@@ -40,6 +41,10 @@ const appRoutes: RouteObject[] = [
       {
         path: "categories",
         element: <CategoryPage />
+      },
+      {
+        path: "contact",
+        element: <ContactPage />
       },
       {
         path: "test",

@@ -12,6 +12,8 @@ const LoginPage = lazy(() => import('./presentation/pages/LoginPage'));
 const RegisterPage = lazy(() => import('./presentation/pages/RegisterPage'));
 const NotFoundPage = lazy(() => import('./presentation/pages/NotFoundPage'));
 const CategoryPage = lazy(() => import('./presentation/pages/CategoryPage'));
+const AboutUsPage = lazy(() => import('./presentation/pages/AboutUsPage'));
+const ContactPage = lazy(() => import('./presentation/pages/ContactPage'));
 const DashboardLayout = lazy(() => import('./presentation/layouts/DashboardLayout'));
 
 // Loading fallback for lazy-loaded components
@@ -45,6 +47,8 @@ const App: React.FC = () => {
           <Route path="products/:id" element={<ProductItemPage />} />
           <Route path="products" element={<ProductPage />} />
           <Route path="categories" element={<CategoryPage />} />
+          <Route path="about" element={<AboutUsPage />} />
+          <Route path="contact" element={<ContactPage />} />
           <Route 
             path="login" 
             element={
