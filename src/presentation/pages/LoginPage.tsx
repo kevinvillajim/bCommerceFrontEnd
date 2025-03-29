@@ -1,30 +1,35 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
+import type { UserLoginData } from '../../core/domain/entities/User';
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Usar el hook de autenticación
+  const { login, loading, error } = useAuth();
+
+  // Obtener ruta de redirección si existe
+  const from = (location.state as any)?.from?.pathname || '/';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    setIsLoading(true);
     
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Mock successful login
-      localStorage.setItem('auth_token', 'mock-jwt-token');
-      navigate('/');
-    } catch (err) {
-      setError('Correo electrónico o contraseña inválidos');
-    } finally {
-      setIsLoading(false);
+    // Preparar las credenciales
+    const credentials: UserLoginData = {
+      email,
+      password
+    };
+    
+    // Intentar iniciar sesión
+    const result = await login(credentials);
+    
+    // Si el inicio de sesión fue exitoso, redirigir
+    if (result) {
+      navigate(from, { replace: true });
     }
   };
 
@@ -117,10 +122,10 @@ const LoginPage: React.FC = () => {
           <div>
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={loading}
               className="cursor-pointer group relative w-full flex justify-center py-3 px-4 border border-transparent rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? (
+              {loading ? (
                 <span className="absolute left-0 inset-y-0 flex items-center pl-3">
                   <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>

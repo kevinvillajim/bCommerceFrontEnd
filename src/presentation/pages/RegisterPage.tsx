@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
+import type { UserRegistrationData } from '../../core/domain/entities/User';
 
 const RegisterPage: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -10,9 +12,9 @@ const RegisterPage: React.FC = () => {
     confirmPassword: ''
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isLoading, setIsLoading] = useState(false);
   
   const navigate = useNavigate();
+  const { register, loading, error } = useAuth();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -74,19 +76,20 @@ const RegisterPage: React.FC = () => {
       return;
     }
     
-    setIsLoading(true);
+    // Preparar datos para el registro según la interfaz UserRegistrationData
+    const userData: UserRegistrationData = {
+      name: `${formData.firstName} ${formData.lastName}`,
+      email: formData.email,
+      password: formData.password,
+      password_confirmation: formData.confirmPassword
+    };
     
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Mock successful registration
-      localStorage.setItem('auth_token', 'mock-jwt-token');
+    // Intentar registrar al usuario
+    const result = await register(userData);
+    
+    // Si el registro fue exitoso, redirigir al home
+    if (result) {
       navigate('/');
-    } catch (err) {
-      setErrors({ form: 'El registro falló. Por favor, inténtalo de nuevo.' });
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -115,9 +118,9 @@ const RegisterPage: React.FC = () => {
           </p>
         </div>
         
-        {errors.form && (
+        {error && (
           <div className="bg-red-50 text-red-700 p-3 rounded-md text-sm">
-            {errors.form}
+            {error}
           </div>
         )}
         
@@ -244,10 +247,10 @@ const RegisterPage: React.FC = () => {
           <div>
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={loading}
               className="cursor-pointer group relative w-full flex justify-center py-3 px-4 border border-transparent rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isLoading ? (
+              {loading ? (
                 <span className="absolute left-0 inset-y-0 flex items-center pl-3">
                   <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>

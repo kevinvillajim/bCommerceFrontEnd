@@ -17,7 +17,7 @@ const environments = {
 };
 
 // Get current environment from build process or default to development
-const currentEnv = process.env.REACT_APP_ENV || 'development';
+const currentEnv = import.meta.env.REACT_APP_ENV || 'development';
 
 // Export the environment configuration
 export const environment = environments[currentEnv as keyof typeof environments];
