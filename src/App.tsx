@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 
 // Import layouts
 import MainLayout from './presentation/layouts/MainLayout';
+// import UserProfilePage from './presentation/pages/UserProfilePage';
 
 // Lazy load components for better performance
 const HomePage = lazy(() => import('./presentation/pages/HomePage'));
@@ -15,6 +16,9 @@ const CategoryPage = lazy(() => import('./presentation/pages/CategoryPage'));
 const AboutUsPage = lazy(() => import('./presentation/pages/AboutUsPage'));
 const ContactPage = lazy(() => import('./presentation/pages/ContactPage'));
 const FAQPage = lazy(() => import('./presentation/pages/FAQPage'));
+const FavoritePage = lazy(() => import('./presentation/pages/FavoritePage'));
+const CartPage = lazy(() => import('./presentation/pages/CartPage'));
+const UserProfilePage = lazy(() => import('./presentation/pages/UserProfilePage'));
 const DashboardLayout = lazy(() => import('./presentation/layouts/DashboardLayout'));
 
 // Loading fallback for lazy-loaded components
@@ -51,6 +55,9 @@ const App: React.FC = () => {
           <Route path="about" element={<AboutUsPage />} />
           <Route path="contact" element={<ContactPage />} />
           <Route path="faq" element={<FAQPage />} />
+          <Route path="favorites" element={<FavoritePage />} />
+          <Route path="account" element={<UserProfilePage />} />
+          <Route path="cart" element={<CartPage />} />
           <Route 
             path="login" 
             element={

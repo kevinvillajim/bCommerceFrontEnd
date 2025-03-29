@@ -29,6 +29,11 @@ const Header: React.FC<HeaderProps> = ({
   ]
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const notification = {
+    favorites: null,
+    cart: 1
+  };
   
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);
@@ -51,9 +56,9 @@ const Header: React.FC<HeaderProps> = ({
               <span>Envío gratis en pedidos superiores a $50</span>
             </div>
             <div className="flex space-x-4 text-xs md:text-sm">
-              <a href="#" className="hover:underline">Seguimiento de pedido</a>
+              <a href="tracking" className="hover:underline">Seguimiento de pedido</a>
               <span>|</span>
-              <a href="#" className="hover:underline">Ayuda</a>
+              <a href="faq" className="hover:underline">Ayuda</a>
               {/* <span>|</span>
               <a href="#" className="hover:underline">ES</a> */}
             </div>
@@ -98,11 +103,11 @@ const Header: React.FC<HeaderProps> = ({
           <div className="hidden md:flex items-center space-x-6">
             <Link to="/favorites" className="text-gray-700 hover:text-primary-600 transition-colors relative">
               <Heart size={22} />
-              <span className="absolute -top-2 -right-2 bg-primary-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">3</span>
+              <span className={`${notification.favorites ? "absolute" : "hidden"} -top-2 -right-2 bg-primary-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center`}>{notification.favorites}</span>
             </Link>
             <Link to="/cart" className="text-gray-700 hover:text-primary-600 transition-colors relative">
               <ShoppingCart size={22} />
-              <span className="absolute -top-2 -right-2 bg-primary-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">2</span>
+              <span className="absolute -top-2 -right-2 bg-primary-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">{notification.cart}</span>
             </Link>
             <Link to="/account" className="text-gray-700 hover:text-primary-600 transition-colors">
               <User size={22} />
