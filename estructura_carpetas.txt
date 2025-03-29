@@ -1,0 +1,182 @@
+Listado de rutas de carpetas
+El n�mero de serie del volumen es 7C1B-BCDF
+C:.
+|   .dockerignore
+|   .env
+|   .gitignore
+|   Dockerfile
+|   estructura_carpetas.txt
+|   index.html
+|   initialArchTemplate.txt
+|   package-lock.json
+|   package.json
+|   react-router.config.ts
+|   README.md
+|   roadMap.txt
+|   taiwindcssconfig.txt
+|   tsconfig.json
+|   tsconfig.node.json
+|   vite.config.ts
+|   
++---.react-router
+|   \---types
+|       |   +register.ts
+|       |   +virtual.ts
+|       |   
+|       \---app
+|           +---+types
+|           |       root.ts
+|           |       
+|           \---routes
+|               \---+types
+|                       home.ts
+|                       
++---public
+|       favicon.ico
+|       
+\---src
+    |   App.tsx
+    |   main.tsx
+    |   
+    +---assets
+    |   +---icons
+    |   +---images
+    |   \---styles
+    +---config
+    |       appConfig.ts
+    |       environment.ts
+    |       
+    +---constants
+    |       apiEndpoints.ts
+    |       routes.ts
+    |       
+    +---core
+    |   +---domain
+    |   |   +---entities
+    |   |   |       Accounting.ts
+    |   |   |       Category.ts
+    |   |   |       DescountCode.ts
+    |   |   |       Favorite.ts
+    |   |   |       Feedback.ts
+    |   |   |       Invoice.ts
+    |   |   |       Message.ts
+    |   |   |       Notification.ts
+    |   |   |       Order.ts
+    |   |   |       Product.ts
+    |   |   |       Rating.ts
+    |   |   |       Seller.ts
+    |   |   |       ShoppingCart.ts
+    |   |   |       User.ts
+    |   |   |       UserInteraction.ts
+    |   |   |       
+    |   |   +---interfaces
+    |   |   |       IProductService.ts
+    |   |   |       IUserRepository.ts
+    |   |   |       
+    |   |   \---valueObjects
+    |   |           Address.ts
+    |   |           Money.ts
+    |   |           
+    |   +---services
+    |   |       AuthService.ts
+    |   |       ProductService.ts
+    |   |       RecommendationService.ts
+    |   |       
+    |   \---useCases
+    |       +---product
+    |       |       CreateProductUseCase.ts
+    |       |       GetProductDetailsUseCase.ts
+    |       |       SearchProductsUseCase.ts
+    |       |       
+    |       \---user
+    |               LoginUseCase.ts
+    |               RegisterUseCase.ts
+    |               UpdateProfileUseCase.ts
+    |               
+    +---infrastructure
+    |   +---api
+    |   |       apiClient.ts
+    |   |       axiosConfig.ts
+    |   |       endpoints.ts
+    |   |       
+    |   +---repositories
+    |   |       HttpProductRepository.ts
+    |   |       HttpUserRepository.ts
+    |   |       
+    |   \---services
+    |           HttpAuthService.ts
+    |           LocalStorageService.ts
+    |           
+    +---presentation
+    |   +---components
+    |   |   +---common
+    |   |   |       Button.tsx
+    |   |   |       Categories.tsx
+    |   |   |       Footer.tsx
+    |   |   |       Header.tsx
+    |   |   |       ImageSlider.tsx
+    |   |   |       Input.tsx
+    |   |   |       ProductCards.tsx
+    |   |   |       TextSlider.tsx
+    |   |   |       WhyUs.tsx
+    |   |   |       
+    |   |   +---FAQ
+    |   |   |       FAQBase.tsx
+    |   |   |       
+    |   |   +---product
+    |   |   |       CategoriesProduct.tsx
+    |   |   |       ProductCardCompact.tsx
+    |   |   |       ProductCarousel.tsx
+    |   |   |       ProductFilters.tsx
+    |   |   |       ProductList.tsx
+    |   |   |       
+    |   |   \---user
+    |   |           LoginForm.tsx
+    |   |           ProfileCard.tsx
+    |   |           
+    |   +---contexts
+    |   |       AuthContext.tsx
+    |   |       CartContext.tsx
+    |   |       
+    |   +---hooks
+    |   |       useAuth.ts
+    |   |       useProducts.ts
+    |   |       
+    |   +---layouts
+    |   |       DashboardLayout.tsx
+    |   |       MainLayout.tsx
+    |   |       
+    |   \---pages
+    |           AboutUsPage.tsx
+    |           CartPage.tsx
+    |           CategoryPage.tsx
+    |           ContactPage.tsx
+    |           FAQPage.tsx
+    |           FavoritePage.tsx
+    |           HomePage.tsx
+    |           LoginPage.tsx
+    |           NotFoundPage.tsx
+    |           ProductItemPage.tsx
+    |           ProductPage.tsx
+    |           RegisterPage.tsx
+    |           UserProfilePage.tsx
+    |           
+    +---routes
+    |       AppRoutes.tsx
+    |       PrivateRoute.tsx
+    |       PublicRoute.tsx
+    |       
+    +---styles
+    |       main.css
+    |       tailwind.css
+    |       
+    \---utils
+        |   helpers.ts
+        |   
+        +---formatters
+        |       currencyFormatter.ts
+        |       dateFormatter.ts
+        |       
+        \---validators
+                formValidation.ts
+                

@@ -11,9 +11,16 @@ import NotFoundPage from '../presentation/pages/NotFoundPage';
 import CategoryPage from '../presentation/pages/CategoryPage';
 import ContactPage from '../presentation/pages/ContactPage';
 import FAQPage from '../presentation/pages/FAQPage';
-import FavoritePage from '../presentation/pages/FavoritePage';
-import CartPage from '../presentation/pages/CartPage';
 import DashboardLayout from '../presentation/layouts/DashboardLayout';
+
+// Protected Pages
+import UserProfilePage from '../presentation/pages/UserProfilePage';
+import CartPage from '../presentation/pages/CartPage';
+import FavoritePage from '../presentation/pages/FavoritePage';
+
+// Route wrappers
+import PrivateRoute from './PrivateRoute';
+import PublicRoute from './PublicRoute';
 
 
 // Auth guard helper

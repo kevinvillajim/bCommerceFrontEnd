@@ -1,7 +1,7 @@
 /**
  * Ajustes de configuración
  */
-import environment from './environment';
+import {environment} from './environment';
 
 // App configuration
 const appConfig = {
@@ -42,7 +42,19 @@ const appConfig = {
     contact: '/contact',
     faq: '/faq',
     favorites: '/favorites',
-  }
+  },
+  // Límites de carga de archivos (en bytes)
+  fileUpload: {
+    maxImageSize: 5242880, // 5MB
+    allowedImageTypes: ['image/jpeg', 'image/png', 'image/webp'],
+    maxProductImages: 5
+  },
+  // Configuración de validación
+  validation: {
+    minPasswordLength: 8,
+    maxProductNameLength: 100,
+    maxDescriptionLength: 5000
+  },
 };
 
 export default appConfig;
