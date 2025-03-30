@@ -4,7 +4,7 @@ import { useSearchParams } from 'react-router-dom';
 
 // Importaciones de componentes
 import SearchBar from '../components/product/SearchBar';
-import CategoriesProduct from '../components/product/CategoriesProduct';
+import CategoriesCarousel from '../components/product/CategoriesCarousel';
 import ProductFilters from '../components/product/ProductFilters';
 import ProductGrid from '../components/product/ProductGrid';
 import SortDropdown from '../components/product/SortDropdown';
@@ -394,36 +394,9 @@ useEffect(() => {
   const totalPages = productsMeta ? Math.ceil(productsMeta.total / productsMeta.limit) : 0;
   
   // Esta constante se usa en el componente ActiveFilters
-  // const hasActiveFilters = selectedCategories.length > 0 || selectedPriceRange !== null || showingDiscounted;
+  const hasActiveFilters = selectedCategories.length > 0 || selectedPriceRange !== null || showingDiscounted;
 
-  const testApiDirectly = () => {
-  console.log("Testing API directly with fetch...");
-  
-  fetch('http://localhost:8000/api/products')
-    .then(response => {
-      console.log("Products API Status:", response.status);
-      return response.json();
-    })
-    .then(data => {
-      console.log("Products API Data:", data);
-    })
-    .catch(error => {
-      console.error("Products API Error:", error);
-    });
-  
-  fetch('http://localhost:8000/api/categories')
-    .then(response => {
-      console.log("Categories API Status:", response.status);
-      return response.json();
-    })
-    .then(data => {
-      console.log("Categories API Data:", data);
-    })
-    .catch(error => {
-      console.error("Categories API Error:", error);
-    });
-};
-testApiDirectly()
+
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -448,7 +421,7 @@ testApiDirectly()
             Error al cargar categorías. Por favor, intenta nuevamente.
           </div>
         ) : categoryOptions.length > 0 ? (
-          <CategoriesProduct categories={categoryOptions} />
+          <CategoriesCarousel categories={categoryOptions} />
         ) : (
           <div className="p-4 bg-gray-50 text-gray-500 rounded-lg text-center">
             No hay categorías disponibles
