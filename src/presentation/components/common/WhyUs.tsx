@@ -24,9 +24,9 @@ const WhyUs: React.FC<WhyUsProps> = ({
         {features.map((feature, index) => (
           <div 
             key={index} 
-            className="bg-white shadow-md hover:shadow-lg rounded-xl p-6 transition-all duration-300 hover:translate-y-[-5px]"
+            className="bg-white shadow-md hover:shadow-lg rounded-xl p-6 transition-all duration-300 hover:translate-y-[-5px] feature-card"
           >
-            <div className={`w-14 h-14 ${feature.color || 'bg-indigo-50 text-indigo-600'} rounded-full flex items-center justify-center mb-4`}>
+            <div className={`w-14 h-14 ${feature.color || 'bg-indigo-50 text-indigo-600'} rounded-full flex items-center justify-center mb-4 feature-icon`}>
               <feature.icon size={28} strokeWidth={1.5} />
             </div>
             <h3 className="font-bold text-lg mb-3 text-gray-800">{feature.title}</h3>

@@ -1,117 +1,31 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import CategoriesProduct from '../components/product/CategoriesProduct';
 import ProductFilters from '../components/product/ProductFilters';
 import ProductCardCompact from '../components/product/ProductCardCompact';
-import { Search, SlidersHorizontal, ChevronDown, Check, X } from 'lucide-react';
-import { Smartphone, Tv, Laptop, Monitor, Headphones, Camera, Watch, Speaker } from 'lucide-react';
+import { Search, ChevronDown, Check, X, Filter } from 'lucide-react';
+import { Smartphone, Tv, Laptop, Monitor, Headphones, Camera, Watch, Speaker, Package } from 'lucide-react';
+import { useProducts } from '../hooks/useProducts';
+import { useCategories } from '../hooks/useCategories';
+import { useCart } from '../hooks/useCart';
+import { useFavorites } from '../hooks/useFavorites';
+import appConfig from '../../config/appConfig';
+import type { ProductFilterParams } from '../../core/domain/entities/Product';
+import environment from '../../config/environment';
 
-// Mock data for products (in a real app, this would come from an API)
-const mockProducts = [
-  {
-    id: 1,
-    name: "Auriculares inalámbricos",
-    description: "Auriculares premium con cancelación de ruido y 30h de batería",
-    price: 199.99,
-    discount: 15, // 15% de descuento
-    image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80",
-    category: "Auriculares"
-  },
-  {
-    id: 2,
-    name: "Smartwatch Pro",
-    description: "Monitoriza tu estado físico, salud y mantente conectado con estilo",
-    price: 249.99,
-    image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80",
-    category: "Relojes"
-  },
-  {
-    id: 3,
-    name: "Cámara de acción 4K",
-    description: "Captura tus aventuras en impresionante resolución 4K",
-    price: 329.99,
-    discount: 20, // 20% de descuento
-    image: "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80",
-    category: "Cámaras"
-  },
-  {
-    id: 4,
-    name: "iWatch Ultra",
-    description: "Alto rendimiento en un diseño elegante y ligero",
-    price: 1099.99,
-    image: "https://images.unsplash.com/photo-1546868871-7041f2a55e12?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80",
-    category: "Relojes"
-  },
-  {
-    id: 5,
-    name: "Altavoz inteligente",
-    description: "Altavoz con control por voz y calidad de audio premium",
-    price: 129.99,
-    discount: 10, // 10% de descuento
-    image: "https://images.unsplash.com/photo-1589003077984-894e133dabab?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80",
-    category: "Altavoces"
-  },
-  {
-    id: 6,
-    name: "Gafas inteligentes",
-    description: "Gafas con bluetooth, musica in ear y sistema operativo android, manejable con los ojos",
-    price: 149.99,
-    image: "https://images.unsplash.com/photo-1572635196237-14b3f281503f?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80",
-    category: "Gadgets"
-  },
-  {
-    id: 7,
-    name: "Smartphone Galaxy S25",
-    description: "El último smartphone con cámara de 108MP y pantalla AMOLED de 6.8 pulgadas",
-    price: 1299.99,
-    discount: 12,
-    image: "https://images.unsplash.com/photo-1592899677977-9c10ca588bbd?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80",
-    category: "Smartphones"
-  },
-  {
-    id: 8,
-    name: "Laptop Pro X",
-    description: "Potente laptop con procesador de última generación y 32GB de RAM",
-    price: 1899.99,
-    image: "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80",
-    category: "Laptops"
-  },
-  {
-    id: 9,
-    name: "Monitor UltraWide 34\"",
-    description: "Monitor curvo ultrawide con resolución 4K y tecnología HDR",
-    price: 599.99,
-    discount: 8,
-    image: "https://images.unsplash.com/photo-1616763355548-1b606f439f86?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80",
-    category: "Monitores"
-  },
-  {
-    id: 10,
-    name: "TV OLED 65\"",
-    description: "Televisor OLED de 65 pulgadas con tecnología de imagen avanzada",
-    price: 2499.99,
-    discount: 15,
-    image: "https://images.unsplash.com/photo-1593784991095-a205069470b6?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80",
-    category: "TVs"
-  },
-  {
-    id: 11,
-    name: "Auriculares Gaming",
-    description: "Auriculares con micrófono de alta calidad y sonido envolvente 7.1",
-    price: 159.99,
-    image: "https://images.unsplash.com/photo-1591370874773-6702e8f12fd8?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80",
-    category: "Auriculares"
-  },
-  {
-    id: 12,
-    name: "Tablet Pro 12.9",
-    description: "Tablet de 12.9 pulgadas con pantalla Retina y procesador potente",
-    price: 1099.99,
-    discount: 10,
-    image: "https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80",
-    category: "Tablets"
-  }
-];
+// Mapeo de iconos por categoría (nombre en minúsculas como clave)
+const CATEGORY_ICONS: Record<string, React.ElementType> = {
+  'smartphones': Smartphone,
+  'laptops': Laptop,
+  'monitores': Monitor,
+  'tvs': Tv,
+  'auriculares': Headphones,
+  'cámaras': Camera,
+  'camaras': Camera,
+  'relojes': Watch,
+  'altavoces': Speaker,
+  'default': Package
+};
 
 // Price ranges for filter
 const priceRanges = [
@@ -119,7 +33,8 @@ const priceRanges = [
   { id: '100-300', label: '$100 - $300' },
   { id: '300-500', label: '$300 - $500' },
   { id: '500-1000', label: '$500 - $1000' },
-  { id: '1000+', label: 'Más de $1000' }
+  { id: '1000-2000', label: '$1000 - $2000' },
+  { id: '2000-999999', label: 'Más de $2000' }
 ];
 
 // Sort options
@@ -129,46 +44,206 @@ const sortOptions = [
   { id: 'price-desc', label: 'Precio: Mayor a Menor' },
   { id: 'name-asc', label: 'Nombre: A-Z' },
   { id: 'name-desc', label: 'Nombre: Z-A' },
-  { id: 'discount', label: 'Mayores Descuentos' }
+  { id: 'newest', label: 'Más recientes' }
 ];
 
+/**
+ * Página de productos que muestra la lista de productos disponibles
+ * con opciones de filtrado y ordenamiento
+ */
 const ProductPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [filteredProducts, setFilteredProducts] = useState(mockProducts);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [priceRange, setPriceRange] = useState<string | null>(null);
+  const [selectedPriceRange, setSelectedPriceRange] = useState<{ min: number; max: number } | null>(null);
+  const [rangeString, setRangeString] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState('featured');
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [showingDiscounted, setShowingDiscounted] = useState(false);
-  
-  // Nuevo estado para controlar la apertura del dropdown
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  
-  // Referencia para detectar clics fuera del dropdown
+  const [currentPage, setCurrentPage] = useState(1);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  
+  // Hooks
+  const { 
+    loading: productsLoading, 
+    error: productsError, 
+    products: productsData, 
+    meta: productsMeta, 
+    fetchProducts 
+  } = useProducts();
+  
+  const { 
+    loading: categoriesLoading, 
+    error: categoriesError,
+    categories: categoriesData, 
+    fetchCategories 
+  } = useCategories();
+  
+  const { addToCart } = useCart();
+  const { toggleFavorite } = useFavorites();
+  
+  // State para categorías con iconos
+  const [categoryOptions, setCategoryOptions] = useState<Array<{
+    id: number;
+    title: string;
+    icon: React.ElementType;
+    link: string;
+  }>>([]);
 
-  // Categories with icons
-  const categories = [
-    { id: 1, title: "Smartphones", icon: Smartphone, link: "/products?category=Smartphones" },
-    { id: 2, title: "Laptops", icon: Laptop, link: "/products?category=Laptops" },
-    { id: 3, title: "Monitores", icon: Monitor, link: "/products?category=Monitores" },
-    { id: 4, title: "TVs", icon: Tv, link: "/products?category=TVs" },
-    { id: 5, title: "Auriculares", icon: Headphones, link: "/products?category=Auriculares" },
-    { id: 6, title: "Cámaras", icon: Camera, link: "/products?category=Cámaras" },
-    { id: 7, title: "Relojes", icon: Watch, link: "/products?category=Relojes" },
-    { id: 8, title: "Altavoces", icon: Speaker, link: "/products?category=Altavoces" }
-  ];
-
-  // Get initial category from URL if present
-  useEffect(() => {
-    const categoryParam = searchParams.get('category');
-    if (categoryParam) {
-      setSelectedCategories(categoryParam ? [categoryParam] : []);
+  // Función para construir parámetros de filtro
+  const buildFilterParams = useCallback((): ProductFilterParams => {
+    const params: ProductFilterParams = {
+      limit: appConfig.pagination.defaultPageSize,
+      offset: (currentPage - 1) * appConfig.pagination.defaultPageSize
+    };
+    
+    // Añadir categoría si está seleccionada
+    if (selectedCategories.length > 0) {
+      const categoryIds = selectedCategories
+        .map(catName => categoriesData.find(c => c.name.toLowerCase() === catName.toLowerCase())?.id)
+        .filter(id => id !== undefined) as number[];
+      
+      if (categoryIds.length > 0) {
+        params.categoryId = categoryIds[0];
+      }
     }
-  }, [searchParams]);
+    
+    // Añadir rango de precio si está seleccionado
+    if (selectedPriceRange) {
+      params.minPrice = selectedPriceRange.min;
+      
+      // Solo añadir maxPrice si no es el valor máximo (para filtros como "Más de $X")
+      if (selectedPriceRange.max < 999999) {
+        params.maxPrice = selectedPriceRange.max;
+      }
+    }
+    
+    // Añadir término de búsqueda
+    if (searchTerm) {
+      params.term = searchTerm;
+    }
+    
+    // Añadir filtro de descuento
+    if (showingDiscounted) {
+      // La API debería tener un parámetro para filtrar productos con descuento
+      // Por ejemplo: params.hasDiscount = true;
+      // Ajustar según la especificación real de la API
+    }
+    
+    // Añadir ordenamiento
+    switch (sortBy) {
+      case 'price-asc':
+        params.sortBy = 'price';
+        params.sortDir = 'asc';
+        break;
+      case 'price-desc':
+        params.sortBy = 'price';
+        params.sortDir = 'desc';
+        break;
+      case 'name-asc':
+        params.sortBy = 'name';
+        params.sortDir = 'asc';
+        break;
+      case 'name-desc':
+        params.sortBy = 'name';
+        params.sortDir = 'desc';
+        break;
+      case 'newest':
+        params.sortBy = 'created_at';
+        params.sortDir = 'desc';
+        break;
+      case 'featured':
+      default:
+        params.sortBy = 'featured';
+        params.sortDir = 'desc';
+        break;
+    }
+    
+    return params;
+  }, [selectedCategories, selectedPriceRange, searchTerm, showingDiscounted, sortBy, currentPage, categoriesData]);
 
-  // Event listener para cerrar el dropdown al hacer click fuera
+  // Cargar datos al iniciar
+  useEffect(() => {
+    // Cargar categorías
+    fetchCategories();
+    
+    // Obtener parámetros de la URL
+    const categoryParam = searchParams.get('category');
+    const searchParam = searchParams.get('search');
+    const priceMinParam = searchParams.get('minPrice');
+    const priceMaxParam = searchParams.get('maxPrice');
+    const sortParam = searchParams.get('sort');
+    const pageParam = searchParams.get('page');
+    
+    // Aplicar filtros de la URL
+    if (categoryParam) {
+      setSelectedCategories(categoryParam.split(','));
+    }
+    
+    if (searchParam) {
+      setSearchTerm(searchParam);
+    }
+    
+    if (priceMinParam && priceMaxParam) {
+      const min = parseInt(priceMinParam);
+      const max = parseInt(priceMaxParam);
+      setSelectedPriceRange({ min, max });
+      
+      // Buscar el rango que coincida
+      const rangeId = priceRanges.find(r => {
+        const [rMin, rMax] = r.id.split('-').map(Number);
+        return rMin === min && rMax === max;
+      })?.id;
+      
+      if (rangeId) {
+        setRangeString(rangeId);
+      }
+    }
+    
+    if (sortParam) {
+      setSortBy(sortParam);
+    }
+    
+    if (pageParam) {
+      setCurrentPage(parseInt(pageParam));
+    }
+    
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchCategories]);
+
+  // Actualizar opciones de categoría cuando se carguen los datos
+  useEffect(() => {
+    if (categoriesData && categoriesData.length > 0) {
+      const options = categoriesData.map(category => {
+        // Determinar icono basado en el nombre de categoría (o usar Default)
+        const categoryNameLower = category.name.toLowerCase();
+        const icon = CATEGORY_ICONS[categoryNameLower] || CATEGORY_ICONS.default;
+        
+        return {
+          id: category.id || 0,
+          title: category.name,
+          icon: icon,
+          link: `/products?category=${encodeURIComponent(category.name)}`
+        };
+      });
+      setCategoryOptions(options);
+    }
+  }, [categoriesData]);
+
+  // Cargar productos cuando cambien los filtros
+  useEffect(() => {
+    if (categoriesData.length > 0) {
+      // No cargar hasta que tengamos las categorías
+      fetchProducts(buildFilterParams());
+      
+      // Actualizar URL con filtros
+      updateSearchParams();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchProducts, buildFilterParams, categoriesData.length]);
+
+  // Cerrar dropdown al hacer clic fuera o al hacer scroll
   useEffect(() => {
     const handleOutsideClick = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
@@ -176,148 +251,179 @@ const ProductPage: React.FC = () => {
       }
     };
     
-    // Event listener para cerrar el dropdown al hacer scroll
     const handleScroll = () => {
       setDropdownOpen(false);
     };
 
-    // Solo agregar los event listeners si el dropdown está abierto
     if (dropdownOpen) {
       document.addEventListener('mousedown', handleOutsideClick);
       window.addEventListener('scroll', handleScroll);
     }
 
-    // Cleanup
     return () => {
       document.removeEventListener('mousedown', handleOutsideClick);
       window.removeEventListener('scroll', handleScroll);
     };
   }, [dropdownOpen]);
 
-  // Apply filters
-  useEffect(() => {
-    let result = [...mockProducts];
+  // Actualizar parámetros de búsqueda en la URL
+  const updateSearchParams = () => {
+    const newParams = new URLSearchParams(searchParams);
     
-    // Filter by category
+    // Limpiar parámetros existentes
+    ['category', 'search', 'minPrice', 'maxPrice', 'sort', 'page'].forEach(param => {
+      newParams.delete(param);
+    });
+    
+    // Añadir categorías
     if (selectedCategories.length > 0) {
-  result = result.filter(product => selectedCategories.includes(product.category));
-}
-    
-    // Filter by price range
-    if (priceRange) {
-      const [min, max] = priceRange.split('-');
-      if (max === '+') {
-        result = result.filter(product => product.price >= Number(min));
-      } else {
-        result = result.filter(
-          product => product.price >= Number(min) && product.price <= Number(max)
-        );
-      }
+      newParams.set('category', selectedCategories.join(','));
     }
     
-    // Filter by discounted products only
-    if (showingDiscounted) {
-      result = result.filter(product => product.discount);
-    }
-    
-    // Filter by search term
+    // Añadir término de búsqueda
     if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      result = result.filter(
-        product => 
-          product.name.toLowerCase().includes(term) || 
-          product.description.toLowerCase().includes(term) ||
-          product.category.toLowerCase().includes(term)
-      );
+      newParams.set('search', searchTerm);
     }
     
-    // Apply sorting
-    switch (sortBy) {
-      case 'price-asc':
-        result.sort((a, b) => a.price - b.price);
-        break;
-      case 'price-desc':
-        result.sort((a, b) => b.price - a.price);
-        break;
-      case 'name-asc':
-        result.sort((a, b) => a.name.localeCompare(b.name));
-        break;
-      case 'name-desc':
-        result.sort((a, b) => b.name.localeCompare(a.name));
-        break;
-      case 'discount':
-        result.sort((a, b) => {
-          const discountA = a.discount || 0;
-          const discountB = b.discount || 0;
-          return discountB - discountA;
-        });
-        break;
-      // featured is default, no sorting needed
+    // Añadir rango de precio
+    if (selectedPriceRange) {
+      newParams.set('minPrice', selectedPriceRange.min.toString());
+      newParams.set('maxPrice', selectedPriceRange.max.toString());
     }
     
-    setFilteredProducts(result);
-  }, [selectedCategories, priceRange, sortBy, searchTerm, showingDiscounted]);
-
-  // Handle filter changes
-  const handleCategoryChange = (categories: string[]) => {
-  setSelectedCategories(categories);
-  
-  // Actualizar URL si cambian las categorías
-  if (categories.length === 1) {
-    searchParams.set('category', categories[0]);
-    setSearchParams(searchParams);
-  } else if (categories.length === 0 && searchParams.has('category')) {
-    searchParams.delete('category');
-    setSearchParams(searchParams);
-  }
-};
-
-  const handlePriceRangeChange = (range: string) => {
-    setPriceRange(range === priceRange ? null : range);
+    // Añadir ordenamiento
+    if (sortBy !== 'featured') {
+      newParams.set('sort', sortBy);
+    }
+    
+    // Añadir página actual
+    if (currentPage > 1) {
+      newParams.set('page', currentPage.toString());
+    }
+    
+    // Actualizar URL sin recargar la página
+    setSearchParams(newParams, { replace: true });
   };
 
+  // Manejar cambio de categoría
+  const handleCategoryChange = (categories: string[]) => {
+    setSelectedCategories(categories);
+    setCurrentPage(1); // Resetear a la primera página
+  };
+
+  // Manejar cambio de rango de precio
+  const handlePriceRangeChange = (range: { min: number; max: number }) => {
+    // Si el mismo rango ya está seleccionado, deseleccionarlo
+    if (selectedPriceRange && selectedPriceRange.min === range.min && selectedPriceRange.max === range.max) {
+      setSelectedPriceRange(null);
+      setRangeString(null);
+    } else {
+      setSelectedPriceRange(range);
+      
+      // Convertir a la forma "min-max" para componentes de UI
+      const rangeId = `${range.min}-${range.max}`;
+      setRangeString(rangeId);
+    }
+    
+    setCurrentPage(1); // Resetear a la primera página
+  };
+
+  // Manejar cambio de ordenamiento
   const handleSortChange = (sort: string) => {
     setSortBy(sort);
-    setDropdownOpen(false); // Cerrar dropdown después de seleccionar
+    setDropdownOpen(false);
+    setCurrentPage(1); // Resetear a la primera página
   };
 
+  // Manejar búsqueda
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    // Search functionality already triggered by useEffect
+    setCurrentPage(1); // Resetear a la primera página al buscar
   };
 
+  // Manejar cambio en input de búsqueda
   const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
   };
 
+  // Alternar filtro de descuentos
   const toggleDiscountedProducts = () => {
     setShowingDiscounted(!showingDiscounted);
+    setCurrentPage(1); // Resetear a la primera página
   };
 
+  // Resetear todos los filtros
   const resetFilters = () => {
     setSelectedCategories([]);
-    setPriceRange(null);
+    setSelectedPriceRange(null);
+    setRangeString(null);
     setSortBy('featured');
     setSearchTerm('');
     setShowingDiscounted(false);
-    searchParams.delete('category');
-    setSearchParams(searchParams);
+    setCurrentPage(1);
   };
 
+  // Alternar panel de filtros en móvil
   const toggleFilters = () => {
     setShowFilters(!showFilters);
   };
-
-  // Toggle el dropdown
+  
+  // Alternar dropdown de ordenamiento
   const toggleDropdown = () => {
     setDropdownOpen(!dropdownOpen);
   };
 
+  // Eliminar una categoría seleccionada
   const removeCategory = (categoryToRemove: string) => {
-  const newCategories = selectedCategories.filter(cat => cat !== categoryToRemove);
-  handleCategoryChange(newCategories);
-};
+    const newCategories = selectedCategories.filter(cat => cat !== categoryToRemove);
+    handleCategoryChange(newCategories);
+  };
+  
+  // Cambiar página en la paginación
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+    // Hacer scroll al inicio de la lista de productos
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  
+  // Manejar acción de añadir al carrito
+  const handleAddToCart = async (productId: number) => {
+    try {
+      await addToCart({
+        productId,
+        quantity: 1
+      });
+    } catch (error) {
+      console.error('Error al añadir al carrito:', error);
+      // Aquí se podría mostrar una notificación de error
+    }
+  };
+  
+  // Manejar acción de añadir a favoritos
+  const handleAddToWishlist = async (productId: number) => {
+    try {
+      await toggleFavorite(productId);
+    } catch (error) {
+      console.error('Error al añadir a favoritos:', error);
+      // Aquí se podría mostrar una notificación de error
+    }
+  };
 
+  // Obtener la URL completa de la imagen
+  const getImageUrl = (imagePath: string | undefined) => {
+    if (!imagePath) return 'https://via.placeholder.com/300';
+    
+    // Si la imagen ya es una URL completa, devolverla tal cual
+    if (imagePath.startsWith('http')) {
+      return imagePath;
+    }
+    
+    // Sino, construirla con la base URL
+    return `${environment.imageBaseUrl}${imagePath}`;
+  };
+
+  // Calcular el número total de páginas
+  const totalPages = productsMeta ? Math.ceil(productsMeta.total / productsMeta.limit) : 0;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -342,7 +448,21 @@ const ProductPage: React.FC = () => {
       {/* Categories Section */}
       <section className="mb-8">
         <h2 className="text-xl font-bold mb-4">Categorías</h2>
-        <CategoriesProduct categories={categories} />
+        {categoriesLoading ? (
+          <div className="flex justify-center py-4">
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600"></div>
+          </div>
+        ) : categoriesError ? (
+          <div className="p-4 bg-red-50 text-red-700 rounded-lg">
+            Error al cargar categorías. Por favor, intenta nuevamente.
+          </div>
+        ) : categoryOptions.length > 0 ? (
+          <CategoriesProduct categories={categoryOptions} />
+        ) : (
+          <div className="p-4 bg-gray-50 text-gray-500 rounded-lg text-center">
+            No hay categorías disponibles
+          </div>
+        )}
       </section>
       
       {/* Filter and Sort Section */}
@@ -353,7 +473,7 @@ const ProductPage: React.FC = () => {
             onClick={toggleFilters}
             className="md:hidden flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-sm"
           >
-            <SlidersHorizontal size={16} />
+            <Filter size={16} />
             Filtros
           </button>
           
@@ -367,10 +487,15 @@ const ProductPage: React.FC = () => {
             </div>
           ))}
           
-          {priceRange && (
+          {selectedPriceRange && (
             <div className="flex items-center gap-1 px-3 py-1 bg-primary-100 text-primary-800 rounded-full text-sm">
-              {priceRanges.find(range => range.id === priceRange)?.label}
-              <button onClick={() => setPriceRange(null)} className="ml-1">
+              {selectedPriceRange.max === 999999 
+                ? `Más de $${selectedPriceRange.min}`
+                : `$${selectedPriceRange.min} - $${selectedPriceRange.max}`}
+              <button onClick={() => {
+                setSelectedPriceRange(null);
+                setRangeString(null);
+              }} className="ml-1">
                 <X size={14} />
               </button>
             </div>
@@ -385,7 +510,7 @@ const ProductPage: React.FC = () => {
             </div>
           )}
           
-          {(selectedCategories || priceRange || showingDiscounted) && (
+          {(selectedCategories.length > 0 || selectedPriceRange || showingDiscounted) && (
             <button 
               onClick={resetFilters}
               className="text-gray-500 hover:text-primary-600 text-sm"
@@ -395,7 +520,7 @@ const ProductPage: React.FC = () => {
           )}
         </div>
         
-        {/* Sort Dropdown - Modificado para abrir con click en lugar de hover */}
+        {/* Sort Dropdown */}
         <div className="relative" ref={dropdownRef}>
           <button 
             onClick={toggleDropdown}
@@ -430,30 +555,24 @@ const ProductPage: React.FC = () => {
       <div className="flex flex-col md:flex-row gap-6">
         {/* Filters Sidebar - Desktop */}
         <div className="hidden md:block w-72 flex-shrink-0">
-  <ProductFilters 
-    categories={["Smartphones", "Laptops", "Monitores", "TVs", "Auriculares", "Cámaras", "Relojes", "Altavoces"]}
-    priceRange={{ min: 0, max: 2000 }}
-    selectedCategories={selectedCategories} // Pasar las categorías seleccionadas al componente hijo
-    onCategoryChange={(categories) => {
-      // Modificación: Pasar todas las categorías seleccionadas, no solo la primera
-      handleCategoryChange(categories);
-    }}
-    onPriceRangeChange={(range) => {
-      // Handle price range change
-      const priceRangeId = `${range.min}-${range.max === 2000 ? '+' : range.max}`;
-      handlePriceRangeChange(priceRangeId);
-    }}
-    onRatingChange={(rating) => {
-      // Handle rating change
-      console.log(`Rating filter changed: ${rating}`);
-    }}
-    onDiscountChange={(discount) => {
-      // Handle discount change
-      setShowingDiscounted(discount > 0);
-    }}
-    onClearFilters={resetFilters}
-  />
-</div>
+          <ProductFilters 
+            categories={categoriesData.map(cat => cat.name)}
+            priceRange={{ min: 0, max: 2000 }}
+            selectedCategories={selectedCategories}
+            selectedPriceRange={selectedPriceRange}
+            selectedDiscount={showingDiscounted}
+            onCategoryChange={handleCategoryChange}
+            onPriceRangeChange={handlePriceRangeChange}
+            onRatingChange={(rating) => {
+              // Implementar cuando la API lo soporte
+              console.log(`Rating filter changed: ${rating}`);
+            }}
+            onDiscountChange={(discount) => {
+              setShowingDiscounted(discount > 0);
+            }}
+            onClearFilters={resetFilters}
+          />
+        </div>
         
         {/* Mobile Filters */}
         {showFilters && (
@@ -466,6 +585,30 @@ const ProductPage: React.FC = () => {
                 </button>
               </div>
               
+              {/* Categorías en móvil */}
+              <div className="mb-6">
+                <h4 className="font-medium mb-2">Categorías</h4>
+                <div className="space-y-3">
+                  {categoriesData.map((category) => (
+                    <label key={category.id} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selectedCategories.includes(category.name)}
+                        onChange={() => {
+                          if (selectedCategories.includes(category.name)) {
+                            handleCategoryChange(selectedCategories.filter(c => c !== category.name));
+                          } else {
+                            handleCategoryChange([...selectedCategories, category.name]);
+                          }
+                        }}
+                        className="rounded text-primary-600 focus:ring-primary-500 h-5 w-5"
+                      />
+                      <span className="text-gray-700">{category.name}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              
               {/* Price Range Filter */}
               <div className="mb-6">
                 <h4 className="font-medium mb-2">Rango de Precio</h4>
@@ -474,8 +617,14 @@ const ProductPage: React.FC = () => {
                     <label key={range.id} className="flex items-center gap-2 cursor-pointer">
                       <input
                         type="checkbox"
-                        checked={priceRange === range.id}
-                        onChange={() => handlePriceRangeChange(range.id)}
+                        checked={rangeString === range.id}
+                        onChange={() => {
+                          const [min, max] = range.id.split('-').map(Number);
+                          handlePriceRangeChange({
+                            min,
+                            max
+                          });
+                        }}
                         className="rounded text-primary-600 focus:ring-primary-500 h-5 w-5"
                       />
                       <span className="text-gray-700">{range.label}</span>
@@ -517,29 +666,110 @@ const ProductPage: React.FC = () => {
         
         {/* Products Grid */}
         <div className="flex-1">
-          {filteredProducts.length > 0 ? (
+          {productsLoading ? (
+            <div className="flex justify-center items-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
+            </div>
+          ) : productsError ? (
+            <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded">
+              <p className="text-red-700">Error al cargar productos: {productsError}</p>
+              <button 
+                onClick={() => fetchProducts({ limit: appConfig.pagination.defaultPageSize, offset: 0 })}
+                className="mt-3 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+              >
+                Reintentar
+              </button>
+            </div>
+          ) : productsData.length > 0 ? (
             <div>
               <h2 className="text-2xl font-bold mb-6">
-              {selectedCategories.length > 0 ? selectedCategories.join(', ') : "Todos los productos"}
-                </h2>
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    {filteredProducts.map(product => (
-                      <ProductCardCompact 
-                        key={product.id}
-                        id={product.id}
-                        name={product.name}
-                        price={product.price}
-                        discount={product.discount}
-                        rating={4.5}
-                        reviews={24}
-                        image={product.image}
-                        category={product.category}
-                        isNew={product.id % 5 === 0} // Just for demo
-                        onAddToCart={(id) => console.log(`Added product ${id} to cart`)}
-                        onAddToWishlist={(id) => console.log(`Added product ${id} to wishlist`)}
-                      />
+                {selectedCategories.length > 0 
+                  ? selectedCategories.join(', ') 
+                  : "Todos los productos"}
+              </h2>
+              
+              {/* Productos encontrados y paginación info */}
+              <div className="flex justify-between items-center mb-6">
+                <p className="text-gray-600">
+                  Mostrando {(currentPage - 1) * (productsMeta?.limit || 12) + 1}-
+                  {Math.min(currentPage * (productsMeta?.limit || 12), productsMeta?.total || 0)} de {productsMeta?.total || 0} productos
+                </p>
+              </div>
+              
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {productsData.map(product => (
+                  <ProductCardCompact 
+                    key={product.id}
+                    id={product.id || 0}
+                    name={product.name}
+                    price={product.price}
+                    discount={product.discountPercentage}
+                    rating={product.ratingAvg || 0}
+                    reviews={0} // La API no proporciona este dato directamente
+                    image={getImageUrl(product.images && product.images.length > 0 ? product.images[0] : undefined)}
+                    category={categoriesData.find(cat => cat.id === product.categoryId)?.name}
+                    isNew={new Date(product.createdAt || '').getTime() > Date.now() - (30 * 24 * 60 * 60 * 1000)}
+                    onAddToCart={handleAddToCart}
+                    onAddToWishlist={handleAddToWishlist}
+                  />
                 ))}
               </div>
+              
+              {/* Pagination */}
+              {productsMeta && productsMeta.total > productsMeta.limit && (
+                <div className="flex justify-center mt-8">
+                  <div className="flex flex-wrap items-center justify-center gap-2">
+                    <button
+                      className="px-3 py-1 border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                      disabled={currentPage === 1}
+                      onClick={() => handlePageChange(currentPage - 1)}
+                    >
+                      Anterior
+                    </button>
+                    
+                    {/* Botones de página */}
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      // Lógica para calcular qué páginas mostrar
+                      let pageNum = i + 1;
+                      
+                      if (totalPages > 5) {
+                        if (currentPage <= 3) {
+                          // Al principio: mostrar páginas 1-5
+                          pageNum = i + 1;
+                        } else if (currentPage >= totalPages - 2) {
+                          // Al final: mostrar las últimas 5 páginas
+                          pageNum = totalPages - 4 + i;
+                        } else {
+                          // En medio: mostrar actual -2, -1, actual, +1, +2
+                          pageNum = currentPage - 2 + i;
+                        }
+                      }
+                      
+                      return (
+                        <button
+                          key={pageNum}
+                          className={`w-8 h-8 flex items-center justify-center rounded-md text-sm ${
+                            currentPage === pageNum
+                              ? 'bg-primary-600 text-white'
+                              : 'border border-gray-300 text-gray-700 hover:bg-gray-100'
+                          }`}
+                          onClick={() => handlePageChange(pageNum)}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+                    
+                    <button
+                      className="px-3 py-1 border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                      disabled={currentPage === totalPages}
+                      onClick={() => handlePageChange(currentPage + 1)}
+                    >
+                      Siguiente
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <div className="bg-white rounded-lg shadow-sm p-8 text-center">

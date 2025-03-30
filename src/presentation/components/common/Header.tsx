@@ -21,6 +21,7 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({
+
   logo = {
     img: undefined,
     name: "B-Commerce"
@@ -46,7 +47,8 @@ const Header: React.FC<HeaderProps> = ({
   
   const { favoriteCount } = useFavorites();
   const { unreadCount: notificationCount } = useNotifications();
-  
+
+
   // Cerrar el menú de usuario al hacer clic fuera de él
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -92,7 +94,7 @@ const Header: React.FC<HeaderProps> = ({
   return (
     <header className="bg-white shadow-md sticky top-0 z-50">
       {/* Top Bar */}
-      <div className="bg-gray-900 text-white text-sm py-2">
+      <div className="bg-gray-900 text-white text-sm py-2 top-bar">
         <div className="container mx-auto px-4">
           <div className="flex justify-between items-center">
             <div className="hidden md:block">
@@ -191,24 +193,24 @@ const Header: React.FC<HeaderProps> = ({
                   
                   {/* User Dropdown Menu */}
                   {userMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 z-10 border border-gray-100">
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 z-10 border border-gray-100 dropdown-menu">
                       <div className="px-4 py-2 border-b border-gray-100">
                         <p className="text-sm font-medium">{user?.name}</p>
                         <p className="text-xs text-gray-500 truncate">{user?.email}</p>
                       </div>
-                      <Link to="/account" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                      <Link to="/account" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dropdown-item">
                         <User size={16} className="mr-2" />
                         Mi perfil
                       </Link>
-                      <Link to="/orders" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                      <Link to="/orders" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dropdown-item">
                         <ShoppingBag size={16} className="mr-2" />
                         Mis pedidos
                       </Link>
-                      <Link to="/favorites" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                      <Link to="/favorites" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dropdown-item">
                         <Heart size={16} className="mr-2" />
                         Mis favoritos
                       </Link>
-                      <Link to="/account/settings" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                      <Link to="/account/settings" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dropdown-item">
                         <Settings size={16} className="mr-2" />
                         Configuración
                       </Link>

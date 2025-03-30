@@ -1,6 +1,5 @@
+// src/core/services/ProductService.ts
 import { API_ENDPOINTS } from '../../constants/apiEndpoints';
-import axiosInstance from '../../infrastructure/api/axiosConfig';
-import type { AxiosResponse } from 'axios';
 import type {
   Product,
   ProductDetail,
@@ -10,6 +9,7 @@ import type {
   ProductFilterParams
 } from '../domain/entities/Product';
 import type { IProductService } from '../domain/interfaces/IProductService';
+import ApiClient from '../../infrastructure/api/ApiClient';
 
 /**
  * Implementación del servicio de productos
@@ -19,31 +19,47 @@ export class ProductService implements IProductService {
    * Obtiene una lista de productos con filtros opcionales
    */
   async getProducts(filterParams?: ProductFilterParams): Promise<ProductListResponse> {
-    const response: AxiosResponse = await axiosInstance.get(
-      API_ENDPOINTS.PRODUCTS.LIST,
-      { params: filterParams }
-    );
-    return response.data;
+    try {
+      const response = await ApiClient.get<ProductListResponse>(
+        API_ENDPOINTS.PRODUCTS.LIST,
+        filterParams
+      );
+      return response;
+    } catch (error) {
+      console.error('Error al obtener productos:', error);
+      // Devolver un objeto vacío en caso de error
+      return { data: [], meta: { total: 0, limit: 0, offset: 0 } };
+    }
   }
 
   /**
    * Obtiene un producto por su ID
    */
   async getProductById(id: number): Promise<ProductDetail> {
-    const response: AxiosResponse = await axiosInstance.get(
-      API_ENDPOINTS.PRODUCTS.DETAILS(id)
-    );
-    return response.data;
+    try {
+      const response = await ApiClient.get<ProductDetail>(
+        API_ENDPOINTS.PRODUCTS.DETAILS(id)
+      );
+      return response;
+    } catch (error) {
+      console.error(`Error al obtener el producto ${id}:`, error);
+      throw error;
+    }
   }
 
   /**
    * Obtiene un producto por su slug
    */
   async getProductBySlug(slug: string): Promise<ProductDetail> {
-    const response: AxiosResponse = await axiosInstance.get(
-      API_ENDPOINTS.PRODUCTS.DETAILS_BY_SLUG(slug)
-    );
-    return response.data;
+    try {
+      const response = await ApiClient.get<ProductDetail>(
+        API_ENDPOINTS.PRODUCTS.DETAILS_BY_SLUG(slug)
+      );
+      return response;
+    } catch (error) {
+      console.error(`Error al obtener el producto con slug ${slug}:`, error);
+      throw error;
+    }
   }
 
   /**
@@ -70,17 +86,16 @@ export class ProductService implements IProductService {
       });
     }
     
-    const response: AxiosResponse = await axiosInstance.post(
-      API_ENDPOINTS.PRODUCTS.CREATE,
-      formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      }
-    );
-    
-    return response.data;
+    try {
+      const response = await ApiClient.uploadFile<Product>(
+        API_ENDPOINTS.PRODUCTS.CREATE,
+        formData
+      );
+      return response;
+    } catch (error) {
+      console.error('Error al crear producto:', error);
+      throw error;
+    }
   }
 
   /**
@@ -107,55 +122,73 @@ export class ProductService implements IProductService {
       });
     }
     
-    const response: AxiosResponse = await axiosInstance.put(
-      API_ENDPOINTS.PRODUCTS.UPDATE(data.id),
-      formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      }
-    );
-    
-    return response.data;
+    try {
+      const response = await ApiClient.uploadFile<Product>(
+        API_ENDPOINTS.PRODUCTS.UPDATE(data.id),
+        formData
+      );
+      return response;
+    } catch (error) {
+      console.error(`Error al actualizar producto ${data.id}:`, error);
+      throw error;
+    }
   }
 
   /**
    * Elimina un producto
    */
   async deleteProduct(id: number): Promise<boolean> {
-    const response: AxiosResponse = await axiosInstance.delete(
-      API_ENDPOINTS.PRODUCTS.DELETE(id)
-    );
-    return response.data?.success || false;
+    try {
+      const response = await ApiClient.delete<{ success: boolean }>(
+        API_ENDPOINTS.PRODUCTS.DELETE(id)
+      );
+      return response.success || false;
+    } catch (error) {
+      console.error(`Error al eliminar producto ${id}:`, error);
+      return false;
+    }
   }
 
   /**
    * Obtiene productos destacados
    */
   async getFeaturedProducts(limit = 8): Promise<Product[]> {
-    const response: AxiosResponse = await axiosInstance.get(
-      API_ENDPOINTS.PRODUCTS.FEATURED,
-      { params: { limit } }
-    );
-    return response.data;
+    try {
+      const response = await ApiClient.get<{ data: Product[] }>(
+        API_ENDPOINTS.PRODUCTS.FEATURED,
+        { limit }
+      );
+      return response.data || [];
+    } catch (error) {
+      console.error('Error al obtener productos destacados:', error);
+      return [];
+    }
   }
 
   /**
    * Obtiene productos relacionados a un producto específico
    */
   async getRelatedProducts(productId: number, limit = 4): Promise<Product[]> {
-    const response: AxiosResponse = await axiosInstance.get(
-      API_ENDPOINTS.PRODUCTS.DETAILS(productId) + '/related',
-      { params: { limit } }
-    );
-    return response.data;
+    try {
+      const response = await ApiClient.get<{ data: Product[] }>(
+        `${API_ENDPOINTS.PRODUCTS.DETAILS(productId)}/related`,
+        { limit }
+      );
+      return response.data || [];
+    } catch (error) {
+      console.error(`Error al obtener productos relacionados para ${productId}:`, error);
+      return [];
+    }
   }
 
   /**
    * Registra una visualización de producto
    */
   async trackProductView(productId: number): Promise<void> {
-    await axiosInstance.post(API_ENDPOINTS.PRODUCTS.INCREMENT_VIEW(productId));
+    try {
+      await ApiClient.post(API_ENDPOINTS.PRODUCTS.INCREMENT_VIEW(productId));
+    } catch (error) {
+      console.error(`Error al registrar visualización de producto ${productId}:`, error);
+    }
   }
 }

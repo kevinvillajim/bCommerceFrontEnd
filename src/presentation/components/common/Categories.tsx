@@ -17,8 +17,8 @@ interface CategoryCardProps {
 const CategoryCard: React.FC<CategoryCardProps> = ({ category, icon: Icon, link=undefined }) => {
     return (
       <a href={link}>
-    <div className="cursor-pointer bg-white shadow-md hover:shadow-xl rounded-xl p-6 text-center transition-all duration-300 hover:scale-105 border border-gray-50">
-      <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center text-gray-600 hover:text-primary-600 hover:bg-primary-50 transition-colors">
+    <div className="cursor-pointer bg-white shadow-md hover:shadow-xl rounded-xl p-6 text-center transition-all duration-300 hover:scale-105 border border-gray-50 category-card">
+      <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center text-gray-600 hover:text-primary-600 hover:bg-primary-50 transition-colors category-icon">
         <Icon size={28} strokeWidth={1.5} />
       </div>
       <h3 className="font-medium text-gray-800 tracking-wide">{category}</h3>

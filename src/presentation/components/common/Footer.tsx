@@ -42,9 +42,10 @@ const Footer: React.FC<FooterProps> = ({
       {children}
     </a>
   );
+  
 
   return (
-    <footer className="relative overflow-hidden">
+    <footer className="relative overflow-hidden footer">
       {/* Wave SVG en la parte superior */}
       <div className="absolute top-0 left-0 w-full overflow-hidden">
         <svg 

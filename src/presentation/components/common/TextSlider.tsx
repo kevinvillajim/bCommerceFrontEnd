@@ -34,7 +34,7 @@ const TextSlider: React.FC<SliderProps> = ({ slides, interval = 5000 }) => {
   };
 
   return (
-    <div className="relative overflow-hidden rounded-xl h-96">
+    <div className="relative overflow-hidden rounded-xl h-96 text-slider">
       {slides.map((slide, index) => {
         const contentPosition = index % 2 === 0 ? "items-start text-left" : "items-end text-right";
 

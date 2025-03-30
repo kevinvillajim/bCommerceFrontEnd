@@ -35,7 +35,7 @@ const ProductCardCompact: React.FC<ProductCardProps> = ({
   const discountedPrice = discount ? price - (price * (discount / 100)) : price;
 
   return (
-    <div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden group">
+    <div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden group product-card">
       {/* Product Image with Overlay */}
       <div className="relative h-48 overflow-hidden">
         <img
@@ -46,14 +46,14 @@ const ProductCardCompact: React.FC<ProductCardProps> = ({
         
         {/* Discount Tag */}
         {discount && (
-          <div className={`absolute top-2 left-2 ${color ? "bg-red-500" : "bg-primary-600"} text-white text-xs font-bold py-1 px-2 rounded`}>
+          <div className={`absolute top-2 left-2 ${color ? "bg-red-500" : "bg-primary-600"} text-white text-xs font-bold py-1 px-2 rounded badge`}>
             -{discount}%
           </div>
         )}
         
         {/* New Product Tag */}
         {isNew && (
-          <div className={`absolute top-2 right-2 ${color ? "bg-green-500" : "bg-primary-800"} text-white text-xs font-bold py-1 px-2 rounded`}>
+          <div className={`absolute top-2 right-2 ${color ? "bg-green-500" : "bg-primary-800"} text-white text-xs font-bold py-1 px-2 rounded badge`}>
             Nuevo
           </div>
         )}
@@ -126,7 +126,7 @@ const ProductCardCompact: React.FC<ProductCardProps> = ({
                 </span>
               </>
             ) : (
-              <span className="font-bold text-primary-600">
+              <span className="font-bold text-primary-600 product-price">
                 ${price.toFixed(2)}
               </span>
             )}

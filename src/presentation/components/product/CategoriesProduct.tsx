@@ -1,15 +1,18 @@
 import React from 'react';
+import type { ElementType } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import { ChevronRight } from 'lucide-react';
-import { Link } from 'react-router-dom'; // Asumiendo que usas React Router
+import { Link } from 'react-router-dom';
 
+// Definimos la interfaz Category que acepta cualquier ElementType para el icono
 interface Category {
   id: number;
   title: string;
-  icon: LucideIcon;
+  icon: ElementType;
   link: string;
 }
 
+// Para el CardProps seguimos exigiendo específicamente LucideIcon
 interface CategoryCardProps {
   category: string;
   icon: LucideIcon;
@@ -38,6 +41,7 @@ const CategoryCard: React.FC<CategoryCardProps> = ({ category, icon: Icon, link 
   return <CardContent />;
 };
 
+// El componente CategoriesProduct debe hacer un cast del tipo icon a LucideIcon
 interface CategoriesProps {
   categories: Category[];
 }
@@ -49,7 +53,7 @@ const CategoriesProduct: React.FC<CategoriesProps> = ({ categories }) => {
         <CategoryCard 
           key={category.id}
           category={category.title}
-          icon={category.icon}
+          icon={category.icon as unknown as LucideIcon}
           link={category.link}
         />
       ))}

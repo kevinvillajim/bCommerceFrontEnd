@@ -1,10 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+// src/presentation/hooks/useProducts.ts
+import { useState, useCallback } from 'react';
 import { ProductService } from '../../core/services/ProductService';
 import type { 
   Product, 
   ProductDetail, 
   ProductFilterParams, 
-  ProductListResponse 
 } from '../../core/domain/entities/Product';
 
 // Create instance of product service
@@ -29,11 +29,21 @@ export const useProducts = () => {
     
     try {
       const response = await productService.getProducts(filterParams);
-      setProducts(response.data);
-      setMeta(response.meta);
+      
+      if (response && response.data) {
+        setProducts(response.data);
+        setMeta(response.meta);
+      } else {
+        setProducts([]);
+        setMeta({ total: 0, limit: 0, offset: 0 });
+      }
+      
       return response;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch products');
+      const errorMessage = err instanceof Error ? err.message : 'Error al obtener productos';
+      setError(errorMessage);
+      setProducts([]);
+      setMeta({ total: 0, limit: 0, offset: 0 });
       return null;
     } finally {
       setLoading(false);
@@ -52,7 +62,9 @@ export const useProducts = () => {
       setProduct(productDetail);
       return productDetail;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch product details');
+      const errorMessage = err instanceof Error ? err.message : 'Error al obtener detalles del producto';
+      setError(errorMessage);
+      setProduct(null);
       return null;
     } finally {
       setLoading(false);
@@ -71,7 +83,9 @@ export const useProducts = () => {
       setProduct(productDetail);
       return productDetail;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch product details');
+      const errorMessage = err instanceof Error ? err.message : 'Error al obtener detalles del producto';
+      setError(errorMessage);
+      setProduct(null);
       return null;
     } finally {
       setLoading(false);
@@ -89,7 +103,8 @@ export const useProducts = () => {
       const featuredProducts = await productService.getFeaturedProducts(limit);
       return featuredProducts;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch featured products');
+      const errorMessage = err instanceof Error ? err.message : 'Error al obtener productos destacados';
+      setError(errorMessage);
       return [];
     } finally {
       setLoading(false);
@@ -107,7 +122,8 @@ export const useProducts = () => {
       const relatedProducts = await productService.getRelatedProducts(productId, limit);
       return relatedProducts;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch related products');
+      const errorMessage = err instanceof Error ? err.message : 'Error al obtener productos relacionados';
+      setError(errorMessage);
       return [];
     } finally {
       setLoading(false);
