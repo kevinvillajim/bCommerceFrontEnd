@@ -11,6 +11,19 @@ import type {
 import type { IProductService } from '../domain/interfaces/IProductService';
 import ApiClient from '../../infrastructure/api/ApiClient';
 
+// Interfaz para la respuesta cruda de la API
+interface ApiProductListResponse {
+  data: any[];
+  meta: {
+    total: number;
+    count?: number;
+    limit?: number;
+    offset?: number;
+    term?: string;
+    filters?: any[];
+  };
+}
+
 /**
  * Implementación del servicio de productos
  */
@@ -20,13 +33,40 @@ export class ProductService implements IProductService {
    */
   async getProducts(filterParams?: ProductFilterParams): Promise<ProductListResponse> {
     try {
-      const response = await ApiClient.get<ProductListResponse>(
+      console.log("Fetching products from API with params:", filterParams);
+      
+      // Adaptamos los nombres de los parámetros si es necesario
+      const apiParams: Record<string, any> = {};
+      
+      if (filterParams) {
+        // Mapeamos los parámetros de nuestra aplicación a los que espera la API
+        if (filterParams.limit) apiParams.limit = filterParams.limit;
+        if (filterParams.offset) apiParams.offset = filterParams.offset;
+        if (filterParams.term) apiParams.term = filterParams.term;
+        if (filterParams.categoryId) apiParams.category_id = filterParams.categoryId;
+        if (filterParams.minPrice) apiParams.min_price = filterParams.minPrice;
+        if (filterParams.maxPrice) apiParams.max_price = filterParams.maxPrice;
+        
+        // Añadir otros parámetros según sea necesario
+        if (filterParams.sortBy) {
+          apiParams.sort_by = filterParams.sortBy;
+          if (filterParams.sortDir) {
+            apiParams.sort_dir = filterParams.sortDir;
+          }
+        }
+      }
+      
+      const response = await ApiClient.get<ApiProductListResponse>(
         API_ENDPOINTS.PRODUCTS.LIST,
-        filterParams
+        apiParams
       );
-      return response;
+      
+      console.log("API response:", response);
+      
+      // Devolvemos la respuesta tal cual, la transformación se hace en el hook useProducts
+      return response as unknown as ProductListResponse;
     } catch (error) {
-      console.error('Error al obtener productos:', error);
+      console.error('Error getting products:', error);
       // Devolver un objeto vacío en caso de error
       return { data: [], meta: { total: 0, limit: 0, offset: 0 } };
     }
@@ -37,12 +77,17 @@ export class ProductService implements IProductService {
    */
   async getProductById(id: number): Promise<ProductDetail> {
     try {
-      const response = await ApiClient.get<ProductDetail>(
+      const response = await ApiClient.get<any>(
         API_ENDPOINTS.PRODUCTS.DETAILS(id)
       );
-      return response;
+      
+      // Si la API devuelve un objeto con una propiedad 'data', extraemos eso
+      const productData = response.data ? response.data : response;
+      
+      // Aquí podríamos adaptar los datos si es necesario, pero lo hacemos en el hook
+      return productData as unknown as ProductDetail;
     } catch (error) {
-      console.error(`Error al obtener el producto ${id}:`, error);
+      console.error(`Error getting product ${id}:`, error);
       throw error;
     }
   }
@@ -52,12 +97,16 @@ export class ProductService implements IProductService {
    */
   async getProductBySlug(slug: string): Promise<ProductDetail> {
     try {
-      const response = await ApiClient.get<ProductDetail>(
+      const response = await ApiClient.get<any>(
         API_ENDPOINTS.PRODUCTS.DETAILS_BY_SLUG(slug)
       );
-      return response;
+      
+      // Si la API devuelve un objeto con una propiedad 'data', extraemos eso
+      const productData = response.data ? response.data : response;
+      
+      return productData as unknown as ProductDetail;
     } catch (error) {
-      console.error(`Error al obtener el producto con slug ${slug}:`, error);
+      console.error(`Error getting product with slug ${slug}:`, error);
       throw error;
     }
   }
@@ -79,6 +128,11 @@ export class ProductService implements IProductService {
       }
     });
     
+    // Adaptamos los nombres si es necesario
+    if (data.categoryId) {
+      formData.append('category_id', String(data.categoryId));
+    }
+    
     // Agregamos los archivos de imágenes
     if (data.images && data.images.length > 0) {
       data.images.forEach((image, index) => {
@@ -93,7 +147,7 @@ export class ProductService implements IProductService {
       );
       return response;
     } catch (error) {
-      console.error('Error al crear producto:', error);
+      console.error('Error creating product:', error);
       throw error;
     }
   }
@@ -115,6 +169,11 @@ export class ProductService implements IProductService {
       }
     });
     
+    // Adaptamos los nombres si es necesario
+    if (data.categoryId) {
+      formData.append('category_id', String(data.categoryId));
+    }
+    
     // Agregamos los archivos de imágenes
     if (data.images && data.images.length > 0) {
       data.images.forEach((image, index) => {
@@ -129,7 +188,7 @@ export class ProductService implements IProductService {
       );
       return response;
     } catch (error) {
-      console.error(`Error al actualizar producto ${data.id}:`, error);
+      console.error(`Error updating product ${data.id}:`, error);
       throw error;
     }
   }
@@ -144,7 +203,7 @@ export class ProductService implements IProductService {
       );
       return response.success || false;
     } catch (error) {
-      console.error(`Error al eliminar producto ${id}:`, error);
+      console.error(`Error deleting product ${id}:`, error);
       return false;
     }
   }
@@ -154,13 +213,17 @@ export class ProductService implements IProductService {
    */
   async getFeaturedProducts(limit = 8): Promise<Product[]> {
     try {
-      const response = await ApiClient.get<{ data: Product[] }>(
+      const response = await ApiClient.get<any>(
         API_ENDPOINTS.PRODUCTS.FEATURED,
         { limit }
       );
-      return response.data || [];
+      
+      // Adaptar la respuesta según la estructura de la API
+      const featuredProducts = response.data || [];
+      
+      return featuredProducts;
     } catch (error) {
-      console.error('Error al obtener productos destacados:', error);
+      console.error('Error getting featured products:', error);
       return [];
     }
   }
@@ -170,13 +233,17 @@ export class ProductService implements IProductService {
    */
   async getRelatedProducts(productId: number, limit = 4): Promise<Product[]> {
     try {
-      const response = await ApiClient.get<{ data: Product[] }>(
+      const response = await ApiClient.get<any>(
         `${API_ENDPOINTS.PRODUCTS.DETAILS(productId)}/related`,
         { limit }
       );
-      return response.data || [];
+      
+      // Adaptar la respuesta según la estructura de la API
+      const relatedProducts = response.data || [];
+      
+      return relatedProducts;
     } catch (error) {
-      console.error(`Error al obtener productos relacionados para ${productId}:`, error);
+      console.error(`Error getting related products for ${productId}:`, error);
       return [];
     }
   }
@@ -188,7 +255,7 @@ export class ProductService implements IProductService {
     try {
       await ApiClient.post(API_ENDPOINTS.PRODUCTS.INCREMENT_VIEW(productId));
     } catch (error) {
-      console.error(`Error al registrar visualización de producto ${productId}:`, error);
+      console.error(`Error tracking product view ${productId}:`, error);
     }
   }
 }

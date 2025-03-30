@@ -1,17 +1,27 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
+// No necesitamos importar Filter ya que usamos el componente ActiveFilters
+
+// Importaciones de componentes
+import SearchBar from '../components/product/SearchBar';
 import CategoriesProduct from '../components/product/CategoriesProduct';
 import ProductFilters from '../components/product/ProductFilters';
-import ProductCardCompact from '../components/product/ProductCardCompact';
-import { Search, ChevronDown, Check, X, Filter } from 'lucide-react';
-import { Smartphone, Tv, Laptop, Monitor, Headphones, Camera, Watch, Speaker, Package } from 'lucide-react';
+import ProductGrid from '../components/product/ProductGrid';
+import SortDropdown from '../components/product/SortDropdown';
+import MobileFilterPanel from '../components/product/MobileFilterPanel';
+import ActiveFilters from '../components/product/ActiveFilters';
+import Pagination from '../components/product/Pagination';
+
+// Importaciones de hooks y utilidades
 import { useProducts } from '../hooks/useProducts';
 import { useCategories } from '../hooks/useCategories';
 import { useCart } from '../hooks/useCart';
 import { useFavorites } from '../hooks/useFavorites';
 import appConfig from '../../config/appConfig';
-import type { ProductFilterParams } from '../../core/domain/entities/Product';
 import environment from '../../config/environment';
+import type { ProductFilterParams } from '../../core/domain/entities/Product';
+// Usamos el tipo Category importado en los componentes hijos
+import { Smartphone, Tv, Laptop, Monitor, Headphones, Camera, Watch, Speaker, Package } from 'lucide-react';
 
 // Mapeo de iconos por categoría (nombre en minúsculas como clave)
 const CATEGORY_ICONS: Record<string, React.ElementType> = {
@@ -55,14 +65,17 @@ const ProductPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedPriceRange, setSelectedPriceRange] = useState<{ min: number; max: number } | null>(null);
-  const [rangeString, setRangeString] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState('featured');
   const [searchTerm, setSearchTerm] = useState('');
-  const [showFilters, setShowFilters] = useState(false);
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [showingDiscounted, setShowingDiscounted] = useState(false);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [categoryOptions, setCategoryOptions] = useState<Array<{
+    id: number;
+    title: string;
+    icon: React.ElementType;
+    link: string;
+  }>>([]);
   
   // Hooks
   const { 
@@ -82,14 +95,6 @@ const ProductPage: React.FC = () => {
   
   const { addToCart } = useCart();
   const { toggleFavorite } = useFavorites();
-  
-  // State para categorías con iconos
-  const [categoryOptions, setCategoryOptions] = useState<Array<{
-    id: number;
-    title: string;
-    icon: React.ElementType;
-    link: string;
-  }>>([]);
 
   // Función para construir parámetros de filtro
   const buildFilterParams = useCallback((): ProductFilterParams => {
@@ -128,7 +133,6 @@ const ProductPage: React.FC = () => {
     if (showingDiscounted) {
       // La API debería tener un parámetro para filtrar productos con descuento
       // Por ejemplo: params.hasDiscount = true;
-      // Ajustar según la especificación real de la API
     }
     
     // Añadir ordenamiento
@@ -189,16 +193,6 @@ const ProductPage: React.FC = () => {
       const min = parseInt(priceMinParam);
       const max = parseInt(priceMaxParam);
       setSelectedPriceRange({ min, max });
-      
-      // Buscar el rango que coincida
-      const rangeId = priceRanges.find(r => {
-        const [rMin, rMax] = r.id.split('-').map(Number);
-        return rMin === min && rMax === max;
-      })?.id;
-      
-      if (rangeId) {
-        setRangeString(rangeId);
-      }
     }
     
     if (sortParam) {
@@ -231,40 +225,23 @@ const ProductPage: React.FC = () => {
     }
   }, [categoriesData]);
 
-  // Cargar productos cuando cambien los filtros
-  useEffect(() => {
-    if (categoriesData.length > 0) {
-      // No cargar hasta que tengamos las categorías
-      fetchProducts(buildFilterParams());
-      
-      // Actualizar URL con filtros
-      updateSearchParams();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fetchProducts, buildFilterParams, categoriesData.length]);
-
-  // Cerrar dropdown al hacer clic fuera o al hacer scroll
-  useEffect(() => {
-    const handleOutsideClick = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setDropdownOpen(false);
-      }
-    };
+// En ProductPage.tsx, después de llamar a fetchProducts
+useEffect(() => {
+  if (categoriesData.length > 0) {
+    const params = buildFilterParams();
+    console.log("Parámetros de filtrado:", params);
     
-    const handleScroll = () => {
-      setDropdownOpen(false);
-    };
-
-    if (dropdownOpen) {
-      document.addEventListener('mousedown', handleOutsideClick);
-      window.addEventListener('scroll', handleScroll);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleOutsideClick);
-      window.removeEventListener('scroll', handleScroll);
-    };
-  }, [dropdownOpen]);
+    fetchProducts(params)
+      .then(response => {
+        console.log("Respuesta de la API:", response);
+      })
+      .catch(err => {
+        console.error("Error al obtener productos:", err);
+      });
+    
+    updateSearchParams();
+  }
+}, [fetchProducts, buildFilterParams, categoriesData.length]);
 
   // Actualizar parámetros de búsqueda en la URL
   const updateSearchParams = () => {
@@ -305,7 +282,9 @@ const ProductPage: React.FC = () => {
     setSearchParams(newParams, { replace: true });
   };
 
-  // Manejar cambio de categoría
+  // Handlers para interacción del usuario
+  
+  // Manejar cambio de categorías
   const handleCategoryChange = (categories: string[]) => {
     setSelectedCategories(categories);
     setCurrentPage(1); // Resetear a la primera página
@@ -316,23 +295,39 @@ const ProductPage: React.FC = () => {
     // Si el mismo rango ya está seleccionado, deseleccionarlo
     if (selectedPriceRange && selectedPriceRange.min === range.min && selectedPriceRange.max === range.max) {
       setSelectedPriceRange(null);
-      setRangeString(null);
     } else {
       setSelectedPriceRange(range);
-      
-      // Convertir a la forma "min-max" para componentes de UI
-      const rangeId = `${range.min}-${range.max}`;
-      setRangeString(rangeId);
     }
     
     setCurrentPage(1); // Resetear a la primera página
   };
 
-  // Manejar cambio de ordenamiento
-  const handleSortChange = (sort: string) => {
-    setSortBy(sort);
-    setDropdownOpen(false);
-    setCurrentPage(1); // Resetear a la primera página
+  // Eliminar una categoría seleccionada
+  const handleRemoveCategory = (categoryToRemove: string) => {
+    setSelectedCategories(prev => prev.filter(cat => cat !== categoryToRemove));
+    setCurrentPage(1);
+  };
+
+  // Limpiar filtro de rango de precio
+  const handleClearPriceRange = () => {
+    setSelectedPriceRange(null);
+    setCurrentPage(1);
+  };
+
+  // Alternar filtro de descuentos
+  const handleToggleDiscount = () => {
+    setShowingDiscounted(!showingDiscounted);
+    setCurrentPage(1);
+  };
+
+  // Resetear todos los filtros
+  const handleClearAllFilters = () => {
+    setSelectedCategories([]);
+    setSelectedPriceRange(null);
+    setSortBy('featured');
+    setSearchTerm('');
+    setShowingDiscounted(false);
+    setCurrentPage(1);
   };
 
   // Manejar búsqueda
@@ -346,46 +341,19 @@ const ProductPage: React.FC = () => {
     setSearchTerm(e.target.value);
   };
 
-  // Alternar filtro de descuentos
-  const toggleDiscountedProducts = () => {
-    setShowingDiscounted(!showingDiscounted);
-    setCurrentPage(1); // Resetear a la primera página
-  };
-
-  // Resetear todos los filtros
-  const resetFilters = () => {
-    setSelectedCategories([]);
-    setSelectedPriceRange(null);
-    setRangeString(null);
-    setSortBy('featured');
-    setSearchTerm('');
-    setShowingDiscounted(false);
+  // Manejar cambio de ordenamiento
+  const handleSortChange = (sortId: string) => {
+    setSortBy(sortId);
     setCurrentPage(1);
   };
 
-  // Alternar panel de filtros en móvil
-  const toggleFilters = () => {
-    setShowFilters(!showFilters);
-  };
-  
-  // Alternar dropdown de ordenamiento
-  const toggleDropdown = () => {
-    setDropdownOpen(!dropdownOpen);
-  };
-
-  // Eliminar una categoría seleccionada
-  const removeCategory = (categoryToRemove: string) => {
-    const newCategories = selectedCategories.filter(cat => cat !== categoryToRemove);
-    handleCategoryChange(newCategories);
-  };
-  
-  // Cambiar página en la paginación
+  // Manejar cambio de página
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage);
     // Hacer scroll al inicio de la lista de productos
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
-  
+
   // Manejar acción de añadir al carrito
   const handleAddToCart = async (productId: number) => {
     try {
@@ -424,26 +392,49 @@ const ProductPage: React.FC = () => {
 
   // Calcular el número total de páginas
   const totalPages = productsMeta ? Math.ceil(productsMeta.total / productsMeta.limit) : 0;
+  
+  // Esta constante se usa en el componente ActiveFilters
+  // const hasActiveFilters = selectedCategories.length > 0 || selectedPriceRange !== null || showingDiscounted;
+
+  const testApiDirectly = () => {
+  console.log("Testing API directly with fetch...");
+  
+  fetch('http://localhost:8000/api/products')
+    .then(response => {
+      console.log("Products API Status:", response.status);
+      return response.json();
+    })
+    .then(data => {
+      console.log("Products API Data:", data);
+    })
+    .catch(error => {
+      console.error("Products API Error:", error);
+    });
+  
+  fetch('http://localhost:8000/api/categories')
+    .then(response => {
+      console.log("Categories API Status:", response.status);
+      return response.json();
+    })
+    .then(data => {
+      console.log("Categories API Data:", data);
+    })
+    .catch(error => {
+      console.error("Categories API Error:", error);
+    });
+};
+testApiDirectly()
 
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold mb-6">Productos</h1>
       
-      {/* Search Bar */}
-      <div className="mb-8">
-        <form onSubmit={handleSearch} className="relative">
-          <input 
-            type="text" 
-            placeholder="Buscar productos..." 
-            className="w-full py-3 px-4 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent"
-            value={searchTerm}
-            onChange={handleSearchInputChange}
-          />
-          <button type="submit" className="absolute right-3 top-3 text-gray-400 hover:text-primary-600">
-            <Search size={20} />
-          </button>
-        </form>
-      </div>
+      {/* Search Bar Component */}
+      <SearchBar 
+        searchTerm={searchTerm}
+        onSearchChange={handleSearchInputChange}
+        onSearch={handleSearch}
+      />
       
       {/* Categories Section */}
       <section className="mb-8">
@@ -467,323 +458,92 @@ const ProductPage: React.FC = () => {
       
       {/* Filter and Sort Section */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
-        <div className="flex flex-wrap items-center gap-2 mb-4 md:mb-0">
-          {/* Mobile Filter Toggle */}
-          <button
-            onClick={toggleFilters}
-            className="md:hidden flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-sm"
-          >
-            <Filter size={16} />
-            Filtros
-          </button>
-          
-          {/* Selected Filters */}
-          {selectedCategories.map(cat => (
-            <div key={cat} className="flex items-center gap-1 px-3 py-1 bg-primary-100 text-primary-800 rounded-full text-sm">
-              {cat}
-              <button onClick={() => removeCategory(cat)} className="ml-1">
-                <X size={14} />
-              </button>
-            </div>
-          ))}
-          
-          {selectedPriceRange && (
-            <div className="flex items-center gap-1 px-3 py-1 bg-primary-100 text-primary-800 rounded-full text-sm">
-              {selectedPriceRange.max === 999999 
-                ? `Más de $${selectedPriceRange.min}`
-                : `$${selectedPriceRange.min} - $${selectedPriceRange.max}`}
-              <button onClick={() => {
-                setSelectedPriceRange(null);
-                setRangeString(null);
-              }} className="ml-1">
-                <X size={14} />
-              </button>
-            </div>
-          )}
-          
-          {showingDiscounted && (
-            <div className="flex items-center gap-1 px-3 py-1 bg-primary-100 text-primary-800 rounded-full text-sm">
-              Con descuento
-              <button onClick={toggleDiscountedProducts} className="ml-1">
-                <X size={14} />
-              </button>
-            </div>
-          )}
-          
-          {(selectedCategories.length > 0 || selectedPriceRange || showingDiscounted) && (
-            <button 
-              onClick={resetFilters}
-              className="text-gray-500 hover:text-primary-600 text-sm"
-            >
-              Limpiar filtros
-            </button>
-          )}
-        </div>
+        {/* Active Filters Component */}
+        <ActiveFilters 
+          selectedCategories={selectedCategories}
+          selectedPriceRange={selectedPriceRange}
+          showingDiscounted={showingDiscounted}
+          onRemoveCategory={handleRemoveCategory}
+          onClearPriceRange={handleClearPriceRange}
+          onToggleDiscount={handleToggleDiscount}
+          onClearAllFilters={handleClearAllFilters}
+          onToggleFilters={() => setShowMobileFilters(true)}
+        />
         
-        {/* Sort Dropdown */}
-        <div className="relative" ref={dropdownRef}>
-          <button 
-            onClick={toggleDropdown}
-            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-sm cursor-pointer"
-          >
-            <span>Ordenar por: {sortOptions.find(option => option.id === sortBy)?.label}</span>
-            <ChevronDown size={16} />
-          </button>
-          
-          {dropdownOpen && (
-            <div className="absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-              <div className="py-1">
-                {sortOptions.map((option) => (
-                  <button
-                    key={option.id}
-                    onClick={() => handleSortChange(option.id)}
-                    className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                  >
-                    {sortBy === option.id && <Check size={16} className="text-primary-600" />}
-                    <span className={sortBy === option.id ? "text-primary-600 font-medium" : ""}>
-                      {option.label}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
+        {/* Sort Dropdown Component */}
+        <SortDropdown 
+          options={sortOptions}
+          selectedOption={sortBy}
+          onSortChange={handleSortChange}
+        />
       </div>
       
       {/* Main Content */}
       <div className="flex flex-col md:flex-row gap-6">
         {/* Filters Sidebar - Desktop */}
-        <div className="hidden md:block w-72 flex-shrink-0">
+        <div className="hidden md:block md:w-72 flex-shrink-0">
           <ProductFilters 
             categories={categoriesData.map(cat => cat.name)}
             priceRange={{ min: 0, max: 2000 }}
+            onCategoryChange={handleCategoryChange}
+            onPriceRangeChange={(range) => handlePriceRangeChange(range)}
+            onRatingChange={(rating) => console.log(`Rating filter: ${rating}`)}
+            onDiscountChange={(discount) => setShowingDiscounted(discount > 0)}
+            onClearFilters={handleClearAllFilters}
             selectedCategories={selectedCategories}
             selectedPriceRange={selectedPriceRange}
             selectedDiscount={showingDiscounted}
-            onCategoryChange={handleCategoryChange}
-            onPriceRangeChange={handlePriceRangeChange}
-            onRatingChange={(rating) => {
-              // Implementar cuando la API lo soporte
-              console.log(`Rating filter changed: ${rating}`);
-            }}
-            onDiscountChange={(discount) => {
-              setShowingDiscounted(discount > 0);
-            }}
-            onClearFilters={resetFilters}
           />
         </div>
         
-        {/* Mobile Filters */}
-        {showFilters && (
-          <div className="md:hidden fixed inset-0 bg-gray-900 bg-opacity-50 z-40 flex items-end">
-            <div className="bg-white w-full rounded-t-xl p-6 max-h-[80vh] overflow-y-auto">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="font-bold text-lg">Filtros</h3>
-                <button onClick={toggleFilters} className="text-gray-500">
-                  <X size={24} />
-                </button>
-              </div>
-              
-              {/* Categorías en móvil */}
-              <div className="mb-6">
-                <h4 className="font-medium mb-2">Categorías</h4>
-                <div className="space-y-3">
-                  {categoriesData.map((category) => (
-                    <label key={category.id} className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={selectedCategories.includes(category.name)}
-                        onChange={() => {
-                          if (selectedCategories.includes(category.name)) {
-                            handleCategoryChange(selectedCategories.filter(c => c !== category.name));
-                          } else {
-                            handleCategoryChange([...selectedCategories, category.name]);
-                          }
-                        }}
-                        className="rounded text-primary-600 focus:ring-primary-500 h-5 w-5"
-                      />
-                      <span className="text-gray-700">{category.name}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-              
-              {/* Price Range Filter */}
-              <div className="mb-6">
-                <h4 className="font-medium mb-2">Rango de Precio</h4>
-                <div className="space-y-3">
-                  {priceRanges.map((range) => (
-                    <label key={range.id} className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={rangeString === range.id}
-                        onChange={() => {
-                          const [min, max] = range.id.split('-').map(Number);
-                          handlePriceRangeChange({
-                            min,
-                            max
-                          });
-                        }}
-                        className="rounded text-primary-600 focus:ring-primary-500 h-5 w-5"
-                      />
-                      <span className="text-gray-700">{range.label}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-              
-              {/* Discounted Products Filter */}
-              <div className="mb-6">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={showingDiscounted}
-                    onChange={toggleDiscountedProducts}
-                    className="rounded text-primary-600 focus:ring-primary-500 h-5 w-5"
-                  />
-                  <span className="text-gray-700">Productos con descuento</span>
-                </label>
-              </div>
-              
-              <div className="mt-6 flex gap-3">
-                <button 
-                  onClick={resetFilters}
-                  className="flex-1 py-2 border border-gray-300 rounded-lg"
-                >
-                  Limpiar
-                </button>
-                <button 
-                  onClick={toggleFilters}
-                  className="flex-1 py-2 bg-primary-600 text-white rounded-lg"
-                >
-                  Ver resultados
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Mobile Filters Panel */}
+        <MobileFilterPanel 
+          isOpen={showMobileFilters}
+          onClose={() => setShowMobileFilters(false)}
+          categories={categoriesData}
+          selectedCategories={selectedCategories}
+          priceRanges={priceRanges}
+          selectedRangeId={selectedPriceRange ? `${selectedPriceRange.min}-${selectedPriceRange.max}` : null}
+          showingDiscounted={showingDiscounted}
+          onCategoryChange={(category, isSelected) => {
+            if (isSelected) {
+              handleCategoryChange([...selectedCategories, category]);
+            } else {
+              handleRemoveCategory(category);
+            }
+          }}
+          onPriceRangeChange={(min: number, max: number) => {
+            handlePriceRangeChange({ min, max });
+          }}
+          onDiscountToggle={handleToggleDiscount}
+          onClearFilters={handleClearAllFilters}
+        />
         
         {/* Products Grid */}
         <div className="flex-1">
-          {productsLoading ? (
-            <div className="flex justify-center items-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
-            </div>
-          ) : productsError ? (
-            <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded">
-              <p className="text-red-700">Error al cargar productos: {productsError}</p>
-              <button 
-                onClick={() => fetchProducts({ limit: appConfig.pagination.defaultPageSize, offset: 0 })}
-                className="mt-3 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-              >
-                Reintentar
-              </button>
-            </div>
-          ) : productsData.length > 0 ? (
-            <div>
-              <h2 className="text-2xl font-bold mb-6">
-                {selectedCategories.length > 0 
-                  ? selectedCategories.join(', ') 
-                  : "Todos los productos"}
-              </h2>
-              
-              {/* Productos encontrados y paginación info */}
-              <div className="flex justify-between items-center mb-6">
-                <p className="text-gray-600">
-                  Mostrando {(currentPage - 1) * (productsMeta?.limit || 12) + 1}-
-                  {Math.min(currentPage * (productsMeta?.limit || 12), productsMeta?.total || 0)} de {productsMeta?.total || 0} productos
-                </p>
-              </div>
-              
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {productsData.map(product => (
-                  <ProductCardCompact 
-                    key={product.id}
-                    id={product.id || 0}
-                    name={product.name}
-                    price={product.price}
-                    discount={product.discountPercentage}
-                    rating={product.ratingAvg || 0}
-                    reviews={0} // La API no proporciona este dato directamente
-                    image={getImageUrl(product.images && product.images.length > 0 ? product.images[0] : undefined)}
-                    category={categoriesData.find(cat => cat.id === product.categoryId)?.name}
-                    isNew={new Date(product.createdAt || '').getTime() > Date.now() - (30 * 24 * 60 * 60 * 1000)}
-                    onAddToCart={handleAddToCart}
-                    onAddToWishlist={handleAddToWishlist}
-                  />
-                ))}
-              </div>
-              
-              {/* Pagination */}
-              {productsMeta && productsMeta.total > productsMeta.limit && (
-                <div className="flex justify-center mt-8">
-                  <div className="flex flex-wrap items-center justify-center gap-2">
-                    <button
-                      className="px-3 py-1 border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-                      disabled={currentPage === 1}
-                      onClick={() => handlePageChange(currentPage - 1)}
-                    >
-                      Anterior
-                    </button>
-                    
-                    {/* Botones de página */}
-                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                      // Lógica para calcular qué páginas mostrar
-                      let pageNum = i + 1;
-                      
-                      if (totalPages > 5) {
-                        if (currentPage <= 3) {
-                          // Al principio: mostrar páginas 1-5
-                          pageNum = i + 1;
-                        } else if (currentPage >= totalPages - 2) {
-                          // Al final: mostrar las últimas 5 páginas
-                          pageNum = totalPages - 4 + i;
-                        } else {
-                          // En medio: mostrar actual -2, -1, actual, +1, +2
-                          pageNum = currentPage - 2 + i;
-                        }
-                      }
-                      
-                      return (
-                        <button
-                          key={pageNum}
-                          className={`w-8 h-8 flex items-center justify-center rounded-md text-sm ${
-                            currentPage === pageNum
-                              ? 'bg-primary-600 text-white'
-                              : 'border border-gray-300 text-gray-700 hover:bg-gray-100'
-                          }`}
-                          onClick={() => handlePageChange(pageNum)}
-                        >
-                          {pageNum}
-                        </button>
-                      );
-                    })}
-                    
-                    <button
-                      className="px-3 py-1 border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-                      disabled={currentPage === totalPages}
-                      onClick={() => handlePageChange(currentPage + 1)}
-                    >
-                      Siguiente
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="bg-white rounded-lg shadow-sm p-8 text-center">
-              <h3 className="text-xl font-medium mb-2">No se encontraron productos</h3>
-              <p className="text-gray-600 mb-4">
-                No hay productos que coincidan con los filtros actuales.
-              </p>
-              <button 
-                onClick={resetFilters}
-                className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-              >
-                Limpiar filtros
-              </button>
-            </div>
+          <ProductGrid 
+            products={productsData}
+            categories={categoriesData}
+            isLoading={productsLoading}
+            error={productsError || null}
+            onRetry={() => fetchProducts({ limit: appConfig.pagination.defaultPageSize, offset: 0 })}
+            onAddToCart={handleAddToCart}
+            onAddToWishlist={handleAddToWishlist}
+            getImageUrl={getImageUrl}
+            selectedCategories={selectedCategories}
+            totalItems={productsMeta?.total || 0}
+            currentPage={currentPage}
+            itemsPerPage={productsMeta?.limit || appConfig.pagination.defaultPageSize}
+            onResetFilters={handleClearAllFilters}
+          />
+          
+          {/* Pagination */}
+          {productsMeta && productsMeta.total > productsMeta.limit && (
+            <Pagination 
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+            />
           )}
         </div>
       </div>

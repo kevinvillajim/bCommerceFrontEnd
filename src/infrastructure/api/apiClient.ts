@@ -14,21 +14,20 @@ export class ApiClient {
    */
   public static async get<T>(url: string, params?: any, config?: AxiosRequestConfig): Promise<T> {
     try {
-
-      const headers = axiosInstance.defaults.headers;
-      console.log('Request headers:', headers);
+      console.log('Making GET request to:', url);
+      console.log('With params:', params);
       
-      const response: AxiosResponse<T> = await axiosInstance.get(url, {
+      const response: AxiosResponse = await axiosInstance.get(url, {
         params,
         ...config
       });
+      
+      console.log('Response received:', response.status);
+      console.log('Response data:', response.data);
+      
       return response.data;
     } catch (error) {
-      if (axios.isAxiosError(error) && error.response?.status === 401) {
-      console.error('Authentication error - token may be invalid or missing');
-      // Can add additional debugging here
-    }
-      this.handleError(error);
+      this.handleApiError(error, url, 'GET');
       throw error;
     }
   }
@@ -41,10 +40,15 @@ export class ApiClient {
    */
   public static async post<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
     try {
-      const response: AxiosResponse<T> = await axiosInstance.post(url, data, config);
+      console.log('Making POST request to:', url);
+      
+      const response: AxiosResponse = await axiosInstance.post(url, data, config);
+      
+      console.log('Response received:', response.status);
+      
       return response.data;
     } catch (error) {
-      this.handleError(error);
+      this.handleApiError(error, url, 'POST');
       throw error;
     }
   }
@@ -57,10 +61,10 @@ export class ApiClient {
    */
   public static async put<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
     try {
-      const response: AxiosResponse<T> = await axiosInstance.put(url, data, config);
+      const response: AxiosResponse = await axiosInstance.put(url, data, config);
       return response.data;
     } catch (error) {
-      this.handleError(error);
+      this.handleApiError(error, url, 'PUT');
       throw error;
     }
   }
@@ -73,10 +77,10 @@ export class ApiClient {
    */
   public static async patch<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
     try {
-      const response: AxiosResponse<T> = await axiosInstance.patch(url, data, config);
+      const response: AxiosResponse = await axiosInstance.patch(url, data, config);
       return response.data;
     } catch (error) {
-      this.handleError(error);
+      this.handleApiError(error, url, 'PATCH');
       throw error;
     }
   }
@@ -88,10 +92,10 @@ export class ApiClient {
    */
   public static async delete<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
     try {
-      const response: AxiosResponse<T> = await axiosInstance.delete(url, config);
+      const response: AxiosResponse = await axiosInstance.delete(url, config);
       return response.data;
     } catch (error) {
-      this.handleError(error);
+      this.handleApiError(error, url, 'DELETE');
       throw error;
     }
   }
@@ -104,7 +108,7 @@ export class ApiClient {
    */
   public static async uploadFile<T>(url: string, formData: FormData, config?: AxiosRequestConfig): Promise<T> {
     try {
-      const response: AxiosResponse<T> = await axiosInstance.post(url, formData, {
+      const response: AxiosResponse = await axiosInstance.post(url, formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         },
@@ -112,43 +116,55 @@ export class ApiClient {
       });
       return response.data;
     } catch (error) {
-      this.handleError(error);
+      this.handleApiError(error, url, 'UPLOAD');
       throw error;
     }
   }
 
   /**
-   * Handle API errors
+   * Helper method to handle API errors
    * @param error - Error object
+   * @param url - The URL of the request
+   * @param method - The HTTP method used
    */
-  private static handleError(error: any): void {
+  private static handleApiError(error: any, url: string, method: string): void {
     if (axios.isAxiosError(error)) {
       const { response } = error;
       
-      // Log the error in development mode
-      if (process.env.NODE_ENV === 'development') {
-        console.error('API Error:', {
-          status: response?.status,
-          statusText: response?.statusText,
-          data: response?.data,
-          url: error.config?.url
-        });
+      console.error(`API Error (${method} ${url}):`, {
+        status: response?.status,
+        statusText: response?.statusText,
+        data: response?.data,
+        headers: response?.headers
+      });
+      
+      // Authentication error
+      if (response?.status === 401) {
+        console.error('Authentication error - token may be invalid or missing');
       }
       
-      // Handle specific error scenarios
-      if (response?.status === 422) {
-        // Validation error
-        console.error('Validation error:', response.data.errors);
-      } else if (response?.status === 404) {
-        // Resource not found
+      // Validation error
+      else if (response?.status === 422) {
+        console.error('Validation error:', response.data?.errors || response.data);
+      }
+      
+      // Not found
+      else if (response?.status === 404) {
         console.error('Resource not found');
-      } else if (response?.status === 500) {
-        // Server error
+      }
+      
+      // Server error
+      else if (response?.status === 500) {
         console.error('Server error');
       }
+      
+      // CORS error
+      else if (error.message.includes('Network Error')) {
+        console.error('Network error - this might be a CORS issue');
+      }
     } else {
-      // Handle non-Axios errors
-      console.error('Unknown error:', error);
+      // Non-Axios error
+      console.error(`Unknown error (${method} ${url}):`, error);
     }
   }
 }
