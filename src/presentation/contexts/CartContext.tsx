@@ -60,59 +60,61 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
 
   // Initialize cart on mount
   useEffect(() => {
-    const initCart = async () => {
-      // Try to get cart from API first (for logged in users)
-      const token = storageService.getItem(appConfig.storage.authTokenKey);
-      
-      if (token && isAuthenticated) {
-        try {
-          console.log('📦 User authenticated, fetching cart from API');
-          setLoading(true);
-          
-          // Add a small delay to ensure token is fully available
-          await new Promise(resolve => setTimeout(resolve, 100));
-          
-          // Use direct axios instance instead of ApiClient
-          const response: AxiosResponse<any> = await axiosInstance.get(API_ENDPOINTS.CART.GET);
-          
-          if (response && response.data) {
-            const cartData = response.data.data;
-            setCart(cartData);
-          } else {
-            throw new Error('Empty response');
-          }
-        } catch (err: any) {
-          console.error('📦 Cart API error:', err.response?.status);
-          console.error('Error details:', err);
-          
-          // If API call fails, try to get from localStorage
-          const localCart = storageService.getItem('cart');
-          if (localCart) {
-            try {
-              setCart(JSON.parse(localCart));
-            } catch (e) {
-              console.error('Error parsing local cart:', e);
-            }
-          }
-        } finally {
-          setLoading(false);
+  const initCart = async () => {
+    const token = storageService.getItem(appConfig.storage.authTokenKey);
+    console.log('Token obtenido:', token);
+
+    if (token && isAuthenticated) {
+      try {
+        console.log('📦 Usuario autenticado, intentando obtener el carrito desde la API');
+        setLoading(true);
+        await new Promise(resolve => setTimeout(resolve, 100));
+        const response: AxiosResponse<any> = await axiosInstance.get(API_ENDPOINTS.CART.GET);
+        console.log('Respuesta de la API:', response);
+        if (response && response.data) {
+          const cartData = response.data.data;
+          console.log('Datos del carrito obtenidos de la API:', cartData);
+          setCart(cartData);
+        } else {
+          throw new Error('Respuesta vacía de la API');
         }
-      } else {
-        // For anonymous users, get from localStorage
-        console.log('📦 User not authenticated, using local cart');
+      } catch (err: any) {
+        console.error('Error al obtener el carrito desde la API:', err);
+        console.log('Intentando obtener el carrito desde localStorage...');
         const localCart = storageService.getItem('cart');
+        console.log('Valor obtenido de localStorage:', localCart);
         if (localCart) {
           try {
-            setCart(JSON.parse(localCart));
+            const parsedCart = JSON.parse(localCart);
+            console.log('Carrito parseado correctamente desde localStorage:', parsedCart);
+            setCart(parsedCart);
           } catch (e) {
-            console.error('Error parsing local cart:', e);
+            console.error('Error al parsear el carrito desde localStorage:', e);
+            storageService.removeItem('cart');
           }
         }
+      } finally {
+        setLoading(false);
       }
-    };
+    } else {
+      console.log('📦 Usuario no autenticado, usando carrito local');
+      const localCart = storageService.getItem('cart');
+      console.log('Valor obtenido de localStorage:', localCart);
+      if (localCart) {
+        try {
+          const parsedCart = JSON.parse(localCart);
+          console.log('Carrito parseado correctamente desde localStorage:', parsedCart);
+          setCart(parsedCart);
+        } catch (e) {
+          console.error('Error al parsear el carrito desde localStorage:', e);
+          storageService.removeItem('cart');
+        }
+      }
+    }
+  };
 
-    initCart();
-  }, [isAuthenticated]); // Add isAuthenticated as a dependency
+  initCart();
+}, [isAuthenticated]);
 
   // Update derived states when cart changes
   useEffect(() => {
@@ -325,7 +327,28 @@ const clearCart = useCallback(async (): Promise<boolean> => {
     } else {
       // For anonymous users, clear local cart
       setCart(null);
-      storageService.removeItem('cart');
+      const localCart = storageService.getItem('cart');
+        if (localCart) {
+          try {
+            // Intentamos parsear; si falla, lo limpiamos y mostramos un mensaje
+            const parsedCart = JSON.parse(localCart);
+            setCart(parsedCart);
+          } catch (e) {
+            console.error('Error parsing local cart:', e);
+            // Limpiar el item incorrecto para evitar futuros errores
+            const localCart = storageService.getItem('cart');
+if (localCart) {
+  try {
+    const parsedCart = JSON.parse(localCart);
+    setCart(parsedCart);
+  } catch (e) {
+    console.error('Error parsing local cart:', e);
+    // Elimina el valor incorrecto para evitar futuros errores
+    storageService.removeItem('cart');
+  }
+}
+          }
+        }
     }
     
     return true;

@@ -52,7 +52,7 @@ const CategoriesCarousel: React.FC<CategoriesCarouselProps> = ({
   const [currentPage, setCurrentPage] = useState(0);
 
   // Calcular el número de páginas 
-  const maxItemsPerPage = 10; // 2 filas x 8 columnas
+  const maxItemsPerPage = 8; // 2 filas x 8 columnas
   const totalPages = Math.ceil(categories.length / maxItemsPerPage);
 
   // Obtener las categorías para la página actual
@@ -108,7 +108,7 @@ const CategoriesCarousel: React.FC<CategoriesCarouselProps> = ({
           )}
         </div>
         
-        <div className="grid grid-cols-6 grid-rows-2 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 grid-rows-2 gap-3">
           {getCurrentPageCategories().map((category) => (
             <CategoryCard 
               key={category.id}
