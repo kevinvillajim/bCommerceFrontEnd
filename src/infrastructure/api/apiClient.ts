@@ -14,12 +14,20 @@ export class ApiClient {
    */
   public static async get<T>(url: string, params?: any, config?: AxiosRequestConfig): Promise<T> {
     try {
+
+      const headers = axiosInstance.defaults.headers;
+      console.log('Request headers:', headers);
+      
       const response: AxiosResponse<T> = await axiosInstance.get(url, {
         params,
         ...config
       });
       return response.data;
     } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+      console.error('Authentication error - token may be invalid or missing');
+      // Can add additional debugging here
+    }
       this.handleError(error);
       throw error;
     }

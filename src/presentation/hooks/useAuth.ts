@@ -131,10 +131,25 @@ export const useAuth = () => {
       // Limpiar estado local
       setUser(null);
       setIsAuthenticated(false);
+      
+      // Limpiar almacenamiento local
+      storageService.removeItem(appConfig.storage.authTokenKey);
+      storageService.removeItem(appConfig.storage.userKey);
+      storageService.removeItem(appConfig.storage.cartKey);
+      
       return true;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Error al cerrar sesión';
       setError(errorMessage);
+      
+      // Intentar limpiar almacenamiento local de todas formas
+      storageService.removeItem(appConfig.storage.authTokenKey);
+      storageService.removeItem(appConfig.storage.userKey);
+      storageService.removeItem(appConfig.storage.cartKey);
+      
+      setUser(null);
+      setIsAuthenticated(false);
+      
       return false;
     } finally {
       setLoading(false);

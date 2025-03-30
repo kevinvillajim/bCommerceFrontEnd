@@ -3,7 +3,10 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 
 // Import layouts
 import MainLayout from './presentation/layouts/MainLayout';
-// import UserProfilePage from './presentation/pages/UserProfilePage';
+
+// Contextos
+import { AuthProvider } from './presentation/contexts/AuthContext';
+import { CartProvider } from './presentation/contexts/CartContext';
 
 // Lazy load components for better performance
 const HomePage = lazy(() => import('./presentation/pages/HomePage'));
@@ -45,47 +48,61 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 
 const App: React.FC = () => {
   return (
-    <Suspense fallback={<LoadingFallback />}>
-      <Routes>
-        <Route path="/" element={<MainLayout />}>
-          <Route index element={<HomePage />} />
-          <Route path="products/:id" element={<ProductItemPage />} />
-          <Route path="products" element={<ProductPage />} />
-          <Route path="categories" element={<CategoryPage />} />
-          <Route path="about" element={<AboutUsPage />} />
-          <Route path="contact" element={<ContactPage />} />
-          <Route path="faq" element={<FAQPage />} />
-          <Route path="favorites" element={<FavoritePage />} />
-          <Route path="account" element={<UserProfilePage />} />
-          <Route path="cart" element={<CartPage />} />
-          <Route 
-            path="login" 
-            element={
-              isAuthenticated() ? <Navigate to="/" replace /> : <LoginPage />
-            } 
-          />
-          <Route 
-            path="register" 
-            element={
-              isAuthenticated() ? <Navigate to="/" replace /> : <RegisterPage />
-            } 
-          />
-        </Route>
-        
-        <Route 
-          path="/dashboard" 
-          element={
-            <ProtectedRoute>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }
-        >
-          {/* Dashboard routes will be added here */}
-        </Route>
-        
-        <Route path="*" element={<NotFoundPage />} />
-      </Routes>
-    </Suspense>
+    <AuthProvider>
+      <CartProvider>
+        <Suspense fallback={<LoadingFallback />}>
+          <Routes>
+            <Route path="/" element={<MainLayout />}>
+              <Route index element={<HomePage />} />
+              <Route path="products/:id" element={<ProductItemPage />} />
+              <Route path="products" element={<ProductPage />} />
+              <Route path="categories" element={<CategoryPage />} />
+              <Route path="about" element={<AboutUsPage />} />
+              <Route path="contact" element={<ContactPage />} />
+              <Route path="faq" element={<FAQPage />} />
+              <Route path="favorites" element={<FavoritePage />} />
+              <Route path="cart" element={<CartPage />} />
+              
+              {/* Ruta para el perfil de usuario que ahora está protegida correctamente */}
+              <Route 
+                path="account" 
+                element={
+                  <ProtectedRoute>
+                    <UserProfilePage />
+                  </ProtectedRoute>
+                } 
+              />
+              
+              <Route 
+                path="login" 
+                element={
+                  isAuthenticated() ? <Navigate to="/" replace /> : <LoginPage />
+                } 
+              />
+              <Route 
+                path="register" 
+                element={
+                  isAuthenticated() ? <Navigate to="/" replace /> : <RegisterPage />
+                } 
+              />
+            </Route>
+            
+            <Route 
+              path="/dashboard" 
+              element={
+                <ProtectedRoute>
+                  <DashboardLayout />
+                </ProtectedRoute>
+              }
+            >
+              {/* Dashboard routes will be added here */}
+            </Route>
+            
+            <Route path="*" element={<NotFoundPage />} />
+          </Routes>
+        </Suspense>
+      </CartProvider>
+    </AuthProvider>
   );
 };
 

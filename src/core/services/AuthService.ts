@@ -25,24 +25,24 @@ export class AuthService {
    */
   async login(credentials: UserLoginData): Promise<AuthResponse> {
     try {
+      console.log("AuthService: Realizando solicitud de login");
       // Realizar la solicitud de login
       const response = await axiosInstance.post(API_ENDPOINTS.AUTH.LOGIN, credentials);
       
       // Verificar si hay datos en la respuesta
-      if (!response) {
+      if (!response || !response.data) {
         throw new Error('Respuesta del servidor vacía');
       }
       
-      let authData: AuthResponse;
-      
-      // Asignamos authData directamente de la respuesta
-      authData = response.data;
+      let authData: AuthResponse = response.data;
       
       // Validar token de acceso
       if (!authData.access_token) {
         throw new Error('Token de acceso no encontrado en la respuesta');
       }
       
+      console.log("AuthService: Login exitoso, token recibido");
+      console.log('Token being saved:', authData.access_token.substring(0, 10) + '...');
       // Almacenar token en localStorage
       storageService.setItem(appConfig.storage.authTokenKey, authData.access_token);
       
@@ -53,7 +53,7 @@ export class AuthService {
       
       return authData;
     } catch (error) {
-      console.error('Error de login:', error);
+      console.error('AuthService: Error de login:', error);
       
       // Manejo detallado de errores
       if (axios.isAxiosError(error)) {
@@ -88,11 +88,12 @@ export class AuthService {
    */
   async register(userData: UserRegistrationData): Promise<AuthResponse> {
     try {
-      // Realizar la solicitud de registro
+      console.log("AuthService: Realizando solicitud de registro");
+
       const response = await axiosInstance.post(API_ENDPOINTS.AUTH.REGISTER, userData);
       
       // Verificar si hay datos en la respuesta
-      if (!response) {
+      if (!response || !response.data) {
         throw new Error('Respuesta del servidor vacía');
       }
       
@@ -104,6 +105,8 @@ export class AuthService {
         throw new Error('Token de acceso no encontrado en la respuesta');
       }
       
+      console.log("AuthService: Registro exitoso, token recibido");
+      
       // Almacenar token en localStorage
       storageService.setItem(appConfig.storage.authTokenKey, authData.access_token);
       
@@ -114,7 +117,7 @@ export class AuthService {
       
       return authData;
     } catch (error) {
-      console.error('Error de registro:', error);
+      console.error('AuthService: Error de registro:', error);
       
       // Manejo detallado de errores
       if (axios.isAxiosError(error)) {
@@ -147,27 +150,32 @@ export class AuthService {
    */
   async logout(): Promise<boolean> {
     try {
-      // Verificar si hay token para intentar logout en servidor
+      console.log("AuthService: Iniciando proceso de logout");
+
       const token = storageService.getItem(appConfig.storage.authTokenKey);
       
       if (token) {
         try {
           await axiosInstance.post(API_ENDPOINTS.AUTH.LOGOUT);
+          console.log("AuthService: Logout en servidor exitoso");
         } catch (error) {
-          console.warn('Error al hacer logout en servidor, continuando con logout local');
+          console.warn('AuthService: Error al hacer logout en servidor, continuando con logout local:', error);
         }
       }
       
       // Eliminar token y datos de usuario del almacenamiento local
       storageService.removeItem(appConfig.storage.authTokenKey);
+      storageService.removeItem(appConfig.storage.refreshTokenKey);
       storageService.removeItem(appConfig.storage.userKey);
       
+      console.log("AuthService: Datos de sesión eliminados del localStorage");
       return true;
     } catch (error) {
-      console.error('Error al cerrar sesión:', error);
+      console.error('AuthService: Error al cerrar sesión:', error);
       
       // A pesar del error, limpiar almacenamiento local de todas formas
       storageService.removeItem(appConfig.storage.authTokenKey);
+      storageService.removeItem(appConfig.storage.refreshTokenKey);
       storageService.removeItem(appConfig.storage.userKey);
       
       throw new Error('Error al cerrar sesión');
@@ -179,6 +187,8 @@ export class AuthService {
    */
   async getCurrentUser(): Promise<User> {
     try {
+      console.log("AuthService: Obteniendo datos del usuario actual");
+      
       // Verificar si hay token
       const token = storageService.getItem(appConfig.storage.authTokenKey);
       if (!token) {
@@ -188,14 +198,16 @@ export class AuthService {
       // Primero intentamos obtener desde el almacenamiento local
       const cachedUser = storageService.getItem(appConfig.storage.userKey);
       if (cachedUser) {
+        console.log("AuthService: Usando datos de usuario en caché");
         return cachedUser;
       }
       
       // Si no está en caché, solicitamos al servidor
+      console.log("AuthService: Solicitando datos de usuario al servidor");
       const response = await axiosInstance.get(API_ENDPOINTS.AUTH.ME);
       
       // Verificar si hay datos en la respuesta
-      if (!response) {
+      if (!response || !response.data) {
         throw new Error('Respuesta del servidor vacía');
       }
       
@@ -207,16 +219,19 @@ export class AuthService {
         throw new Error('Información de usuario no encontrada en la respuesta');
       }
       
+      console.log("AuthService: Datos de usuario obtenidos del servidor");
+      
       // Almacenar en caché
       storageService.setItem(appConfig.storage.userKey, userData);
       
       return userData;
     } catch (error) {
-      console.error('Error al obtener usuario actual:', error);
+      console.error('AuthService: Error al obtener usuario actual:', error);
       
       if (axios.isAxiosError(error) && error.response?.status === 401) {
         // Token inválido o expirado, limpiar almacenamiento
         storageService.removeItem(appConfig.storage.authTokenKey);
+        storageService.removeItem(appConfig.storage.refreshTokenKey); 
         storageService.removeItem(appConfig.storage.userKey);
       }
       
@@ -232,7 +247,7 @@ export class AuthService {
       const response = await axiosInstance.put('/user/profile', data);
       
       // Verificar si hay datos en la respuesta
-      if (!response) {
+      if (!response || !response.data) {
         throw new Error('Respuesta del servidor vacía');
       }
       
@@ -249,7 +264,7 @@ export class AuthService {
       
       return userData;
     } catch (error) {
-      console.error('Error al actualizar perfil:', error);
+      console.error('AuthService: Error al actualizar perfil:', error);
       
       // Manejo detallado de errores
       if (axios.isAxiosError(error)) {
@@ -274,6 +289,7 @@ export class AuthService {
       throw new Error('No se pudo actualizar el perfil');
     }
   }
+
 
   /**
    * Solicita restablecimiento de contraseña

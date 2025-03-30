@@ -37,13 +37,13 @@ const Header: React.FC<HeaderProps> = ({
   // Obtener información del usuario y estado de autenticación
   const { user, isAuthenticated, logout } = useAuth();
   
-  // Obtener información del carrito
+  // Obtener información del carrito utilizando el hook useCart
   const { itemCount: cartItemCount } = useCart();
   
   // Estado para notificaciones de ejemplo
   const [notifications, setNotifications] = useState({
-    favorites: 0,
-    notifications: 3
+    favorites: 1,
+    notifications: 5
   });
   
   // Cerrar el menú de usuario al hacer clic fuera de él

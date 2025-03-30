@@ -1,10 +1,12 @@
-import React, { createContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useState, useEffect, useCallback, useContext } from 'react';
 import type { ReactNode } from 'react';
 import type { AxiosResponse } from 'axios';
 import type { ShoppingCart, CartItem, AddToCartRequest, CartItemUpdateData } from '../../core/domain/entities/ShoppingCart';
 import { LocalStorageService } from '../../infrastructure/services/LocalStorageService';
-import ApiClient from '../../infrastructure/api/ApiClient';
+import { AuthContext } from '../contexts/AuthContext';
+import axiosInstance from '../../infrastructure/api/axiosConfig';
 import { API_ENDPOINTS } from '../../constants/apiEndpoints';
+import appConfig from '../../config/appConfig';
 
 // Interfaz para respuestas de la API
 interface ApiResponse<T> {
@@ -12,6 +14,7 @@ interface ApiResponse<T> {
   message?: string;
   data: T;
 }
+
 
 // Define context interface
 interface CartContextProps {
@@ -53,39 +56,63 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   const [error, setError] = useState<string | null>(null);
   const [itemCount, setItemCount] = useState<number>(0);
   const [totalAmount, setTotalAmount] = useState<number>(0);
+  const { isAuthenticated } = useContext(AuthContext);
 
   // Initialize cart on mount
   useEffect(() => {
     const initCart = async () => {
       // Try to get cart from API first (for logged in users)
-      const token = storageService.getItem('auth_token');
+      const token = storageService.getItem(appConfig.storage.authTokenKey);
       
-      if (token) {
+      if (token && isAuthenticated) {
         try {
+          console.log('📦 User authenticated, fetching cart from API');
           setLoading(true);
-          const response: AxiosResponse<ApiResponse<ShoppingCart>> = await ApiClient.get(API_ENDPOINTS.CART.GET);
-          const cartData = response.data.data;
-          setCart(cartData);
-        } catch (err) {
+          
+          // Add a small delay to ensure token is fully available
+          await new Promise(resolve => setTimeout(resolve, 100));
+          
+          // Use direct axios instance instead of ApiClient
+          const response: AxiosResponse<any> = await axiosInstance.get(API_ENDPOINTS.CART.GET);
+          
+          if (response && response.data) {
+            const cartData = response.data.data;
+            setCart(cartData);
+          } else {
+            throw new Error('Empty response');
+          }
+        } catch (err: any) {
+          console.error('📦 Cart API error:', err.response?.status);
+          console.error('Error details:', err);
+          
           // If API call fails, try to get from localStorage
           const localCart = storageService.getItem('cart');
           if (localCart) {
-            setCart(JSON.parse(localCart));
+            try {
+              setCart(JSON.parse(localCart));
+            } catch (e) {
+              console.error('Error parsing local cart:', e);
+            }
           }
         } finally {
           setLoading(false);
         }
       } else {
         // For anonymous users, get from localStorage
+        console.log('📦 User not authenticated, using local cart');
         const localCart = storageService.getItem('cart');
         if (localCart) {
-          setCart(JSON.parse(localCart));
+          try {
+            setCart(JSON.parse(localCart));
+          } catch (e) {
+            console.error('Error parsing local cart:', e);
+          }
         }
       }
     };
 
     initCart();
-  }, []);
+  }, [isAuthenticated]); // Add isAuthenticated as a dependency
 
   // Update derived states when cart changes
   useEffect(() => {
@@ -95,7 +122,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
       setTotalAmount(cart.total);
       
       // Sync with localStorage for anonymous users
-      if (!storageService.getItem('auth_token')) {
+      if (!storageService.getItem(appConfig.storage.authTokenKey)) {
         storageService.setItem('cart', JSON.stringify(cart));
       }
     } else {
@@ -110,15 +137,18 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     setError(null);
     
     try {
-      const token = storageService.getItem('auth_token');
+      const token = storageService.getItem(appConfig.storage.authTokenKey);
       
-      if (token) {
+      if (token && isAuthenticated) {
         // For logged in users, use API
-        const response: AxiosResponse<ApiResponse<{ cart: ShoppingCart }>> = await ApiClient.post(
+        const response = await axiosInstance.post(
           API_ENDPOINTS.CART.ADD_ITEM, 
           request
         );
-        setCart(response.data.data.cart);
+        
+        if (response.data?.data?.cart) {
+          setCart(response.data.data.cart);
+        }
       } else {
         // For anonymous users, update local cart
         const currentCart = cart || {
@@ -171,127 +201,143 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
       }
       
       return true;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to add item to cart');
+    } catch (err: any) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to add item to cart';
+      setError(errorMsg);
+      console.error('Failed to add item to cart:', err);
       return false;
     } finally {
       setLoading(false);
     }
-  }, [cart]);
+  }, [cart, isAuthenticated]);
 
-  // Remove item from cart
-  const removeFromCart = useCallback(async (itemId: number): Promise<boolean> => {
-    setLoading(true);
-    setError(null);
+ const removeFromCart = useCallback(async (itemId: number): Promise<boolean> => {
+  setLoading(true);
+  setError(null);
+  
+  try {
+    const token = storageService.getItem(appConfig.storage.authTokenKey);
     
-    try {
-      const token = storageService.getItem('auth_token');
+    if (token && isAuthenticated) {
+      // For logged in users, use API
+      const response = await axiosInstance.delete(
+        API_ENDPOINTS.CART.REMOVE_ITEM(itemId)
+      );
       
-      if (token) {
-        // For logged in users, use API
-        const response: AxiosResponse<ApiResponse<{ cart: ShoppingCart }>> = await ApiClient.delete(
-          API_ENDPOINTS.CART.REMOVE_ITEM(itemId)
-        );
+      if (response.data?.data?.cart) {
         setCart(response.data.data.cart);
-      } else {
-        // For anonymous users, update local cart
-        if (!cart) return false;
-        
-        const updatedItems = cart.items.filter(item => item.id !== itemId);
-        const newTotal = updatedItems.reduce((sum, item) => sum + item.subtotal, 0);
-        
-        setCart({
-          ...cart,
-          items: updatedItems,
-          total: newTotal
-        });
       }
+    } else {
+      // For anonymous users, update local cart
+      if (!cart) return false;
       
-      return true;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to remove item from cart');
-      return false;
-    } finally {
-      setLoading(false);
+      const updatedItems = cart.items.filter(item => item.id !== itemId);
+      const newTotal = updatedItems.reduce((sum, item) => sum + item.subtotal, 0);
+      
+      setCart({
+        ...cart,
+        items: updatedItems,
+        total: newTotal
+      });
     }
-  }, [cart]);
+    
+    return true;
+  } catch (err: any) {
+    const errorMessage = err instanceof Error ? err.message : 'Failed to remove item from cart';
+    setError(errorMessage);
+    console.error('Failed to remove item from cart:', err);
+    return false;
+  } finally {
+    setLoading(false);
+  }
+}, [cart, isAuthenticated]);
 
-  // Update cart item quantity
-  const updateCartItem = useCallback(async (data: CartItemUpdateData): Promise<boolean> => {
-    setLoading(true);
-    setError(null);
+// Update cart item quantity
+const updateCartItem = useCallback(async (data: CartItemUpdateData): Promise<boolean> => {
+  setLoading(true);
+  setError(null);
+  
+  try {
+    const token = storageService.getItem(appConfig.storage.authTokenKey);
     
-    try {
-      const token = storageService.getItem('auth_token');
+    if (token && isAuthenticated) {
+      // For logged in users, use API
+      const response = await axiosInstance.put(
+        API_ENDPOINTS.CART.UPDATE_ITEM(data.itemId), 
+        { quantity: data.quantity }
+      );
       
-      if (token) {
-        // For logged in users, use API
-        const response: AxiosResponse<ApiResponse<{ cart: ShoppingCart }>> = await ApiClient.put(
-          API_ENDPOINTS.CART.UPDATE_ITEM(data.itemId), 
-          { quantity: data.quantity }
-        );
+      if (response.data?.data?.cart) {
         setCart(response.data.data.cart);
-      } else {
-        // For anonymous users, update local cart
-        if (!cart) return false;
-        
-        const updatedItems = cart.items.map(item => {
-          if (item.id === data.itemId) {
-            return {
-              ...item,
-              quantity: data.quantity,
-              subtotal: item.price * data.quantity
-            };
-          }
-          return item;
-        });
-        
-        const newTotal = updatedItems.reduce((sum, item) => sum + item.subtotal, 0);
-        
-        setCart({
-          ...cart,
-          items: updatedItems,
-          total: newTotal
-        });
       }
+    } else {
+      // For anonymous users, update local cart
+      if (!cart) return false;
       
-      return true;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update cart item');
-      return false;
-    } finally {
-      setLoading(false);
+      const updatedItems = cart.items.map(item => {
+        if (item.id === data.itemId) {
+          return {
+            ...item,
+            quantity: data.quantity,
+            subtotal: item.price * data.quantity
+          };
+        }
+        return item;
+      });
+      
+      const newTotal = updatedItems.reduce((sum, item) => sum + item.subtotal, 0);
+      
+      setCart({
+        ...cart,
+        items: updatedItems,
+        total: newTotal
+      });
     }
-  }, [cart]);
+    
+    return true;
+  } catch (err: any) {
+    const errorMessage = err instanceof Error ? err.message : 'Failed to update cart item';
+    setError(errorMessage);
+    console.error('Failed to update cart item:', err);
+    return false;
+  } finally {
+    setLoading(false);
+  }
+}, [cart, isAuthenticated]);
 
-  // Clear entire cart
-  const clearCart = useCallback(async (): Promise<boolean> => {
-    setLoading(true);
-    setError(null);
+// Clear entire cart
+const clearCart = useCallback(async (): Promise<boolean> => {
+  setLoading(true);
+  setError(null);
+  
+  try {
+    const token = storageService.getItem(appConfig.storage.authTokenKey);
     
-    try {
-      const token = storageService.getItem('auth_token');
+    if (token && isAuthenticated) {
+      // For logged in users, use API
+      const response = await axiosInstance.post(
+        API_ENDPOINTS.CART.EMPTY
+      );
       
-      if (token) {
-        // For logged in users, use API
-        const response: AxiosResponse<ApiResponse<{ cart: ShoppingCart }>> = await ApiClient.delete(
-          API_ENDPOINTS.CART.EMPTY
-        );
+      if (response.data?.data?.cart) {
         setCart(response.data.data.cart);
-      } else {
-        // For anonymous users, clear local cart
-        setCart(null);
-        storageService.removeItem('cart');
       }
-      
-      return true;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to clear cart');
-      return false;
-    } finally {
-      setLoading(false);
+    } else {
+      // For anonymous users, clear local cart
+      setCart(null);
+      storageService.removeItem('cart');
     }
-  }, []);
+    
+    return true;
+  } catch (err: any) {
+    const errorMessage = err instanceof Error ? err.message : 'Failed to clear cart';
+    setError(errorMessage);
+    console.error('Failed to clear cart:', err);
+    return false;
+  } finally {
+    setLoading(false);
+  }
+}, [isAuthenticated]);
 
   return (
     <CartContext.Provider value={{ 

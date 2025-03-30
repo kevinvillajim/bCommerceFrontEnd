@@ -1,3 +1,5 @@
+// src/infrastructure/api/axiosConfig.ts
+
 import axios from 'axios';
 import type { AxiosInstance, AxiosError, InternalAxiosRequestConfig, AxiosResponse } from 'axios';
 import appConfig from '../../config/appConfig';
@@ -21,11 +23,14 @@ axiosInstance.interceptors.request.use(
     // If token exists, add it to the headers
     if (token && config.headers) {
       config.headers['Authorization'] = `Bearer ${token}`;
+      // Debug: Uncomment this line to check the token being sent
+      // console.log('📦 Auth Header:', `Bearer ${token}`);
     }
     
     return config;
   },
   (error: AxiosError) => {
+    console.error('Request interceptor error:', error);
     return Promise.reject(error);
   }
 );
@@ -57,7 +62,7 @@ axiosInstance.interceptors.response.use(
             }
           );
           
-          if (response.data.access_token) {
+          if (response.data?.access_token) {
             // Save the new token
             localStorage.setItem(appConfig.storage.authTokenKey, response.data.access_token);
             
@@ -69,8 +74,12 @@ axiosInstance.interceptors.response.use(
             // Retry the original request
             return axiosInstance(originalRequest);
           }
+        } else {
+          // No refresh token available
+          console.error('No refresh token available for token refresh');
         }
       } catch (refreshError) {
+        console.error('Token refresh failed:', refreshError);
         // If refresh fails, redirect to login
         localStorage.removeItem(appConfig.storage.authTokenKey);
         localStorage.removeItem(appConfig.storage.refreshTokenKey);
