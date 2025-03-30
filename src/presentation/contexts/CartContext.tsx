@@ -8,12 +8,12 @@ import axiosInstance from '../../infrastructure/api/axiosConfig';
 import { API_ENDPOINTS } from '../../constants/apiEndpoints';
 import appConfig from '../../config/appConfig';
 
-// Interfaz para respuestas de la API
-interface ApiResponse<T> {
-  status: string;
-  message?: string;
-  data: T;
-}
+// // Interfaz para respuestas de la API
+// interface ApiResponse<T> {
+//   status: string;
+//   message?: string;
+//   data: T;
+// }
 
 
 // Define context interface

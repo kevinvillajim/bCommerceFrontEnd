@@ -9,8 +9,6 @@ import type {
 import { LocalStorageService } from '../../infrastructure/services/LocalStorageService';
 import appConfig from '../../config/appConfig';
 import { API_ENDPOINTS } from '../../constants/apiEndpoints';
-
-// Importamos axiosInstance (no como ApiClient/apiClient)
 import axiosInstance from '../../infrastructure/api/axiosConfig';
 
 // Instancia del servicio de almacenamiento local

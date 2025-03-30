@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ShoppingCart, User, Menu, X, Search, Heart, Bell, LogOut, Settings, ShoppingBag } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useCart } from '../../hooks/useCart';
+import { useFavorites } from '../../hooks/useFavorites';
+import { useNotifications } from '../../hooks/useNotifications';
 
 // Interfaz para el logo
 interface Logo {
@@ -40,11 +42,9 @@ const Header: React.FC<HeaderProps> = ({
   // Obtener información del carrito utilizando el hook useCart
   const { itemCount: cartItemCount } = useCart();
   
-  // Estado para notificaciones de ejemplo
-  const [notifications, setNotifications] = useState({
-    favorites: 1,
-    notifications: 5
-  });
+  
+  const { favoriteCount } = useFavorites();
+  const { unreadCount: notificationCount } = useNotifications();
   
   // Cerrar el menú de usuario al hacer clic fuera de él
   useEffect(() => {
@@ -146,9 +146,9 @@ const Header: React.FC<HeaderProps> = ({
             {/* Favorites Icon */}
             <Link to="/favorites" className="text-gray-700 hover:text-primary-600 transition-colors relative">
               <Heart size={22} />
-              {notifications.favorites > 0 && (
+              {favoriteCount > 0 && (
                 <span className="absolute -top-2 -right-2 bg-primary-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-                  {notifications.favorites}
+                  {favoriteCount}
                 </span>
               )}
             </Link>
@@ -168,9 +168,9 @@ const Header: React.FC<HeaderProps> = ({
                 {/* Notifications Icon - Only visible when authenticated */}
                 <Link to="/notifications" className="text-gray-700 hover:text-primary-600 transition-colors relative">
                   <Bell size={22} />
-                  {notifications.notifications > 0 && (
+                  {notificationCount > 0 && (
                     <span className="absolute -top-2 -right-2 bg-primary-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-                      {notifications.notifications}
+                      {notificationCount}
                     </span>
                   )}
                 </Link>
