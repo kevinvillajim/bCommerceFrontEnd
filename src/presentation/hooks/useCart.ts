@@ -34,7 +34,33 @@ export const useProducts = () => {
     }
   }, []);
 
-  // Añadir otros métodos para getProductById, etc.
+  const getProductById = useCallback(async (id: number) => {
+    setLoading(true);
+    try {
+      const product = await productService.getProductById(id);
+      setProductDetail(product);
+      return product;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al obtener el producto');
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const getProductBySlug = useCallback(async (slug: string) => {
+    setLoading(true);
+    try {
+      const product = await productService.getProductBySlug(slug);
+      setProductDetail(product);
+      return product;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al obtener el producto');
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   return {
     loading,
@@ -42,6 +68,7 @@ export const useProducts = () => {
     products,
     productDetail,
     getProducts,
-    // otros métodos
+    getProductById,
+    getProductBySlug
   };
 };

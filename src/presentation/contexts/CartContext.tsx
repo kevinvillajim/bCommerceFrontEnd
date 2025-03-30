@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import type { AxiosResponse } from 'axios';
 import type { ShoppingCart, CartItem, AddToCartRequest, CartItemUpdateData } from '../../core/domain/entities/ShoppingCart';
 import { LocalStorageService } from '../../infrastructure/services/LocalStorageService';
-import ApiClient from '../../infrastructure/api/apiClient';
+import ApiClient from '../../infrastructure/api/ApiClient';
 import { API_ENDPOINTS } from '../../constants/apiEndpoints';
 
 // Interfaz para respuestas de la API

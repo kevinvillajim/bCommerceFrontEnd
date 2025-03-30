@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
-import { ShoppingCart, User, Menu, X, Search, Heart } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { ShoppingCart, User, Menu, X, Search, Heart, Bell, LogOut, Settings, ShoppingBag } from 'lucide-react';
+import { useAuth } from '../../hooks/useAuth';
+import { useCart } from '../../hooks/useCart';
 
 // Interfaz para el logo
 interface Logo {
@@ -29,14 +31,46 @@ const Header: React.FC<HeaderProps> = ({
   ]
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
-  const notification = {
-    favorites: null,
-    cart: 1
-  };
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+  
+  // Obtener información del usuario y estado de autenticación
+  const { user, isAuthenticated, logout } = useAuth();
+  
+  // Obtener información del carrito
+  const { itemCount: cartItemCount } = useCart();
+  
+  // Estado para notificaciones de ejemplo
+  const [notifications, setNotifications] = useState({
+    favorites: 0,
+    notifications: 3
+  });
+  
+  // Cerrar el menú de usuario al hacer clic fuera de él
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
   
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);
+  };
+  
+  const toggleUserMenu = () => {
+    setUserMenuOpen(!userMenuOpen);
+  };
+  
+  const handleLogout = async () => {
+    await logout();
+    setUserMenuOpen(false);
   };
 
   // Componente interno Link para simular react-router-dom
@@ -45,6 +79,14 @@ const Header: React.FC<HeaderProps> = ({
       {children}
     </a>
   );
+  
+  // Obtener la inicial del usuario para el avatar
+  const getUserInitial = () => {
+    if (user?.name) {
+      return user.name.charAt(0).toUpperCase();
+    }
+    return 'U';
+  };
 
   return (
     <header className="bg-white shadow-md sticky top-0 z-50">
@@ -101,35 +143,118 @@ const Header: React.FC<HeaderProps> = ({
 
           {/* Icons - Desktop */}
           <div className="hidden md:flex items-center space-x-6">
+            {/* Favorites Icon */}
             <Link to="/favorites" className="text-gray-700 hover:text-primary-600 transition-colors relative">
               <Heart size={22} />
-              <span className={`${notification.favorites ? "absolute" : "hidden"} -top-2 -right-2 bg-primary-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center`}>{notification.favorites}</span>
+              {notifications.favorites > 0 && (
+                <span className="absolute -top-2 -right-2 bg-primary-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                  {notifications.favorites}
+                </span>
+              )}
             </Link>
+            
+            {/* Cart Icon */}
             <Link to="/cart" className="text-gray-700 hover:text-primary-600 transition-colors relative">
               <ShoppingCart size={22} />
-              <span className="absolute -top-2 -right-2 bg-primary-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">{notification.cart}</span>
+              {cartItemCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-primary-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                  {cartItemCount}
+                </span>
+              )}
             </Link>
-            <Link to="/account" className="text-gray-700 hover:text-primary-600 transition-colors">
-              <User size={22} />
-            </Link>
-            <Link to="/login" className="text-gray-700 hover:text-primary-600 transition-colors font-medium">
-              Iniciar sesión
-            </Link>
-            <Link to="/register" className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium shadow-sm hover:shadow">
-              Registrarse
-            </Link>
+            
+            {isAuthenticated ? (
+              <>
+                {/* Notifications Icon - Only visible when authenticated */}
+                <Link to="/notifications" className="text-gray-700 hover:text-primary-600 transition-colors relative">
+                  <Bell size={22} />
+                  {notifications.notifications > 0 && (
+                    <span className="absolute -top-2 -right-2 bg-primary-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                      {notifications.notifications}
+                    </span>
+                  )}
+                </Link>
+                
+                {/* User Menu */}
+                <div className="relative" ref={userMenuRef}>
+                  <button 
+                    onClick={toggleUserMenu}
+                    className="flex items-center space-x-2 text-gray-700 hover:text-primary-600 transition-colors"
+                  >
+                    <div className="h-8 w-8 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center font-medium">
+                      {getUserInitial()}
+                    </div>
+                    <span className="font-medium">{user?.name?.split(' ')[0]}</span>
+                  </button>
+                  
+                  {/* User Dropdown Menu */}
+                  {userMenuOpen && (
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 z-10 border border-gray-100">
+                      <div className="px-4 py-2 border-b border-gray-100">
+                        <p className="text-sm font-medium">{user?.name}</p>
+                        <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+                      </div>
+                      <Link to="/account" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                        <User size={16} className="mr-2" />
+                        Mi perfil
+                      </Link>
+                      <Link to="/orders" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                        <ShoppingBag size={16} className="mr-2" />
+                        Mis pedidos
+                      </Link>
+                      <Link to="/favorites" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                        <Heart size={16} className="mr-2" />
+                        Mis favoritos
+                      </Link>
+                      <Link to="/account/settings" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                        <Settings size={16} className="mr-2" />
+                        Configuración
+                      </Link>
+                      <button 
+                        onClick={handleLogout} 
+                        className="flex items-center w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                      >
+                        <LogOut size={16} className="mr-2" />
+                        Cerrar sesión
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Login and Register buttons when not authenticated */}
+                <Link to="/login" className="text-gray-700 hover:text-primary-600 transition-colors font-medium">
+                  Iniciar sesión
+                </Link>
+                <Link to="/register" className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors font-medium shadow-sm hover:shadow">
+                  Registrarse
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
-          <div className="md:hidden flex items-center">
-            <Link to="/cart" className="text-gray-700 mr-4 relative">
+          <div className="md:hidden flex items-center space-x-4">
+            {/* Cart Icon for Mobile */}
+            <Link to="/cart" className="text-gray-700 relative">
               <ShoppingCart size={22} />
-              <span className="absolute -top-2 -right-2 bg-primary-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">2</span>
+              {cartItemCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-primary-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                  {cartItemCount}
+                </span>
+              )}
             </Link>
-            <button 
-              onClick={toggleMobileMenu}
-              className="text-gray-700"
-            >
+            
+            {/* User Icon for Mobile (only when authenticated) */}
+            {isAuthenticated && (
+              <div className="h-8 w-8 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center font-medium">
+                {getUserInitial()}
+              </div>
+            )}
+            
+            {/* Menu Toggle Button */}
+            <button onClick={toggleMobileMenu} className="text-gray-700">
               {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
           </div>
@@ -171,8 +296,49 @@ const Header: React.FC<HeaderProps> = ({
             </button>
           </div>
 
+          {/* Mobile User Info (if authenticated) */}
+          {isAuthenticated && (
+            <div className="mb-6 pb-4 border-b border-gray-200">
+              <div className="flex items-center space-x-3 mb-3">
+                <div className="h-10 w-10 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center font-medium">
+                  {getUserInitial()}
+                </div>
+                <div>
+                  <p className="font-medium">{user?.name}</p>
+                  <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-2 mb-2">
+                <Link 
+                  to="/account" 
+                  className="flex flex-col items-center p-2 rounded-lg hover:bg-gray-50"
+                  onClick={toggleMobileMenu}
+                >
+                  <User size={20} className="mb-1 text-gray-700" />
+                  <span className="text-xs">Perfil</span>
+                </Link>
+                <Link 
+                  to="/orders" 
+                  className="flex flex-col items-center p-2 rounded-lg hover:bg-gray-50"
+                  onClick={toggleMobileMenu}
+                >
+                  <ShoppingBag size={20} className="mb-1 text-gray-700" />
+                  <span className="text-xs">Pedidos</span>
+                </Link>
+                <Link 
+                  to="/favorites" 
+                  className="flex flex-col items-center p-2 rounded-lg hover:bg-gray-50"
+                  onClick={toggleMobileMenu}
+                >
+                  <Heart size={20} className="mb-1 text-gray-700" />
+                  <span className="text-xs">Favoritos</span>
+                </Link>
+              </div>
+            </div>
+          )}
+
           {/* Mobile Navigation */}
-          <ul className="space-y-3">
+          <ul className="space-y-3 mb-4">
             {navLinks.map((link, index) => (
               <li key={index}>
                 <Link 
@@ -186,23 +352,36 @@ const Header: React.FC<HeaderProps> = ({
             ))}
           </ul>
 
-          {/* Mobile Auth Buttons */}
-          <div className="mt-6 space-y-2">
-            <Link 
-              to="/login" 
-              className="block text-center py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
-              onClick={toggleMobileMenu}
+          {/* Mobile Auth Buttons or Logout */}
+          {isAuthenticated ? (
+            <button 
+              onClick={() => {
+                handleLogout();
+                toggleMobileMenu();
+              }} 
+              className="w-full text-center py-2 text-red-600 font-medium border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
             >
-              Iniciar sesión
-            </Link>
-            <Link 
-              to="/register" 
-              className="block text-center py-2 bg-primary-600 rounded-lg text-white hover:bg-primary-700 transition-colors"
-              onClick={toggleMobileMenu}
-            >
-              Registrarse
-            </Link>
-          </div>
+              <LogOut size={16} className="inline-block mr-2" />
+              Cerrar sesión
+            </button>
+          ) : (
+            <div className="space-y-2">
+              <Link 
+                to="/login" 
+                className="block text-center py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                onClick={toggleMobileMenu}
+              >
+                Iniciar sesión
+              </Link>
+              <Link 
+                to="/register" 
+                className="block text-center py-2 bg-primary-600 rounded-lg text-white hover:bg-primary-700 transition-colors"
+                onClick={toggleMobileMenu}
+              >
+                Registrarse
+              </Link>
+            </div>
+          )}
         </div>
       )}
     </header>
