@@ -9,7 +9,15 @@
   --toastify-color-error: var(--color-red-500);
 }
 
-/* Scrollbar styles */
+/* Dark mode variables */
+.dark {
+  --toastify-color-light: #1e1e1e;
+  --toastify-text-color-light: #e0e0e0;
+  --toastify-color-dark: #121212;
+  --toastify-text-color-dark: #ffffff;
+}
+
+/* Scrollbar styles - Light mode */
 @utility scrollbar-thin {
   &::-webkit-scrollbar {
     width: 6px;
@@ -27,6 +35,24 @@
 
   &::-webkit-scrollbar-thumb:hover {
     background: var(--color-gray-400);
+  }
+}
+
+/* Scrollbar styles - Dark mode */
+.dark {
+  @utility scrollbar-thin {
+    &::-webkit-scrollbar-track {
+      background: #2d3748; /* dark gray */
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: #4a5568; /* medium gray */
+      border-radius: 3px;
+    }
+
+    &::-webkit-scrollbar-thumb:hover {
+      background: #718096; /* light gray */
+    }
   }
 }
 
@@ -57,4 +83,28 @@
 
 .slide-in {
   animation: slideIn 0.3s ease-in-out;
+}
+
+/* Clases adicionales para el modo oscuro */
+.dark .bg-white {
+  background-color: #1e1e1e !important;
+}
+
+.dark .text-gray-900 {
+  color: #f3f4f6 !important;
+}
+
+.dark .shadow-lg {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2) !important;
+}
+
+.dark .border-gray-200,
+.dark .border-gray-300 {
+  border-color: #374151 !important;
+}
+
+/* Transición suave para el cambio de tema */
+* {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-duration: 200ms;
 }

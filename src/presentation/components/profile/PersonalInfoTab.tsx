@@ -1,7 +1,9 @@
+// src/presentation/components/profile/PersonalInfoTab.tsx
 import React, { useState, useEffect } from 'react';
 import { User, Mail, MapPin, Calendar, Settings } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import type { UserProfileUpdateData } from '../../../core/domain/entities/User';
+import ApiClient from '../../../infrastructure/api/ApiClient';
 
 // Esta interfaz debe coincidir con la definida en UserProfilePage
 interface UserProfile {
@@ -80,24 +82,48 @@ const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({
         location: formData.location || null
       };
       
-      // Actualizar perfil usando la API correcta mediante el hook de autenticación
-      const updatedUser = await updateProfile(profileData);
-      
-      if (updatedUser && onProfileUpdate && userProfile) {
-        // Asegurarse de que el objeto actualizado mantiene los campos obligatorios
-        const updatedProfile: UserProfile = {
-          ...userProfile,
-          name: updatedUser.name || userProfile.name,
-          age: updatedUser.age ?? userProfile.age,
-          gender: updatedUser.gender ?? userProfile.gender,
-          location: updatedUser.location ?? userProfile.location
-        };
+      try {
+        // Directamente usando ApiClient para actualizar el perfil
+        const updatedUser = await ApiClient.put<any>('/profile', profileData);
         
-        // Notificar al componente padre sobre la actualización
-        onProfileUpdate(updatedProfile);
+        if (updatedUser && onProfileUpdate && userProfile) {
+          // Asegurarse de que el objeto actualizado mantiene los campos obligatorios
+          const updatedProfile: UserProfile = {
+            ...userProfile,
+            name: updatedUser.name || userProfile.name,
+            age: updatedUser.age ?? userProfile.age,
+            gender: updatedUser.gender ?? userProfile.gender,
+            location: updatedUser.location ?? userProfile.location
+          };
+          
+          // Notificar al componente padre sobre la actualización
+          onProfileUpdate(updatedProfile);
+          
+          setProfileSuccess('Perfil actualizado correctamente');
+          setIsEditing(false);
+        }
+      } catch (error) {
+        console.error("Error al actualizar con ApiClient:", error);
         
-        setProfileSuccess('Perfil actualizado correctamente');
-        setIsEditing(false);
+        // Intento alternativo con updateProfile del hook de auth
+        const updatedUser = await updateProfile(profileData);
+        
+        if (updatedUser && onProfileUpdate && userProfile) {
+          // Asegurarse de que el objeto actualizado mantiene los campos obligatorios
+          const updatedProfile: UserProfile = {
+            ...userProfile,
+            name: updatedUser.name || userProfile.name,
+            age: updatedUser.age ?? userProfile.age,
+            gender: updatedUser.gender ?? userProfile.gender,
+            location: updatedUser.location ?? userProfile.location
+          };
+          
+          // Notificar al componente padre sobre la actualización
+          onProfileUpdate(updatedProfile);
+          
+          setProfileSuccess('Perfil actualizado correctamente');
+          setIsEditing(false);
+        }
       }
     } catch (error) {
       console.error('Error al actualizar perfil:', error);

@@ -4,6 +4,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useCart } from '../../hooks/useCart';
 import { useFavorites } from '../../hooks/useFavorites';
 import { useNotifications } from '../../hooks/useNotifications';
+import ThemeToggle from './ThemeToggle'
 
 // Interfaz para el logo
 interface Logo {
@@ -143,6 +144,7 @@ const Header: React.FC<HeaderProps> = ({
 
           {/* Icons - Desktop */}
           <div className="hidden md:flex items-center space-x-6">
+            <ThemeToggle />
             {/* Favorites Icon */}
             <Link to="/favorites" className="text-gray-700 hover:text-primary-600 transition-colors relative">
               <Heart size={22} />
@@ -236,6 +238,7 @@ const Header: React.FC<HeaderProps> = ({
 
           {/* Mobile Menu Button */}
           <div className="md:hidden flex items-center space-x-4">
+            <ThemeToggle />
             {/* Cart Icon for Mobile */}
             <Link to="/cart" className="text-gray-700 relative">
               <ShoppingCart size={22} />
@@ -245,7 +248,15 @@ const Header: React.FC<HeaderProps> = ({
                 </span>
               )}
             </Link>
-            
+            {/* Favorites Icon for Mobile */}
+            <Link to="/favorites" className="text-gray-700 hover:text-primary-600 transition-colors relative">
+              <Heart size={22} />
+              {favoriteCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-primary-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                  {favoriteCount}
+                </span>
+              )}
+            </Link>
             {/* User Icon for Mobile (only when authenticated) */}
             {isAuthenticated && (
               <div className="h-8 w-8 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center font-medium">

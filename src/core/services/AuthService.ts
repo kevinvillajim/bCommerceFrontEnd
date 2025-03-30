@@ -244,7 +244,6 @@ async updateProfile(data: UserProfileUpdateData): Promise<User> {
   try {
     // Imprimir datos para depuración
     console.log('Enviando actualización de perfil:', data);
-    console.log('URL completa:', appConfig.api.baseUrl + '/profile');
     
     // Usar la ruta correcta según la documentación de API proporcionada: PUT /api/profile
     const response = await axiosInstance.put('/profile', data);

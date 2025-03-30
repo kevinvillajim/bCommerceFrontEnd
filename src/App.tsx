@@ -19,6 +19,9 @@ const FavoritePage = lazy(() => import('./presentation/pages/FavoritePage'));
 const CartPage = lazy(() => import('./presentation/pages/CartPage'));
 const UserProfilePage = lazy(() => import('./presentation/pages/UserProfilePage'));
 const DashboardLayout = lazy(() => import('./presentation/layouts/DashboardLayout'));
+const ForgotPasswordPage = lazy(() => import('./presentation/pages/ForgotPasswordPage'));
+const ResetPasswordPage = lazy(() => import('./presentation/pages/ResetPasswordPage'));
+
 
 // Loading fallback for lazy-loaded components
 const LoadingFallback = () => (
@@ -56,7 +59,9 @@ const App: React.FC = () => {
           <Route path="faq" element={<FAQPage />} />
           <Route path="favorites" element={<FavoritePage />} />
           <Route path="cart" element={<CartPage />} />
-          
+          <Route path="favorites" element={<FavoritePage />} />
+          <Route path="forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="reset-password" element={<ResetPasswordPage />} />
           {/* Ruta para el perfil de usuario que ahora está protegida correctamente */}
           <Route 
             path="account" 

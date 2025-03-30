@@ -21,6 +21,8 @@ import FavoritePage from '../presentation/pages/FavoritePage';
 // Route wrappers
 import PrivateRoute from './PrivateRoute';
 import PublicRoute from './PublicRoute';
+import ForgotPasswordPage from '@/presentation/pages/ForgotPasswordPage';
+import ResetPasswordPage from '@/presentation/pages/ResetPasswordPage';
 
 
 // Auth guard helper
@@ -66,6 +68,14 @@ const appRoutes: RouteObject[] = [
       {
         path: "cart",
         element: <CartPage />
+      },
+      {
+        path: "forgot-password",
+        element: <ForgotPasswordPage />
+      },
+      {
+        path: "reset-password",
+        element: <ResetPasswordPage />
       },
       {
         path: "login",

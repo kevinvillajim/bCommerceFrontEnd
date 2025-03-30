@@ -68,7 +68,8 @@ const UserProfilePage: React.FC = () => {
   const fetchUserProfile = async () => {
     setIsLoading(true);
     try {
-      const response = await ApiClient.get<UserProfileResponse>(API_ENDPOINTS.AUTH.ME);
+      // Cambiamos la ruta a /profile en lugar de AUTH.ME
+      const response = await ApiClient.get<UserProfileResponse>(API_ENDPOINTS.PROFILE.LIST);
       
       if (response) {
         // Transformar la respuesta para asegurar la compatibilidad de tipos

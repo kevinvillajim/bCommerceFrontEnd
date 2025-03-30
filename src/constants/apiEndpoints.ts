@@ -10,11 +10,17 @@ export const API_ENDPOINTS = {
     LOGOUT: '/auth/logout',
     REFRESH: '/auth/refresh',
     REGISTER: '/auth/register',
-    FORGOT_PASSWORD: '/auth/forgot-password',
+    FORGOT_PASSWORD_EMAIL: '/auth/forgot-password-email',
+    FORGOT_PASSWORD_TOKEN: '/auth/forgot-password-token',
     RESET_PASSWORD: '/auth/reset-password',
     ME: '/auth/me',
     UPDATE_PASSWORD: '/auth/password/update',
     VERIFY_EMAIL: (id: string | number, hash: string) => `/email/verify/${id}/${hash}`
+  },
+
+  PROFILE: {
+    LIST: '/profile',
+    UPDATE: '/profile',
   },
   
   // Products

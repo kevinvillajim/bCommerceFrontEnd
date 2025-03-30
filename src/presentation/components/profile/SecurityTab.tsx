@@ -56,7 +56,7 @@ const SecurityTab: React.FC = () => {
     
     try {
       // Llamar al endpoint para actualizar contraseña
-      await ApiClient.put(API_ENDPOINTS.AUTH.UPDATE_PASSWORD, {
+      await ApiClient.post(API_ENDPOINTS.AUTH.UPDATE_PASSWORD, {
         current_password: formData.currentPassword,
         password: formData.newPassword,
         password_confirmation: formData.confirmPassword
