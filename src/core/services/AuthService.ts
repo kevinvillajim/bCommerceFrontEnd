@@ -238,55 +238,60 @@ export class AuthService {
   }
 
   /**
-   * Actualiza el perfil del usuario
-   */
-  async updateProfile(data: UserProfileUpdateData): Promise<User> {
-    try {
-      const response = await axiosInstance.put('/user/profile', data);
-      
-      // Verificar si hay datos en la respuesta
-      if (!response || !response.data) {
-        throw new Error('Respuesta del servidor vacía');
-      }
-      
-      // Asignamos userData directamente de la respuesta
-      const userData: User = response.data;
-      
-      // Validar usuario
-      if (!userData) {
-        throw new Error('Información de usuario no encontrada en la respuesta');
-      }
-      
-      // Actualizar en caché
-      storageService.setItem(appConfig.storage.userKey, userData);
-      
-      return userData;
-    } catch (error) {
-      console.error('AuthService: Error al actualizar perfil:', error);
-      
-      // Manejo detallado de errores
-      if (axios.isAxiosError(error)) {
-        const axiosError = error as AxiosError<any>;
-        
-        if (axiosError.response?.status === 401) {
-          throw new Error('No autorizado para actualizar el perfil');
-        } else if (axiosError.response?.status === 422) {
-          // Error de validación
-          const validationErrors = axiosError.response.data?.errors;
-          if (validationErrors) {
-            // Convertir errores de validación a mensaje legible
-            const messages = Object.values(validationErrors).flat();
-            throw new Error(messages.join('. '));
-          }
-          throw new Error('Datos de perfil inválidos');
-        } else if (axiosError.response?.data?.message) {
-          throw new Error(axiosError.response.data.message);
-        }
-      }
-      
-      throw new Error('No se pudo actualizar el perfil');
+ * Actualiza el perfil del usuario
+ */
+async updateProfile(data: UserProfileUpdateData): Promise<User> {
+  try {
+    // Imprimir datos para depuración
+    console.log('Enviando actualización de perfil:', data);
+    console.log('URL completa:', appConfig.api.baseUrl + '/profile');
+    
+    // Usar la ruta correcta según la documentación de API proporcionada: PUT /api/profile
+    const response = await axiosInstance.put('/profile', data);
+    
+    // Verificar si hay datos en la respuesta
+    if (!response || !response.data) {
+      throw new Error('Respuesta del servidor vacía');
     }
+    
+    // Asignamos userData directamente de la respuesta
+    const userData: User = response.data;
+    
+    // Validar usuario
+    if (!userData) {
+      throw new Error('Información de usuario no encontrada en la respuesta');
+    }
+    
+    // Actualizar en caché
+    storageService.setItem(appConfig.storage.userKey, userData);
+    
+    return userData;
+  } catch (error) {
+    console.error('AuthService: Error al actualizar perfil:', error);
+    
+    // Manejo detallado de errores
+    if (axios.isAxiosError(error)) {
+      const axiosError = error as AxiosError<any>;
+      
+      if (axiosError.response?.status === 401) {
+        throw new Error('No autorizado para actualizar el perfil');
+      } else if (axiosError.response?.status === 422) {
+        // Error de validación
+        const validationErrors = axiosError.response.data?.errors;
+        if (validationErrors) {
+          // Convertir errores de validación a mensaje legible
+          const messages = Object.values(validationErrors).flat();
+          throw new Error(messages.join('. '));
+        }
+        throw new Error('Datos de perfil inválidos');
+      } else if (axiosError.response?.data?.message) {
+        throw new Error(axiosError.response.data.message);
+      }
+    }
+    
+    throw new Error('No se pudo actualizar el perfil');
   }
+}
 
 
   /**

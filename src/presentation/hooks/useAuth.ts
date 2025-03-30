@@ -157,12 +157,12 @@ export const useAuth = () => {
   }, [setUser, setIsAuthenticated]);
 
   /**
-   * Actualizar perfil de usuario
-   */
+ * Actualizar perfil de usuario
+ */
   const updateProfile = useCallback(async (profileData: UserProfileUpdateData) => {
     setLoading(true);
     setError(null);
-
+  
     try {
       // Usar el caso de uso de actualización de perfil
       const updatedUser = await updateProfileUseCase.execute(profileData);

@@ -18,15 +18,15 @@ export class UpdateProfileUseCase {
   }
 
   /**
-   * Ejecuta el proceso de actualización de perfil
-   * @param profileData Datos de perfil a actualizar
-   * @returns Usuario actualizado o null si falla
-   */
+ * Ejecuta el proceso de actualización de perfil
+ * @param profileData Datos de perfil a actualizar
+ * @returns Usuario actualizado o null si falla
+ */
   async execute(profileData: UserProfileUpdateData): Promise<User | null> {
     try {
       // Llamada al servicio de autenticación para actualizar el perfil
       const updatedUser = await this.authService.updateProfile(profileData);
-      
+
       // Verificar que la respuesta sea válida
       if (!updatedUser) {
         throw new Error('Respuesta de actualización inválida');
@@ -38,7 +38,7 @@ export class UpdateProfileUseCase {
       return updatedUser;
     } catch (error) {
       console.error('Error en UpdateProfileUseCase:', error);
-      
+
       // Propagar el error para que pueda ser manejado en la capa superior
       if (error instanceof Error) {
         throw error;
@@ -48,5 +48,4 @@ export class UpdateProfileUseCase {
     }
   }
 }
-
 export default UpdateProfileUseCase;

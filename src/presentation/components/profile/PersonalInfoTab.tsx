@@ -80,7 +80,7 @@ const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({
         location: formData.location || null
       };
       
-      // Actualizar perfil usando el hook de autenticación
+      // Actualizar perfil usando la API correcta mediante el hook de autenticación
       const updatedUser = await updateProfile(profileData);
       
       if (updatedUser && onProfileUpdate && userProfile) {
@@ -101,7 +101,11 @@ const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({
       }
     } catch (error) {
       console.error('Error al actualizar perfil:', error);
-      setProfileError('No se pudo actualizar el perfil. Inténtelo de nuevo.');
+      if (error instanceof Error) {
+        setProfileError(error.message);
+      } else {
+        setProfileError('No se pudo actualizar el perfil. Inténtelo de nuevo.');
+      }
     } finally {
       setIsUpdating(false);
     }
@@ -140,13 +144,13 @@ const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({
       
       {/* Mensajes de éxito/error */}
       {profileSuccess && (
-        <div className="bg-green-50 border-l-4 border-green-400 p-4 mb-4 text-sm text-green-700">
+        <div className="bg-green-50 border-l-4 border-green-400 p-4 mb-4 text-sm text-green-700 animate-fadeIn">
           {profileSuccess}
         </div>
       )}
       
       {profileError && (
-        <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-4 text-sm text-red-700">
+        <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-4 text-sm text-red-700 animate-fadeIn">
           {profileError}
         </div>
       )}
