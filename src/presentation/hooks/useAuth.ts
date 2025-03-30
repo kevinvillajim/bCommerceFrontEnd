@@ -1,15 +1,22 @@
 import { useState, useEffect, useCallback, useContext } from 'react';
 import { AuthContext } from '../contexts/AuthContext';
 import { AuthService } from '../../core/services/AuthService';
-import type { User, UserLoginData, UserRegistrationData } from '../../core/domain/entities/User';
+import LoginUseCase from '../../core/useCases/user/LoginUseCase';
+import RegisterUseCase from '../../core/useCases/user/RegisterUseCase';
+import UpdateProfileUseCase from '../../core/useCases/user/UpdateProfileUseCase';
+import type { UserLoginData, UserRegistrationData, UserProfileUpdateData } from '../../core/domain/entities/User';
 import { LocalStorageService } from '../../infrastructure/services/LocalStorageService';
+import appConfig from '../../config/appConfig';
 
-// Create instances of services
+// Crear instancias de servicios y casos de uso
 const authService = new AuthService();
 const storageService = new LocalStorageService();
+const loginUseCase = new LoginUseCase();
+const registerUseCase = new RegisterUseCase();
+const updateProfileUseCase = new UpdateProfileUseCase();
 
 /**
- * Hook for authentication related operations
+ * Hook para operaciones de autenticación
  */
 export const useAuth = () => {
   const { user, setUser, isAuthenticated, setIsAuthenticated } = useContext(AuthContext);
@@ -17,19 +24,34 @@ export const useAuth = () => {
   const [error, setError] = useState<string | null>(null);
 
   /**
-   * Check if user is already logged in (on mount)
+   * Verificar si el usuario ya está logueado (al montar el componente)
    */
   useEffect(() => {
     const checkAuth = async () => {
-      const token = storageService.getItem('auth_token');
+      const token = storageService.getItem(appConfig.storage.authTokenKey);
       if (token) {
         try {
-          const userData = await authService.getCurrentUser();
-          setUser(userData);
-          setIsAuthenticated(true);
+          const userData = storageService.getItem(appConfig.storage.userKey);
+          if (userData) {
+            setUser(userData);
+            setIsAuthenticated(true);
+          } else {
+            try {
+              // Si no hay usuario en caché, intenta obtenerlo del servidor
+              const currentUser = await authService.getCurrentUser();
+              setUser(currentUser);
+              setIsAuthenticated(true);
+            } catch (error) {
+              // Si falla, limpia el token y estado
+              storageService.removeItem(appConfig.storage.authTokenKey);
+              setUser(null);
+              setIsAuthenticated(false);
+            }
+          }
         } catch (err) {
-          // Token might be invalid or expired
-          storageService.removeItem('auth_token');
+          // Token inválido, limpia estado
+          storageService.removeItem(appConfig.storage.authTokenKey);
+          storageService.removeItem(appConfig.storage.userKey);
           setUser(null);
           setIsAuthenticated(false);
         }
@@ -40,21 +62,27 @@ export const useAuth = () => {
   }, [setUser, setIsAuthenticated]);
 
   /**
-   * Login user
+   * Iniciar sesión de usuario
    */
   const login = useCallback(async (credentials: UserLoginData) => {
     setLoading(true);
     setError(null);
 
     try {
-      const response = await authService.login(credentials);
-      // Save token and user data
-      storageService.setItem('auth_token', response.access_token);
-      setUser(response.user);
-      setIsAuthenticated(true);
-      return response.user;
+      // Usar el caso de uso de login
+      const response = await loginUseCase.execute(credentials);
+      
+      if (response && response.user) {
+        setUser(response.user);
+        setIsAuthenticated(true);
+        return response;
+      } else {
+        throw new Error("No se recibió información de usuario válida");
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
+      const errorMessage = err instanceof Error ? err.message : 'Error al iniciar sesión';
+      console.error("Login error:", errorMessage);
+      setError(errorMessage);
       return null;
     } finally {
       setLoading(false);
@@ -62,21 +90,27 @@ export const useAuth = () => {
   }, [setUser, setIsAuthenticated]);
 
   /**
-   * Register new user
+   * Registrar nuevo usuario
    */
   const register = useCallback(async (userData: UserRegistrationData) => {
     setLoading(true);
     setError(null);
 
     try {
-      const response = await authService.register(userData);
-      // Save token and user data
-      storageService.setItem('auth_token', response.access_token);
-      setUser(response.user);
-      setIsAuthenticated(true);
-      return response.user;
+      // Usar el caso de uso de registro
+      const response = await registerUseCase.execute(userData);
+      
+      if (response && response.user) {
+        setUser(response.user);
+        setIsAuthenticated(true);
+        return response;
+      } else {
+        throw new Error("No se recibió información de usuario válida");
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Registration failed');
+      const errorMessage = err instanceof Error ? err.message : 'Error al registrar usuario';
+      console.error("Register error:", errorMessage);
+      setError(errorMessage);
       return null;
     } finally {
       setLoading(false);
@@ -84,21 +118,23 @@ export const useAuth = () => {
   }, [setUser, setIsAuthenticated]);
 
   /**
-   * Logout user
+   * Cerrar sesión de usuario
    */
   const logout = useCallback(async () => {
     setLoading(true);
     setError(null);
 
     try {
+      // Cerrar sesión con el servicio de autenticación
       await authService.logout();
-      // Clear local storage and context
-      storageService.removeItem('auth_token');
+      
+      // Limpiar estado local
       setUser(null);
       setIsAuthenticated(false);
       return true;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Logout failed');
+      const errorMessage = err instanceof Error ? err.message : 'Error al cerrar sesión';
+      setError(errorMessage);
       return false;
     } finally {
       setLoading(false);
@@ -106,24 +142,32 @@ export const useAuth = () => {
   }, [setUser, setIsAuthenticated]);
 
   /**
-   * Update user profile
+   * Actualizar perfil de usuario
    */
-  const updateProfile = useCallback(async (profileData: Partial<User>) => {
+  const updateProfile = useCallback(async (profileData: UserProfileUpdateData) => {
     setLoading(true);
     setError(null);
 
     try {
-      const updatedUser = await authService.updateProfile(profileData);
-      setUser(updatedUser);
-      return updatedUser;
+      // Usar el caso de uso de actualización de perfil
+      const updatedUser = await updateProfileUseCase.execute(profileData);
+      
+      if (updatedUser) {
+        setUser(updatedUser);
+        return updatedUser;
+      } else {
+        throw new Error("No se recibió información de usuario actualizada");
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Profile update failed');
+      const errorMessage = err instanceof Error ? err.message : 'Error al actualizar perfil';
+      setError(errorMessage);
       return null;
     } finally {
       setLoading(false);
     }
   }, [setUser]);
 
+  // Devolver estado y funciones del hook
   return {
     user,
     isAuthenticated,
@@ -135,3 +179,5 @@ export const useAuth = () => {
     updateProfile
   };
 };
+
+export default useAuth;
