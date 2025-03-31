@@ -1,8 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-// No necesitamos importar Filter ya que usamos el componente ActiveFilters
 
-// Importaciones de componentes
+// Componentes optimizados
 import SearchBar from '../components/product/SearchBar';
 import CategoriesCarousel from '../components/product/CategoriesCarousel';
 import ProductFilters from '../components/product/ProductFilters';
@@ -11,16 +10,22 @@ import SortDropdown from '../components/product/SortDropdown';
 import MobileFilterPanel from '../components/product/MobileFilterPanel';
 import ActiveFilters from '../components/product/ActiveFilters';
 import Pagination from '../components/product/Pagination';
+import SimplePagination from '../components/product/SimplePagination';
+import MobilePagination from '../components/product/MobilePagination';
 
-// Importaciones de hooks y utilidades
+// Hooks optimizados con caché
 import { useProducts } from '../hooks/useProducts';
 import { useCategories } from '../hooks/useCategories';
 import { useCart } from '../hooks/useCart';
 import { useFavorites } from '../hooks/useFavorites';
+
+// Servicios y configuración
+import CacheService from '../../infrastructure/services/CacheService';
 import appConfig from '../../config/appConfig';
 import environment from '../../config/environment';
-import type { ProductFilterParams } from '../../core/domain/entities/Product';
-// Usamos el tipo Category importado en los componentes hijos
+import type { ExtendedProductFilterParams } from '../types/ProductFilterParams';
+
+// Íconos
 import { Smartphone, Tv, Laptop, Monitor, Headphones, Camera, Watch, Speaker, Package } from 'lucide-react';
 
 // Mapeo de iconos por categoría (nombre en minúsculas como clave)
@@ -57,12 +62,21 @@ const sortOptions = [
   { id: 'newest', label: 'Más recientes' }
 ];
 
+// Clave de caché para categorías transformadas
+const CATEGORY_OPTIONS_CACHE_KEY = 'category_options_transformed';
+
 /**
- * Página de productos que muestra la lista de productos disponibles
- * con opciones de filtrado y ordenamiento
+ * Página de productos optimizada 
+ * - Usa componentes modularizados
+ * - Implementa sistema de caché
+ * - Incluye paginación mejorada para móviles
+ * - Pestaña de precio abierta por defecto
  */
 const ProductPage: React.FC = () => {
+  // Estado de la URL y navegación
   const [searchParams, setSearchParams] = useSearchParams();
+  
+  // Estados para filtros
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedPriceRange, setSelectedPriceRange] = useState<{ min: number; max: number } | null>(null);
   const [sortBy, setSortBy] = useState('featured');
@@ -70,14 +84,16 @@ const ProductPage: React.FC = () => {
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [showingDiscounted, setShowingDiscounted] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [isMobile, setIsMobile] = useState(false);
+  
   const [categoryOptions, setCategoryOptions] = useState<Array<{
     id: number;
     title: string;
-    icon: React.ElementType;
+    iconName: string;
     link: string;
   }>>([]);
-  
-  // Hooks
+
+  // Hooks optimizados
   const { 
     loading: productsLoading, 
     error: productsError, 
@@ -96,9 +112,23 @@ const ProductPage: React.FC = () => {
   const { addToCart } = useCart();
   const { toggleFavorite } = useFavorites();
 
+  // Detectar si es móvil
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    handleResize(); // Check initially
+    window.addEventListener('resize', handleResize);
+    
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
+  
   // Función para construir parámetros de filtro
-  const buildFilterParams = useCallback((): ProductFilterParams => {
-    const params: ProductFilterParams = {
+  const buildFilterParams = useCallback((): ExtendedProductFilterParams => {
+    const params: ExtendedProductFilterParams = {
       limit: appConfig.pagination.defaultPageSize,
       offset: (currentPage - 1) * appConfig.pagination.defaultPageSize
     };
@@ -131,8 +161,8 @@ const ProductPage: React.FC = () => {
     
     // Añadir filtro de descuento
     if (showingDiscounted) {
-      // La API debería tener un parámetro para filtrar productos con descuento
-      // Por ejemplo: params.hasDiscount = true;
+      // Usar nuestra propiedad personalizada para filtrar por descuento
+      params.minDiscount = 5; // Ejemplo: productos con al menos 5% de descuento
     }
     
     // Añadir ordenamiento
@@ -170,7 +200,11 @@ const ProductPage: React.FC = () => {
   // Cargar datos al iniciar
   useEffect(() => {
     // Cargar categorías
-    fetchCategories();
+    const loadCategories = async () => {
+      await fetchCategories();
+    };
+    
+    loadCategories();
     
     // Obtener parámetros de la URL
     const categoryParam = searchParams.get('category');
@@ -179,6 +213,7 @@ const ProductPage: React.FC = () => {
     const priceMaxParam = searchParams.get('maxPrice');
     const sortParam = searchParams.get('sort');
     const pageParam = searchParams.get('page');
+    const discountParam = searchParams.get('discount');
     
     // Aplicar filtros de la URL
     if (categoryParam) {
@@ -203,52 +238,94 @@ const ProductPage: React.FC = () => {
       setCurrentPage(parseInt(pageParam));
     }
     
+    if (discountParam === 'true') {
+      setShowingDiscounted(true);
+    }
+    
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fetchCategories]);
+  }, []);
 
   // Actualizar opciones de categoría cuando se carguen los datos
-  useEffect(() => {
-    if (categoriesData && categoriesData.length > 0) {
-      const options = categoriesData.map(category => {
-        // Determinar icono basado en el nombre de categoría (o usar Default)
-        const categoryNameLower = category.name.toLowerCase();
-        const icon = CATEGORY_ICONS[categoryNameLower] || CATEGORY_ICONS.default;
-        
-        return {
-          id: category.id || 0,
-          title: category.name,
-          icon: icon,
-          link: `/products?category=${encodeURIComponent(category.name)}`
-        };
-      });
-      setCategoryOptions(options);
-    }
-  }, [categoriesData]);
-
-// En ProductPage.tsx, después de llamar a fetchProducts
+  // Y actualiza la transformación de categorías:
 useEffect(() => {
-  if (categoriesData.length > 0) {
-    const params = buildFilterParams();
-    console.log("Parámetros de filtrado:", params);
+  if (categoriesData && categoriesData.length > 0) {
+    // Intentar obtener categorías transformadas de caché
+    const cachedOptions = CacheService.getItem(CATEGORY_OPTIONS_CACHE_KEY);
     
-    fetchProducts(params)
-      .then(response => {
-        console.log("Respuesta de la API:", response);
-      })
-      .catch(err => {
-        console.error("Error al obtener productos:", err);
-      });
+    if (cachedOptions) {
+      setCategoryOptions(cachedOptions);
+      return;
+    }
     
-    updateSearchParams();
+    // Si no hay caché, transformar las categorías
+    const options = categoriesData.map(category => {
+      // Determinar ícono basado en el nombre de categoría
+      const categoryNameLower = category.name.toLowerCase();
+      let iconName = "📦"; // Emoji por defecto
+      
+      // Asignar emojis según el nombre de la categoría
+      if (categoryNameLower.includes("smartphone")) iconName = "📱";
+      else if (categoryNameLower.includes("laptop")) iconName = "💻";
+      else if (categoryNameLower.includes("monitor")) iconName = "🖥️";
+      else if (categoryNameLower.includes("tv")) iconName = "📺";
+      else if (categoryNameLower.includes("auricular") || categoryNameLower.includes("headphone")) iconName = "🎧";
+      else if (categoryNameLower.includes("camara") || categoryNameLower.includes("camera")) iconName = "📷";
+      else if (categoryNameLower.includes("reloj") || categoryNameLower.includes("watch")) iconName = "⌚";
+      else if (categoryNameLower.includes("altavoz") || categoryNameLower.includes("speaker")) iconName = "🔊";
+      
+      return {
+        id: category.id || 0,
+        title: category.name,
+        iconName: iconName,
+        link: `/products?category=${encodeURIComponent(category.name)}`
+      };
+    });
+    
+    // Guardar en caché
+    CacheService.setItem(
+      CATEGORY_OPTIONS_CACHE_KEY,
+      options,
+      appConfig.cache.categoryCacheTime
+    );
+    
+    setCategoryOptions(options);
   }
-}, [fetchProducts, buildFilterParams, categoriesData.length]);
+}, [categoriesData]);
+
+  // Cargar productos cuando cambien los filtros
+  useEffect(() => {
+    if (categoriesData.length > 0) {
+      const params = buildFilterParams();
+      console.log("Parámetros de filtrado:", params);
+      
+      fetchProducts(params)
+        .then(response => {
+          console.log("Respuesta de productos:", response);
+        })
+        .catch(err => {
+          console.error("Error al obtener productos:", err);
+        });
+      
+      updateSearchParams();
+    }
+  }, [
+    fetchProducts, 
+    buildFilterParams, 
+    categoriesData.length, 
+    selectedCategories, 
+    selectedPriceRange, 
+    showingDiscounted, 
+    sortBy, 
+    currentPage,
+    searchTerm
+  ]);
 
   // Actualizar parámetros de búsqueda en la URL
-  const updateSearchParams = () => {
+  const updateSearchParams = useCallback(() => {
     const newParams = new URLSearchParams(searchParams);
     
     // Limpiar parámetros existentes
-    ['category', 'search', 'minPrice', 'maxPrice', 'sort', 'page'].forEach(param => {
+    ['category', 'search', 'minPrice', 'maxPrice', 'sort', 'page', 'discount'].forEach(param => {
       newParams.delete(param);
     });
     
@@ -273,6 +350,11 @@ useEffect(() => {
       newParams.set('sort', sortBy);
     }
     
+    // Añadir descuento
+    if (showingDiscounted) {
+      newParams.set('discount', 'true');
+    }
+    
     // Añadir página actual
     if (currentPage > 1) {
       newParams.set('page', currentPage.toString());
@@ -280,18 +362,18 @@ useEffect(() => {
     
     // Actualizar URL sin recargar la página
     setSearchParams(newParams, { replace: true });
-  };
+  }, [searchParams, selectedCategories, searchTerm, selectedPriceRange, sortBy, showingDiscounted, currentPage, setSearchParams]);
 
   // Handlers para interacción del usuario
   
   // Manejar cambio de categorías
-  const handleCategoryChange = (categories: string[]) => {
+  const handleCategoryChange = useCallback((categories: string[]) => {
     setSelectedCategories(categories);
     setCurrentPage(1); // Resetear a la primera página
-  };
+  }, []);
 
   // Manejar cambio de rango de precio
-  const handlePriceRangeChange = (range: { min: number; max: number }) => {
+  const handlePriceRangeChange = useCallback((range: { min: number; max: number }) => {
     // Si el mismo rango ya está seleccionado, deseleccionarlo
     if (selectedPriceRange && selectedPriceRange.min === range.min && selectedPriceRange.max === range.max) {
       setSelectedPriceRange(null);
@@ -300,62 +382,62 @@ useEffect(() => {
     }
     
     setCurrentPage(1); // Resetear a la primera página
-  };
+  }, [selectedPriceRange]);
 
   // Eliminar una categoría seleccionada
-  const handleRemoveCategory = (categoryToRemove: string) => {
+  const handleRemoveCategory = useCallback((categoryToRemove: string) => {
     setSelectedCategories(prev => prev.filter(cat => cat !== categoryToRemove));
     setCurrentPage(1);
-  };
+  }, []);
 
   // Limpiar filtro de rango de precio
-  const handleClearPriceRange = () => {
+  const handleClearPriceRange = useCallback(() => {
     setSelectedPriceRange(null);
     setCurrentPage(1);
-  };
+  }, []);
 
   // Alternar filtro de descuentos
-  const handleToggleDiscount = () => {
-    setShowingDiscounted(!showingDiscounted);
+  const handleToggleDiscount = useCallback(() => {
+    setShowingDiscounted(prev => !prev);
     setCurrentPage(1);
-  };
+  }, []);
 
   // Resetear todos los filtros
-  const handleClearAllFilters = () => {
+  const handleClearAllFilters = useCallback(() => {
     setSelectedCategories([]);
     setSelectedPriceRange(null);
     setSortBy('featured');
     setSearchTerm('');
     setShowingDiscounted(false);
     setCurrentPage(1);
-  };
+  }, []);
 
   // Manejar búsqueda
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     setCurrentPage(1); // Resetear a la primera página al buscar
-  };
+  }, []);
 
   // Manejar cambio en input de búsqueda
-  const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSearchInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
-  };
+  }, []);
 
   // Manejar cambio de ordenamiento
-  const handleSortChange = (sortId: string) => {
+  const handleSortChange = useCallback((sortId: string) => {
     setSortBy(sortId);
     setCurrentPage(1);
-  };
+  }, []);
 
   // Manejar cambio de página
-  const handlePageChange = (newPage: number) => {
+  const handlePageChange = useCallback((newPage: number) => {
     setCurrentPage(newPage);
     // Hacer scroll al inicio de la lista de productos
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  }, []);
 
   // Manejar acción de añadir al carrito
-  const handleAddToCart = async (productId: number) => {
+  const handleAddToCart = useCallback(async (productId: number) => {
     try {
       await addToCart({
         productId,
@@ -365,20 +447,20 @@ useEffect(() => {
       console.error('Error al añadir al carrito:', error);
       // Aquí se podría mostrar una notificación de error
     }
-  };
+  }, [addToCart]);
   
   // Manejar acción de añadir a favoritos
-  const handleAddToWishlist = async (productId: number) => {
+  const handleAddToWishlist = useCallback(async (productId: number) => {
     try {
       await toggleFavorite(productId);
     } catch (error) {
       console.error('Error al añadir a favoritos:', error);
       // Aquí se podría mostrar una notificación de error
     }
-  };
+  }, [toggleFavorite]);
 
   // Obtener la URL completa de la imagen
-  const getImageUrl = (imagePath: string | undefined) => {
+  const getImageUrl = useCallback((imagePath: string | undefined) => {
     if (!imagePath) return 'https://via.placeholder.com/300';
     
     // Si la imagen ya es una URL completa, devolverla tal cual
@@ -388,15 +470,12 @@ useEffect(() => {
     
     // Sino, construirla con la base URL
     return `${environment.imageBaseUrl}${imagePath}`;
-  };
+  }, []);
 
   // Calcular el número total de páginas
-  const totalPages = productsMeta ? Math.ceil(productsMeta.total / productsMeta.limit) : 0;
-  
-  // Esta constante se usa en el componente ActiveFilters
-  const hasActiveFilters = selectedCategories.length > 0 || selectedPriceRange !== null || showingDiscounted;
-
-
+  const totalPages = useMemo(() => {
+    return productsMeta ? Math.ceil(productsMeta.total / (productsMeta.limit || appConfig.pagination.defaultPageSize)) : 0;
+  }, [productsMeta]);
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -459,7 +538,7 @@ useEffect(() => {
             categories={categoriesData.map(cat => cat.name)}
             priceRange={{ min: 0, max: 2000 }}
             onCategoryChange={handleCategoryChange}
-            onPriceRangeChange={(range) => handlePriceRangeChange(range)}
+            onPriceRangeChange={handlePriceRangeChange}
             onRatingChange={(rating) => console.log(`Rating filter: ${rating}`)}
             onDiscountChange={(discount) => setShowingDiscounted(discount > 0)}
             onClearFilters={handleClearAllFilters}
@@ -510,13 +589,27 @@ useEffect(() => {
             onResetFilters={handleClearAllFilters}
           />
           
-          {/* Pagination */}
+          {/* Paginación - Mostrar SimplePagination en móvil y Pagination en desktop */}
           {productsMeta && productsMeta.total > productsMeta.limit && (
-            <Pagination 
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={handlePageChange}
-            />
+            <>
+              {/* Paginación para móviles */}
+              {isMobile && (
+                <MobilePagination 
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={handlePageChange}
+                />
+              )}
+              
+              {/* Paginación para desktop */}
+              {!isMobile && (
+                <Pagination 
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={handlePageChange}
+                />
+              )}
+            </>
           )}
         </div>
       </div>

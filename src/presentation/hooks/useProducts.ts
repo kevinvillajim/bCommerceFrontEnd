@@ -1,6 +1,7 @@
-// src/presentation/hooks/useProducts.ts
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { ProductService } from '../../core/services/ProductService';
+import CacheService from '../../infrastructure/services/CacheService';
+import appConfig from '../../config/appConfig';
 import type { 
   Product, 
   ProductDetail, 
@@ -37,19 +38,15 @@ interface ApiProduct {
   [key: string]: any; // Para cualquier otra propiedad
 }
 
-// Interfaz para la respuesta completa de la API
-interface ApiProductResponse {
-  data: ApiProduct[];
-  meta: {
-    total: number;
-    limit?: number;
-    offset?: number;
-    count?: number;
-  };
-}
+// Crear una clave de caché basada en los parámetros de filtro
+const getCacheKey = (params?: ProductFilterParams): string => {
+  if (!params) return 'products_default';
+  return `products_${JSON.stringify(params)}`;
+};
 
 /**
- * Hook for product operations
+ * Hook optimizado para operaciones de productos
+ * Incluye sistema de caché y memoización
  */
 export const useProducts = () => {
   const [loading, setLoading] = useState<boolean>(false);
@@ -59,7 +56,7 @@ export const useProducts = () => {
   const [meta, setMeta] = useState<{ total: number, limit: number, offset: number } | null>(null);
 
   // Función para adaptar el formato de la API al formato de la aplicación
-  const adaptApiProductToProduct = (apiProduct: ApiProduct): Product => {
+  const adaptApiProductToProduct = useCallback((apiProduct: ApiProduct): Product => {
     return {
       id: apiProduct.id,
       userId: apiProduct.user_id,
@@ -85,37 +82,60 @@ export const useProducts = () => {
       tags: apiProduct.tags,
       attributes: apiProduct.attributes
     };
-  };
+  }, []);
 
   /**
    * Fetch products with optional filtering
+   * Versión optimizada con caché
    */
   const fetchProducts = useCallback(async (filterParams?: ProductFilterParams) => {
     setLoading(true);
     setError(null);
     
+    // Generar clave de caché basada en los parámetros
+    const cacheKey = getCacheKey(filterParams);
+    
     try {
-      console.log("Fetching products with params:", filterParams);
+      // Intentar obtener datos de la caché primero
+      const cachedData = CacheService.getItem(cacheKey);
+      
+      if (cachedData) {
+        console.log("Usando datos en caché para:", filterParams);
+        setProducts(cachedData.data);
+        setMeta(cachedData.meta);
+        setLoading(false);
+        return cachedData;
+      }
+      
+      console.log("Fetching products from API with params:", filterParams);
       const response = await productService.getProducts(filterParams);
-      console.log("API Response:", response);
       
       if (response && response.data) {
         // Adaptamos los datos al formato esperado
         // Primero convertimos la respuesta a ApiProduct[]
         const apiProducts = response.data as unknown as ApiProduct[];
         const adaptedProducts = apiProducts.map(adaptApiProductToProduct);
-        setProducts(adaptedProducts);
         
-        setMeta({
-          total: response.meta.total || 0,
-          limit: response.meta.limit || 10,
-          offset: response.meta.offset || 0
-        });
-        
-        return {
+        const result = {
           data: adaptedProducts,
-          meta: response.meta
+          meta: {
+            total: response.meta.total || 0,
+            limit: response.meta.limit || 10,
+            offset: response.meta.offset || 0
+          }
         };
+        
+        // Guardar en caché
+        CacheService.setItem(
+          cacheKey, 
+          result,
+          appConfig.cache.productCacheTime
+        );
+        
+        setProducts(adaptedProducts);
+        setMeta(result.meta);
+        
+        return result;
       } else {
         setProducts([]);
         setMeta({ total: 0, limit: 0, offset: 0 });
@@ -131,20 +151,39 @@ export const useProducts = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [adaptApiProductToProduct]);
 
   /**
    * Fetch product details by ID
+   * Versión optimizada con caché
    */
   const fetchProductById = useCallback(async (id: number) => {
     setLoading(true);
     setError(null);
     
+    const cacheKey = `product_${id}`;
+    
     try {
+      // Intentar obtener de caché primero
+      const cachedProduct = CacheService.getItem(cacheKey);
+      
+      if (cachedProduct) {
+        console.log(`Usando producto en caché con ID ${id}`);
+        setProduct(cachedProduct);
+        setLoading(false);
+        return cachedProduct;
+      }
+      
       const productDetailResponse = await productService.getProductById(id);
       
       if (productDetailResponse) {
-        // Aquí también podríamos necesitar adaptar los datos si la API los devuelve en otro formato
+        // Guardar en caché
+        CacheService.setItem(
+          cacheKey, 
+          productDetailResponse,
+          appConfig.cache.productCacheTime
+        );
+        
         setProduct(productDetailResponse);
         return productDetailResponse;
       }
@@ -162,65 +201,6 @@ export const useProducts = () => {
     }
   }, []);
 
-  /**
-   * Fetch product details by slug
-   */
-  const fetchProductBySlug = useCallback(async (slug: string) => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const productDetail = await productService.getProductBySlug(slug);
-      setProduct(productDetail);
-      return productDetail;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Error al obtener detalles del producto';
-      setError(errorMessage);
-      setProduct(null);
-      return null;
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  /**
-   * Fetch featured products
-   */
-  const fetchFeaturedProducts = useCallback(async (limit?: number) => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const featuredProducts = await productService.getFeaturedProducts(limit);
-      return featuredProducts;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Error al obtener productos destacados';
-      setError(errorMessage);
-      return [];
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  /**
-   * Fetch related products
-   */
-  const fetchRelatedProducts = useCallback(async (productId: number, limit?: number) => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const relatedProducts = await productService.getRelatedProducts(productId, limit);
-      return relatedProducts;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Error al obtener productos relacionados';
-      setError(errorMessage);
-      return [];
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   return {
     loading,
     error,
@@ -228,9 +208,8 @@ export const useProducts = () => {
     product,
     meta,
     fetchProducts,
-    fetchProductById,
-    fetchProductBySlug,
-    fetchFeaturedProducts,
-    fetchRelatedProducts
+    fetchProductById
   };
 };
+
+export default useProducts;
