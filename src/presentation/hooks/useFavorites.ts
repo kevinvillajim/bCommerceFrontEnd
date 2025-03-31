@@ -4,3 +4,5 @@ import { FavoriteContext } from '../contexts/FavoriteContext';
 export const useFavorites = () => {
   return useContext(FavoriteContext);
 };
+
+export default useFavorites;

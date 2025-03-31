@@ -72,3 +72,5 @@ export const useProducts = () => {
     getProductBySlug
   };
 };
+
+export default useCart;

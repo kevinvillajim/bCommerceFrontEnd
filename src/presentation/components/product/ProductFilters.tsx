@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { X } from 'lucide-react';
-import useFilterState from '../../hooks/useFilterState';
+import type { Category } from '../../../core/domain/entities/Category';
+
+// Importamos los componentes de filtro mejorados
 import CategoryFilterSection from './CategoryFilterSection';
 import PriceFilterSection from './PriceFilterSection';
 import RatingFilterSection from './RatingFilterSection';
@@ -10,20 +12,23 @@ interface ProductFiltersProps {
   categories: string[];
   priceRange: { min: number; max: number };
   onCategoryChange: (categories: string[]) => void;
-  onPriceRangeChange: (range: { min: number; max: number }) => void;
+  onPriceRangeChange: (range: { min: number; max: number } | null) => void;
   onRatingChange: (rating: number) => void;
-  onDiscountChange: (discount: number) => void;
+  onDiscountChange: (discount: boolean) => void;
   onClearFilters: () => void;
   className?: string;
-  // Props para sincronizar el estado con ProductPage
+  // Props para sincronizar el estado externo
   selectedCategories?: string[];
   selectedPriceRange?: { min: number; max: number } | null;
+  selectedRating?: number | null;
   selectedDiscount?: boolean;
+  // Datos extra
+  productCountByCategory?: Record<string, number>;
 }
 
 /**
  * Componente de filtros para productos
- * Versión optimizada que utiliza subcomponentes y hooks personalizados
+ * Versión optimizada que utiliza subcomponentes mejorados
  */
 const ProductFilters: React.FC<ProductFiltersProps> = ({
   categories = [],
@@ -34,47 +39,22 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
   onDiscountChange,
   onClearFilters,
   className = '',
-  selectedCategories: propSelectedCategories = [],
+  selectedCategories = [],
   selectedPriceRange = null,
+  selectedRating = null,
   selectedDiscount = false,
+  productCountByCategory = {}
 }) => {
   // Determinar si es móvil
   const [isMobile, setIsMobile] = useState(false);
   
-  // Usar el hook personalizado para manejar el estado de los filtros
-  const {
-    selectedCategories: localSelectedCategories,
-    selectedPriceRange: localSelectedPriceRange,
-    selectedRating,
-    selectedDiscount: localSelectedDiscount,
-    expandedSections,
-    handleCategoryChange,
-    handlePriceChange,
-    handleRatingChange,
-    handleDiscountChange,
-    toggleSection,
-    clearAllFilters,
-    setSelectedCategories,
-    setSelectedPriceRange,
-    setSelectedDiscount
-  } = useFilterState({
-    initialCategories: propSelectedCategories,
-    initialPriceRange: selectedPriceRange,
-    initialDiscount: selectedDiscount
+  // Estado para secciones expandidas
+  const [expandedSections, setExpandedSections] = useState({
+    categories: true,  // Categorías expandidas por defecto
+    price: true,       // Precio expandido por defecto
+    rating: false,
+    discount: false
   });
-  
-  // Sincronizar estados locales con props cuando cambian
-  useEffect(() => {
-    setSelectedCategories(propSelectedCategories);
-  }, [propSelectedCategories, setSelectedCategories]);
-  
-  useEffect(() => {
-    setSelectedPriceRange(selectedPriceRange);
-  }, [selectedPriceRange, setSelectedPriceRange]);
-  
-  useEffect(() => {
-    setSelectedDiscount(selectedDiscount ? 10 : null);
-  }, [selectedDiscount, setSelectedDiscount]);
   
   // Detectar si es dispositivo móvil
   useEffect(() => {
@@ -90,53 +70,51 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
     };
   }, []);
   
-  // Propagar cambios al componente padre
-  useEffect(() => {
-    onCategoryChange(localSelectedCategories);
-  }, [localSelectedCategories, onCategoryChange]);
+  // Alternar una sección
+  const toggleSection = useCallback((section: keyof typeof expandedSections) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  }, []);
   
   // Handler para categorías
-  const handleCategorySelection = (category: string, isSelected: boolean) => {
+  const handleCategorySelection = useCallback((category: string, isSelected: boolean) => {
     const newCategories = isSelected
-      ? [...localSelectedCategories, category]
-      : localSelectedCategories.filter(c => c !== category);
+      ? [...selectedCategories, category]
+      : selectedCategories.filter(c => c !== category);
     
-    setSelectedCategories(newCategories);
     onCategoryChange(newCategories);
-  };
+  }, [selectedCategories, onCategoryChange]);
   
-  // Wrapper para propagar cambios de rango de precio
-  const handleApplyPriceRange = (min: number, max: number) => {
-    handlePriceChange(min, max);
+  // Handler para rango de precio
+  const handlePriceRangeChange = useCallback((min: number, max: number) => {
     onPriceRangeChange({ min, max });
-  };
+  }, [onPriceRangeChange]);
   
-  // Wrapper para propagar cambios de calificación
-  const handleRatingFilterChange = (rating: number) => {
-    handleRatingChange(rating);
+  // Handler para limpiar precio
+  const handleClearPriceRange = useCallback(() => {
+    onPriceRangeChange(null);
+  }, [onPriceRangeChange]);
+  
+  // Handler para rating
+  const handleRatingChange = useCallback((rating: number) => {
     onRatingChange(rating);
-  };
+  }, [onRatingChange]);
   
-  // Wrapper para propagar cambios de descuento
-  const handleDiscountFilterChange = (discount: number) => {
-    handleDiscountChange(discount);
-    onDiscountChange(discount);
-  };
+  // Handler para descuento
+  const handleDiscountChange = useCallback((discount: number) => {
+    onDiscountChange(discount > 0);
+  }, [onDiscountChange]);
   
-  // Wrapper para limpiar todos los filtros
-  const handleClearFilters = () => {
-    clearAllFilters();
-    onClearFilters();
-  };
-  
-  // Renderizado del componente
   return (
     <div className={`bg-white rounded-xl shadow-sm overflow-hidden ${className}`}>
       <div className="p-4 border-b border-gray-100 flex justify-between items-center">
         <h3 className="font-bold text-gray-800 text-lg">Filtros</h3>
         <button 
-          onClick={handleClearFilters}
+          onClick={onClearFilters}
           className="text-primary-600 text-sm font-medium hover:text-primary-700 flex items-center"
+          aria-label="Limpiar todos los filtros"
         >
           <X size={16} className="mr-1" />
           Limpiar filtros
@@ -146,21 +124,23 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
       {/* Filtro de Categorías */}
       <CategoryFilterSection
         categories={categories}
-        selectedCategories={localSelectedCategories}
+        selectedCategories={selectedCategories}
         isExpanded={expandedSections.categories}
         onToggle={() => toggleSection('categories')}
         onCategoryChange={handleCategorySelection}
         isMobile={isMobile}
+        productCountByCategory={productCountByCategory}
       />
 
       {/* Filtro de Rango de Precio */}
       <PriceFilterSection
         initialMin={priceRange.min}
         initialMax={priceRange.max}
-        selectedRange={localSelectedPriceRange}
+        selectedRange={selectedPriceRange}
         isExpanded={expandedSections.price}
         onToggle={() => toggleSection('price')}
-        onApply={handleApplyPriceRange}
+        onApply={handlePriceRangeChange}
+        onClear={handleClearPriceRange}
       />
 
       {/* Filtro de Calificación */}
@@ -168,15 +148,15 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({
         selectedRating={selectedRating}
         isExpanded={expandedSections.rating}
         onToggle={() => toggleSection('rating')}
-        onRatingChange={handleRatingFilterChange}
+        onRatingChange={handleRatingChange}
       />
 
       {/* Filtro de Descuentos */}
       <DiscountFilterSection
-        selectedDiscount={localSelectedDiscount}
+        selectedDiscount={selectedDiscount ? 10 : null}
         isExpanded={expandedSections.discount}
         onToggle={() => toggleSection('discount')}
-        onDiscountChange={handleDiscountFilterChange}
+        onDiscountChange={handleDiscountChange}
       />
     </div>
   );

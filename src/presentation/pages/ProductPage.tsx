@@ -1,15 +1,17 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 
-// Hooks personalizados
-import { useProductFilters } from '../hooks/useProductFilters';
-import { useProductSearch } from '../hooks/useProductSearch';
-import { useProducts } from '../hooks/useProducts';
-import { useCategories } from '../hooks/useCategories';
-import { useCart } from '../hooks/useCart';
-import { useFavorites } from '../hooks/useFavorites';
+// Importamos los hooks personalizados a través del archivo index
+import { 
+  useProductFilters, 
+  useProductSearch, 
+  useProducts, 
+  useCategories, 
+  useCart, 
+  useFavorites 
+} from '../hooks';
 
-// Componentes
+// Componentes mejorados
 import SearchBar from '../components/product/SearchBar';
 import CategoriesCarousel from '../components/product/CategoriesCarousel';
 import ProductFilters from '../components/product/ProductFilters';
@@ -57,7 +59,7 @@ const ProductPage: React.FC = () => {
     iconName: string;
     link: string;
   }>>([]);
-  
+
   // Hooks para datos y funcionalidad
   const { 
     loading: categoriesLoading, 
@@ -192,7 +194,7 @@ const ProductPage: React.FC = () => {
       
       fetchProducts(params);
     }
-  }, [fetchProducts, buildFilterParams, categoriesData.length, searchTerm]);
+  }, [fetchProducts, buildFilterParams, categoriesData.length, searchTerm, filters]);
   
   // Manejadores para interacciones de usuario
   const handlePriceRangeChange = useCallback((range: { min: number; max: number } | null) => {
@@ -281,11 +283,15 @@ const ProductPage: React.FC = () => {
         <ActiveFilters 
           selectedCategories={filters.categories}
           selectedPriceRange={filters.priceRange}
+          selectedRating={filters.rating}
+          searchTerm={searchTerm}
           showingDiscounted={filters.discount}
           onRemoveCategory={(category) => {
             setCategories(filters.categories.filter(c => c !== category));
           }}
           onClearPriceRange={() => setPriceRange(null)}
+          onClearRating={() => setRating(null)}
+          onClearSearch={clearSearch}
           onToggleDiscount={() => setDiscount(!filters.discount)}
           onClearAllFilters={clearFilters}
           onToggleFilters={() => setShowMobileFilters(true)}
@@ -309,11 +315,13 @@ const ProductPage: React.FC = () => {
             onCategoryChange={setCategories}
             onPriceRangeChange={handlePriceRangeChange}
             onRatingChange={setRating}
-            onDiscountChange={(discount) => setDiscount(discount > 0)}
+            onDiscountChange={(discount) => setDiscount(discount)}
             onClearFilters={clearFilters}
             selectedCategories={filters.categories}
             selectedPriceRange={filters.priceRange}
+            selectedRating={filters.rating}
             selectedDiscount={filters.discount}
+            productCountByCategory={productCountByCategory}
           />
         </div>
         
@@ -325,6 +333,7 @@ const ProductPage: React.FC = () => {
           selectedCategories={filters.categories}
           priceRanges={priceRanges}
           selectedRangeId={filters.priceRange ? `${filters.priceRange.min}-${filters.priceRange.max}` : null}
+          selectedRating={filters.rating}
           showingDiscounted={filters.discount}
           onCategoryChange={(category, isSelected) => {
             if (isSelected) {
@@ -336,8 +345,10 @@ const ProductPage: React.FC = () => {
           onPriceRangeChange={(min, max) => {
             handlePriceRangeChange({ min, max });
           }}
+          onRatingChange={setRating}
           onDiscountToggle={() => setDiscount(!filters.discount)}
           onClearFilters={clearFilters}
+          productCountByCategory={productCountByCategory}
         />
         
         {/* Products Grid */}
