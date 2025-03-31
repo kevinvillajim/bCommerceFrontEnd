@@ -109,7 +109,7 @@ export const useProductFilters = (
   }, [filtersState, isUpdatingFromUrl, searchParams, setSearchParams]);
   
   // Construir parámetros para la API de productos
-  const buildFilterParams = useCallback((): ExtendedProductFilterParams => {
+   const buildFilterParams = useCallback((): ExtendedProductFilterParams => {
     const params: ExtendedProductFilterParams = {
       limit: defaultPageSize,
       offset: (filtersState.page - 1) * defaultPageSize
@@ -127,7 +127,10 @@ export const useProductFilters = (
         .filter(id => id !== undefined) as number[];
       
       if (categoryIds.length > 0) {
+        // Usamos un parámetro especial para indicar que queremos la UNIÓN de categorías
+        // en vez de la intersección (es decir, productos que están en CUALQUIERA de las categorías seleccionadas)
         params.categoryIds = categoryIds;
+        params.categoryOperator = 'or'; // Añadimos este parámetro para indicar que queremos la unión
       }
     }
     

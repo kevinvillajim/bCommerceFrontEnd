@@ -47,6 +47,7 @@ const SortDropdown: React.FC<SortDropdownProps> = ({
   };
 
   const handleOptionSelect = (optionId: string) => {
+    console.log("Seleccionando opción de ordenamiento:", optionId);
     onSortChange(optionId);
     setIsOpen(false);
   };
@@ -55,25 +56,35 @@ const SortDropdown: React.FC<SortDropdownProps> = ({
   const selectedLabel = options.find(option => option.id === selectedOption)?.label || 'Ordenar por';
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative z-10" ref={dropdownRef}>
       <button 
         onClick={toggleDropdown}
         className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-sm cursor-pointer"
+        aria-haspopup="true"
+        aria-expanded={isOpen}
       >
         <span>Ordenar por: {selectedLabel}</span>
-        <ChevronDown size={16} />
+        <ChevronDown size={16} className={isOpen ? "transform rotate-180 transition-transform" : "transition-transform"} />
       </button>
       
       {isOpen && (
-        <div className="absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+        <div 
+          className="absolute right-0 z-20 mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
+          role="menu"
+          aria-orientation="vertical"
+          aria-labelledby="sort-menu-button"
+        >
           <div className="py-1">
             {options.map((option) => (
               <button
                 key={option.id}
                 onClick={() => handleOptionSelect(option.id)}
                 className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                role="menuitem"
               >
-                {selectedOption === option.id && <Check size={16} className="text-primary-600" />}
+                <span className="w-5 flex justify-center">
+                  {selectedOption === option.id && <Check size={16} className="text-primary-600" />}
+                </span>
                 <span className={selectedOption === option.id ? "text-primary-600 font-medium" : ""}>
                   {option.label}
                 </span>
@@ -86,4 +97,4 @@ const SortDropdown: React.FC<SortDropdownProps> = ({
   );
 };
 
-export default SortDropdown;
+export default React.memo(SortDropdown);

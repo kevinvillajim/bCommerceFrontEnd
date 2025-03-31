@@ -5,6 +5,7 @@ export const useProductSearch = (debounceTimeMs: number = 500) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
   const [isSearching, setIsSearching] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
   
   // Referencia para el temporizador de debounce
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -15,23 +16,26 @@ export const useProductSearch = (debounceTimeMs: number = 500) => {
     if (searchParam) {
       setSearchTerm(searchParam);
     }
-  }, []);
+    setIsInitialized(true);
+  }, [searchParams]);
   
   // Manejar cambios en el campo de búsqueda con debounce
   const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setSearchTerm(value);
     
-    // Limpiar el temporizador anterior
+    // Solo debounce la actualización de la URL, no el estado del input
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
     
     // Configurar nuevo temporizador
     debounceTimerRef.current = setTimeout(() => {
-      updateSearchInUrl(value);
+      if (isInitialized) {
+        updateSearchInUrl(value);
+      }
     }, debounceTimeMs);
-  }, [debounceTimeMs]);
+  }, [debounceTimeMs, isInitialized]);
   
   // Actualizar la URL con el término de búsqueda
   const updateSearchInUrl = useCallback((term: string) => {

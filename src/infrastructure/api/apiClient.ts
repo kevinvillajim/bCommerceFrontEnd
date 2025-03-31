@@ -24,6 +24,11 @@ public static async get<T>(url: string, params?: any, config?: AxiosRequestConfi
     if (axiosParams && axiosParams.categoryIds && Array.isArray(axiosParams.categoryIds)) {
       // Convertir a string separado por comas (formato más compatible)
       axiosParams.category_id = axiosParams.categoryIds.join(',');
+      // Si hay un operador de categoría especificado, añadirlo
+      if (axiosParams.categoryOperator) {
+        axiosParams.category_operator = axiosParams.categoryOperator;
+        delete axiosParams.categoryOperator;
+      }
       delete axiosParams.categoryIds;
     }
     

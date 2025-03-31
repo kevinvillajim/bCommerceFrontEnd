@@ -46,7 +46,13 @@ interface Category {
   link: string
 }
 
-const CategoriesCarousel: React.FC<{ categories: Category[] }> = ({ categories }) => {
+const CategoriesCarousel: React.FC<{ 
+  categories: Category[],
+  isLoading?: boolean 
+}> = ({ 
+  categories, 
+  isLoading = false 
+}) => {
   // Estado para controlar la página actual
   const [currentPage, setCurrentPage] = useState(0);
   const navigate = useNavigate();
@@ -104,6 +110,24 @@ const CategoriesCarousel: React.FC<{ categories: Category[] }> = ({ categories }
     // Si no hay coincidencia, usar un ícono genérico
     return <Package size={24} />;
   };
+
+  // Renderizar spinner durante la carga
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-4">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
+
+  // Si no hay categorías, mostrar mensaje
+  if (categories.length === 0) {
+    return (
+      <div className="p-4 bg-gray-50 text-gray-500 rounded-lg text-center">
+        No hay categorías disponibles
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">

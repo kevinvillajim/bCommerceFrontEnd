@@ -18,4 +18,11 @@ export interface ExtendedProductFilterParams extends OriginalFilterParams {
    * IDs de categorías para selección múltiple
    */
   categoryIds?: number[];
+
+  /**
+   * Operador para filtrar por múltiples categorías:
+   * - 'and': Devuelve productos que están en TODAS las categorías seleccionadas (intersección)
+   * - 'or': Devuelve productos que están en CUALQUIERA de las categorías seleccionadas (unión)
+   */
+  categoryOperator?: 'and' | 'or';
 }

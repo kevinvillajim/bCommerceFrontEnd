@@ -136,30 +136,28 @@ const ProductPage: React.FC = () => {
       }
       
       // Si no hay caché, transformar las categorías
-      const options = categoriesData
-        .filter(category => category.productCount && category.productCount > 0) // Solo categorías con productos
-        .map(category => {
-          // Determinar ícono basado en el nombre de categoría
-          const categoryNameLower = category.name.toLowerCase();
-          let iconName = "📦"; // Emoji por defecto
-          
-          // Asignar emojis según el nombre de la categoría
-          if (categoryNameLower.includes("smartphone")) iconName = "📱";
-          else if (categoryNameLower.includes("laptop")) iconName = "💻";
-          else if (categoryNameLower.includes("monitor")) iconName = "🖥️";
-          else if (categoryNameLower.includes("tv")) iconName = "📺";
-          else if (categoryNameLower.includes("auricular") || categoryNameLower.includes("headphone")) iconName = "🎧";
-          else if (categoryNameLower.includes("camara") || categoryNameLower.includes("camera")) iconName = "📷";
-          else if (categoryNameLower.includes("reloj") || categoryNameLower.includes("watch")) iconName = "⌚";
-          else if (categoryNameLower.includes("altavoz") || categoryNameLower.includes("speaker")) iconName = "🔊";
-          
-          return {
-            id: category.id || 0,
-            title: category.name,
-            iconName: iconName,
-            link: `/products?category=${encodeURIComponent(category.name)}`
-          };
-        });
+      const options = categoriesData.map(category => {
+        // Determinar ícono basado en el nombre de categoría
+        const categoryNameLower = category.name.toLowerCase();
+        let iconName = "📦"; // Emoji por defecto
+        
+        // Asignar emojis según el nombre de la categoría
+        if (categoryNameLower.includes("smartphone")) iconName = "📱";
+        else if (categoryNameLower.includes("laptop")) iconName = "💻";
+        else if (categoryNameLower.includes("monitor")) iconName = "🖥️";
+        else if (categoryNameLower.includes("tv")) iconName = "📺";
+        else if (categoryNameLower.includes("auricular") || categoryNameLower.includes("headphone")) iconName = "🎧";
+        else if (categoryNameLower.includes("camara") || categoryNameLower.includes("camera")) iconName = "📷";
+        else if (categoryNameLower.includes("reloj") || categoryNameLower.includes("watch")) iconName = "⌚";
+        else if (categoryNameLower.includes("altavoz") || categoryNameLower.includes("speaker")) iconName = "🔊";
+        
+        return {
+          id: category.id || 0,
+          title: category.name,
+          iconName: iconName,
+          link: `/products?category=${encodeURIComponent(category.name)}`
+        };
+      });
       
       // Ordenar por cantidad de productos (mayor a menor)
       options.sort((a, b) => {
