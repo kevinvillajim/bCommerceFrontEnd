@@ -92,12 +92,12 @@ const ActiveFilters: React.FC<ActiveFiltersProps> = ({
 				{selectedCategories.map((category) => (
 					<div
 						key={category}
-						className="flex items-center px-3 py-1 bg-purple-50 text-purple-700 rounded-full text-sm"
+						className="flex items-center px-3 py-1 bg-primary-100 text-primary-700 rounded-full text-sm"
 					>
 						<span className="mr-1">Categoría: {category}</span>
 						<button
 							onClick={() => onRemoveCategory(category)}
-							className="ml-1 text-purple-500 hover:text-purple-700"
+							className="ml-1 text-primary-500 hover:text-primary-700"
 						>
 							<X size={14} />
 						</button>

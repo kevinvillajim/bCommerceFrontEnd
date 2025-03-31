@@ -7,61 +7,103 @@ interface MobilePaginationProps {
 	onPageChange: (page: number) => void;
 }
 
+/**
+ * Componente de paginación optimizado para dispositivos móviles
+ * Diseño intuitivo con indicadores visibles para la página actual
+ */
 const MobilePagination: React.FC<MobilePaginationProps> = ({
 	currentPage,
 	totalPages,
 	onPageChange,
 }) => {
-	// No mostrar paginación si solo hay una página
+	// Si no hay múltiples páginas, no mostrar paginación
 	if (totalPages <= 1) return null;
 
-	// Manejar cambio a página anterior
-	const handlePrevious = () => {
-		if (currentPage > 1) {
-			onPageChange(currentPage - 1);
-		}
-	};
+	// Determinar qué páginas mostrar (máximo 5)
+	const getPageNumbers = () => {
+		const pageNumbers = [];
 
-	// Manejar cambio a página siguiente
-	const handleNext = () => {
-		if (currentPage < totalPages) {
-			onPageChange(currentPage + 1);
+		if (totalPages <= 5) {
+			// Si hay 5 o menos páginas, mostrar todas
+			for (let i = 1; i <= totalPages; i++) {
+				pageNumbers.push(i);
+			}
+		} else {
+			// Para más páginas, mostrar un rango centrado en la página actual
+			let startPage;
+
+			if (currentPage <= 3) {
+				// Cerca del inicio
+				startPage = 1;
+			} else if (currentPage >= totalPages - 2) {
+				// Cerca del final
+				startPage = totalPages - 4;
+			} else {
+				// En medio
+				startPage = currentPage - 2;
+			}
+
+			for (let i = 0; i < 5; i++) {
+				pageNumbers.push(startPage + i);
+			}
 		}
+
+		return pageNumbers;
 	};
 
 	return (
-		<div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6 md:hidden">
-			<div className="flex flex-1 justify-between">
+		<div className="flex flex-col items-center mt-6 space-y-4">
+			{/* Indicador de página */}
+			<div className="text-sm text-gray-500">
+				Página <span className="font-medium text-gray-900">{currentPage}</span>{" "}
+				de <span className="font-medium text-gray-900">{totalPages}</span>
+			</div>
+
+			{/* Botones de paginación */}
+			<div className="flex justify-center items-center space-x-1">
+				{/* Botón Anterior */}
 				<button
-					onClick={handlePrevious}
+					onClick={() => onPageChange(currentPage - 1)}
 					disabled={currentPage === 1}
-					className={`relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium ${
-						currentPage === 1
-							? "text-gray-300 cursor-not-allowed"
-							: "text-gray-700 hover:bg-gray-50"
+					className={`flex items-center justify-center w-10 h-10 rounded-lg border ${
+						currentPage > 1
+							? "border-gray-300 text-gray-700 hover:bg-gray-50"
+							: "border-gray-200 text-gray-400 cursor-not-allowed"
 					}`}
+					aria-label="Página anterior"
 				>
-					<ChevronLeft size={16} className="mr-1" />
-					Anterior
+					<ChevronLeft size={20} />
 				</button>
 
-				<div className="text-sm text-gray-700 flex items-center">
-					<span>
-						Página {currentPage} de {totalPages}
-					</span>
-				</div>
+				{/* Botones de número de página */}
+				{getPageNumbers().map((pageNum) => (
+					<button
+						key={pageNum}
+						onClick={() => onPageChange(pageNum)}
+						className={`flex items-center justify-center w-10 h-10 rounded-lg text-sm ${
+							currentPage === pageNum
+								? "bg-primary-600 text-white font-medium shadow-sm"
+								: "border border-gray-300 text-gray-700 hover:bg-gray-50"
+						}`}
+						aria-label={`Página ${pageNum}`}
+						aria-current={currentPage === pageNum ? "page" : undefined}
+					>
+						{pageNum}
+					</button>
+				))}
 
+				{/* Botón Siguiente */}
 				<button
-					onClick={handleNext}
+					onClick={() => onPageChange(currentPage + 1)}
 					disabled={currentPage === totalPages}
-					className={`relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium ${
-						currentPage === totalPages
-							? "text-gray-300 cursor-not-allowed"
-							: "text-gray-700 hover:bg-gray-50"
+					className={`flex items-center justify-center w-10 h-10 rounded-lg border ${
+						currentPage < totalPages
+							? "border-gray-300 text-gray-700 hover:bg-gray-50"
+							: "border-gray-200 text-gray-400 cursor-not-allowed"
 					}`}
+					aria-label="Página siguiente"
 				>
-					Siguiente
-					<ChevronRight size={16} className="ml-1" />
+					<ChevronRight size={20} />
 				</button>
 			</div>
 		</div>

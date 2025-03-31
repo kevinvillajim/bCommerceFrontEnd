@@ -346,7 +346,7 @@ const ProductPage: React.FC = () => {
 				<div className="hidden md:block md:w-72 flex-shrink-0">
 					<ProductFilters
 						categories={categoriesData.map((cat) => cat.name)}
-						priceRange={{min: 0, max: 2000}}
+						priceRange={{min: 0, max: 100}}
 						onCategoryChange={setCategories}
 						onPriceRangeChange={handlePriceRangeChange}
 						onRatingChange={setRating}
