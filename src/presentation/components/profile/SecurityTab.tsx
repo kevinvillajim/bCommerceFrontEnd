@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { API_ENDPOINTS } from '../../../constants/apiEndpoints';
-import ApiClient from '../../../infrastructure/api/ApiClient';
+import ApiClient from '../../../infrastructure/api/apiClient';
 
 /**
  * Componente de pestaña de seguridad

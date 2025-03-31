@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { User, Mail, MapPin, Calendar, Settings } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import type { UserProfileUpdateData } from '../../../core/domain/entities/User';
-import ApiClient from '../../../infrastructure/api/ApiClient';
+import ApiClient from '../../../infrastructure/api/apiClient';
 
 // Esta interfaz debe coincidir con la definida en UserProfilePage
 interface UserProfile {

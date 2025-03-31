@@ -1,7 +1,7 @@
 // src/presentation/contexts/NotificationContext.tsx
 import React, { createContext, useState, useEffect} from 'react';
 import type { ReactNode } from 'react';
-import ApiClient from '../../infrastructure/api/ApiClient';
+import ApiClient from '../../infrastructure/api/apiClient';
 import { API_ENDPOINTS } from '../../constants/apiEndpoints';
 import type { Notification, NotificationCountResponse } from '../../core/domain/entities/Notification';
 import { useAuth } from '../hooks/useAuth';

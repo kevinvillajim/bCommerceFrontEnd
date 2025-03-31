@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ShoppingBag } from 'lucide-react';
 import { API_ENDPOINTS } from '../../../constants/apiEndpoints';
-import ApiClient from '../../../infrastructure/api/ApiClient';
+import ApiClient from '../../../infrastructure/api/apiClient';
 
 interface OrderItem {
   product_id: number;

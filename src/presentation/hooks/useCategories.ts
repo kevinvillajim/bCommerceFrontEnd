@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import ApiClient from '../../infrastructure/api/ApiClient';
+import ApiClient from '../../infrastructure/api/apiClient';
 import CacheService from '../../infrastructure/services/CacheService';
 import appConfig from '../../config/appConfig';
 import { API_ENDPOINTS } from '../../constants/apiEndpoints';

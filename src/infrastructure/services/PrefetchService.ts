@@ -1,5 +1,5 @@
 import { ProductService } from '../../core/services/ProductService';
-import ApiClient from '../api/ApiClient';
+import ApiClient from '../api/apiClient';
 import CacheService from './CacheService';
 import appConfig from '../../config/appConfig';
 import { API_ENDPOINTS } from '../../constants/apiEndpoints';

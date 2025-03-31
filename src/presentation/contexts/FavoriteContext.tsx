@@ -1,7 +1,7 @@
 // src/presentation/contexts/FavoriteContext.tsx
 import React, { createContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import ApiClient from '../../infrastructure/api/ApiClient';
+import ApiClient from '../../infrastructure/api/apiClient';
 import { API_ENDPOINTS } from '../../constants/apiEndpoints';
 import type { Favorite, FavoriteListResponse } from '../../core/domain/entities/Favorite';
 import { useAuth } from '../hooks/useAuth';

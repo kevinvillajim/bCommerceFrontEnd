@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { API_ENDPOINTS } from '../../constants/apiEndpoints';
-import ApiClient from '../../infrastructure/api/ApiClient';
+import ApiClient from '../../infrastructure/api/apiClient';
 import { useAuth } from '../hooks/useAuth';
 
 // Importar componentes modulares
