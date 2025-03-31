@@ -22,15 +22,9 @@ public static async get<T>(url: string, params?: any, config?: AxiosRequestConfi
     
     // Si hay categoryIds, lo convertimos a un formato que la API entienda
     if (axiosParams && axiosParams.categoryIds && Array.isArray(axiosParams.categoryIds)) {
-      // Dependiendo de cómo tu API maneje los arrays, elige una de estas opciones:
-      
-      // Opción 1: Crear múltiples parámetros category_id
-      axiosParams.category_id = axiosParams.categoryIds;
+      // Convertir a string separado por comas (formato más compatible)
+      axiosParams.category_id = axiosParams.categoryIds.join(',');
       delete axiosParams.categoryIds;
-      
-      // Opción 2: Convertir a string separado por comas (si tu API lo maneja así)
-      // axiosParams.category_id = axiosParams.categoryIds.join(',');
-      // delete axiosParams.categoryIds;
     }
     
     const response: AxiosResponse = await axiosInstance.get(url, {

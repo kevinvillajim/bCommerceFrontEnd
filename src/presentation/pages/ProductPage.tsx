@@ -84,6 +84,7 @@ const ProductPage: React.FC = () => {
   const [showingDiscounted, setShowingDiscounted] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [isMobile, setIsMobile] = useState(false);
+  const [isUpdatingFromUrl, setIsUpdatingFromUrl] = useState<boolean>(false);
   
   const [categoryOptions, setCategoryOptions] = useState<Array<{
     id: number;
@@ -147,13 +148,8 @@ const buildFilterParams = useCallback((): ExtendedProductFilterParams => {
       .filter(id => id !== undefined) as number[];
     
     if (categoryIds.length > 0) {
-      if (categoryIds.length === 1) {
-        // Si solo hay una categoría, usamos el parámetro categoryId
-        params.categoryId = categoryIds[0];
-      } else {
-        // Si hay múltiples categorías, las guardamos en nuestro parámetro extendido
-        params.categoryIds = categoryIds;
-      }
+      // Siempre usar categoryIds, independientemente de la cantidad
+      params.categoryIds = categoryIds;
     }
   }
   
@@ -306,33 +302,41 @@ useEffect(() => {
 
   // Cargar productos cuando cambien los filtros
   useEffect(() => {
-    if (categoriesData.length > 0) {
-      const params = buildFilterParams();
-      console.log("Parámetros de filtrado:", params);
-      
-      fetchProducts(params)
-        .then(response => {
-          console.log("Respuesta de productos:", response);
-        })
-        .catch(err => {
-          console.error("Error al obtener productos:", err);
-        });
-      
+  if (categoriesData.length > 0) {
+    const params = buildFilterParams();
+    console.log("Parámetros de filtrado:", params);
+    
+    fetchProducts(params)
+      .then(response => {
+        console.log("Respuesta de productos:", response);
+      })
+      .catch(err => {
+        console.error("Error al obtener productos:", err);
+      });
+    
+    // Solo actualizar la URL si no estamos en proceso de actualización desde URL
+    if (!isUpdatingFromUrl) {
       updateSearchParams();
     }
-  }, [
-    fetchProducts, 
-    buildFilterParams, 
-    categoriesData.length, 
-    selectedPriceRange, 
-    showingDiscounted, 
-    sortBy, 
-    currentPage,
-    searchTerm
-  ]);
+  }
+}, [
+  fetchProducts, 
+  buildFilterParams, 
+  categoriesData.length, 
+  selectedPriceRange, 
+  showingDiscounted, 
+  sortBy, 
+  currentPage,
+  searchTerm,
+  selectedCategories, // Añadir selectedCategories como dependencia
+  isUpdatingFromUrl,
+  updateSearchParams
+]);
 
   useEffect(() => {
-  // Este efecto se ejecuta cuando cambia la URL
+  // Si ya estamos actualizando desde una interacción, no disparar este efecto
+  if (isUpdatingFromUrl) return;
+  
   const queryParams = new URLSearchParams(location.search);
   const categoryParam = queryParams.get('category');
   
@@ -341,13 +345,13 @@ useEffect(() => {
     const categoryNames = categoryParam.split(',');
     
     // Añade esta comprobación para evitar actualizaciones innecesarias que causan bucles
-    if (JSON.stringify(categoryNames) !== JSON.stringify(selectedCategories)) {
+    if (JSON.stringify(categoryNames.sort()) !== JSON.stringify([...selectedCategories].sort())) {
+      setIsUpdatingFromUrl(true);
       setSelectedCategories(categoryNames);
-      // No necesitas llamar a fetchProducts aquí, el otro useEffect se encargará
+      setTimeout(() => setIsUpdatingFromUrl(false), 0);
     }
   }
-  // Solo incluir location.search como dependencia
-}, [location.search, selectedCategories]);
+}, [location.search, selectedCategories, isUpdatingFromUrl]);
 
   // Actualizar parámetros de búsqueda en la URL
   const updateSearchParams = useCallback(() => {
@@ -433,13 +437,37 @@ useEffect(() => {
 
   // Resetear todos los filtros
   const handleClearAllFilters = useCallback(() => {
-    setSelectedCategories([]);
-    setSelectedPriceRange(null);
-    setSortBy('featured');
-    setSearchTerm('');
-    setShowingDiscounted(false);
-    setCurrentPage(1);
-  }, []);
+  setIsUpdatingFromUrl(true);
+  
+  // Limpiar todos los estados
+  setSelectedCategories([]);
+  setSelectedPriceRange(null);
+  setSortBy('featured');
+  setSearchTerm('');
+  setShowingDiscounted(false);
+  setCurrentPage(1);
+  
+  // Limpiar URL directamente sin usar updateSearchParams
+  const emptyParams = new URLSearchParams();
+  setSearchParams(emptyParams, { replace: true });
+  
+  // Buscar productos con filtros limpios
+  const cleanParams = {
+    limit: appConfig.pagination.defaultPageSize,
+    offset: 0,
+    sortBy: 'featured',
+    sortDir: 'desc'
+  };
+  
+  fetchProducts(cleanParams)
+    .catch(err => {
+      console.error("Error al obtener productos después de limpiar filtros:", err);
+    })
+    .finally(() => {
+      // Reestablecer la bandera
+      setTimeout(() => setIsUpdatingFromUrl(false), 100);
+    });
+}, [setSearchParams, fetchProducts]);
 
   // Manejar búsqueda
   const handleSearch = useCallback((e: React.FormEvent) => {

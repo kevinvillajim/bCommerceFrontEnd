@@ -41,7 +41,19 @@ interface ApiProduct {
 // Crear una clave de caché basada en los parámetros de filtro
 const getCacheKey = (params?: ProductFilterParams): string => {
   if (!params) return 'products_default';
-  return `products_${JSON.stringify(params)}`;
+  
+  // Crear una copia para no modificar el original
+  const paramsForKey = { ...params };
+  
+  // Asegurarse de que categoryIds se maneje correctamente
+  if (paramsForKey.categoryIds) {
+    // Ordenar para asegurar consistencia independientemente del orden
+    paramsForKey.categoryIds = [...paramsForKey.categoryIds].sort((a, b) => a - b);
+  }
+  
+  // Normalizar otras propiedades si es necesario
+  
+  return `products_${JSON.stringify(paramsForKey)}`;
 };
 
 /**

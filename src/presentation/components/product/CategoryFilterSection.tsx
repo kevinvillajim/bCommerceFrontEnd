@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import FilterSection from './FilterSection';
 
@@ -27,23 +27,28 @@ const CategoryFilterSection: React.FC<CategoryFilterSectionProps> = ({
   const [currentPage, setCurrentPage] = useState(0);
   
   // Para paginación
-  const getPagedCategories = () => {
+  const getPagedCategories = useCallback(() => {
     if (!isMobile) return categories; // En desktop mostrar todas
     
     const start = currentPage * ITEMS_PER_PAGE;
     const end = start + ITEMS_PER_PAGE;
     return categories.slice(start, end);
-  };
+  }, [categories, currentPage, isMobile]);
   
   const totalPages = Math.ceil(categories.length / ITEMS_PER_PAGE);
   
-  const handlePreviousPage = () => {
+  const handlePreviousPage = useCallback(() => {
     setCurrentPage(prev => Math.max(0, prev - 1));
-  };
+  }, []);
   
-  const handleNextPage = () => {
+  const handleNextPage = useCallback(() => {
     setCurrentPage(prev => Math.min(totalPages - 1, prev + 1));
-  };
+  }, [totalPages]);
+
+  // Manejo de clic en categoría con memo para mejorar rendimiento
+  const handleCategoryClick = useCallback((category: string, isCurrentlySelected: boolean) => {
+    onCategoryChange(category, !isCurrentlySelected);
+  }, [onCategoryChange]);
 
   return (
     <FilterSection
@@ -64,8 +69,9 @@ const CategoryFilterSection: React.FC<CategoryFilterSectionProps> = ({
                   : 'border-gray-300'
               }`}
               onClick={(e) => {
+                e.preventDefault();
                 e.stopPropagation();
-                onCategoryChange(category, !selectedCategories.includes(category));
+                handleCategoryClick(category, selectedCategories.includes(category));
               }}
             >
               {selectedCategories.includes(category) && (
@@ -75,8 +81,9 @@ const CategoryFilterSection: React.FC<CategoryFilterSectionProps> = ({
             <span 
               className="ml-2 text-gray-700 w-full"
               onClick={(e) => {
+                e.preventDefault();
                 e.stopPropagation();
-                onCategoryChange(category, !selectedCategories.includes(category));
+                handleCategoryClick(category, selectedCategories.includes(category));
               }}
             >
               {category}

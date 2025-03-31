@@ -1,4 +1,7 @@
-import { useState, useCallback } from 'react';
+// src/presentation/hooks/useFilterState.ts
+// Mejora el hook para evitar actualizaciones innecesarias
+
+import { useState, useCallback, useEffect } from 'react';
 
 export interface FilterState {
   selectedCategories: string[];
@@ -35,6 +38,11 @@ export const useFilterState = ({
   const [selectedPriceRange, setSelectedPriceRange] = useState<{ min: number; max: number } | null>(initialPriceRange);
   const [selectedRating, setSelectedRating] = useState<number | null>(initialRating);
   const [selectedDiscount, setSelectedDiscount] = useState<number | null>(initialDiscount ? 10 : null);
+  const [prevProps, setPrevProps] = useState({ 
+    categories: initialCategories, 
+    priceRange: initialPriceRange, 
+    discount: initialDiscount 
+  });
   
   // Estado para secciones expandidas (con precio abierto por defecto)
   const [expandedSections, setExpandedSections] = useState({
@@ -43,6 +51,24 @@ export const useFilterState = ({
     rating: false,
     discount: false
   });
+  
+  // Actualizar estado cuando cambien las props
+  useEffect(() => {
+    if (JSON.stringify(initialCategories) !== JSON.stringify(prevProps.categories)) {
+      setSelectedCategories(initialCategories);
+      setPrevProps(prev => ({ ...prev, categories: initialCategories }));
+    }
+    
+    if (JSON.stringify(initialPriceRange) !== JSON.stringify(prevProps.priceRange)) {
+      setSelectedPriceRange(initialPriceRange);
+      setPrevProps(prev => ({ ...prev, priceRange: initialPriceRange }));
+    }
+    
+    if (initialDiscount !== prevProps.discount) {
+      setSelectedDiscount(initialDiscount ? 10 : null);
+      setPrevProps(prev => ({ ...prev, discount: initialDiscount }));
+    }
+  }, [initialCategories, initialPriceRange, initialDiscount, prevProps]);
   
   // Funciones para manejar los cambios de estado
   const handleCategoryChange = useCallback((category: string) => {
