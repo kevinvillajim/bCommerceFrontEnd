@@ -8,18 +8,17 @@ interface PriceFilterSectionProps {
   isExpanded: boolean;
   onToggle: () => void;
   onApply: (min: number, max: number) => void;
+  onClear: () => void;
 }
 
-/**
- * Componente para la sección de filtrado por rango de precios
- */
 const PriceFilterSection: React.FC<PriceFilterSectionProps> = ({
   initialMin,
   initialMax,
   selectedRange,
   isExpanded,
   onToggle,
-  onApply
+  onApply,
+  onClear
 }) => {
   const [min, setMin] = useState(selectedRange?.min || initialMin);
   const [max, setMax] = useState(selectedRange?.max || initialMax);
@@ -37,16 +36,28 @@ const PriceFilterSection: React.FC<PriceFilterSectionProps> = ({
   
   const handleMinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = Number(e.target.value);
+    if (isNaN(value)) return;
+    
+    // Asegurar que min no sea mayor que max
     setMin(value > max ? max : value);
   };
   
   const handleMaxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = Number(e.target.value);
+    if (isNaN(value)) return;
+    
+    // Asegurar que max no sea menor que min
     setMax(value < min ? min : value);
   };
   
   const handleApply = () => {
     onApply(min, max);
+  };
+  
+  const handleClear = () => {
+    onClear();
+    setMin(initialMin);
+    setMax(initialMax);
   };
   
   return (
@@ -84,12 +95,22 @@ const PriceFilterSection: React.FC<PriceFilterSectionProps> = ({
           </div>
         </div>
       </div>
-      <button
-        onClick={handleApply}
-        className="w-full py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-md transition-colors text-sm"
-      >
-        Aplicar
-      </button>
+      <div className="flex gap-2">
+        <button
+          onClick={handleApply}
+          className="flex-1 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-md transition-colors text-sm"
+        >
+          Aplicar
+        </button>
+        {selectedRange && (
+          <button
+            onClick={handleClear}
+            className="py-2 px-3 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100 text-sm"
+          >
+            Limpiar
+          </button>
+        )}
+      </div>
     </FilterSection>
   );
 };

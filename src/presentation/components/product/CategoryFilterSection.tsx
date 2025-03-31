@@ -1,5 +1,4 @@
-// src/presentation/components/product/CategoryFilterSection.tsx
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import FilterSection from './FilterSection';
 
@@ -10,34 +9,43 @@ interface CategoryFilterSectionProps {
   onToggle: () => void;
   onCategoryChange: (category: string, isSelected: boolean) => void;
   isMobile?: boolean;
+  // Para ordenar categorías por cantidad de productos
+  productCountByCategory?: Record<string, number>;
 }
 
-/**
- * Componente para la sección de filtrado por categorías
- * Incluye paginación para dispositivos móviles
- * Soporta selección múltiple de categorías
- */
 const CategoryFilterSection: React.FC<CategoryFilterSectionProps> = ({
   categories,
   selectedCategories,
   isExpanded,
   onToggle,
   onCategoryChange,
-  isMobile = false
+  isMobile = false,
+  productCountByCategory = {}
 }) => {
-  const ITEMS_PER_PAGE = 14; // Máximo 14 categorías por página en móvil
+  const ITEMS_PER_PAGE = 14;
   const [currentPage, setCurrentPage] = useState(0);
   
-  // Para paginación
+  // Ordenar categorías por cantidad de productos (si hay datos)
+  const sortedCategories = useMemo(() => {
+    if (Object.keys(productCountByCategory).length > 0) {
+      return [...categories].sort((a, b) => {
+        const countA = productCountByCategory[a] || 0;
+        const countB = productCountByCategory[b] || 0;
+        return countB - countA; // De mayor a menor
+      });
+    }
+    return categories;
+  }, [categories, productCountByCategory]);
+  
+  const totalPages = Math.ceil(sortedCategories.length / ITEMS_PER_PAGE);
+  
   const getPagedCategories = useCallback(() => {
-    if (!isMobile) return categories; // En desktop mostrar todas
+    if (!isMobile) return sortedCategories;
     
     const start = currentPage * ITEMS_PER_PAGE;
     const end = start + ITEMS_PER_PAGE;
-    return categories.slice(start, end);
-  }, [categories, currentPage, isMobile]);
-  
-  const totalPages = Math.ceil(categories.length / ITEMS_PER_PAGE);
+    return sortedCategories.slice(start, end);
+  }, [sortedCategories, currentPage, isMobile]);
   
   const handlePreviousPage = useCallback(() => {
     setCurrentPage(prev => Math.max(0, prev - 1));
@@ -47,10 +55,14 @@ const CategoryFilterSection: React.FC<CategoryFilterSectionProps> = ({
     setCurrentPage(prev => Math.min(totalPages - 1, prev + 1));
   }, [totalPages]);
 
-  // Manejo de clic en categoría con memo para mejorar rendimiento
-  const handleCategoryClick = useCallback((category: string, isCurrentlySelected: boolean) => {
+  // Evitamos propagación de eventos para prevenir problemas
+  const handleCategoryClick = useCallback((e: React.MouseEvent, category: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const isCurrentlySelected = selectedCategories.includes(category);
     onCategoryChange(category, !isCurrentlySelected);
-  }, [onCategoryChange]);
+  }, [onCategoryChange, selectedCategories]);
 
   return (
     <FilterSection
@@ -59,42 +71,38 @@ const CategoryFilterSection: React.FC<CategoryFilterSectionProps> = ({
       onToggle={onToggle}
     >
       <div className="grid grid-cols-1 gap-2 max-h-64 overflow-y-auto pr-2">
-        {getPagedCategories().map((category) => (
-          <label 
-            key={category} 
-            className="flex items-center cursor-pointer hover:bg-gray-50 p-2 rounded-md w-full"
-          >
+        {getPagedCategories().map((category) => {
+          const isSelected = selectedCategories.includes(category);
+          return (
             <div 
-              className={`w-5 h-5 border rounded flex items-center justify-center cursor-pointer ${
-                selectedCategories.includes(category) 
-                  ? 'bg-primary-600 border-primary-600' 
-                  : 'border-gray-300'
-              }`}
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                handleCategoryClick(category, selectedCategories.includes(category));
-              }}
+              key={category} 
+              className="flex items-center cursor-pointer hover:bg-gray-50 p-2 rounded-md w-full"
+              onClick={(e) => handleCategoryClick(e, category)}
             >
-              {selectedCategories.includes(category) && (
-                <Check size={14} className="text-white" />
-              )}
+              <div 
+                className={`w-5 h-5 border rounded flex items-center justify-center ${
+                  isSelected 
+                    ? 'bg-primary-600 border-primary-600' 
+                    : 'border-gray-300'
+                }`}
+              >
+                {isSelected && (
+                  <Check size={14} className="text-white" />
+                )}
+              </div>
+              <span className="ml-2 text-gray-700 w-full flex justify-between">
+                {category}
+                {productCountByCategory[category] > 0 && (
+                  <span className="text-xs text-gray-500 ml-1">
+                    ({productCountByCategory[category]})
+                  </span>
+                )}
+              </span>
             </div>
-            <span 
-              className="ml-2 text-gray-700 w-full"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                handleCategoryClick(category, selectedCategories.includes(category));
-              }}
-            >
-              {category}
-            </span>
-          </label>
-        ))}
+          );
+        })}
       </div>
       
-      {/* Controles de paginación para móvil */}
       {isMobile && totalPages > 1 && (
         <div className="flex justify-between items-center mt-4 pt-3 border-t border-gray-100">
           <button
