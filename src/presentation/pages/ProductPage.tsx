@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useLocation } from 'react-router-dom';
 
 // Componentes optimizados
 import SearchBar from '../components/product/SearchBar';
@@ -10,7 +10,6 @@ import SortDropdown from '../components/product/SortDropdown';
 import MobileFilterPanel from '../components/product/MobileFilterPanel';
 import ActiveFilters from '../components/product/ActiveFilters';
 import Pagination from '../components/product/Pagination';
-import SimplePagination from '../components/product/SimplePagination';
 import MobilePagination from '../components/product/MobilePagination';
 
 // Hooks optimizados con caché
@@ -125,78 +124,91 @@ const ProductPage: React.FC = () => {
       window.removeEventListener('resize', handleResize);
     };
   }, []);
+
+  const location = useLocation();
   
   // Función para construir parámetros de filtro
-  const buildFilterParams = useCallback((): ExtendedProductFilterParams => {
-    const params: ExtendedProductFilterParams = {
-      limit: appConfig.pagination.defaultPageSize,
-      offset: (currentPage - 1) * appConfig.pagination.defaultPageSize
-    };
+const buildFilterParams = useCallback((): ExtendedProductFilterParams => {
+  const params: ExtendedProductFilterParams = {
+    limit: appConfig.pagination.defaultPageSize,
+    offset: (currentPage - 1) * appConfig.pagination.defaultPageSize
+  };
+  
+  // Manejar selección múltiple de categorías
+  if (selectedCategories.length > 0) {
+    // Obtener IDs de las categorías seleccionadas
+    const categoryIds = selectedCategories
+      .map(catName => {
+        const category = categoriesData.find(c => 
+          c.name.toLowerCase() === catName.toLowerCase()
+        );
+        return category?.id;
+      })
+      .filter(id => id !== undefined) as number[];
     
-    // Añadir categoría si está seleccionada
-    if (selectedCategories.length > 0) {
-      const categoryIds = selectedCategories
-        .map(catName => categoriesData.find(c => c.name.toLowerCase() === catName.toLowerCase())?.id)
-        .filter(id => id !== undefined) as number[];
-      
-      if (categoryIds.length > 0) {
+    if (categoryIds.length > 0) {
+      if (categoryIds.length === 1) {
+        // Si solo hay una categoría, usamos el parámetro categoryId
         params.categoryId = categoryIds[0];
+      } else {
+        // Si hay múltiples categorías, las guardamos en nuestro parámetro extendido
+        params.categoryIds = categoryIds;
       }
     }
+  }
+  
+  // Añadir rango de precio si está seleccionado
+  if (selectedPriceRange) {
+    params.minPrice = selectedPriceRange.min;
     
-    // Añadir rango de precio si está seleccionado
-    if (selectedPriceRange) {
-      params.minPrice = selectedPriceRange.min;
-      
-      // Solo añadir maxPrice si no es el valor máximo (para filtros como "Más de $X")
-      if (selectedPriceRange.max < 999999) {
-        params.maxPrice = selectedPriceRange.max;
-      }
+    // Solo añadir maxPrice si no es el valor máximo (para filtros como "Más de $X")
+    if (selectedPriceRange.max < 999999) {
+      params.maxPrice = selectedPriceRange.max;
     }
-    
-    // Añadir término de búsqueda
-    if (searchTerm) {
-      params.term = searchTerm;
-    }
-    
-    // Añadir filtro de descuento
-    if (showingDiscounted) {
-      // Usar nuestra propiedad personalizada para filtrar por descuento
-      params.minDiscount = 5; // Ejemplo: productos con al menos 5% de descuento
-    }
-    
-    // Añadir ordenamiento
-    switch (sortBy) {
-      case 'price-asc':
-        params.sortBy = 'price';
-        params.sortDir = 'asc';
-        break;
-      case 'price-desc':
-        params.sortBy = 'price';
-        params.sortDir = 'desc';
-        break;
-      case 'name-asc':
-        params.sortBy = 'name';
-        params.sortDir = 'asc';
-        break;
-      case 'name-desc':
-        params.sortBy = 'name';
-        params.sortDir = 'desc';
-        break;
-      case 'newest':
-        params.sortBy = 'created_at';
-        params.sortDir = 'desc';
-        break;
-      case 'featured':
-      default:
-        params.sortBy = 'featured';
-        params.sortDir = 'desc';
-        break;
-    }
-    
-    return params;
-  }, [selectedCategories, selectedPriceRange, searchTerm, showingDiscounted, sortBy, currentPage, categoriesData]);
-
+  }
+  
+  // Añadir término de búsqueda
+  if (searchTerm) {
+    params.term = searchTerm;
+  }
+  
+  // Añadir filtro de descuento
+  if (showingDiscounted) {
+    params.minDiscount = 5; // Productos con al menos 5% de descuento
+  }
+  
+  // Añadir ordenamiento
+  switch (sortBy) {
+    case 'price-asc':
+      params.sortBy = 'price';
+      params.sortDir = 'asc';
+      break;
+    case 'price-desc':
+      params.sortBy = 'price';
+      params.sortDir = 'desc';
+      break;
+    case 'name-asc':
+      params.sortBy = 'name';
+      params.sortDir = 'asc';
+      break;
+    case 'name-desc':
+      params.sortBy = 'name';
+      params.sortDir = 'desc';
+      break;
+    case 'newest':
+      params.sortBy = 'created_at';
+      params.sortDir = 'desc';
+      break;
+    case 'featured':
+    default:
+      params.sortBy = 'featured';
+      params.sortDir = 'desc';
+      break;
+  }
+  
+  return params;
+}, [selectedCategories, selectedPriceRange, searchTerm, showingDiscounted, sortBy, currentPage, categoriesData]);
+  
   // Cargar datos al iniciar
   useEffect(() => {
     // Cargar categorías
@@ -312,13 +324,30 @@ useEffect(() => {
     fetchProducts, 
     buildFilterParams, 
     categoriesData.length, 
-    selectedCategories, 
     selectedPriceRange, 
     showingDiscounted, 
     sortBy, 
     currentPage,
     searchTerm
   ]);
+
+  useEffect(() => {
+  // Este efecto se ejecuta cuando cambia la URL
+  const queryParams = new URLSearchParams(location.search);
+  const categoryParam = queryParams.get('category');
+  
+  if (categoryParam) {
+    // Si hay un parámetro de categoría en la URL, actualizar el estado
+    const categoryNames = categoryParam.split(',');
+    
+    // Añade esta comprobación para evitar actualizaciones innecesarias que causan bucles
+    if (JSON.stringify(categoryNames) !== JSON.stringify(selectedCategories)) {
+      setSelectedCategories(categoryNames);
+      // No necesitas llamar a fetchProducts aquí, el otro useEffect se encargará
+    }
+  }
+  // Solo incluir location.search como dependencia
+}, [location.search, selectedCategories]);
 
   // Actualizar parámetros de búsqueda en la URL
   const updateSearchParams = useCallback(() => {
@@ -600,7 +629,7 @@ useEffect(() => {
                   onPageChange={handlePageChange}
                 />
               )}
-              
+
               {/* Paginación para desktop */}
               {!isMobile && (
                 <Pagination 

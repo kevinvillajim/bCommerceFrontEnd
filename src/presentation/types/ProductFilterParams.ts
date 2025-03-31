@@ -13,4 +13,9 @@ export interface ExtendedProductFilterParams extends OriginalFilterParams {
    * Filtrar por productos destacados
    */
   featured?: boolean;
+  
+  /**
+   * IDs de categorías para selección múltiple
+   */
+  categoryIds?: number[];
 }

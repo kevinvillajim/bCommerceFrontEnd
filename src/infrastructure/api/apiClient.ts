@@ -12,25 +12,41 @@ export class ApiClient {
    * @param params - Query parameters
    * @param config - Additional axios config
    */
-  public static async get<T>(url: string, params?: any, config?: AxiosRequestConfig): Promise<T> {
-    try {
-      console.log('Making GET request to:', url);
-      console.log('With params:', params);
+public static async get<T>(url: string, params?: any, config?: AxiosRequestConfig): Promise<T> {
+  try {
+    console.log('Making GET request to:', url);
+    console.log('With params:', params);
+    
+    // Adaptamos los parámetros para manejar múltiples categorías
+    let axiosParams = { ...params };
+    
+    // Si hay categoryIds, lo convertimos a un formato que la API entienda
+    if (axiosParams && axiosParams.categoryIds && Array.isArray(axiosParams.categoryIds)) {
+      // Dependiendo de cómo tu API maneje los arrays, elige una de estas opciones:
       
-      const response: AxiosResponse = await axiosInstance.get(url, {
-        params,
-        ...config
-      });
+      // Opción 1: Crear múltiples parámetros category_id
+      axiosParams.category_id = axiosParams.categoryIds;
+      delete axiosParams.categoryIds;
       
-      console.log('Response received:', response.status);
-      console.log('Response data:', response.data);
-      
-      return response.data;
-    } catch (error) {
-      this.handleApiError(error, url, 'GET');
-      throw error;
+      // Opción 2: Convertir a string separado por comas (si tu API lo maneja así)
+      // axiosParams.category_id = axiosParams.categoryIds.join(',');
+      // delete axiosParams.categoryIds;
     }
+    
+    const response: AxiosResponse = await axiosInstance.get(url, {
+      params: axiosParams,
+      ...config
+    });
+    
+    console.log('Response received:', response.status);
+    console.log('Response data:', response.data);
+    
+    return response.data;
+  } catch (error) {
+    this.handleApiError(error, url, 'GET');
+    throw error;
   }
+}
 
   /**
    * Make a POST request
