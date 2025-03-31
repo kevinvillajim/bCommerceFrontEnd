@@ -9,7 +9,7 @@ import type {
   ProductFilterParams
 } from '../domain/entities/Product';
 import type { IProductService } from '../domain/interfaces/IProductService';
-import ApiClient from '../../infrastructure/api/ApiClient';
+import ApiClient from '../../infrastructure/api/apiClient';
 
 // Interfaz para la respuesta cruda de la API
 interface ApiProductListResponse {
@@ -43,7 +43,15 @@ export class ProductService implements IProductService {
         if (filterParams.limit) apiParams.limit = filterParams.limit;
         if (filterParams.offset) apiParams.offset = filterParams.offset;
         if (filterParams.term) apiParams.term = filterParams.term;
-        if (filterParams.categoryId) apiParams.category_id = filterParams.categoryId;
+        
+        // Para filtros de categoría, usamos categoryId o categoryIds según corresponda
+        if (filterParams.categoryIds && filterParams.categoryIds.length > 0) {
+          // La API espera category_id como string separado por comas
+          apiParams.category_id = filterParams.categoryIds.join(',');
+        } else if (filterParams.categoryId) {
+          apiParams.category_id = filterParams.categoryId;
+        }
+        
         if (filterParams.minPrice) apiParams.min_price = filterParams.minPrice;
         if (filterParams.maxPrice) apiParams.max_price = filterParams.maxPrice;
         

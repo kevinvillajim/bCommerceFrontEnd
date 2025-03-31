@@ -1,3 +1,4 @@
+// src/presentation/components/product/CategoryFilterSection.tsx
 import React, { useState, useCallback } from 'react';
 import { Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import FilterSection from './FilterSection';
@@ -14,6 +15,7 @@ interface CategoryFilterSectionProps {
 /**
  * Componente para la sección de filtrado por categorías
  * Incluye paginación para dispositivos móviles
+ * Soporta selección múltiple de categorías
  */
 const CategoryFilterSection: React.FC<CategoryFilterSectionProps> = ({
   categories,

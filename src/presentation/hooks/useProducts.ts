@@ -1,4 +1,5 @@
-import { useState, useCallback, useMemo } from 'react';
+// src/presentation/hooks/useProducts.ts
+import { useState, useCallback } from 'react';
 import { ProductService } from '../../core/services/ProductService';
 import CacheService from '../../infrastructure/services/CacheService';
 import appConfig from '../../config/appConfig';

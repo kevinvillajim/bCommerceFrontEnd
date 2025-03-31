@@ -94,6 +94,7 @@ export interface ProductUpdateData extends Partial<ProductCreationData> {
 export interface ProductFilterParams {
   term?: string;
   categoryId?: number;
+  categoryIds?: number[];
   minPrice?: number;
   maxPrice?: number;
   rating?: number;

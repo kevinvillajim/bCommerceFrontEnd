@@ -1,3 +1,6 @@
+// Actualización del componente MobileFilterPanel para soportar múltiples categorías
+// src/presentation/components/product/MobileFilterPanel.tsx
+
 import React, { useState } from 'react';
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { Category } from '../../../core/domain/entities/Category';
@@ -25,6 +28,7 @@ interface MobileFilterPanelProps {
  * Panel de filtros para móviles (optimizado)
  * Incluye paginación para categorías (máximo 14 por página)
  * Bordes consistentes en todos los filtros
+ * Soporta selección múltiple de categorías
  */
 const MobileFilterPanel: React.FC<MobileFilterPanelProps> = ({
   isOpen,
@@ -56,6 +60,18 @@ const MobileFilterPanel: React.FC<MobileFilterPanelProps> = ({
   
   const totalCategoryPages = Math.ceil(categories.length / CATEGORIES_PER_PAGE);
 
+  // Calcular número de filtros activos por sección
+  const getActiveCounts = () => {
+    return {
+      categories: selectedCategories.length,
+      price: selectedRangeId ? 1 : 0,
+      discounts: showingDiscounted ? 1 : 0,
+      ratings: 0 // Por ahora no hay filtro de ratings activo
+    };
+  };
+
+  const activeCounts = getActiveCounts();
+
   return (
     <div className="md:hidden fixed inset-0 bg-gray-900 bg-opacity-50 z-40 flex items-end">
       <div className="bg-white w-full rounded-t-xl max-h-[85vh] flex flex-col">
@@ -66,10 +82,10 @@ const MobileFilterPanel: React.FC<MobileFilterPanelProps> = ({
           </button>
         </div>
         
-        {/* Tabs para navegación */}
+        {/* Tabs para navegación con indicadores de cantidad */}
         <div className="flex overflow-x-auto border-b border-gray-200">
           <button
-            className={`px-4 py-2 font-medium ${
+            className={`px-4 py-2 font-medium relative ${
               activeTab === 'categories' 
                 ? 'text-primary-600 border-b-2 border-primary-600' 
                 : 'text-gray-600'
@@ -77,9 +93,14 @@ const MobileFilterPanel: React.FC<MobileFilterPanelProps> = ({
             onClick={() => setActiveTab('categories')}
           >
             Categorías
+            {activeCounts.categories > 0 && (
+              <span className="absolute -top-1 -right-1 bg-primary-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                {activeCounts.categories}
+              </span>
+            )}
           </button>
           <button
-            className={`px-4 py-2 font-medium ${
+            className={`px-4 py-2 font-medium relative ${
               activeTab === 'price' 
                 ? 'text-primary-600 border-b-2 border-primary-600' 
                 : 'text-gray-600'
@@ -87,6 +108,11 @@ const MobileFilterPanel: React.FC<MobileFilterPanelProps> = ({
             onClick={() => setActiveTab('price')}
           >
             Precio
+            {activeCounts.price > 0 && (
+              <span className="absolute -top-1 -right-1 bg-primary-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                {activeCounts.price}
+              </span>
+            )}
           </button>
           <button
             className={`px-4 py-2 font-medium ${
@@ -99,7 +125,7 @@ const MobileFilterPanel: React.FC<MobileFilterPanelProps> = ({
             Valoraciones
           </button>
           <button
-            className={`px-4 py-2 font-medium ${
+            className={`px-4 py-2 font-medium relative ${
               activeTab === 'discounts' 
                 ? 'text-primary-600 border-b-2 border-primary-600' 
                 : 'text-gray-600'
@@ -107,6 +133,11 @@ const MobileFilterPanel: React.FC<MobileFilterPanelProps> = ({
             onClick={() => setActiveTab('discounts')}
           >
             Descuentos
+            {activeCounts.discounts > 0 && (
+              <span className="absolute -top-1 -right-1 bg-primary-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                {activeCounts.discounts}
+              </span>
+            )}
           </button>
         </div>
         
