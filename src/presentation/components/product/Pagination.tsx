@@ -1,90 +1,116 @@
-import React from 'react';
+import React from "react";
+import {ChevronLeft, ChevronRight} from "lucide-react";
 
 interface PaginationProps {
-  currentPage: number;
-  totalPages: number;
-  onPageChange: (page: number) => void;
+	currentPage: number;
+	totalPages: number;
+	onPageChange: (page: number) => void;
 }
 
-const Pagination: React.FC<PaginationProps> = ({ 
-  currentPage, 
-  totalPages, 
-  onPageChange 
+const Pagination: React.FC<PaginationProps> = ({
+	currentPage,
+	totalPages,
+	onPageChange,
 }) => {
-  // Si no hay páginas o solo hay una, no mostrar paginación
-  if (totalPages <= 1) return null;
+	// No mostrar paginación si solo hay una página
+	if (totalPages <= 1) return null;
 
-  // Calcular qué páginas mostrar
-  const getPageNumbers = () => {
-    const pageNumbers: number[] = [];
-    const maxPagesToShow = 5;
-    
-    if (totalPages <= maxPagesToShow) {
-      // Si hay menos páginas que el máximo a mostrar, mostrar todas
-      for (let i = 1; i <= totalPages; i++) {
-        pageNumbers.push(i);
-      }
-    } else {
-      // Calcular rango de páginas a mostrar
-      let startPage: number;
-      
-      if (currentPage <= 3) {
-        // Cerca del inicio: mostrar 1-5
-        startPage = 1;
-      } else if (currentPage >= totalPages - 2) {
-        // Cerca del final: mostrar las últimas 5
-        startPage = totalPages - 4;
-      } else {
-        // En medio: mostrar actual -2, -1, actual, +1, +2
-        startPage = currentPage - 2;
-      }
-      
-      for (let i = 0; i < maxPagesToShow; i++) {
-        pageNumbers.push(startPage + i);
-      }
-    }
-    
-    return pageNumbers;
-  };
+	// Determinar qué páginas mostrar
+	const getPageNumbers = () => {
+		const pages: (number | string)[] = [];
 
-  return (
-    <div className="flex justify-center mt-8">
-      <div className="flex flex-wrap items-center justify-center gap-2">
-        {/* Botón Anterior */}
-        <button
-          className="px-3 py-1 border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-          disabled={currentPage === 1}
-          onClick={() => onPageChange(currentPage - 1)}
-        >
-          Anterior
-        </button>
-        
-        {/* Botones de páginas */}
-        {getPageNumbers().map(pageNum => (
-          <button
-            key={pageNum}
-            className={`w-8 h-8 flex items-center justify-center rounded-md text-sm ${
-              currentPage === pageNum
-                ? 'bg-primary-600 text-white'
-                : 'border border-gray-300 text-gray-700 hover:bg-gray-100'
-            }`}
-            onClick={() => onPageChange(pageNum)}
-          >
-            {pageNum}
-          </button>
-        ))}
-        
-        {/* Botón Siguiente */}
-        <button
-          className="px-3 py-1 border border-gray-300 rounded-md disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-          disabled={currentPage === totalPages}
-          onClick={() => onPageChange(currentPage + 1)}
-        >
-          Siguiente
-        </button>
-      </div>
-    </div>
-  );
+		// Siempre incluir la primera página
+		pages.push(1);
+
+		// Mostrar puntos suspensivos si no estamos cerca del principio
+		if (currentPage > 3) {
+			pages.push("...");
+		}
+
+		// Páginas adyacentes a la actual
+		for (
+			let i = Math.max(2, currentPage - 1);
+			i <= Math.min(totalPages - 1, currentPage + 1);
+			i++
+		) {
+			if (i > 1 && i < totalPages) {
+				pages.push(i);
+			}
+		}
+
+		// Mostrar puntos suspensivos si no estamos cerca del final
+		if (currentPage < totalPages - 2) {
+			pages.push("...");
+		}
+
+		// Siempre incluir la última página si hay más de una
+		if (totalPages > 1) {
+			pages.push(totalPages);
+		}
+
+		return pages;
+	};
+
+	const pages = getPageNumbers();
+
+	return (
+		<div className="hidden md:flex justify-center mt-6">
+			<nav
+				className="inline-flex items-center rounded-md shadow-sm"
+				aria-label="Paginación"
+			>
+				{/* Botón de página anterior */}
+				<button
+					onClick={() => onPageChange(currentPage - 1)}
+					disabled={currentPage === 1}
+					className={`relative inline-flex items-center rounded-l-md border border-gray-300 bg-white px-2 py-2 text-sm ${
+						currentPage === 1
+							? "text-gray-300 cursor-not-allowed"
+							: "text-gray-500 hover:bg-gray-50"
+					}`}
+				>
+					<span className="sr-only">Anterior</span>
+					<ChevronLeft size={16} />
+				</button>
+
+				{/* Números de página */}
+				{pages.map((page, index) => (
+					<React.Fragment key={index}>
+						{typeof page === "number" ? (
+							<button
+								onClick={() => onPageChange(page)}
+								className={`relative inline-flex items-center border border-gray-300 px-4 py-2 text-sm font-medium ${
+									currentPage === page
+										? "bg-primary-50 border-primary-500 text-primary-600 z-10"
+										: "bg-white text-gray-500 hover:bg-gray-50"
+								}`}
+							>
+								{page}
+							</button>
+						) : (
+							<span className="relative inline-flex items-center border border-gray-300 bg-white px-4 py-2 text-sm text-gray-700">
+								{page}
+							</span>
+						)}
+					</React.Fragment>
+				))}
+
+				{/* Botón de página siguiente */}
+				<button
+					onClick={() => onPageChange(currentPage + 1)}
+					disabled={currentPage === totalPages}
+					className={`relative inline-flex items-center rounded-r-md border border-gray-300 bg-white px-2 py-2 text-sm ${
+						currentPage === totalPages
+							? "text-gray-300 cursor-not-allowed"
+							: "text-gray-500 hover:bg-gray-50"
+					}`}
+				>
+					<span className="sr-only">Siguiente</span>
+					<ChevronRight size={16} />
+				</button>
+			</nav>
+		</div>
+	);
 };
 
 export default Pagination;

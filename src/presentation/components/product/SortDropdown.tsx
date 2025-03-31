@@ -1,100 +1,86 @@
-import React, { useRef, useEffect, useState } from 'react';
-import { ChevronDown, Check } from 'lucide-react';
+import React, {useState, useRef, useEffect} from "react";
+import {ChevronDown} from "lucide-react";
 
 interface SortOption {
-  id: string;
-  label: string;
+	id: string;
+	label: string;
 }
 
 interface SortDropdownProps {
-  options: SortOption[];
-  selectedOption: string;
-  onSortChange: (sortId: string) => void;
+	options: SortOption[];
+	selectedOption: string;
+	onSortChange: (option: string) => void;
 }
 
 const SortDropdown: React.FC<SortDropdownProps> = ({
-  options,
-  selectedOption,
-  onSortChange
+	options,
+	selectedOption,
+	onSortChange,
 }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  
-  useEffect(() => {
-    const handleOutsideClick = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-    
-    const handleScroll = () => {
-      setIsOpen(false);
-    };
+	const [isOpen, setIsOpen] = useState(false);
+	const dropdownRef = useRef<HTMLDivElement>(null);
 
-    if (isOpen) {
-      document.addEventListener('mousedown', handleOutsideClick);
-      window.addEventListener('scroll', handleScroll);
-    }
+	// Cerrar dropdown al hacer clic fuera
+	useEffect(() => {
+		const handleClickOutside = (event: MouseEvent) => {
+			if (
+				dropdownRef.current &&
+				!dropdownRef.current.contains(event.target as Node)
+			) {
+				setIsOpen(false);
+			}
+		};
 
-    return () => {
-      document.removeEventListener('mousedown', handleOutsideClick);
-      window.removeEventListener('scroll', handleScroll);
-    };
-  }, [isOpen]);
+		document.addEventListener("mousedown", handleClickOutside);
+		return () => {
+			document.removeEventListener("mousedown", handleClickOutside);
+		};
+	}, []);
 
-  const toggleDropdown = () => {
-    setIsOpen(!isOpen);
-  };
+	// Obtener etiqueta de la opción seleccionada
+	const getSelectedLabel = () => {
+		const option = options.find((opt) => opt.id === selectedOption);
+		return option ? option.label : "Ordenar por";
+	};
 
-  const handleOptionSelect = (optionId: string) => {
-    console.log("Seleccionando opción de ordenamiento:", optionId);
-    onSortChange(optionId);
-    setIsOpen(false);
-  };
+	// Manejar selección de opción
+	const handleSelect = (optionId: string) => {
+		onSortChange(optionId);
+		setIsOpen(false);
+	};
 
-  // Encontrar la etiqueta del ordenamiento seleccionado
-  const selectedLabel = options.find(option => option.id === selectedOption)?.label || 'Ordenar por';
+	return (
+		<div className="relative" ref={dropdownRef}>
+			<button
+				onClick={() => setIsOpen(!isOpen)}
+				className="flex items-center px-4 py-2 bg-white rounded-lg shadow border border-gray-200 text-gray-700 hover:bg-gray-50"
+			>
+				<span className="mr-2">{getSelectedLabel()}</span>
+				<ChevronDown
+					size={16}
+					className={`transition-transform ${isOpen ? "transform rotate-180" : ""}`}
+				/>
+			</button>
 
-  return (
-    <div className="relative z-10" ref={dropdownRef}>
-      <button 
-        onClick={toggleDropdown}
-        className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-sm cursor-pointer"
-        aria-haspopup="true"
-        aria-expanded={isOpen}
-      >
-        <span>Ordenar por: {selectedLabel}</span>
-        <ChevronDown size={16} className={isOpen ? "transform rotate-180 transition-transform" : "transition-transform"} />
-      </button>
-      
-      {isOpen && (
-        <div 
-          className="absolute right-0 z-20 mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
-          role="menu"
-          aria-orientation="vertical"
-          aria-labelledby="sort-menu-button"
-        >
-          <div className="py-1">
-            {options.map((option) => (
-              <button
-                key={option.id}
-                onClick={() => handleOptionSelect(option.id)}
-                className="flex items-center gap-2 w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                role="menuitem"
-              >
-                <span className="w-5 flex justify-center">
-                  {selectedOption === option.id && <Check size={16} className="text-primary-600" />}
-                </span>
-                <span className={selectedOption === option.id ? "text-primary-600 font-medium" : ""}>
-                  {option.label}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
+			{isOpen && (
+				<div className="absolute right-0 mt-2 z-10 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1">
+					{options.map((option) => (
+						<button
+							key={option.id}
+							onClick={() => handleSelect(option.id)}
+							className={`block w-full text-left px-4 py-2 text-sm ${
+								selectedOption === option.id
+									? "bg-primary-50 text-primary-700 font-medium"
+									: "text-gray-700 hover:bg-gray-50"
+							}`}
+						>
+							{option.label}
+						</button>
+					))}
+				</div>
+			)}
+		</div>
+	);
 };
 
-export default React.memo(SortDropdown);
+export default SortDropdown;

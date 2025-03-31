@@ -1,151 +1,154 @@
-import React, { useMemo } from 'react';
-import { X, Filter } from 'lucide-react';
+import React from "react";
+import {X, Filter} from "lucide-react";
 
 interface ActiveFiltersProps {
-  selectedCategories: string[];
-  selectedPriceRange: { min: number; max: number } | null;
-  showingDiscounted: boolean;
-  selectedRating?: number | null;
-  searchTerm?: string;
-  onRemoveCategory: (category: string) => void;
-  onClearPriceRange: () => void;
-  onToggleDiscount: () => void;
-  onClearRating?: () => void;
-  onClearSearch?: () => void;
-  onClearAllFilters: () => void;
-  onToggleFilters: () => void;
+	selectedCategories: string[];
+	selectedPriceRange: {min: number; max: number} | null;
+	selectedRating: number | null;
+	searchTerm: string;
+	showingDiscounted: boolean;
+	onRemoveCategory: (category: string) => void;
+	onClearPriceRange: () => void;
+	onClearRating: () => void;
+	onClearSearch: () => void;
+	onToggleDiscount: () => void;
+	onClearAllFilters: () => void;
+	onToggleFilters: () => void;
 }
 
 const ActiveFilters: React.FC<ActiveFiltersProps> = ({
-  selectedCategories,
-  selectedPriceRange,
-  showingDiscounted,
-  selectedRating,
-  searchTerm,
-  onRemoveCategory,
-  onClearPriceRange,
-  onToggleDiscount,
-  onClearRating,
-  onClearSearch,
-  onClearAllFilters,
-  onToggleFilters
+	selectedCategories,
+	selectedPriceRange,
+	selectedRating,
+	searchTerm,
+	showingDiscounted,
+	onRemoveCategory,
+	onClearPriceRange,
+	onClearRating,
+	onClearSearch,
+	onToggleDiscount,
+	onClearAllFilters,
+	onToggleFilters,
 }) => {
-  // Verificar si hay algún filtro activo para mostrar el botón de limpiar todo
-  const hasActiveFilters = useMemo(() => {
-    return selectedCategories.length > 0 || 
-           selectedPriceRange !== null || 
-           showingDiscounted || 
-           (selectedRating !== undefined && selectedRating !== null) ||
-           (searchTerm !== undefined && searchTerm !== '');
-  }, [selectedCategories, selectedPriceRange, showingDiscounted, selectedRating, searchTerm]);
+	// Verificar si hay filtros activos
+	const hasActiveFilters =
+		selectedCategories.length > 0 ||
+		selectedPriceRange !== null ||
+		selectedRating !== null ||
+		showingDiscounted ||
+		searchTerm !== "";
 
-  return (
-    <div className="flex flex-wrap items-center gap-2 mb-4 md:mb-0">
-      {/* Mobile Filter Toggle */}
-      <button
-        onClick={onToggleFilters}
-        className="md:hidden flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg shadow-sm"
-        aria-label="Mostrar filtros"
-      >
-        <Filter size={16} />
-        <span>Filtros</span>
-        {hasActiveFilters && (
-          <span className="ml-1 inline-flex items-center justify-center w-5 h-5 text-xs font-medium bg-primary-100 text-primary-800 rounded-full">
-            {selectedCategories.length + 
-             (selectedPriceRange ? 1 : 0) + 
-             (showingDiscounted ? 1 : 0) + 
-             (selectedRating ? 1 : 0) +
-             (searchTerm && searchTerm !== '' ? 1 : 0)}
-          </span>
-        )}
-      </button>
-      
-      {/* Término de búsqueda */}
-      {searchTerm && searchTerm !== '' && onClearSearch && (
-        <div className="flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
-          <span>Búsqueda: {searchTerm}</span>
-          <button 
-            onClick={onClearSearch} 
-            className="ml-1 text-blue-800 hover:text-blue-900"
-            aria-label="Eliminar filtro de búsqueda"
-          >
-            <X size={14} />
-          </button>
-        </div>
-      )}
-      
-      {/* Selected Categories */}
-      {selectedCategories.map(category => (
-        <div key={category} className="flex items-center gap-1 px-3 py-1 bg-primary-100 text-primary-800 rounded-full text-sm">
-          <span>{category}</span>
-          <button 
-            onClick={() => onRemoveCategory(category)}
-            className="ml-1 text-primary-800 hover:text-primary-900"
-            aria-label={`Eliminar filtro de categoría ${category}`}
-          >
-            <X size={14} />
-          </button>
-        </div>
-      ))}
-      
-      {/* Selected Price Range */}
-      {selectedPriceRange && (
-        <div className="flex items-center gap-1 px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
-          <span>
-            {selectedPriceRange.max === 999999 
-              ? `Más de $${selectedPriceRange.min}`
-              : `$${selectedPriceRange.min} - $${selectedPriceRange.max}`}
-          </span>
-          <button 
-            onClick={onClearPriceRange}
-            className="ml-1 text-green-800 hover:text-green-900"
-            aria-label="Eliminar filtro de precio"
-          >
-            <X size={14} />
-          </button>
-        </div>
-      )}
-      
-      {/* Selected Rating */}
-      {selectedRating && onClearRating && (
-        <div className="flex items-center gap-1 px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">
-          <span>{selectedRating}★ o más</span>
-          <button 
-            onClick={onClearRating}
-            className="ml-1 text-yellow-800 hover:text-yellow-900"
-            aria-label="Eliminar filtro de calificación"
-          >
-            <X size={14} />
-          </button>
-        </div>
-      )}
-      
-      {/* Discount Filter */}
-      {showingDiscounted && (
-        <div className="flex items-center gap-1 px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm">
-          <span>Con descuento</span>
-          <button 
-            onClick={onToggleDiscount}
-            className="ml-1 text-red-800 hover:text-red-900"
-            aria-label="Eliminar filtro de descuento"
-          >
-            <X size={14} />
-          </button>
-        </div>
-      )}
-      
-      {/* Clear All Filters */}
-      {hasActiveFilters && (
-        <button 
-          onClick={onClearAllFilters}
-          className="text-gray-600 hover:text-primary-600 text-sm font-medium"
-          aria-label="Limpiar todos los filtros"
-        >
-          Limpiar todos
-        </button>
-      )}
-    </div>
-  );
+	// No mostrar si no hay filtros activos
+	if (!hasActiveFilters) {
+		return (
+			<button
+				onClick={onToggleFilters}
+				className="md:hidden flex items-center px-4 py-2 bg-white rounded-lg shadow border border-gray-200 text-gray-700"
+			>
+				<Filter size={18} className="mr-2" />
+				<span>Filtros</span>
+			</button>
+		);
+	}
+
+	return (
+		<div className="w-full md:w-auto">
+			<div className="flex items-center justify-between mb-2">
+				<h3 className="text-sm font-medium text-gray-700">Filtros Activos</h3>
+				{hasActiveFilters && (
+					<button
+						onClick={onClearAllFilters}
+						className="text-xs text-primary-600 hover:text-primary-700"
+					>
+						Limpiar todos
+					</button>
+				)}
+			</div>
+
+			<div className="flex flex-wrap gap-2">
+				{/* Filtro móvil - Solo visible en móvil */}
+				<button
+					onClick={onToggleFilters}
+					className="md:hidden flex items-center px-3 py-1 bg-primary-50 text-primary-700 rounded-full text-sm"
+				>
+					<Filter size={14} className="mr-1" />
+					<span>Filtrar</span>
+				</button>
+
+				{/* Término de búsqueda */}
+				{searchTerm && (
+					<div className="flex items-center px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-sm">
+						<span className="mr-1">Búsqueda: {searchTerm}</span>
+						<button
+							onClick={onClearSearch}
+							className="ml-1 text-blue-500 hover:text-blue-700"
+						>
+							<X size={14} />
+						</button>
+					</div>
+				)}
+
+				{/* Categorías seleccionadas */}
+				{selectedCategories.map((category) => (
+					<div
+						key={category}
+						className="flex items-center px-3 py-1 bg-purple-50 text-purple-700 rounded-full text-sm"
+					>
+						<span className="mr-1">Categoría: {category}</span>
+						<button
+							onClick={() => onRemoveCategory(category)}
+							className="ml-1 text-purple-500 hover:text-purple-700"
+						>
+							<X size={14} />
+						</button>
+					</div>
+				))}
+
+				{/* Rango de precio */}
+				{selectedPriceRange && (
+					<div className="flex items-center px-3 py-1 bg-green-50 text-green-700 rounded-full text-sm">
+						<span className="mr-1">
+							Precio: ${selectedPriceRange.min} - ${selectedPriceRange.max}
+						</span>
+						<button
+							onClick={onClearPriceRange}
+							className="ml-1 text-green-500 hover:text-green-700"
+						>
+							<X size={14} />
+						</button>
+					</div>
+				)}
+
+				{/* Valoración */}
+				{selectedRating !== null && (
+					<div className="flex items-center px-3 py-1 bg-yellow-50 text-yellow-700 rounded-full text-sm">
+						<span className="mr-1">
+							Valoración: {selectedRating}+ estrellas
+						</span>
+						<button
+							onClick={onClearRating}
+							className="ml-1 text-yellow-500 hover:text-yellow-700"
+						>
+							<X size={14} />
+						</button>
+					</div>
+				)}
+
+				{/* Descuento */}
+				{showingDiscounted && (
+					<div className="flex items-center px-3 py-1 bg-red-50 text-red-700 rounded-full text-sm">
+						<span className="mr-1">Con descuento</span>
+						<button
+							onClick={onToggleDiscount}
+							className="ml-1 text-red-500 hover:text-red-700"
+						>
+							<X size={14} />
+						</button>
+					</div>
+				)}
+			</div>
+		</div>
+	);
 };
 
-export default React.memo(ActiveFilters);
+export default ActiveFilters;
