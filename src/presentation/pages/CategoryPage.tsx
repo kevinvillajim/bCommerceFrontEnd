@@ -1,146 +1,133 @@
-import { ChevronRight } from 'lucide-react';
+import {useEffect, useState} from "react";
+import {ChevronRight} from "lucide-react";
+import useCategories from "../hooks/useCategories";
 
-const secciones = [
-  {
-    title: "Computadoras",
-    description: "Descubre nuestra selección de equipos para trabajo y gaming",
-    subtitles: [
-      { label: "Laptops", link: "/categoria/laptops" },
-      { label: "Computadoras de escritorio", link: "/categoria/desktops" },
-      { label: "All-in-One", link: "/categoria/all-in-one" },
-      { label: "Chromebooks", link: "/categoria/chromebooks" },
-      { label: "Mini PC", link: "/categoria/mini-pc" }
-    ]
-  },
-  {
-    title: "Componentes",
-    description: "Actualiza tu equipo con los mejores componentes del mercado",
-    subtitles: [
-      { label: "Procesadores", link: "/categoria/procesadores" },
-      { label: "Tarjetas gráficas", link: "/categoria/tarjetas-graficas" },
-      { label: "Memorias RAM", link: "/categoria/memorias-ram" },
-      { label: "Discos duros y SSD", link: "/categoria/almacenamiento" },
-      { label: "Placas madre", link: "/categoria/placas-madre" }
-    ]
-  },
-  {
-    title: "Dispositivos Móviles",
-    description: "Smartphones, tablets y accesorios de última generación",
-    subtitles: [
-      { label: "Smartphones", link: "/categoria/smartphones" },
-      { label: "Tablets", link: "/categoria/tablets" },
-      { label: "Smartwatches", link: "/categoria/smartwatches" },
-      { label: "Auriculares inalámbricos", link: "/categoria/auriculares" },
-      { label: "Accesorios para móviles", link: "/categoria/accesorios-moviles" }
-    ]
-  },
-  {
-    title: "Periféricos",
-    description: "Mejora tu experiencia con periféricos de alta calidad",
-    subtitles: [
-      { label: "Teclados", link: "/categoria/teclados" },
-      { label: "Ratones", link: "/categoria/ratones" },
-      { label: "Monitores", link: "/categoria/monitores" },
-      { label: "Audífonos", link: "/categoria/audifonos" },
-      { label: "Webcams", link: "/categoria/webcams" }
-    ]
-  },
-  {
-    title: "Gaming",
-    description: "Todo lo que necesitas para una experiencia de juego inmersiva",
-    subtitles: [
-      { label: "Laptops gaming", link: "/categoria/laptops-gaming" },
-      { label: "Monitores gaming", link: "/categoria/monitores-gaming" },
-      { label: "Teclados mecánicos", link: "/categoria/teclados-mecanicos" },
-      { label: "Ratones gaming", link: "/categoria/ratones-gaming" },
-      { label: "Sillas gamer", link: "/categoria/sillas-gamer" }
-    ]
-  },
-  {
-    title: "Almacenamiento",
-    description: "Soluciones de almacenamiento para tus datos más importantes",
-    subtitles: [
-      { label: "Discos duros externos", link: "/categoria/discos-externos" },
-      { label: "Unidades SSD", link: "/categoria/ssd" },
-      { label: "Memorias USB", link: "/categoria/memorias-usb" },
-      { label: "Tarjetas SD", link: "/categoria/tarjetas-sd" },
-      { label: "NAS y almacenamiento en red", link: "/categoria/nas" }
-    ]
-  },
-  {
-    title: "Smart Home",
-    description: "Dispositivos inteligentes para automatizar tu hogar",
-    subtitles: [
-      { label: "Asistentes de voz", link: "/categoria/asistentes-voz" },
-      { label: "Iluminación inteligente", link: "/categoria/iluminacion-inteligente" },
-      { label: "Seguridad para el hogar", link: "/categoria/seguridad-hogar" },
-      { label: "Electrodomésticos inteligentes", link: "/categoria/electrodomesticos-inteligentes" },
-      { label: "Termostatos y clima", link: "/categoria/clima-inteligente" }
-    ]
-  },
-  {
-    title: "Redes",
-    description: "Equipos para mejorar tu conectividad y redes domésticas",
-    subtitles: [
-      { label: "Routers", link: "/categoria/routers" },
-      { label: "Repetidores WiFi", link: "/categoria/repetidores" },
-      { label: "Cables de red", link: "/categoria/cables-red" },
-      { label: "Adaptadores WiFi", link: "/categoria/adaptadores-wifi" },
-      { label: "Sistemas mesh", link: "/categoria/sistemas-mesh" }
-    ]
+const CategoryPage = () => {
+	const {loading, error, mainCategories, fetchMainCategories} = useCategories();
+  const [secciones, setSecciones] = useState<any[]>([]);
+  
+  interface Subtitle {
+		label: string;
+		link: string;
   }
-];
+  
 
-const ContentPage = () => {
-  return (
-    <div className="max-w-6xl mx-auto px-4 py-12">
-      <header className="text-center mb-16">
-        <h1 className="text-4xl font-bold mb-4 text-gray-800">Explora Nuestras Categorías</h1>
-        <p className="text-gray-600 max-w-2xl mx-auto">
-          Descubre contenido relevante organizado por temas. Navega por nuestras categorías para encontrar información actualizada y recursos útiles.
-        </p>
-      </header>
+	// Fetch main categories on component mount
+	useEffect(() => {
+		fetchMainCategories();
+	}, [fetchMainCategories]);
 
-      <div className="grid md:grid-cols-2 gap-8">
-        {secciones.map((section, index) => (
-          <div key={index} className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
-            <div className={"bg-gradient-to-bl from-primary-700 to-black px-6 py-8 opacity-90 text-white"}>
-              <div className="flex items-center mb-4">
-                <h2 className="text-2xl font-bold">{section.title}</h2>
-              </div>
-              <p className="opacity-90">{section.description}</p>
-            </div>
-            
-            <ul className="divide-y divide-gray-100">
-              {section.subtitles.map((sub, subIndex) => (
-                <li key={subIndex}>
-                  <a 
-                    href={sub.link} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
-                  >
-                    <span className="text-gray-700 font-medium">{sub.label}</span>
-                    <ChevronRight className="text-gray-400 h-5 w-5" />
-                  </a>
-                </li>
-              ))}
-            </ul>
-            
-            <div className="px-6 py-4 bg-gray-50">
-              <a 
-                href={`#ver-todos-${section.title.toLowerCase()}`}
-                className="text-sm font-medium text-blue-600 hover:text-blue-800 flex items-center"
-              >
-                Ver todos los temas
-                <ChevronRight className="ml-1 h-4 w-4" />
-              </a>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
+	// Transform API categories to component format
+	useEffect(() => {
+		if (mainCategories && mainCategories.length > 0) {
+			const transformedSections = mainCategories.map((category) => {
+				// Get subcategories if available
+				const subtitles = category.subcategories
+					? category.subcategories.map((subcategory) => ({
+							label: subcategory.name,
+							link: `/categoria/${subcategory.slug}`,
+						}))
+					: [];
+
+				return {
+					title: category.name,
+					description:
+						category.description || "Descubre nuestra selección de productos",
+					subtitles: subtitles.slice(0, 5), // Limit to 5 subcategories per section
+				};
+			});
+
+			setSecciones(transformedSections);
+		}
+	}, [mainCategories]);
+
+	// Show loading state
+	if (loading) {
+		return (
+			<div className="max-w-6xl mx-auto px-4 py-12">
+				<div className="flex justify-center items-center h-64">
+					<div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
+				</div>
+			</div>
+		);
+	}
+
+	// Show error state
+	if (error) {
+		return (
+			<div className="max-w-6xl mx-auto px-4 py-12">
+				<div className="bg-red-50 border-l-4 border-red-500 p-4 rounded">
+					<p className="text-red-700">Error al cargar categorías: {error}</p>
+					<button
+						onClick={() => fetchMainCategories()}
+						className="mt-3 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+					>
+						Reintentar
+					</button>
+				</div>
+			</div>
+		);
+	}
+
+	return (
+		<div className="max-w-6xl mx-auto px-4 py-12">
+			<header className="text-center mb-16">
+				<h1 className="text-4xl font-bold mb-4 text-gray-800">
+					Explora Nuestras Categorías
+				</h1>
+				<p className="text-gray-600 max-w-2xl mx-auto">
+					Descubre contenido relevante organizado por temas. Navega por nuestras
+					categorías para encontrar información actualizada y recursos útiles.
+				</p>
+			</header>
+
+			<div className="grid md:grid-cols-2 gap-8">
+				{secciones.map((section, index) => (
+					<div
+						key={index}
+						className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300"
+					>
+						<div
+							className={
+								"bg-gradient-to-bl from-primary-700 to-black px-6 py-8 opacity-90 text-white"
+							}
+						>
+							<div className="flex items-center mb-4">
+								<h2 className="text-2xl font-bold">{section.title}</h2>
+							</div>
+							<p className="opacity-90">{section.description}</p>
+						</div>
+
+						<ul className="divide-y divide-gray-100">
+							{section.subtitles.map((sub:Subtitle, subIndex: number) => (
+								<li key={subIndex}>
+									<a
+										href={sub.link}
+										className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
+									>
+										<span className="text-gray-700 font-medium">
+											{sub.label}
+										</span>
+										<ChevronRight className="text-gray-400 h-5 w-5" />
+									</a>
+								</li>
+							))}
+						</ul>
+
+						<div className="px-6 py-4 bg-gray-50">
+							<a
+								href={`/products?category=${encodeURIComponent(section.title)}`}
+								className="text-sm font-medium text-blue-600 hover:text-blue-800 flex items-center"
+							>
+								Ver todos los temas
+								<ChevronRight className="ml-1 h-4 w-4" />
+							</a>
+						</div>
+					</div>
+				))}
+			</div>
+		</div>
+	);
 };
 
-export default ContentPage;
+export default CategoryPage;
