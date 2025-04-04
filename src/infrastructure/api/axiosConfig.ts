@@ -4,6 +4,9 @@ import axios from 'axios';
 import type { AxiosInstance, AxiosError, InternalAxiosRequestConfig, AxiosResponse } from 'axios';
 import appConfig from '../../config/appConfig';
 
+
+//cambio para pushear
+
 // Create a custom axios instance
 const axiosInstance: AxiosInstance = axios.create({
   baseURL: appConfig.api.baseUrl,
