@@ -89,9 +89,9 @@ const ActiveFilters: React.FC<ActiveFiltersProps> = ({
 				)}
 
 				{/* Categorías seleccionadas */}
-				{selectedCategories.map((category) => (
+				{selectedCategories.map((category, key) => (
 					<div
-						key={category}
+						key={`Active Filter - ${category} - ${key}`}
 						className="flex items-center px-3 py-1 bg-primary-100 text-primary-700 rounded-full text-sm"
 					>
 						<span className="mr-1">Categoría: {category}</span>
