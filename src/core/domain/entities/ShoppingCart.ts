@@ -56,8 +56,9 @@ export interface ShoppingCartResponse {
  * Add to cart request
  */
 export interface AddToCartRequest {
-  productId: number;
-  quantity: number;
+	productId: number;
+	quantity: number;
+	attributes?: string[] | Record<string, string>;
 }
 
 /**

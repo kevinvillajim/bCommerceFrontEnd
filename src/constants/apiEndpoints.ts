@@ -3,11 +3,6 @@
  * Base URL configured in environment.ts
  */
 
-// import environment from "../config/environment";
-
-// // Base API URL from environment config
-// const API_BASE_URL = environment.apiBaseUrl;
-
 export const API_ENDPOINTS = {
 	// Auth
 	AUTH: {

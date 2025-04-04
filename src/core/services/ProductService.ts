@@ -1,4 +1,3 @@
-// src/core/services/ProductService.ts
 import {API_ENDPOINTS} from "../../constants/apiEndpoints";
 import type {
 	Product,
@@ -87,40 +86,47 @@ export class ProductService implements IProductService {
 
 			console.log("Respuesta de API de productos:", response);
 
-			// Verificar si la respuesta ya tiene la estructura esperada
-			if (response && "data" in response && "meta" in response) {
-				return response as ProductListResponse;
+			// Analizar la estructura de la respuesta
+			let productData: Product[] = [];
+			let metaData = {
+				total: 0,
+				limit: filterParams?.limit || 10,
+				offset: filterParams?.offset || 0,
+			};
+
+			// Estructura común: { data: [...], meta: {...} }
+			if (response && response.data && Array.isArray(response.data)) {
+				productData = response.data;
+				if (response.meta) {
+					metaData = {
+						...metaData,
+						...response.meta,
+					};
+				}
+			}
+			// Estructura alternativa: { data: { data: [...], meta: {...} } }
+			else if (
+				response &&
+				response.data &&
+				response.data.data &&
+				Array.isArray(response.data.data)
+			) {
+				productData = response.data.data;
+				if (response.data.meta) {
+					metaData = {
+						...metaData,
+						...response.data.meta,
+					};
+				}
+			}
+			// Estructura directa: un array
+			else if (Array.isArray(response)) {
+				productData = response;
 			}
 
-			// Si la estructura es diferente, adaptarla al formato esperado
-			if (response) {
-				// Algunos backends devuelven los datos dentro de un objeto 'data'
-				const productos = Array.isArray(response)
-					? response
-					: Array.isArray(response.data)
-						? response.data
-						: [];
-
-				const meta = response.meta || {
-					total: productos.length,
-					limit: filterParams?.limit || 10,
-					offset: filterParams?.offset || 0,
-				};
-
-				return {
-					data: productos,
-					meta: meta,
-				};
-			}
-
-			// Devolver estructura vacía si no hay respuesta
 			return {
-				data: [],
-				meta: {
-					total: 0,
-					limit: filterParams?.limit || 10,
-					offset: filterParams?.offset || 0,
-				},
+				data: productData,
+				meta: metaData,
 			};
 		} catch (error) {
 			console.error("Error al obtener productos:", error);
@@ -213,9 +219,13 @@ export class ProductService implements IProductService {
 				}
 			});
 
-			// Adaptamos los nombres si es necesario
+			// Adaptamos los nombres si es necesario - transform camelCase to snake_case
 			if (data.categoryId !== undefined) {
 				formData.append("category_id", String(data.categoryId));
+			}
+
+			if (data.discountPercentage !== undefined) {
+				formData.append("discount_percentage", String(data.discountPercentage));
 			}
 
 			// Agregamos los archivos de imágenes
@@ -259,19 +269,14 @@ export class ProductService implements IProductService {
 
 			// Agregamos todos los campos no-archivo al FormData
 			Object.entries(data).forEach(([key, value]) => {
-				if (key !== "images") {
+				if (key !== "images" && key !== "id") {
 					if (Array.isArray(value) || typeof value === "object") {
-						formData.append(key, JSON.stringify(value));
+						formData.append(this.camelToSnake(key), JSON.stringify(value));
 					} else if (value !== undefined && value !== null) {
-						formData.append(key, String(value));
+						formData.append(this.camelToSnake(key), String(value));
 					}
 				}
 			});
-
-			// Adaptamos los nombres si es necesario
-			if (data.categoryId !== undefined) {
-				formData.append("category_id", String(data.categoryId));
-			}
 
 			// Agregamos los archivos de imágenes
 			if (data.images && data.images.length > 0) {
@@ -323,6 +328,7 @@ export class ProductService implements IProductService {
 			const success =
 				(response && response.success) ||
 				(response && response.status === "success") ||
+				(response && response.message && response.message.includes("éxito")) ||
 				(response && response.data && response.data.success) ||
 				false;
 
@@ -375,10 +381,36 @@ export class ProductService implements IProductService {
 			console.log(
 				`Obteniendo productos relacionados para ${productId} (límite: ${limit})`
 			);
-			const response = await ApiClient.get<any>(
-				`${API_ENDPOINTS.PRODUCTS.DETAILS(productId)}/related`,
-				{limit}
-			);
+
+			// Intentar con la ruta específica para productos relacionados
+			let response;
+			try {
+				response = await ApiClient.get<any>(
+					`${API_ENDPOINTS.PRODUCTS.DETAILS(productId)}/related`,
+					{limit}
+				);
+			} catch (error) {
+				// Si la ruta no existe, hacemos un fallback para obtener productos de la misma categoría
+				console.log(
+					"Ruta de productos relacionados no encontrada, usando alternativa"
+				);
+
+				// Primero obtenemos el producto para saber su categoría
+				const product = await this.getProductById(productId);
+
+				if (product && product.category && product.category.id) {
+					// Usamos la misma categoría como método alternativo
+					response = await ApiClient.get<any>(
+						API_ENDPOINTS.PRODUCTS.BY_CATEGORY(product.category.id),
+						{
+							limit,
+							exclude_id: productId, // Excluir el producto actual
+						}
+					);
+				} else {
+					throw new Error("No se pudo determinar la categoría del producto");
+				}
+			}
 
 			console.log(
 				`Respuesta de productos relacionados para ${productId}:`,
@@ -425,5 +457,14 @@ export class ProductService implements IProductService {
 				error
 			);
 		}
+	}
+
+	/**
+	 * Convierte una cadena en camelCase a snake_case
+	 * @param str Cadena en camelCase
+	 * @returns Cadena convertida a snake_case
+	 */
+	private camelToSnake(str: string): string {
+		return str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
 	}
 }

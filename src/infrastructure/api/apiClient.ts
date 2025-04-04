@@ -21,7 +21,7 @@ export class ApiClient {
 		try {
 			console.log("ApiClient: Realizando petición GET a:", url);
 
-			// Transformar parámetros camelCase a snake_case para API de Laravel
+			// Transformar parámetros camelCase a snake_case para API
 			const transformedParams = this.transformParamsToSnakeCase(params);
 
 			console.log("ApiClient: Parámetros transformados:", transformedParams);
@@ -55,9 +55,14 @@ export class ApiClient {
 		try {
 			console.log("ApiClient: Realizando petición POST a:", url);
 
+			// Transformar datos de camelCase a snake_case
+			const transformedData = data
+				? this.transformDataToSnakeCase(data)
+				: undefined;
+
 			const response: AxiosResponse = await axiosInstance.post(
 				url,
-				data,
+				transformedData,
 				config
 			);
 
@@ -85,9 +90,14 @@ export class ApiClient {
 		try {
 			console.log("ApiClient: Realizando petición PUT a:", url);
 
+			// Transformar datos de camelCase a snake_case
+			const transformedData = data
+				? this.transformDataToSnakeCase(data)
+				: undefined;
+
 			const response: AxiosResponse = await axiosInstance.put(
 				url,
-				data,
+				transformedData,
 				config
 			);
 
@@ -115,9 +125,14 @@ export class ApiClient {
 		try {
 			console.log("ApiClient: Realizando petición PATCH a:", url);
 
+			// Transformar datos de camelCase a snake_case
+			const transformedData = data
+				? this.transformDataToSnakeCase(data)
+				: undefined;
+
 			const response: AxiosResponse = await axiosInstance.patch(
 				url,
-				data,
+				transformedData,
 				config
 			);
 
@@ -174,6 +189,7 @@ export class ApiClient {
 		try {
 			console.log("ApiClient: Subiendo archivo a:", url);
 
+			// Las claves del FormData ya deben estar en snake_case
 			const response: AxiosResponse = await axiosInstance.post(url, formData, {
 				headers: {
 					"Content-Type": "multipart/form-data",
@@ -211,9 +227,41 @@ export class ApiClient {
 			const snakeKey = key.replace(/([A-Z])/g, "_$1").toLowerCase();
 
 			// Si el parámetro ya está en snake_case, no lo modificamos
-			const finalKey = key === snakeKey ? key : snakeKey;
+			const finalKey = key.includes("_") ? key : snakeKey;
 
 			transformed[finalKey] = value;
+		});
+
+		return transformed;
+	}
+
+	/**
+	 * Transforma los datos de camelCase a snake_case
+	 * @param data - Datos originales
+	 * @returns Datos transformados
+	 */
+	private static transformDataToSnakeCase(data: any): any {
+		if (!data || typeof data !== "object") return data;
+
+		if (Array.isArray(data)) {
+			return data.map((item) => this.transformDataToSnakeCase(item));
+		}
+
+		const transformed: Record<string, any> = {};
+
+		Object.entries(data).forEach(([key, value]) => {
+			// Convertir camelCase a snake_case
+			const snakeKey = key.replace(/([A-Z])/g, "_$1").toLowerCase();
+
+			// Si la clave ya está en snake_case, no la modificamos
+			const finalKey = key.includes("_") ? key : snakeKey;
+
+			// Recursivamente transformar objetos anidados
+			if (value !== null && typeof value === "object") {
+				transformed[finalKey] = this.transformDataToSnakeCase(value);
+			} else {
+				transformed[finalKey] = value;
+			}
 		});
 
 		return transformed;
@@ -231,7 +279,9 @@ export class ApiClient {
 
 		// Extraer datos según la estructura de la respuesta
 		if (response.data) {
-			// Verificar si la respuesta tiene una estructura anidada data.data
+			// Casos específicos comunes en APIs Laravel
+
+			// 1. Respuesta con data.data anidada
 			if (
 				response.data.data &&
 				(Array.isArray(response.data.data) ||
@@ -243,7 +293,7 @@ export class ApiClient {
 				return response.data;
 			}
 
-			// Caso más común: los datos están directamente en response.data
+			// 2. Respuesta con data directamente
 			return response.data;
 		}
 
