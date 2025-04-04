@@ -1,16 +1,17 @@
-import axios from 'axios';
-import type { AxiosRequestConfig, AxiosResponse } from 'axios';
-import axiosInstance from './axiosConfig';
+import axios from "axios";
+import type {AxiosRequestConfig, AxiosResponse} from "axios";
+import axiosInstance from "./axiosConfig";
 
 /**
- * Base API client for making HTTP requests
+ * Base API client para realizar peticiones HTTP
+ * Con mejoras para manejar diferentes estructuras de respuesta
  */
 export class ApiClient {
 	/**
-	 * Make a GET request
-	 * @param url - API endpoint URL
-	 * @param params - Query parameters
-	 * @param config - Additional axios config
+	 * Realizar petición GET
+	 * @param url - URL del endpoint de la API
+	 * @param params - Parámetros de consulta
+	 * @param config - Configuración adicional de axios
 	 */
 	public static async get<T>(
 		url: string,
@@ -18,63 +19,22 @@ export class ApiClient {
 		config?: AxiosRequestConfig
 	): Promise<T> {
 		try {
-			console.log("ApiClient: Making GET request to:", url);
+			console.log("ApiClient: Realizando petición GET a:", url);
 
-			// Transform camelCase parameters to snake_case for Laravel API
-			let transformedParams = {...params};
+			// Transformar parámetros camelCase a snake_case para API de Laravel
+			const transformedParams = this.transformParamsToSnakeCase(params);
 
-			if (params) {
-				// Category API specific parameters
-				if (params.withCounts !== undefined) {
-					transformedParams.with_counts = params.withCounts;
-					delete transformedParams.withCounts;
-				}
-
-				if (params.withChildren !== undefined) {
-					transformedParams.with_children = params.withChildren;
-					delete transformedParams.withChildren;
-				}
-
-				if (params.withSubcategories !== undefined) {
-					transformedParams.with_subcategories = params.withSubcategories;
-					delete transformedParams.withSubcategories;
-				}
-
-				if (params.withProducts !== undefined) {
-					transformedParams.with_products = params.withProducts;
-					delete transformedParams.withProducts;
-				}
-
-				if (params.productsLimit !== undefined) {
-					transformedParams.products_limit = params.productsLimit;
-					delete transformedParams.productsLimit;
-				}
-
-				if (params.includeSubcategories !== undefined) {
-					transformedParams.include_subcategories = params.includeSubcategories;
-					delete transformedParams.includeSubcategories;
-				}
-
-				// General pagination and sorting parameters
-				if (params.sortBy !== undefined) {
-					transformedParams.sort_by = params.sortBy;
-					delete transformedParams.sortBy;
-				}
-
-				if (params.sortDir !== undefined) {
-					transformedParams.sort_dir = params.sortDir;
-					delete transformedParams.sortDir;
-				}
-			}
-
-			console.log("ApiClient: Transformed params:", transformedParams);
+			console.log("ApiClient: Parámetros transformados:", transformedParams);
 
 			const response: AxiosResponse = await axiosInstance.get(url, {
 				params: transformedParams,
 				...config,
 			});
 
-			return response.data;
+			console.log("ApiClient: Respuesta de GET a", url, ":", response.status);
+
+			// Validar y transformar la respuesta
+			return this.handleApiResponse<T>(response);
 		} catch (error) {
 			this.handleApiError(error, url, "GET");
 			throw error;
@@ -82,10 +42,10 @@ export class ApiClient {
 	}
 
 	/**
-	 * Make a POST request
-	 * @param url - API endpoint URL
-	 * @param data - Request body data
-	 * @param config - Additional axios config
+	 * Realizar petición POST
+	 * @param url - URL del endpoint de la API
+	 * @param data - Datos del cuerpo de la petición
+	 * @param config - Configuración adicional de axios
 	 */
 	public static async post<T>(
 		url: string,
@@ -93,7 +53,7 @@ export class ApiClient {
 		config?: AxiosRequestConfig
 	): Promise<T> {
 		try {
-			console.log("Making POST request to:", url);
+			console.log("ApiClient: Realizando petición POST a:", url);
 
 			const response: AxiosResponse = await axiosInstance.post(
 				url,
@@ -101,9 +61,10 @@ export class ApiClient {
 				config
 			);
 
-			console.log("Response received:", response.status);
+			console.log("ApiClient: Respuesta de POST a", url, ":", response.status);
 
-			return response.data;
+			// Validar y transformar la respuesta
+			return this.handleApiResponse<T>(response);
 		} catch (error) {
 			this.handleApiError(error, url, "POST");
 			throw error;
@@ -111,10 +72,10 @@ export class ApiClient {
 	}
 
 	/**
-	 * Make a PUT request
-	 * @param url - API endpoint URL
-	 * @param data - Request body data
-	 * @param config - Additional axios config
+	 * Realizar petición PUT
+	 * @param url - URL del endpoint de la API
+	 * @param data - Datos del cuerpo de la petición
+	 * @param config - Configuración adicional de axios
 	 */
 	public static async put<T>(
 		url: string,
@@ -122,12 +83,18 @@ export class ApiClient {
 		config?: AxiosRequestConfig
 	): Promise<T> {
 		try {
+			console.log("ApiClient: Realizando petición PUT a:", url);
+
 			const response: AxiosResponse = await axiosInstance.put(
 				url,
 				data,
 				config
 			);
-			return response.data;
+
+			console.log("ApiClient: Respuesta de PUT a", url, ":", response.status);
+
+			// Validar y transformar la respuesta
+			return this.handleApiResponse<T>(response);
 		} catch (error) {
 			this.handleApiError(error, url, "PUT");
 			throw error;
@@ -135,10 +102,10 @@ export class ApiClient {
 	}
 
 	/**
-	 * Make a PATCH request
-	 * @param url - API endpoint URL
-	 * @param data - Request body data
-	 * @param config - Additional axios config
+	 * Realizar petición PATCH
+	 * @param url - URL del endpoint de la API
+	 * @param data - Datos del cuerpo de la petición
+	 * @param config - Configuración adicional de axios
 	 */
 	public static async patch<T>(
 		url: string,
@@ -146,12 +113,18 @@ export class ApiClient {
 		config?: AxiosRequestConfig
 	): Promise<T> {
 		try {
+			console.log("ApiClient: Realizando petición PATCH a:", url);
+
 			const response: AxiosResponse = await axiosInstance.patch(
 				url,
 				data,
 				config
 			);
-			return response.data;
+
+			console.log("ApiClient: Respuesta de PATCH a", url, ":", response.status);
+
+			// Validar y transformar la respuesta
+			return this.handleApiResponse<T>(response);
 		} catch (error) {
 			this.handleApiError(error, url, "PATCH");
 			throw error;
@@ -159,17 +132,28 @@ export class ApiClient {
 	}
 
 	/**
-	 * Make a DELETE request
-	 * @param url - API endpoint URL
-	 * @param config - Additional axios config
+	 * Realizar petición DELETE
+	 * @param url - URL del endpoint de la API
+	 * @param config - Configuración adicional de axios
 	 */
 	public static async delete<T>(
 		url: string,
 		config?: AxiosRequestConfig
 	): Promise<T> {
 		try {
+			console.log("ApiClient: Realizando petición DELETE a:", url);
+
 			const response: AxiosResponse = await axiosInstance.delete(url, config);
-			return response.data;
+
+			console.log(
+				"ApiClient: Respuesta de DELETE a",
+				url,
+				":",
+				response.status
+			);
+
+			// Validar y transformar la respuesta
+			return this.handleApiResponse<T>(response);
 		} catch (error) {
 			this.handleApiError(error, url, "DELETE");
 			throw error;
@@ -177,10 +161,10 @@ export class ApiClient {
 	}
 
 	/**
-	 * Upload file(s) with multipart/form-data
-	 * @param url - API endpoint URL
-	 * @param formData - FormData containing file(s) and other data
-	 * @param config - Additional axios config
+	 * Subir archivo(s) con multipart/form-data
+	 * @param url - URL del endpoint de la API
+	 * @param formData - FormData con archivo(s) y otros datos
+	 * @param config - Configuración adicional de axios
 	 */
 	public static async uploadFile<T>(
 		url: string,
@@ -188,13 +172,24 @@ export class ApiClient {
 		config?: AxiosRequestConfig
 	): Promise<T> {
 		try {
+			console.log("ApiClient: Subiendo archivo a:", url);
+
 			const response: AxiosResponse = await axiosInstance.post(url, formData, {
 				headers: {
 					"Content-Type": "multipart/form-data",
 				},
 				...config,
 			});
-			return response.data;
+
+			console.log(
+				"ApiClient: Respuesta de subida de archivo a",
+				url,
+				":",
+				response.status
+			);
+
+			// Validar y transformar la respuesta
+			return this.handleApiResponse<T>(response);
 		} catch (error) {
 			this.handleApiError(error, url, "UPLOAD");
 			throw error;
@@ -202,10 +197,65 @@ export class ApiClient {
 	}
 
 	/**
-	 * Helper method to handle API errors
-	 * @param error - Error object
-	 * @param url - The URL of the request
-	 * @param method - The HTTP method used
+	 * Transforma parámetros de camelCase a snake_case
+	 * @param params - Parámetros originales
+	 * @returns Parámetros transformados
+	 */
+	private static transformParamsToSnakeCase(params?: any): any {
+		if (!params) return undefined;
+
+		const transformed: Record<string, any> = {};
+
+		Object.entries(params).forEach(([key, value]) => {
+			// Convertir camelCase a snake_case
+			const snakeKey = key.replace(/([A-Z])/g, "_$1").toLowerCase();
+
+			// Si el parámetro ya está en snake_case, no lo modificamos
+			const finalKey = key === snakeKey ? key : snakeKey;
+
+			transformed[finalKey] = value;
+		});
+
+		return transformed;
+	}
+
+	/**
+	 * Procesa la respuesta de la API para manejar diferentes estructuras
+	 * @param response - Respuesta de axios
+	 * @returns Datos procesados
+	 */
+	private static handleApiResponse<T>(response: AxiosResponse): T {
+		if (!response) {
+			throw new Error("Respuesta vacía de la API");
+		}
+
+		// Extraer datos según la estructura de la respuesta
+		if (response.data) {
+			// Verificar si la respuesta tiene una estructura anidada data.data
+			if (
+				response.data.data &&
+				(Array.isArray(response.data.data) ||
+					typeof response.data.data === "object")
+			) {
+				console.log(
+					"ApiClient: Procesando respuesta con estructura anidada data.data"
+				);
+				return response.data;
+			}
+
+			// Caso más común: los datos están directamente en response.data
+			return response.data;
+		}
+
+		// Si no hay datos en la respuesta, devolver la respuesta completa
+		return response as unknown as T;
+	}
+
+	/**
+	 * Método auxiliar para manejar errores de API
+	 * @param error - Objeto de error
+	 * @param url - URL de la petición
+	 * @param method - Método HTTP utilizado
 	 */
 	private static handleApiError(error: any, url: string, method: string): void {
 		if (axios.isAxiosError(error)) {
@@ -215,39 +265,40 @@ export class ApiClient {
 				status: response?.status,
 				statusText: response?.statusText,
 				data: response?.data,
-				headers: response?.headers,
 			});
 
-			// Authentication error
+			// Error de autenticación
 			if (response?.status === 401) {
-				console.error("Authentication error - token may be invalid or missing");
+				console.error(
+					"Error de autenticación - el token puede ser inválido o estar ausente"
+				);
 			}
 
-			// Validation error
+			// Error de validación
 			else if (response?.status === 422) {
 				console.error(
-					"Validation error:",
+					"Error de validación:",
 					response.data?.errors || response.data
 				);
 			}
 
-			// Not found
+			// Recurso no encontrado
 			else if (response?.status === 404) {
-				console.error("Resource not found");
+				console.error("Recurso no encontrado");
 			}
 
-			// Server error
+			// Error del servidor
 			else if (response?.status === 500) {
-				console.error("Server error");
+				console.error("Error del servidor");
 			}
 
-			// CORS error
+			// Error de CORS
 			else if (error.message.includes("Network Error")) {
-				console.error("Network error - this might be a CORS issue");
+				console.error("Error de red - podría ser un problema de CORS");
 			}
 		} else {
-			// Non-Axios error
-			console.error(`Unknown error (${method} ${url}):`, error);
+			// Error no relacionado con Axios
+			console.error(`Error desconocido (${method} ${url}):`, error);
 		}
 	}
 }

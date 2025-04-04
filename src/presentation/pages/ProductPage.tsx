@@ -180,8 +180,8 @@ const ProductPage: React.FC = () => {
 				const categoryA = categoriesData.find((c) => c.id === a.id);
 				const categoryB = categoriesData.find((c) => c.id === b.id);
 
-				const countA = categoryA?.productCount || 0;
-				const countB = categoryB?.productCount || 0;
+				const countA = categoryA?.product_count || 0;
+				const countB = categoryB?.product_count || 0;
 
 				return countB - countA;
 			});
@@ -278,6 +278,7 @@ const ProductPage: React.FC = () => {
 
 	// Determinar si está cargando
 	const isLoading = productsLoading || categoriesLoading || isSearching;
+
 
 	return (
 		<div className="container mx-auto px-4 py-8">
@@ -437,7 +438,6 @@ const ProductPage: React.FC = () => {
 							)}
 						</>
 					)}
-
 					{/* Mensaje cuando no hay productos con los filtros actuales */}
 					{!isLoading &&
 						!productsError &&
