@@ -161,7 +161,9 @@ const AdminLayout: React.FC = () => {
 				<div className="flex items-center justify-between px-6 py-4 border-b border-gray-800">
 					<Link to="/admin/dashboard" className="flex items-center space-x-2">
 						<Shield className="w-7 h-7 text-primary-400" />
-						<span className="text-xl font-bold">Admin Panel</span>
+						<span className="text-xl font-bold">
+							Panel de Administración (Admin)
+						</span>
 					</Link>
 					<button
 						className="md:hidden text-gray-400 hover:text-white"
@@ -176,7 +178,7 @@ const AdminLayout: React.FC = () => {
 					<div className="space-y-8">
 						<div className="space-y-2">
 							<h3 className="px-3 text-xs font-semibold text-gray-400 uppercase">
-								Main
+								Principal
 							</h3>
 
 							<Link
@@ -194,7 +196,7 @@ const AdminLayout: React.FC = () => {
 
 						<div className="space-y-2">
 							<h3 className="px-3 text-xs font-semibold text-gray-400 uppercase">
-								User Management
+								Gestión de Usuario
 							</h3>
 
 							<Link
@@ -206,7 +208,7 @@ const AdminLayout: React.FC = () => {
 								}`}
 							>
 								<Users className="w-5 h-5 mr-3" />
-								Users
+								Usuarios
 							</Link>
 
 							<Link
@@ -219,7 +221,7 @@ const AdminLayout: React.FC = () => {
 							>
 								<div className="flex items-center">
 									<Briefcase className="w-5 h-5 mr-3" />
-									Sellers
+									Vendedores
 								</div>
 								{pendingActions.sellerRequests > 0 && (
 									<span className="bg-red-500 text-white text-xs rounded-full px-2 py-0.5">
@@ -231,7 +233,7 @@ const AdminLayout: React.FC = () => {
 
 						<div className="space-y-2">
 							<h3 className="px-3 text-xs font-semibold text-gray-400 uppercase">
-								Products
+								Productos
 							</h3>
 
 							<Link
@@ -243,7 +245,7 @@ const AdminLayout: React.FC = () => {
 								}`}
 							>
 								<Package className="w-5 h-5 mr-3" />
-								Products
+								Productos
 							</Link>
 
 							<Link
@@ -255,13 +257,13 @@ const AdminLayout: React.FC = () => {
 								}`}
 							>
 								<Tag className="w-5 h-5 mr-3" />
-								Categories
+								Categorías
 							</Link>
 						</div>
 
 						<div className="space-y-2">
 							<h3 className="px-3 text-xs font-semibold text-gray-400 uppercase">
-								Orders
+								Pedidos
 							</h3>
 
 							<Link
@@ -273,7 +275,7 @@ const AdminLayout: React.FC = () => {
 								}`}
 							>
 								<ShoppingBag className="w-5 h-5 mr-3" />
-								Orders
+								Pedidos
 							</Link>
 
 							<Link
@@ -285,13 +287,13 @@ const AdminLayout: React.FC = () => {
 								}`}
 							>
 								<Truck className="w-5 h-5 mr-3" />
-								Shipping
+								Envíos
 							</Link>
 						</div>
 
 						<div className="space-y-2">
 							<h3 className="px-3 text-xs font-semibold text-gray-400 uppercase">
-								Content
+								Contenido
 							</h3>
 
 							<Link
@@ -304,7 +306,7 @@ const AdminLayout: React.FC = () => {
 							>
 								<div className="flex items-center">
 									<Star className="w-5 h-5 mr-3" />
-									Ratings & Reviews
+									Valoraciones y Reseñas
 								</div>
 								{pendingActions.ratings > 0 && (
 									<span className="bg-red-500 text-white text-xs rounded-full px-2 py-0.5">
@@ -323,7 +325,7 @@ const AdminLayout: React.FC = () => {
 							>
 								<div className="flex items-center">
 									<MessageSquare className="w-5 h-5 mr-3" />
-									Feedback
+									Feedback y Comentarios
 								</div>
 								{pendingActions.feedback > 0 && (
 									<span className="bg-red-500 text-white text-xs rounded-full px-2 py-0.5">
@@ -341,13 +343,13 @@ const AdminLayout: React.FC = () => {
 								}`}
 							>
 								<DollarSign className="w-5 h-5 mr-3" />
-								Discounts
+								Descuentos
 							</Link>
 						</div>
 
 						<div className="space-y-2">
 							<h3 className="px-3 text-xs font-semibold text-gray-400 uppercase">
-								Finance
+								Finanzas
 							</h3>
 
 							<Link
@@ -359,7 +361,7 @@ const AdminLayout: React.FC = () => {
 								}`}
 							>
 								<FileText className="w-5 h-5 mr-3" />
-								Invoices
+								Facturas
 							</Link>
 
 							<Link
@@ -371,13 +373,13 @@ const AdminLayout: React.FC = () => {
 								}`}
 							>
 								<DollarSign className="w-5 h-5 mr-3" />
-								Accounting
+								Contabilidad
 							</Link>
 						</div>
 
 						<div className="space-y-2">
 							<h3 className="px-3 text-xs font-semibold text-gray-400 uppercase">
-								System
+								Sistema
 							</h3>
 
 							<Link
@@ -389,7 +391,7 @@ const AdminLayout: React.FC = () => {
 								}`}
 							>
 								<Settings className="w-5 h-5 mr-3" />
-								Settings
+								Configuración
 							</Link>
 
 							<Link
@@ -401,7 +403,7 @@ const AdminLayout: React.FC = () => {
 								}`}
 							>
 								<AlertTriangle className="w-5 h-5 mr-3" />
-								Error Logs
+								Registros de Errores
 							</Link>
 						</div>
 					</div>
@@ -426,8 +428,9 @@ const AdminLayout: React.FC = () => {
 								<div className="flex items-center mr-4">
 									<span className="bg-red-500 text-white text-sm font-medium rounded-md px-2 py-1 flex items-center">
 										<AlertTriangle size={16} className="mr-1" />
-										{totalPendingActions} pending{" "}
-										{totalPendingActions === 1 ? "action" : "actions"}
+										{totalPendingActions} pending {totalPendingActions} acción
+										{totalPendingActions === 1 ? "" : "es"} pendiente
+										{totalPendingActions === 1 ? "" : "s"}
 									</span>
 								</div>
 							)}
@@ -436,27 +439,27 @@ const AdminLayout: React.FC = () => {
 								{/* Dynamic section title based on current path */}
 								{location.pathname.includes("/admin/dashboard") && "Dashboard"}
 								{location.pathname.includes("/admin/users") &&
-									"Users Management"}
+									"Gestión de Usuarios"}
 								{location.pathname.includes("/admin/sellers") &&
-									"Sellers Management"}
+									"Gestión de Vendedores"}
 								{location.pathname.includes("/admin/products") &&
-									"Products Management"}
+									"Gestión de Productos"}
 								{location.pathname.includes("/admin/categories") &&
-									"Categories Management"}
+									"Gestión de Categorías"}
 								{location.pathname.includes("/admin/orders") &&
-									"Orders Management"}
+									"Gestión de Pedidos"}
 								{location.pathname.includes("/admin/ratings") &&
-									"Ratings & Reviews Moderation"}
+									"Moderación de Valoraciones y Reseñas"}
 								{location.pathname.includes("/admin/feedback") &&
-									"Feedback Management"}
+									"Gestión de Comentarios"}
 								{location.pathname.includes("/admin/discounts") &&
-									"Discount Codes"}
-								{location.pathname.includes("/admin/invoices") && "Invoices"}
+									"Códigos de Descuento"}
+								{location.pathname.includes("/admin/invoices") && "Facturas"}
 								{location.pathname.includes("/admin/accounting") &&
-									"Accounting"}
+									"Contabilidad"}
 								{location.pathname.includes("/admin/settings") &&
-									"System Settings"}
-								{location.pathname.includes("/admin/logs") && "Error Logs"}
+									"Configuración del Sistema"}
+								{location.pathname.includes("/admin/logs") && "Registro de Errores"}
 							</h1>
 						</div>
 
@@ -471,7 +474,7 @@ const AdminLayout: React.FC = () => {
 								rel="noopener noreferrer"
 								className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hidden md:block"
 							>
-								<span className="text-sm">Visit Store</span>
+								<span className="text-sm">Visitar Tienda</span>
 							</a>
 
 							{/* Notifications */}
@@ -493,11 +496,11 @@ const AdminLayout: React.FC = () => {
 									<div className="notifications-menu absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg py-2 z-30 border border-gray-200 dark:border-gray-700">
 										<div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
 											<h3 className="text-sm font-semibold text-gray-800 dark:text-white">
-												Notifications
+												Notificaciones
 											</h3>
 											{unreadNotifications > 0 && (
 												<button className="text-xs text-primary-600 dark:text-primary-400 hover:underline">
-													Mark all as read
+													Marcar todas como leídas
 												</button>
 											)}
 										</div>
@@ -505,35 +508,36 @@ const AdminLayout: React.FC = () => {
 											{/* Sample notifications - replace with actual data */}
 											<div className="px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 border-l-4 border-red-500">
 												<p className="text-sm text-gray-800 dark:text-white font-medium">
-													New seller verification request
+													Nueva solicitud de verificación de vendedor
 												</p>
 												<p className="text-xs text-gray-500 dark:text-gray-400">
-													Seller "TechGadgets" needs approval
+													El vendedor "TechGadgets" necesita aprobación
 												</p>
 												<p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-													5 minutes ago
+													Hace 5 minutos
 												</p>
 											</div>
 											<div className="px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700">
 												<p className="text-sm text-gray-800 dark:text-white font-medium">
-													Review needs moderation
+													Reseña necesita moderación
 												</p>
 												<p className="text-xs text-gray-500 dark:text-gray-400">
-													New 1-star review for "Wireless Headphones"
+													Nueva valoración de 1 estrella para "Auriculares
+													Inalámbricos"
 												</p>
 												<p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-													30 minutes ago
+													Hace 30 minutos
 												</p>
 											</div>
 											<div className="px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700">
 												<p className="text-sm text-gray-800 dark:text-white font-medium">
-													System alert
+													Alerta del sistema
 												</p>
 												<p className="text-xs text-gray-500 dark:text-gray-400">
-													Payment gateway connectivity issues
+													Problemas de conectividad con la pasarela de pago
 												</p>
 												<p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-													1 hour ago
+													Hace 1 hora
 												</p>
 											</div>
 										</div>
@@ -542,7 +546,7 @@ const AdminLayout: React.FC = () => {
 												to="/admin/notifications"
 												className="text-sm text-primary-600 dark:text-primary-400 hover:underline block text-center"
 											>
-												View all notifications
+												Ver todas las notificaciones
 											</Link>
 										</div>
 									</div>
@@ -572,7 +576,7 @@ const AdminLayout: React.FC = () => {
 												{user?.name || "Admin"}
 											</p>
 											<p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-												{user?.email || "admin@example.com"}
+												{user?.email || "admin@ejemplo.com"}
 											</p>
 										</div>
 
@@ -583,7 +587,7 @@ const AdminLayout: React.FC = () => {
 										>
 											<div className="flex items-center">
 												<User size={16} className="mr-2" />
-												My Profile
+												Mi Perfil
 											</div>
 										</Link>
 
@@ -594,7 +598,7 @@ const AdminLayout: React.FC = () => {
 										>
 											<div className="flex items-center">
 												<Settings size={16} className="mr-2" />
-												Settings
+												Configuración
 											</div>
 										</Link>
 
@@ -604,7 +608,7 @@ const AdminLayout: React.FC = () => {
 										>
 											<div className="flex items-center">
 												<LogOut size={16} className="mr-2" />
-												Logout
+												Cerrar Sesión
 											</div>
 										</button>
 									</div>
@@ -622,8 +626,8 @@ const AdminLayout: React.FC = () => {
 				{/* Footer */}
 				<footer className="bg-white dark:bg-gray-800 py-3 px-4 text-center text-sm text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700">
 					<p>
-						&copy; {new Date().getFullYear()} BCommerce Admin Panel. All rights
-						reserved.
+						&copy; {new Date().getFullYear()} Panel de Administración BCommerce.
+						Todos los derechos reservados.
 					</p>
 				</footer>
 			</div>

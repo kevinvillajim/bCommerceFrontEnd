@@ -126,7 +126,7 @@ const SellerLayout: React.FC = () => {
 					<Link to="/seller/dashboard" className="flex items-center space-x-2">
 						<Package className="w-7 h-7 text-primary-600 dark:text-primary-400" />
 						<span className="text-xl font-bold text-gray-900 dark:text-white">
-							Seller Portal
+							Portal del Vendedor
 						</span>
 					</Link>
 					<button
@@ -142,7 +142,7 @@ const SellerLayout: React.FC = () => {
 					<div className="space-y-8">
 						<div className="space-y-2">
 							<h3 className="px-3 text-xs font-semibold text-gray-500 uppercase dark:text-gray-400">
-								Main
+								Principal
 							</h3>
 
 							<Link
@@ -160,7 +160,7 @@ const SellerLayout: React.FC = () => {
 
 						<div className="space-y-2">
 							<h3 className="px-3 text-xs font-semibold text-gray-500 uppercase dark:text-gray-400">
-								Products
+								Productos
 							</h3>
 
 							<Link
@@ -173,7 +173,7 @@ const SellerLayout: React.FC = () => {
 								}`}
 							>
 								<Package className="w-5 h-5 mr-3" />
-								All Products
+								Todos los Productos
 							</Link>
 
 							<Link
@@ -185,13 +185,13 @@ const SellerLayout: React.FC = () => {
 								}`}
 							>
 								<Package className="w-5 h-5 mr-3" />
-								Add Product
+								Añadir Producto
 							</Link>
 						</div>
 
 						<div className="space-y-2">
 							<h3 className="px-3 text-xs font-semibold text-gray-500 uppercase dark:text-gray-400">
-								Orders
+								Pedidos
 							</h3>
 
 							<Link
@@ -203,7 +203,7 @@ const SellerLayout: React.FC = () => {
 								}`}
 							>
 								<ShoppingBag className="w-5 h-5 mr-3" />
-								Orders
+								Pedidos
 							</Link>
 
 							<Link
@@ -215,13 +215,13 @@ const SellerLayout: React.FC = () => {
 								}`}
 							>
 								<Truck className="w-5 h-5 mr-3" />
-								Shipping
+								Envíos
 							</Link>
 						</div>
 
 						<div className="space-y-2">
 							<h3 className="px-3 text-xs font-semibold text-gray-500 uppercase dark:text-gray-400">
-								Customers
+								Clientes
 							</h3>
 
 							<Link
@@ -233,7 +233,7 @@ const SellerLayout: React.FC = () => {
 								}`}
 							>
 								<Star className="w-5 h-5 mr-3" />
-								Ratings & Reviews
+								Valoraciones y Reseñas
 							</Link>
 
 							<Link
@@ -245,13 +245,13 @@ const SellerLayout: React.FC = () => {
 								}`}
 							>
 								<MessageSquare className="w-5 h-5 mr-3" />
-								Messages
+								Mensajes
 							</Link>
 						</div>
 
 						<div className="space-y-2">
 							<h3 className="px-3 text-xs font-semibold text-gray-500 uppercase dark:text-gray-400">
-								Financial
+								Finanzas
 							</h3>
 
 							<Link
@@ -263,7 +263,7 @@ const SellerLayout: React.FC = () => {
 								}`}
 							>
 								<FileText className="w-5 h-5 mr-3" />
-								Invoices
+								Facturas
 							</Link>
 
 							<Link
@@ -275,13 +275,13 @@ const SellerLayout: React.FC = () => {
 								}`}
 							>
 								<DollarSign className="w-5 h-5 mr-3" />
-								Earnings
+								Ganancias
 							</Link>
 						</div>
 
 						<div className="space-y-2">
 							<h3 className="px-3 text-xs font-semibold text-gray-500 uppercase dark:text-gray-400">
-								Account
+								Cuenta
 							</h3>
 
 							<Link
@@ -293,7 +293,7 @@ const SellerLayout: React.FC = () => {
 								}`}
 							>
 								<User className="w-5 h-5 mr-3" />
-								Profile
+								Perfil
 							</Link>
 
 							<Link
@@ -305,7 +305,7 @@ const SellerLayout: React.FC = () => {
 								}`}
 							>
 								<Settings className="w-5 h-5 mr-3" />
-								Settings
+								Configuración
 							</Link>
 						</div>
 					</div>
@@ -329,18 +329,19 @@ const SellerLayout: React.FC = () => {
 								{location.pathname.includes("/seller/dashboard") && "Dashboard"}
 								{location.pathname.includes("/seller/products") &&
 									!location.pathname.includes("/create") &&
-									"Products"}
+									"Productos"}
 								{location.pathname.includes("/seller/products/create") &&
-									"Add New Product"}
-								{location.pathname.includes("/seller/orders") && "Orders"}
+									"Añadir Nuevo Producto"}
+								{location.pathname.includes("/seller/orders") && "Pedidos"}
 								{location.pathname.includes("/seller/ratings") &&
-									"Ratings & Reviews"}
-								{location.pathname.includes("/seller/messages") && "Messages"}
-								{location.pathname.includes("/seller/invoices") && "Invoices"}
-								{location.pathname.includes("/seller/profile") && "My Profile"}
-								{location.pathname.includes("/seller/settings") && "Settings"}
-								{location.pathname.includes("/seller/shipping") && "Shipping"}
-								{location.pathname.includes("/seller/earnings") && "Earnings"}
+									"Valoraciones y Reseñas"}
+								{location.pathname.includes("/seller/messages") && "Mensajes"}
+								{location.pathname.includes("/seller/invoices") && "Facturas"}
+								{location.pathname.includes("/seller/profile") && "Mi Perfil"}
+								{location.pathname.includes("/seller/settings") &&
+									"Configuración"}
+								{location.pathname.includes("/seller/shipping") && "Envíos"}
+								{location.pathname.includes("/seller/earnings") && "Ganancias"}
 							</h1>
 						</div>
 
@@ -367,11 +368,11 @@ const SellerLayout: React.FC = () => {
 									<div className="notifications-menu absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg py-2 z-30 border border-gray-200 dark:border-gray-700">
 										<div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
 											<h3 className="text-sm font-semibold text-gray-800 dark:text-white">
-												Notifications
+												Notificaciones
 											</h3>
 											{unreadNotifications > 0 && (
 												<button className="text-xs text-primary-600 dark:text-primary-400 hover:underline">
-													Mark all as read
+													Marcar todas como leídas
 												</button>
 											)}
 										</div>
@@ -379,35 +380,35 @@ const SellerLayout: React.FC = () => {
 											{/* Sample notifications - replace with actual data */}
 											<div className="px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 border-l-4 border-primary-500">
 												<p className="text-sm text-gray-800 dark:text-white font-medium">
-													New order received
+													Nuevo pedido recibido
 												</p>
 												<p className="text-xs text-gray-500 dark:text-gray-400">
-													Order #12345 - 2 items
+													Pedido #12345 - 2 artículos
 												</p>
 												<p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-													10 minutes ago
+													hace 10 minutos
 												</p>
 											</div>
 											<div className="px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700">
 												<p className="text-sm text-gray-800 dark:text-white font-medium">
-													New review
+													Nueva valoración
 												</p>
 												<p className="text-xs text-gray-500 dark:text-gray-400">
-													Someone rated your product 5 stars
+													Alguien calificó tu producto con 5 estrellas
 												</p>
 												<p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-													1 hour ago
+													hace 1 hora
 												</p>
 											</div>
 											<div className="px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700">
 												<p className="text-sm text-gray-800 dark:text-white font-medium">
-													Payment received
+													Pago recibido
 												</p>
 												<p className="text-xs text-gray-500 dark:text-gray-400">
-													Payment for order #12340 confirmed
+													Pago para el pedido #12340 confirmado
 												</p>
 												<p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-													2 hours ago
+													hace 2 horas
 												</p>
 											</div>
 										</div>
@@ -416,7 +417,7 @@ const SellerLayout: React.FC = () => {
 												to="/seller/notifications"
 												className="text-sm text-primary-600 dark:text-primary-400 hover:underline block text-center"
 											>
-												View all notifications
+												Ver todas las notificaciones
 											</Link>
 										</div>
 									</div>
@@ -443,10 +444,10 @@ const SellerLayout: React.FC = () => {
 									<div className="profile-menu absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg py-2 z-30 border border-gray-200 dark:border-gray-700">
 										<div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
 											<p className="text-sm font-medium text-gray-800 dark:text-white">
-												{user?.name || "Seller"}
+												{user?.name || "Vendedor"}
 											</p>
 											<p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-												{user?.email || "seller@example.com"}
+												{user?.email || "vendedor@ejemplo.com"}
 											</p>
 										</div>
 
@@ -457,7 +458,7 @@ const SellerLayout: React.FC = () => {
 										>
 											<div className="flex items-center">
 												<User size={16} className="mr-2" />
-												My Profile
+												Mi Perfil
 											</div>
 										</Link>
 
@@ -468,7 +469,7 @@ const SellerLayout: React.FC = () => {
 										>
 											<div className="flex items-center">
 												<Settings size={16} className="mr-2" />
-												Settings
+												Configuración
 											</div>
 										</Link>
 
@@ -478,7 +479,7 @@ const SellerLayout: React.FC = () => {
 										>
 											<div className="flex items-center">
 												<LogOut size={16} className="mr-2" />
-												Logout
+												Cerrar Sesión
 											</div>
 										</button>
 									</div>
@@ -496,8 +497,8 @@ const SellerLayout: React.FC = () => {
 				{/* Footer */}
 				<footer className="bg-white dark:bg-gray-800 py-3 px-4 text-center text-sm text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700">
 					<p>
-						&copy; {new Date().getFullYear()} BCommerce Seller Portal. All
-						rights reserved.
+						&copy; {new Date().getFullYear()} Portal de Vendedor BCommerce.
+						Todos los derechos reservados.
 					</p>
 				</footer>
 			</div>

@@ -182,14 +182,14 @@ const SellerProductsPage: React.FC = () => {
 		<div className="space-y-6">
 			<div className="flex justify-between items-center">
 				<h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-					My Products
+					Mis Productos
 				</h1>
 				<Link
 					to="/seller/products/create"
 					className="flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
 				>
 					<PlusCircle size={18} className="mr-2" />
-					Add New Product
+					Añadir Nuevo Producto
 				</Link>
 			</div>
 
@@ -216,10 +216,10 @@ const SellerProductsPage: React.FC = () => {
 							value={statusFilter}
 							onChange={(e) => setStatusFilter(e.target.value)}
 						>
-							<option value="all">All Status</option>
-							<option value="active">Active</option>
-							<option value="inactive">Inactive</option>
-							<option value="draft">Draft</option>
+							<option value="all">Todos los Estados</option>
+							<option value="active">Activo</option>
+							<option value="inactive">Inactivo</option>
+							<option value="draft">Borrador</option>
 						</select>
 					</div>
 				</div>
@@ -235,7 +235,7 @@ const SellerProductsPage: React.FC = () => {
 					<div className="p-8 text-center">
 						<Package className="h-12 w-12 mx-auto text-gray-400 dark:text-gray-600 mb-4" />
 						<h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-							No products found
+							No se encontraron productos
 						</h3>
 						<p className="text-gray-500 dark:text-gray-400 mb-4">
 							{searchTerm
@@ -247,7 +247,7 @@ const SellerProductsPage: React.FC = () => {
 							className="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
 						>
 							<PlusCircle size={18} className="mr-2" />
-							Add New Product
+							Añadir Nuevo Producto
 						</Link>
 					</div>
 				) : (
@@ -259,19 +259,19 @@ const SellerProductsPage: React.FC = () => {
 										scope="col"
 										className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
 									>
-										Product
+										Producto
 									</th>
 									<th
 										scope="col"
 										className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
 									>
-										Category
+										Categoría
 									</th>
 									<th
 										scope="col"
 										className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
 									>
-										Price
+										Precio
 									</th>
 									<th
 										scope="col"
@@ -283,19 +283,19 @@ const SellerProductsPage: React.FC = () => {
 										scope="col"
 										className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
 									>
-										Status
+										Estado
 									</th>
 									<th
 										scope="col"
 										className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
 									>
-										Created
+										Creado
 									</th>
 									<th
 										scope="col"
 										className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
 									>
-										Actions
+										Acciones
 									</th>
 								</tr>
 							</thead>
@@ -334,7 +334,7 @@ const SellerProductsPage: React.FC = () => {
 											<div
 												className={`text-sm ${product.stock > 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
 											>
-												{product.stock > 0 ? product.stock : "Out of stock"}
+												{product.stock > 0 ? product.stock : "Sin stock"}
 											</div>
 										</td>
 										<td className="px-6 py-4 whitespace-nowrap">
@@ -347,8 +347,9 @@ const SellerProductsPage: React.FC = () => {
 															: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200"
 												}`}
 											>
-												{product.status.charAt(0).toUpperCase() +
-													product.status.slice(1)}
+												{product.status === "active" && "Activo"}
+												{product.status === "inactive" && "Inactivo"}
+												{product.status === "draft" && "Borrador"}
 											</span>
 										</td>
 										<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
@@ -365,8 +366,8 @@ const SellerProductsPage: React.FC = () => {
 													}`}
 													title={
 														product.status === "active"
-															? "Deactivate"
-															: "Activate"
+															? "Desactivar"
+															: "Activar"
 													}
 												>
 													{product.status === "active" ? (
@@ -378,14 +379,14 @@ const SellerProductsPage: React.FC = () => {
 												<Link
 													to={`/seller/products/edit/${product.id}`}
 													className="p-1 text-blue-600 hover:bg-blue-100 rounded-md dark:text-blue-400 dark:hover:bg-blue-900"
-													title="Edit product"
+													title="Editar producto"
 												>
 													<Edit size={18} />
 												</Link>
 												<button
 													onClick={() => handleDelete(product.id)}
 													className="p-1 text-red-600 hover:bg-red-100 rounded-md dark:text-red-400 dark:hover:bg-red-900"
-													title="Delete product"
+													title="Eliminar producto"
 												>
 													<Trash2 size={18} />
 												</button>

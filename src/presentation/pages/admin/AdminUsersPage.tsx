@@ -193,12 +193,12 @@ const AdminUsersPage: React.FC = () => {
 		<div className="space-y-6">
 			<div className="flex justify-between items-center">
 				<h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-					User Management
+					Gestión de Usuarios
 				</h1>
 				<div className="flex space-x-2">
 					<button className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
 						<RefreshCw size={18} className="inline mr-2" />
-						Refresh
+						Actualizar
 					</button>
 				</div>
 			</div>
@@ -210,7 +210,7 @@ const AdminUsersPage: React.FC = () => {
 					<div className="relative flex-grow">
 						<input
 							type="text"
-							placeholder="Search by name or email..."
+							placeholder="Buscar por nombre o email..."
 							className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
 							value={searchTerm}
 							onChange={(e) => setSearchTerm(e.target.value)}
@@ -226,10 +226,10 @@ const AdminUsersPage: React.FC = () => {
 							value={roleFilter}
 							onChange={(e) => setRoleFilter(e.target.value)}
 						>
-							<option value="all">All Roles</option>
-							<option value="customer">Customer</option>
-							<option value="seller">Seller</option>
-							<option value="admin">Admin</option>
+							<option value="all">Todos los Roles</option>
+							<option value="customer">Cliente</option>
+							<option value="seller">Vendedor</option>
+							<option value="admin">Administrador</option>
 						</select>
 					</div>
 
@@ -240,9 +240,9 @@ const AdminUsersPage: React.FC = () => {
 							value={statusFilter}
 							onChange={(e) => setStatusFilter(e.target.value)}
 						>
-							<option value="all">All Status</option>
-							<option value="active">Active</option>
-							<option value="blocked">Blocked</option>
+							<option value="all">Todos los Estados</option>
+							<option value="active">Activo</option>
+							<option value="blocked">Bloqueado</option>
 						</select>
 					</div>
 				</div>
@@ -258,11 +258,11 @@ const AdminUsersPage: React.FC = () => {
 					<div className="p-8 text-center">
 						<User className="h-12 w-12 mx-auto text-gray-400 dark:text-gray-600 mb-4" />
 						<h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-							No users found
+							No se encontraron usuarios
 						</h3>
 						<p className="text-gray-500 dark:text-gray-400">
-							Try adjusting your search or filter to find what you're looking
-							for.
+							Intente ajustar su búsqueda o filtro para encontrar lo que está
+							buscando.
 						</p>
 					</div>
 				) : (
@@ -275,43 +275,43 @@ const AdminUsersPage: React.FC = () => {
 											scope="col"
 											className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
 										>
-											User
+											Usuario
 										</th>
 										<th
 											scope="col"
 											className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
 										>
-											Role
+											Rol
 										</th>
 										<th
 											scope="col"
 											className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
 										>
-											Status
+											Estado
 										</th>
 										<th
 											scope="col"
 											className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
 										>
-											Last Login
+											Último Acceso
 										</th>
 										<th
 											scope="col"
 											className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
 										>
-											Registered
+											Registrado
 										</th>
 										<th
 											scope="col"
 											className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
 										>
-											Orders
+											Pedidos
 										</th>
 										<th
 											scope="col"
 											className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
 										>
-											Actions
+											Acciones
 										</th>
 									</tr>
 								</thead>
@@ -346,8 +346,9 @@ const AdminUsersPage: React.FC = () => {
 																: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
 													}`}
 												>
-													{user.role.charAt(0).toUpperCase() +
-														user.role.slice(1)}
+													{user.role === "admin" && "Administrador"}
+													{user.role === "seller" && "Vendedor"}
+													{user.role === "customer" && "Cliente"}
 												</span>
 											</td>
 											<td className="px-6 py-4 whitespace-nowrap">
@@ -382,8 +383,8 @@ const AdminUsersPage: React.FC = () => {
 														}`}
 														title={
 															user.status === "active"
-																? "Block User"
-																: "Unblock User"
+																? "Bloquear Usuario"
+																: "Desbloquear Usuario"
 														}
 													>
 														{user.status === "active" ? (
@@ -395,20 +396,20 @@ const AdminUsersPage: React.FC = () => {
 													<button
 														onClick={() => sendPasswordReset(user.id)}
 														className="p-1 text-blue-600 hover:bg-blue-100 rounded-md dark:text-blue-400 dark:hover:bg-blue-900"
-														title="Send Password Reset"
+														title="Enviar Restablecimiento de Contraseña"
 													>
 														<Mail size={18} />
 													</button>
 													<button
 														className="p-1 text-yellow-600 hover:bg-yellow-100 rounded-md dark:text-yellow-400 dark:hover:bg-yellow-900"
-														title="Edit User"
+														title="Editar Usuario"
 													>
 														<Edit size={18} />
 													</button>
 													{user.role !== "admin" && (
 														<button
 															className="p-1 text-purple-600 hover:bg-purple-100 rounded-md dark:text-purple-400 dark:hover:bg-purple-900"
-															title="Make Admin"
+															title="Hacer Administrador"
 														>
 															<Shield size={18} />
 														</button>
@@ -425,20 +426,20 @@ const AdminUsersPage: React.FC = () => {
 						<div className="px-6 py-3 flex items-center justify-between border-t border-gray-200 dark:border-gray-700">
 							<div className="flex-1 flex justify-between sm:hidden">
 								<button className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700">
-									Previous
+									Anterior
 								</button>
 								<button className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700">
-									Next
+									Siguiente
 								</button>
 							</div>
 							<div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
 								<div>
 									<p className="text-sm text-gray-700 dark:text-gray-300">
-										Showing <span className="font-medium">1</span> to{" "}
+										Mostrando <span className="font-medium">1</span> a{" "}
 										<span className="font-medium">{filteredUsers.length}</span>{" "}
-										of{" "}
+										de{" "}
 										<span className="font-medium">{pagination.totalUsers}</span>{" "}
-										users
+										usuarios
 									</p>
 								</div>
 								<div>

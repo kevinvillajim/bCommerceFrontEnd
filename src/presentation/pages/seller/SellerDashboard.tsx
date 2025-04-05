@@ -80,7 +80,7 @@ const SellerDashboard: React.FC = () => {
 	return (
 		<div className="space-y-6">
 			<h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-				Seller Dashboard
+				Panel del Vendedor
 			</h1>
 
 			{/* Stats Cards */}
@@ -89,7 +89,7 @@ const SellerDashboard: React.FC = () => {
 				<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 flex items-start justify-between">
 					<div>
 						<p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-							Total Sales
+							Ventas Totales
 						</p>
 						<p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
 							{formatCurrency(dashboardData.totalSales)}
@@ -103,7 +103,7 @@ const SellerDashboard: React.FC = () => {
 								<ArrowDown size={16} />
 							)}
 							<span className="ml-1 text-sm font-medium">
-								{Math.abs(dashboardData.salesChange)}% from last month
+								{Math.abs(dashboardData.salesChange)}% respecto al mes anterior
 							</span>
 						</div>
 					</div>
@@ -116,7 +116,7 @@ const SellerDashboard: React.FC = () => {
 				<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 flex items-start justify-between">
 					<div>
 						<p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-							Total Orders
+							Pedidos Totales
 						</p>
 						<p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
 							{dashboardData.totalOrders}
@@ -130,7 +130,7 @@ const SellerDashboard: React.FC = () => {
 								<ArrowDown size={16} />
 							)}
 							<span className="ml-1 text-sm font-medium">
-								{Math.abs(dashboardData.ordersChange)}% from last month
+								{Math.abs(dashboardData.ordersChange)}% respecto al mes anterior
 							</span>
 						</div>
 					</div>
@@ -143,14 +143,14 @@ const SellerDashboard: React.FC = () => {
 				<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 flex items-start justify-between">
 					<div>
 						<p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-							Products
+							Productos
 						</p>
 						<p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
 							{dashboardData.activeProducts}/{dashboardData.totalProducts}
 						</p>
 						<div className="flex items-center mt-2 text-gray-600 dark:text-gray-400">
 							<span className="text-sm font-medium">
-								{dashboardData.activeProducts} active products
+								{dashboardData.activeProducts} productos activos
 							</span>
 						</div>
 					</div>
@@ -163,12 +163,13 @@ const SellerDashboard: React.FC = () => {
 				<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 flex items-start justify-between">
 					<div>
 						<p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-							Average Rating
+							Promedio de Valoraciónes
 						</p>
 						<p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
 							{dashboardData.averageRating}
 						</p>
 						<div className="flex items-center mt-2 text-yellow-600 dark:text-yellow-400">
+							{/* Stars */}
 							{[...Array(5)].map((_, i) => (
 								<Star
 									key={i}
@@ -199,13 +200,13 @@ const SellerDashboard: React.FC = () => {
 				<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
 					<div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
 						<h2 className="text-lg font-medium text-gray-900 dark:text-white">
-							Recent Orders
+							Pedidos Recientes
 						</h2>
 						<Link
 							to="/seller/orders"
 							className="text-primary-600 dark:text-primary-400 text-sm font-medium hover:underline flex items-center"
 						>
-							View All <ChevronRight size={16} />
+							Ver Todos <ChevronRight size={16} />
 						</Link>
 					</div>
 					<div className="overflow-x-auto">
@@ -213,19 +214,19 @@ const SellerDashboard: React.FC = () => {
 							<thead className="bg-gray-50 dark:bg-gray-700">
 								<tr>
 									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-										Order ID
+										ID Pedido
 									</th>
 									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-										Date
+										Fecha
 									</th>
 									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-										Customer
+										Cliente
 									</th>
 									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
 										Total
 									</th>
 									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-										Status
+										Estado
 									</th>
 								</tr>
 							</thead>
@@ -250,15 +251,17 @@ const SellerDashboard: React.FC = () => {
 										<td className="px-6 py-4 whitespace-nowrap">
 											<span
 												className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                        ${
-													order.status === "Completed"
-														? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-														: order.status === "Shipped"
-															? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
-															: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
-												}`}
+                        						${
+																			order.status === "Completed"
+																				? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+																				: order.status === "Shipped"
+																					? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+																					: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
+																		}`}
 											>
-												{order.status}
+												{order.status === "Completed" && "Completado"}
+												{order.status === "Shipped" && "Enviado"}
+												{order.status === "Processing" && "En Proceso"}
 											</span>
 										</td>
 									</tr>
@@ -272,13 +275,13 @@ const SellerDashboard: React.FC = () => {
 				<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
 					<div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
 						<h2 className="text-lg font-medium text-gray-900 dark:text-white">
-							Top Products
+							Productos Más Vendidos
 						</h2>
 						<Link
 							to="/seller/products"
 							className="text-primary-600 dark:text-primary-400 text-sm font-medium hover:underline flex items-center"
 						>
-							View All <ChevronRight size={16} />
+							Ver Todos <ChevronRight size={16} />
 						</Link>
 					</div>
 					<div className="overflow-x-auto">
@@ -286,13 +289,13 @@ const SellerDashboard: React.FC = () => {
 							<thead className="bg-gray-50 dark:bg-gray-700">
 								<tr>
 									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-										Product
+										Producto
 									</th>
 									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-										Units Sold
+										Unidades Vendidas
 									</th>
 									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-										Revenue
+										Ingresos
 									</th>
 								</tr>
 							</thead>
@@ -330,21 +333,21 @@ const SellerDashboard: React.FC = () => {
 							<ShoppingBag className="w-5 h-5 text-orange-600 dark:text-orange-400" />
 						</div>
 						<h3 className="text-lg font-medium text-gray-900 dark:text-white">
-							Pending Orders
+							Pedidos Pendientes
 						</h3>
 					</div>
 					<p className="text-gray-600 dark:text-gray-400 mb-4">
-						You have{" "}
+						Tienes{" "}
 						<span className="font-semibold text-orange-600 dark:text-orange-400">
 							{dashboardData.pendingOrders}
 						</span>{" "}
-						orders waiting to be processed.
+						pedidos esperando ser procesados.
 					</p>
 					<Link
 						to="/seller/orders?status=pending"
 						className="text-primary-600 dark:text-primary-400 font-medium hover:underline flex items-center"
 					>
-						Process Orders <ChevronRight size={16} />
+						Procesar Pedidos <ChevronRight size={16} />
 					</Link>
 				</div>
 
@@ -355,17 +358,17 @@ const SellerDashboard: React.FC = () => {
 							<Package className="w-5 h-5 text-blue-600 dark:text-blue-400" />
 						</div>
 						<h3 className="text-lg font-medium text-gray-900 dark:text-white">
-							Add New Product
+							Añadir Nuevo Producto
 						</h3>
 					</div>
 					<p className="text-gray-600 dark:text-gray-400 mb-4">
-						Increase your catalog by adding new products to your store.
+						Aumenta tu catálogo añadiendo nuevos productos a tu tienda.
 					</p>
 					<Link
 						to="/seller/products/create"
 						className="text-primary-600 dark:text-primary-400 font-medium hover:underline flex items-center"
 					>
-						Add Product <ChevronRight size={16} />
+						Añadir Producto <ChevronRight size={16} />
 					</Link>
 				</div>
 
@@ -376,17 +379,17 @@ const SellerDashboard: React.FC = () => {
 							<TrendingUp className="w-5 h-5 text-green-600 dark:text-green-400" />
 						</div>
 						<h3 className="text-lg font-medium text-gray-900 dark:text-white">
-							Sales Reports
+							Informes de Ventas
 						</h3>
 					</div>
 					<p className="text-gray-600 dark:text-gray-400 mb-4">
-						View detailed sales reports and analytics for your store.
+						Consulta informes detallados de ventas y análisis para tu tienda.
 					</p>
 					<Link
 						to="/seller/reports"
 						className="text-primary-600 dark:text-primary-400 font-medium hover:underline flex items-center"
 					>
-						View Reports <ChevronRight size={16} />
+						Ver Informes <ChevronRight size={16} />
 					</Link>
 				</div>
 			</div>

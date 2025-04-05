@@ -88,7 +88,7 @@ const AdminDashboard: React.FC = () => {
 	return (
 		<div className="space-y-6">
 			<h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-				Admin Dashboard
+				Dashboard Admin
 			</h1>
 
 			{/* Stats Cards */}
@@ -97,7 +97,7 @@ const AdminDashboard: React.FC = () => {
 				<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 flex items-start justify-between">
 					<div>
 						<p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-							Total Sales
+							Ventas Totales
 						</p>
 						<p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
 							{formatCurrency(dashboardData.totalSales)}
@@ -111,7 +111,7 @@ const AdminDashboard: React.FC = () => {
 								<ArrowDown size={16} />
 							)}
 							<span className="ml-1 text-sm font-medium">
-								{Math.abs(dashboardData.salesChange)}% from last month
+								{Math.abs(dashboardData.salesChange)}% respecto al mes anterior
 							</span>
 						</div>
 					</div>
@@ -124,7 +124,7 @@ const AdminDashboard: React.FC = () => {
 				<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 flex items-start justify-between">
 					<div>
 						<p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-							Total Users
+							Usuarios Totales
 						</p>
 						<p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
 							{dashboardData.totalUsers}
@@ -138,7 +138,7 @@ const AdminDashboard: React.FC = () => {
 								<ArrowDown size={16} />
 							)}
 							<span className="ml-1 text-sm font-medium">
-								{Math.abs(dashboardData.usersChange)}% from last month
+								{Math.abs(dashboardData.usersChange)}% respecto al mes anterior
 							</span>
 						</div>
 					</div>
@@ -151,7 +151,7 @@ const AdminDashboard: React.FC = () => {
 				<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 flex items-start justify-between">
 					<div>
 						<p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-							Total Orders
+							Pedidos Totales
 						</p>
 						<p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
 							{dashboardData.totalOrders}
@@ -165,7 +165,7 @@ const AdminDashboard: React.FC = () => {
 								<ArrowDown size={16} />
 							)}
 							<span className="ml-1 text-sm font-medium">
-								{Math.abs(dashboardData.ordersChange)}% from last month
+								{Math.abs(dashboardData.ordersChange)}% respecto al mes anterior
 							</span>
 						</div>
 					</div>
@@ -178,14 +178,14 @@ const AdminDashboard: React.FC = () => {
 				<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 flex items-start justify-between">
 					<div>
 						<p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-							Products
+							Productos
 						</p>
 						<p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
 							{dashboardData.activeProducts}/{dashboardData.totalProducts}
 						</p>
 						<div className="flex items-center mt-2 text-gray-600 dark:text-gray-400">
 							<span className="text-sm font-medium">
-								{dashboardData.activeProducts} active products
+								{dashboardData.activeProducts} productos activos
 							</span>
 						</div>
 					</div>
@@ -208,17 +208,17 @@ const AdminDashboard: React.FC = () => {
 						</div>
 						<div>
 							<h3 className="font-medium text-gray-900 dark:text-white">
-								Ratings & Reviews
+								Valoraciones y Reseñas
 							</h3>
 							<p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-								{dashboardData.pendingModeration.ratings} pending reviews need
-								approval
+								{dashboardData.pendingModeration.ratings} reseñas pendientes
+								requieren aprobación
 							</p>
 							<Link
 								to="/admin/ratings?status=pending"
 								className="text-primary-600 dark:text-primary-400 text-sm font-medium hover:underline inline-flex items-center"
 							>
-								Moderate Reviews <ChevronRight size={16} />
+								Moderar Reseñas <ChevronRight size={16} />
 							</Link>
 						</div>
 					</div>
@@ -230,17 +230,17 @@ const AdminDashboard: React.FC = () => {
 						</div>
 						<div>
 							<h3 className="font-medium text-gray-900 dark:text-white">
-								Seller Requests
+								Solicitudes de Vendedores
 							</h3>
 							<p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-								{dashboardData.pendingModeration.sellerRequests} seller
-								verification requests
+								{dashboardData.pendingModeration.sellerRequests} solicitudes de
+								verificación de vendedores
 							</p>
 							<Link
 								to="/admin/sellers?status=pending"
 								className="text-primary-600 dark:text-primary-400 text-sm font-medium hover:underline inline-flex items-center"
 							>
-								Review Requests <ChevronRight size={16} />
+								Ver solicitudes <ChevronRight size={16} />
 							</Link>
 						</div>
 					</div>
@@ -255,14 +255,14 @@ const AdminDashboard: React.FC = () => {
 								Customer Feedback
 							</h3>
 							<p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-								{dashboardData.pendingModeration.feedback} feedback items to
-								review
+								{dashboardData.pendingModeration.feedback} comentarios para
+								revisar
 							</p>
 							<Link
 								to="/admin/feedback?status=pending"
 								className="text-primary-600 dark:text-primary-400 text-sm font-medium hover:underline inline-flex items-center"
 							>
-								Review Feedback <ChevronRight size={16} />
+								Revisar Comentarios <ChevronRight size={16} />
 							</Link>
 						</div>
 					</div>
@@ -275,13 +275,13 @@ const AdminDashboard: React.FC = () => {
 				<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
 					<div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
 						<h2 className="text-lg font-medium text-gray-900 dark:text-white">
-							Recent Orders
+							Pedidos Recientes
 						</h2>
 						<Link
 							to="/admin/orders"
 							className="text-primary-600 dark:text-primary-400 text-sm font-medium hover:underline flex items-center"
 						>
-							View All <ChevronRight size={16} />
+							Ver todo <ChevronRight size={16} />
 						</Link>
 					</div>
 					<div className="overflow-x-auto">
@@ -289,19 +289,19 @@ const AdminDashboard: React.FC = () => {
 							<thead className="bg-gray-50 dark:bg-gray-700">
 								<tr>
 									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-										Order ID
+										ID Pedido
 									</th>
 									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-										Date
+										Fecha
 									</th>
 									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-										Customer
+										Cliente
 									</th>
 									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
 										Total
 									</th>
 									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-										Status
+										Estado
 									</th>
 								</tr>
 							</thead>
@@ -334,7 +334,9 @@ const AdminDashboard: React.FC = () => {
 															: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
 												}`}
 											>
-												{order.status}
+												{order.status === "Completed" && "Completado"}
+												{order.status === "Shipped" && "Enviado"}
+												{order.status === "Processing" && "En Proceso"}
 											</span>
 										</td>
 									</tr>
@@ -348,13 +350,13 @@ const AdminDashboard: React.FC = () => {
 				<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
 					<div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
 						<h2 className="text-lg font-medium text-gray-900 dark:text-white">
-							Top Sellers
+							Mejores Vendedores
 						</h2>
 						<Link
 							to="/admin/sellers"
 							className="text-primary-600 dark:text-primary-400 text-sm font-medium hover:underline flex items-center"
 						>
-							View All <ChevronRight size={16} />
+							Ver todo <ChevronRight size={16} />
 						</Link>
 					</div>
 					<div className="overflow-x-auto">
@@ -362,13 +364,13 @@ const AdminDashboard: React.FC = () => {
 							<thead className="bg-gray-50 dark:bg-gray-700">
 								<tr>
 									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-										Seller
+										Vendedor
 									</th>
 									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-										Orders
+										Pedidos
 									</th>
 									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-										Revenue
+										Ingresos
 									</th>
 								</tr>
 							</thead>
@@ -402,7 +404,7 @@ const AdminDashboard: React.FC = () => {
 				<div className="flex items-center mb-4">
 					<AlertTriangle className="w-5 h-5 text-amber-500 mr-2" />
 					<h2 className="text-lg font-medium text-gray-900 dark:text-white">
-						System Alerts
+						Alertas del Sistema
 					</h2>
 				</div>
 
@@ -414,17 +416,17 @@ const AdminDashboard: React.FC = () => {
 							</div>
 							<div className="ml-3">
 								<h3 className="text-sm font-medium text-amber-800 dark:text-amber-200">
-									Low Inventory Alert
+									Alerta de Inventario Bajo
 								</h3>
 								<div className="mt-2 text-sm text-amber-700 dark:text-amber-300">
-									<p>15 products have inventory levels below the threshold.</p>
+									<p>15 productos tienen el inventario por debajo del umbral mínimo.</p>
 								</div>
 								<div className="mt-3">
 									<Link
 										to="/admin/products?lowStock=true"
 										className="text-sm font-medium text-amber-800 dark:text-amber-200 hover:text-amber-600 dark:hover:text-amber-100"
 									>
-										View affected products
+										Ver productos
 									</Link>
 								</div>
 							</div>
@@ -438,12 +440,11 @@ const AdminDashboard: React.FC = () => {
 							</div>
 							<div className="ml-3">
 								<h3 className="text-sm font-medium text-blue-800 dark:text-blue-200">
-									System Update Available
+									Mensaje del Desarrollador
 								</h3>
 								<div className="mt-2 text-sm text-blue-700 dark:text-blue-300">
 									<p>
-										A new version (2.5.3) is available with security
-										enhancements.
+										La nueva versión (1.0.1) esta ya disponible con mejoras de seguridad.
 									</p>
 								</div>
 								<div className="mt-3">
@@ -451,7 +452,7 @@ const AdminDashboard: React.FC = () => {
 										to="/admin/settings/updates"
 										className="text-sm font-medium text-blue-800 dark:text-blue-200 hover:text-blue-600 dark:hover:text-blue-100"
 									>
-										View update details
+										Ver detalles de la actualización
 									</Link>
 								</div>
 							</div>

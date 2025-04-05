@@ -198,7 +198,7 @@ const Header: React.FC<HeaderProps> = ({
                         <p className="text-sm font-medium">{user?.name}</p>
                         <p className="text-xs text-gray-500 truncate">{user?.email}</p>
                       </div>
-                      <Link to="/account" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dropdown-item">
+                      <Link to="/profile" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dropdown-item">
                         <User size={16} className="mr-2" />
                         Mi perfil
                       </Link>
@@ -210,7 +210,7 @@ const Header: React.FC<HeaderProps> = ({
                         <Heart size={16} className="mr-2" />
                         Mis favoritos
                       </Link>
-                      <Link to="/account/settings" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dropdown-item">
+                      <Link to="/profile/settings" className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dropdown-item">
                         <Settings size={16} className="mr-2" />
                         Configuración
                       </Link>

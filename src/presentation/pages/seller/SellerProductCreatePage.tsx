@@ -117,7 +117,7 @@ const SellerProductCreatePage: React.FC = () => {
 		<div className="space-y-6">
 			<div className="flex justify-between items-center">
 				<h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-					Add New Product
+					Añadir Nuevo Producto
 				</h1>
 				<div className="flex space-x-2">
 					<button
@@ -125,7 +125,7 @@ const SellerProductCreatePage: React.FC = () => {
 						onClick={() => navigate("/seller/products")}
 						className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
 					>
-						<X size={18} className="inline mr-1" /> Cancel
+						<X size={18} className="inline mr-1" /> Cancelar
 					</button>
 					<button
 						type="button"
@@ -140,7 +140,7 @@ const SellerProductCreatePage: React.FC = () => {
 							</>
 						) : (
 							<>
-								<Save size={18} className="inline mr-1" /> Save Product
+								<Save size={18} className="inline mr-1" /> Guardar Producto
 							</>
 						)}
 					</button>
@@ -150,7 +150,7 @@ const SellerProductCreatePage: React.FC = () => {
 			<form onSubmit={handleSubmit} className="space-y-6">
 				<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
 					<h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-						Basic Information
+						Información Básica
 					</h2>
 
 					<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -160,7 +160,7 @@ const SellerProductCreatePage: React.FC = () => {
 								htmlFor="name"
 								className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
 							>
-								Product Name <span className="text-red-500">*</span>
+								Nombre del Producto <span className="text-red-500">*</span>
 							</label>
 							<input
 								type="text"
@@ -179,7 +179,7 @@ const SellerProductCreatePage: React.FC = () => {
 								htmlFor="category"
 								className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
 							>
-								Category <span className="text-red-500">*</span>
+								Categoría <span className="text-red-500">*</span>
 							</label>
 							<select
 								id="category"
@@ -189,13 +189,13 @@ const SellerProductCreatePage: React.FC = () => {
 								onChange={handleInputChange}
 								className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
 							>
-								<option value="">Select Category</option>
-								<option value="Electronics">Electronics</option>
-								<option value="Computers">Computers</option>
-								<option value="Accessories">Accessories</option>
-								<option value="Home">Home</option>
-								<option value="Fashion">Fashion</option>
-								<option value="Beauty">Beauty</option>
+								<option value="">Seleccionar Categoría</option>
+								<option value="Electronics">Electrónica</option>
+								<option value="Computers">Ordenadores</option>
+								<option value="Accessories">Accesorios</option>
+								<option value="Home">Hogar</option>
+								<option value="Fashion">Moda</option>
+								<option value="Beauty">Belleza</option>
 							</select>
 						</div>
 
@@ -205,7 +205,7 @@ const SellerProductCreatePage: React.FC = () => {
 								htmlFor="description"
 								className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
 							>
-								Description <span className="text-red-500">*</span>
+								Descripción <span className="text-red-500">*</span>
 							</label>
 							<textarea
 								id="description"
@@ -224,7 +224,7 @@ const SellerProductCreatePage: React.FC = () => {
 								htmlFor="price"
 								className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
 							>
-								Price ($) <span className="text-red-500">*</span>
+								Precio ($) <span className="text-red-500">*</span>
 							</label>
 							<input
 								type="number"
@@ -245,7 +245,7 @@ const SellerProductCreatePage: React.FC = () => {
 								htmlFor="stock"
 								className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
 							>
-								Stock Quantity <span className="text-red-500">*</span>
+								Cantidad en Stock <span className="text-red-500">*</span>
 							</label>
 							<input
 								type="number"
@@ -265,7 +265,7 @@ const SellerProductCreatePage: React.FC = () => {
 								htmlFor="status"
 								className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
 							>
-								Status
+								Estado
 							</label>
 							<select
 								id="status"
@@ -274,9 +274,9 @@ const SellerProductCreatePage: React.FC = () => {
 								onChange={handleInputChange}
 								className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
 							>
-								<option value="active">Active</option>
-								<option value="inactive">Inactive</option>
-								<option value="draft">Draft</option>
+								<option value="active">Activo</option>
+								<option value="inactive">Inactivo</option>
+								<option value="draft">Borrador</option>
 							</select>
 						</div>
 					</div>
@@ -285,7 +285,7 @@ const SellerProductCreatePage: React.FC = () => {
 				{/* Images */}
 				<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
 					<h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-						Product Images
+						Imágenes del Producto
 					</h2>
 
 					<div className="space-y-4">
@@ -305,10 +305,10 @@ const SellerProductCreatePage: React.FC = () => {
 							>
 								<Upload className="h-12 w-12 text-gray-400 mb-2" />
 								<p className="text-gray-600 dark:text-gray-400 mb-1">
-									Drag and drop images here or click to upload
+									Arrastra y suelta imágenes aquí o haz clic para subir
 								</p>
 								<p className="text-xs text-gray-500 dark:text-gray-500">
-									JPEG, PNG, WebP up to 5MB
+									JPEG, PNG, WebP hasta 5MB
 								</p>
 							</label>
 						</div>
@@ -321,7 +321,7 @@ const SellerProductCreatePage: React.FC = () => {
 										<div className="aspect-w-1 aspect-h-1 w-full overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-700">
 											<img
 												src={preview}
-												alt={`Preview ${index + 1}`}
+												alt={`Vista previa ${index + 1}`}
 												className="h-full w-full object-cover object-center"
 											/>
 										</div>
@@ -342,7 +342,7 @@ const SellerProductCreatePage: React.FC = () => {
 				{/* Tags */}
 				<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
 					<h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-						Product Tags
+						Etiquetas del Producto
 					</h2>
 
 					<div className="space-y-4">
@@ -350,7 +350,7 @@ const SellerProductCreatePage: React.FC = () => {
 						<div className="flex">
 							<input
 								type="text"
-								placeholder="Add a tag and press Enter"
+								placeholder="Añade una etiqueta y presiona Enter"
 								value={formData.currentTag}
 								onChange={(e) =>
 									setFormData((prev) => ({...prev, currentTag: e.target.value}))
@@ -386,7 +386,7 @@ const SellerProductCreatePage: React.FC = () => {
 							))}
 							{formData.tags.length === 0 && (
 								<p className="text-sm text-gray-500 dark:text-gray-400">
-									No tags added yet
+									Aún no se han añadido etiquetas
 								</p>
 							)}
 						</div>
@@ -400,7 +400,7 @@ const SellerProductCreatePage: React.FC = () => {
 						disabled={loading}
 						className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
 					>
-						{loading ? "Saving..." : "Save Product"}
+						{loading ? "Guardando..." : "Guardar Producto"}
 					</button>
 				</div>
 			</form>

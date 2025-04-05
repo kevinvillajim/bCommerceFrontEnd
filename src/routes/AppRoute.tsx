@@ -65,12 +65,7 @@ import PrivateRoute from "./PrivateRoute";
 import PublicRoute from "./PublicRoute";
 import SellerRoute from "./SellerRoute";
 import AdminRoute from "./AdminRoute";
-
-// Auth guard helper
-const isAuthenticated = (): boolean => {
-	const token = localStorage.getItem("auth_token");
-	return !!token;
-};
+import AuthRoute from "./AuthRoute";
 
 // Define las rutas
 const appRoutes: RouteObject[] = [
@@ -191,34 +186,39 @@ const appRoutes: RouteObject[] = [
 			// 		</PrivateRoute>
 			// 	),
 			// },
+
 			//Auth Routes
 			{
 				path: "login",
-				loader: () => {
-					if (isAuthenticated()) {
-						return {redirect: "/"};
-					}
-					return null;
-				},
-				element: <LoginPage />,
+				element: (
+					<AuthRoute>
+						<LoginPage />
+					</AuthRoute>
+				),
 			},
 			{
 				path: "register",
-				loader: () => {
-					if (isAuthenticated()) {
-						return {redirect: "/"};
-					}
-					return null;
-				},
-				element: <RegisterPage />,
+				element: (
+					<AuthRoute>
+						<RegisterPage />
+					</AuthRoute>
+				),
 			},
 			{
 				path: "forgot-password",
-				element: <ForgotPasswordPage />,
+				element: (
+					<AuthRoute>
+						<ForgotPasswordPage />
+					</AuthRoute>
+				),
 			},
 			{
 				path: "reset-password",
-				element: <ResetPasswordPage />,
+				element: (
+					<AuthRoute>
+						<ResetPasswordPage />
+					</AuthRoute>
+				),
 			},
 		],
 	},
@@ -236,9 +236,9 @@ const appRoutes: RouteObject[] = [
 	{
 		path: "/seller",
 		element: (
-			<SellerRoute>
+			// <SellerRoute>
 				<SellerLayout />
-			</SellerRoute>
+			// </SellerRoute>
 		),
 		children: [
 			{
@@ -315,9 +315,9 @@ const appRoutes: RouteObject[] = [
 	{
 		path: "/admin",
 		element: (
-			<AdminRoute>
+			// <AdminRoute>
 				<AdminLayout />
-			</AdminRoute>
+			// </AdminRoute>
 		),
 		children: [
 			{
