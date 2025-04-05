@@ -53,7 +53,7 @@ const SortDropdown: React.FC<SortDropdownProps> = ({
 		<div className="relative" ref={dropdownRef}>
 			<button
 				onClick={() => setIsOpen(!isOpen)}
-				className="flex items-center px-4 py-2 bg-white rounded-lg shadow border border-gray-200 text-gray-700 hover:bg-gray-50"
+				className="cursor-pointer flex items-center px-4 py-2 bg-white rounded-lg shadow border border-gray-200 text-gray-700 hover:bg-gray-50"
 			>
 				<span className="mr-2">{getSelectedLabel()}</span>
 				<ChevronDown

@@ -19,6 +19,14 @@ export const adaptProduct = (apiProduct: any): Product => {
 		apiProduct.rating_data?.average_rating ||
 		0;
 
+    const rating_count =
+			apiProduct.ratingAvg_count ||
+			apiProduct.rating_avg_count ||
+			apiProduct.rating_count ||
+			apiProduct.rating_data?.average_rating_count ||
+			0;
+
+    
 	// Adaptar imágenes según el formato de la API
 	let images: string[] = [];
 
@@ -87,7 +95,8 @@ export const adaptProduct = (apiProduct: any): Product => {
 		finalPrice: finalPrice,
 		isInStock:
 			apiProduct.isInStock || apiProduct.is_in_stock || apiProduct.stock > 0,
-		ratingAvg: parseFloat(rating) || 0,
+		rating: parseFloat(rating) || 0,
+		rating_count: parseFloat(rating_count) || 0,
 		createdAt: apiProduct.createdAt || apiProduct.created_at,
 		updatedAt: apiProduct.updatedAt || apiProduct.updated_at,
 	};

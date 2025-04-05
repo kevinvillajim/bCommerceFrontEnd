@@ -72,7 +72,7 @@ const FilterSection: React.FC<FilterSectionProps> = ({
 	return (
 		<div className="border-b border-gray-200 pb-4">
 			<button
-				className="flex justify-between items-center w-full py-2 text-left font-medium text-gray-700 hover:text-gray-900"
+				className="cursor-pointer flex justify-between items-center w-full py-2 text-left font-medium text-gray-700 hover:text-gray-900"
 				onClick={onToggle}
 			>
 				{title}
@@ -116,11 +116,11 @@ const CategoryFilterSection: React.FC<CategoryFilterSectionProps> = ({
 							id={`category-${category}`}
 							checked={selectedCategories.includes(category)}
 							onChange={() => handleCategoryToggle(category)}
-							className="h-4 w-4 text-primary-600 focus:ring-primary-500 rounded border-gray-300"
+							className="cursor-pointer h-4 w-4 text-primary-600 focus:ring-primary-500 rounded border-gray-300"
 						/>
 						<label
 							htmlFor={`category-${category}`}
-							className="ml-2 block text-sm text-gray-700"
+							className="cursor-pointer ml-2 block text-sm text-gray-700"
 						>
 							{category}
 							<span className="ml-1 text-gray-400 text-xs">
@@ -253,7 +253,7 @@ const RatingFilterSection: React.FC<RatingFilterSectionProps> = ({
 						onClick={() =>
 							onRatingChange(selectedRating === rating ? null : rating)
 						}
-						className={`flex items-center w-full p-2 rounded-md transition ${
+						className={`cursor-pointer flex items-center w-full p-2 rounded-md transition ${
 							selectedRating === rating
 								? "bg-primary-50 text-primary-700"
 								: "hover:bg-gray-100 text-gray-700"
@@ -293,11 +293,11 @@ const DiscountFilterSection: React.FC<DiscountFilterSectionProps> = ({
 						id="discount-filter"
 						checked={selectedDiscount}
 						onChange={() => onDiscountChange(!selectedDiscount)}
-						className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+						className="cursor-pointer h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
 					/>
 					<label
 						htmlFor="discount-filter"
-						className="ml-2 block text-sm text-gray-700"
+						className="cursor-pointer ml-2 block text-sm text-gray-700"
 					>
 						Productos con descuento
 					</label>

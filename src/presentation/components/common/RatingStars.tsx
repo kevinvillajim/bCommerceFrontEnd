@@ -9,10 +9,6 @@ interface RatingStarsProps {
 	reviews?: number;
 }
 
-/**
- * Componente para mostrar calificación con estrellas
- * Si no hay rating disponible, muestra un valor por defecto
- */
 const RatingStars: React.FC<RatingStarsProps> = ({
 	rating,
 	maxRating = 5,
@@ -20,36 +16,45 @@ const RatingStars: React.FC<RatingStarsProps> = ({
 	showValue = false,
 	reviews,
 }) => {
-	// Si no hay rating, usar 4.5 como valor por defecto
-	// Esto asegura que las estrellas siempre se muestren
 	const normalizedRating =
 		rating !== undefined && rating !== null
 			? Math.max(0, Math.min(rating, maxRating))
-			: 4.5; // Valor por defecto
-
-	// Calcular la parte entera y decimal del rating
-	const fullStars = Math.floor(normalizedRating);
-	const hasHalfStar = normalizedRating - fullStars >= 0.5;
+			: 4.5;
 
 	return (
 		<div className="flex items-center">
-			<div className="flex">
-				{Array.from({length: maxRating}).map((_, index) => (
-					<Star
-						key={index}
-						size={size}
-						className={
-							index < fullStars
-								? "text-yellow-400 fill-yellow-400" // Estrella completa
-								: index === fullStars && hasHalfStar
-									? "text-yellow-400 fill-yellow-400 w-1/2 overflow-hidden" // Media estrella
-									: "text-gray-300" // Estrella vacía
-						}
-					/>
-				))}
+			<div className="flex relative gap-[2px]">
+				{Array.from({length: maxRating}).map((_, index) => {
+					const starFill =
+						normalizedRating >= index + 1
+							? 100
+							: normalizedRating > index
+								? (normalizedRating - index) * 100
+								: 0;
+
+					return (
+						<div
+							key={index}
+							className="relative"
+							style={{width: size, height: size}}
+						>
+							{/* Empty Star */}
+							<Star
+								size={size}
+								className="text-gray-300 absolute top-0 left-0"
+							/>
+							{/* Filled Star with dynamic width */}
+							<div
+								className="overflow-hidden absolute top-0 left-0 text-yellow-400"
+								style={{width: `${starFill}%`}}
+							>
+								<Star size={size} className="fill-yellow-400" />
+							</div>
+						</div>
+					);
+				})}
 			</div>
 
-			{/* Mostrar valor numérico si se solicita */}
 			{showValue && (
 				<span className="ml-1 text-xs text-gray-500">
 					{normalizedRating.toFixed(1)}

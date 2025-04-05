@@ -104,20 +104,42 @@ const ProductGrid: React.FC<ProductGridProps> = ({
 					// Adaptar producto para asegurar compatibilidad
 					const adaptedProduct = adaptProduct(product);
 
+					// Obtener la imagen correcta
+					let imageUrl = "";
+					if (product.images) {
+						if (Array.isArray(product.images)) {
+							// Si es un array de strings
+							if (typeof product.images[0] === "string") {
+								imageUrl = product.images[0];
+							}
+							// Si es un array de objetos
+							else if (
+								typeof product.images[0] === "object" &&
+								product.images[0] !== null
+							) {
+								const img = product.images[0] as any;
+								imageUrl =
+									img.original ||
+									img.medium ||
+									img.large ||
+									img.thumbnail ||
+									"";
+							}
+						}
+					}
+
 					return (
 						<ProductCardCompact
 							key={adaptedProduct.id}
 							id={adaptedProduct.id || 0}
 							name={adaptedProduct.name}
 							price={adaptedProduct.price}
-							discount={adaptedProduct.discountPercentage}
-							rating={adaptedProduct.ratingAvg || 0}
-							reviews={0} // La API no proporciona este dato directamente
-							image={getImageUrl(
-								adaptedProduct.images && adaptedProduct.images.length > 0
-									? adaptedProduct.images[0]
-									: undefined
-							)}
+							discount={
+								product.discount_percentage || product.discountPercentage
+							}
+							rating={adaptedProduct.rating || 0}
+							reviews={product.rating_count || 0} // La API no proporciona este dato directamente
+							image={getImageUrl(imageUrl)}
 							category={
 								categories.find((cat) => cat.id === adaptedProduct.categoryId)
 									?.name

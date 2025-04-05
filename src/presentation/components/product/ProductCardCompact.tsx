@@ -8,7 +8,7 @@ interface ProductCardProps {
 	name: string;
 	price: number;
 	discount?: number;
-	rating?: number;
+  rating?: number;
 	reviews?: number;
 	image: string;
 	category?: string;
@@ -23,8 +23,8 @@ const ProductCardCompact: React.FC<ProductCardProps> = ({
 	name,
 	price,
 	discount,
-	rating,
-	reviews,
+	rating = 0,
+	reviews = 0,
 	image,
 	category,
 	isNew = false,
@@ -67,14 +67,14 @@ const ProductCardCompact: React.FC<ProductCardProps> = ({
 				<div className="absolute inset-0 bg-black bg-opacity-30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 items-center justify-center gap-2 hidden md:flex">
 					<button
 						onClick={() => onAddToWishlist(id)}
-						className="bg-white p-2 rounded-full hover:bg-primary-50 hover:text-primary-600 transition-colors"
+						className="cursor-pointer bg-white p-2 rounded-full hover:bg-primary-50 hover:text-primary-600 transition-colors"
 						aria-label="Add to wishlist"
 					>
 						<Heart size={18} />
 					</button>
 					<button
 						onClick={() => onAddToCart(id)}
-						className="bg-white p-2 rounded-full hover:bg-primary-50 hover:text-primary-600 transition-colors"
+						className="cursor-pointer bg-white p-2 rounded-full hover:bg-primary-50 hover:text-primary-600 transition-colors"
 						aria-label="Add to cart"
 					>
 						<ShoppingCart size={18} />

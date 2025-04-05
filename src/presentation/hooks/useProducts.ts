@@ -93,7 +93,8 @@ export const useProducts = () => {
 				apiProduct.discountPercentage || apiProduct.discount_percentage || 0,
 			finalPrice: apiProduct.finalPrice || apiProduct.final_price,
 			isInStock: apiProduct.isInStock || apiProduct.is_in_stock,
-			ratingAvg: apiProduct.ratingAvg || apiProduct.rating_avg,
+			rating: apiProduct.rating || apiProduct.rating_avg,
+			rating_count: apiProduct.rating_count || apiProduct.rating_avg_count,
 			createdAt: apiProduct.createdAt || apiProduct.created_at,
 			updatedAt: apiProduct.updatedAt || apiProduct.updated_at,
 		};

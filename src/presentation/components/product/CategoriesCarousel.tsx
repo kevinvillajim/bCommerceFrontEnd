@@ -153,7 +153,7 @@ const CategoriesCarousel: React.FC<CategoriesCarouselProps> = ({
 								disabled={currentPage === 0}
 								className={`p-1 rounded-full border ${
 									currentPage > 0
-										? "text-gray-700 border-gray-300 hover:bg-gray-100"
+										? "cursor-pointer text-gray-700 border-gray-300 hover:bg-gray-100"
 										: "text-gray-400 border-gray-200 cursor-not-allowed"
 								}`}
 							>
@@ -164,7 +164,7 @@ const CategoriesCarousel: React.FC<CategoriesCarouselProps> = ({
 								disabled={currentPage === totalPages - 1}
 								className={`p-1 rounded-full border ${
 									currentPage < totalPages - 1
-										? "text-gray-700 border-gray-300 hover:bg-gray-100"
+										? "cursor-pointer text-gray-700 border-gray-300 hover:bg-gray-100"
 										: "text-gray-400 border-gray-200 cursor-not-allowed"
 								}`}
 							>

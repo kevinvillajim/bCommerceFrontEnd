@@ -39,8 +39,8 @@ export interface Product {
 	final_price?: number; // Compatibilidad con snake_case
 	isInStock?: boolean;
 	is_in_stock?: boolean; // Compatibilidad con snake_case
-	ratingAvg?: number;
-	rating_avg?: number; // Compatibilidad con snake_case
+	rating?: number;
+	rating_count?: number; // Compatibilidad con snake_case
 	createdAt?: string;
 	created_at?: string; // Compatibilidad con snake_case
 	updatedAt?: string;
