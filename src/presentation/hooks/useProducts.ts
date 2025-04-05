@@ -55,6 +55,13 @@ export const useProducts = () => {
 			return {} as Product;
 		}
 
+	const processedImages = Array.isArray(apiProduct.images)
+			? apiProduct.images.map((img: any) => {
+					if (typeof img === "string") return img;
+					return img.original || img.url || "";
+				})
+			: [];
+
 		// Mapear propiedades para manejar tanto camelCase como snake_case
 		return {
 			id: apiProduct.id,
@@ -76,11 +83,7 @@ export const useProducts = () => {
 			sku: apiProduct.sku,
 			attributes: apiProduct.attributes,
 			// Manejar diferentes formatos de imágenes
-			images: Array.isArray(apiProduct.images)
-				? apiProduct.images.map((img: any) =>
-						typeof img === "string" ? img : img.original || img.url || ""
-					)
-				: [],
+			images: processedImages,
 			featured: Boolean(apiProduct.featured),
 			published: Boolean(apiProduct.published),
 			status: apiProduct.status || "active",
