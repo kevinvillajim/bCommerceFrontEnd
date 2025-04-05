@@ -1,6 +1,7 @@
 import React from "react";
-import {Heart, ShoppingCart, Star} from "lucide-react";
-import {Link} from "react-router-dom";
+import {Heart, ShoppingCart} from "lucide-react";
+import { Link } from "react-router-dom";
+import RatingStars from "../common/RatingStars";
 
 interface ProductCardProps {
 	id: number;
@@ -22,8 +23,8 @@ const ProductCardCompact: React.FC<ProductCardProps> = ({
 	name,
 	price,
 	discount,
-	rating = 0,
-	reviews = 0,
+	rating,
+	reviews,
 	image,
 	category,
 	isNew = false,
@@ -98,24 +99,14 @@ const ProductCardCompact: React.FC<ProductCardProps> = ({
 				</Link>
 
 				{/* Rating */}
-				{rating > 0 && (
-					<div className="flex items-center mb-2">
-						<div className="flex text-yellow-400 mr-1">
-							{[1, 2, 3, 4, 5].map((star) => (
-								<Star
-									key={star}
-									size={12}
-									fill={star <= Math.round(rating) ? "currentColor" : "none"}
-									className={`${star <= Math.round(rating) ? "text-yellow-400" : "text-gray-300"}`}
-								/>
-							))}
-						</div>
-						<span className="text-xs text-gray-500">
-							{typeof rating === "number" ? rating.toFixed(1) : rating} (
-							{reviews})
-						</span>
+					<div className="mb-2">
+						<RatingStars
+							rating={rating}
+							size={14}
+							showValue={true}
+							reviews={reviews}
+						/>
 					</div>
-				)}
 
 				{/* Price */}
 				<div className="flex items-center justify-between">

@@ -2,6 +2,7 @@ import React from "react";
 import ProductCardCompact from "./ProductCardCompact";
 import type {Product} from "../../../core/domain/entities/Product";
 import type {Category} from "../../../core/domain/entities/Category";
+import {adaptProduct} from "../../../utils/productAdapter";
 
 interface ProductGridProps {
 	products: Product[];
@@ -82,20 +83,6 @@ const ProductGrid: React.FC<ProductGridProps> = ({
 	const start = (currentPage - 1) * itemsPerPage + 1;
 	const end = Math.min(currentPage * itemsPerPage, totalItems);
 
-	// Función auxiliar para procesar la imagen del producto
-	const processImage = (
-		images: any[] | string[] | undefined
-	): string | undefined => {
-		if (!images || images.length === 0) return undefined;
-		const image = images[0];
-
-		if (typeof image === "string") return image;
-		if (typeof image === "object" && image !== null) {
-			return image.original || image.url || image.src || undefined;
-		}
-		return undefined;
-	};
-
 	return (
 		<div>
 			<h2 className="text-2xl font-bold mb-6">
@@ -113,31 +100,37 @@ const ProductGrid: React.FC<ProductGridProps> = ({
 
 			{/* Grid de productos */}
 			<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-				{products.map((product) => (
-					<ProductCardCompact
-						key={product.id}
-						id={product.id || 0}
-						name={product.name}
-						price={product.price}
-						discount={product.discount_percentage || product.discountPercentage}
-						rating={product.rating_avg || product.ratingAvg || 0}
-						reviews={product.view_count || product.viewCount || 0}
-						image={getImageUrl(processImage(product.images))}
-						category={
-							categories.find(
-								(cat) => cat.id === (product.category_id || product.categoryId)
-							)?.name
-						}
-						isNew={
-							new Date(
-								product.created_at || product.createdAt || ""
-							).getTime() >
-							Date.now() - 30 * 24 * 60 * 60 * 1000
-						}
-						onAddToCart={onAddToCart}
-						onAddToWishlist={onAddToWishlist}
-					/>
-				))}
+				{products.map((product) => {
+					// Adaptar producto para asegurar compatibilidad
+					const adaptedProduct = adaptProduct(product);
+
+					return (
+						<ProductCardCompact
+							key={adaptedProduct.id}
+							id={adaptedProduct.id || 0}
+							name={adaptedProduct.name}
+							price={adaptedProduct.price}
+							discount={adaptedProduct.discountPercentage}
+							rating={adaptedProduct.ratingAvg || 0}
+							reviews={0} // La API no proporciona este dato directamente
+							image={getImageUrl(
+								adaptedProduct.images && adaptedProduct.images.length > 0
+									? adaptedProduct.images[0]
+									: undefined
+							)}
+							category={
+								categories.find((cat) => cat.id === adaptedProduct.categoryId)
+									?.name
+							}
+							isNew={
+								new Date(adaptedProduct.createdAt || "").getTime() >
+								Date.now() - 30 * 24 * 60 * 60 * 1000
+							}
+							onAddToCart={onAddToCart}
+							onAddToWishlist={onAddToWishlist}
+						/>
+					);
+				})}
 			</div>
 		</div>
 	);

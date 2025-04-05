@@ -1,6 +1,7 @@
 import React from "react";
-import {X, Star} from "lucide-react";
+import {X} from "lucide-react";
 import type {Category} from "../../../core/domain/entities/Category";
+import RatingStars from "../common/RatingStars";
 
 interface PriceRange {
 	id: string;
@@ -140,18 +141,7 @@ const MobileFilterPanel: React.FC<MobileFilterPanelProps> = ({
 											: "text-gray-700 hover:bg-gray-50"
 									}`}
 								>
-									<div className="flex">
-										{[...Array(5)].map((_, i) => (
-											<Star
-												key={i}
-												size={16}
-												fill={i < rating ? "currentColor" : "none"}
-												className={
-													i < rating ? "text-yellow-400" : "text-gray-300"
-												}
-											/>
-										))}
-									</div>
+									<RatingStars rating={rating} />
 									<span className="ml-2">{rating}+ estrellas</span>
 								</button>
 							))}
