@@ -1,4 +1,4 @@
-import { type RouteObject, Navigate } from 'react-router';
+import { type RouteObject} from 'react-router';
 
 // Layouts
 import MainLayout from '../presentation/layouts/MainLayout';
