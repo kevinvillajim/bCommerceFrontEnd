@@ -15,6 +15,7 @@ export interface User {
   createdAt?: string | null;
   updatedAt?: string | null;
   strikes?: UserStrike[];
+  role?: "admin" | "seller" | "user" | string;
 }
 
 /**

@@ -17,6 +17,7 @@ export const API_ENDPOINTS = {
 		UPDATE_PASSWORD: "/auth/password/update",
 		VERIFY_EMAIL: (id: string | number, hash: string) =>
 			`/email/verify/${id}/${hash}`,
+		CHECK_ROLE: "/user/check-role",
 	},
 
 	PROFILE: {

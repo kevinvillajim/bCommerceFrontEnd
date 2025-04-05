@@ -71,20 +71,6 @@ const isAuthenticated = (): boolean => {
   return !!token;
 };
 
-// Example SellerRoute component
-const SellerRoute = ({ children }: { children: React.ReactNode }) => {
-  // Check if user is authenticated and is a seller
-  const isSeller = localStorage.getItem('user_type') === 'seller';
-  return isSeller ? <>{children}</> : <Navigate to="/login" />;
-};
-
-// Example AdminRoute component
-const AdminRoute = ({ children }: { children: React.ReactNode }) => {
-  // Check if user is authenticated and is an admin
-  const isAdmin = localStorage.getItem('user_type') === 'admin';
-  return isAdmin ? <>{children}</> : <Navigate to="/login" />;
-};
-
 // Define las rutas
 const appRoutes: RouteObject[] = [
 	//Public Routes
@@ -94,39 +80,75 @@ const appRoutes: RouteObject[] = [
 		children: [
 			{
 				index: true,
-				element: <HomePage />,
+				element: (
+					<PublicRoute>
+						<HomePage />
+					</PublicRoute>
+				),
 			},
 			{
 				path: "products/:slug",
-				element: <ProductItemPage />,
+				element: (
+					<PublicRoute>
+						<ProductItemPage />
+					</PublicRoute>
+				),
 			},
 			{
 				path: "products",
-				element: <ProductPage />,
+				element: (
+					<PublicRoute>
+						<ProductPage />
+					</PublicRoute>
+				),
 			},
 			{
 				path: "categories",
-				element: <CategoryPage />,
+				element: (
+					<PublicRoute>
+						<CategoryPage />
+					</PublicRoute>
+				),
 			},
 			{
 				path: "categories/:slug",
-				element: <CategoryPage />,
+				element: (
+					<PublicRoute>
+						<CategoryPage />
+					</PublicRoute>
+				),
 			},
 			{
 				path: "contact",
-				element: <ContactPage />,
+				element: (
+					<PublicRoute>
+						<ContactPage />
+					</PublicRoute>
+				),
 			},
 			{
 				path: "faq",
-				element: <FAQPage />,
+				element: (
+					<PublicRoute>
+						<FAQPage />
+					</PublicRoute>
+				),
 			},
 			{
 				path: "favorites",
-				element: <FavoritePage />,
+				element: (
+					<PublicRoute>
+						<FavoritePage />
+					</PublicRoute>
+				),
 			},
 			{
 				path: "cart",
-				element: <CartPage />,
+				element: (
+					<PublicRoute>
+						<CartPage />
+					</PublicRoute>
+				),
 			},
 			// {
 			// 	path: "checkout",
@@ -364,9 +386,9 @@ const appRoutes: RouteObject[] = [
 			// 	element: <AdminLogViewerPage />,
 			// },
 		],
-  },
-  
-  // 404 Not Found
+	},
+
+	// 404 Not Found
 	{
 		path: "*",
 		element: <NotFoundPage />,
