@@ -1,106 +1,29 @@
-import React, { Suspense, lazy } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+// src/App.tsx
+import React, {Suspense} from "react";
+import {BrowserRouter, useRoutes} from "react-router-dom";
+import appRoutes from "./routes/AppRoute";
 
-// Import layouts
-import MainLayout from './presentation/layouts/MainLayout';
-
-// Lazy load components for better performance
-const HomePage = lazy(() => import('./presentation/pages/HomePage'));
-const ProductPage = lazy(() => import('./presentation/pages/ProductPage'));
-const ProductItemPage = lazy(() => import('./presentation/pages/ProductItemPage'));
-const LoginPage = lazy(() => import('./presentation/pages/LoginPage'));
-const RegisterPage = lazy(() => import('./presentation/pages/RegisterPage'));
-const NotFoundPage = lazy(() => import('./presentation/pages/NotFoundPage'));
-const CategoryPage = lazy(() => import('./presentation/pages/CategoryPage'));
-const AboutUsPage = lazy(() => import('./presentation/pages/AboutUsPage'));
-const ContactPage = lazy(() => import('./presentation/pages/ContactPage'));
-const FAQPage = lazy(() => import('./presentation/pages/FAQPage'));
-const FavoritePage = lazy(() => import('./presentation/pages/FavoritePage'));
-const CartPage = lazy(() => import('./presentation/pages/CartPage'));
-const UserProfilePage = lazy(() => import('./presentation/pages/UserProfilePage'));
-const DashboardLayout = lazy(() => import('./presentation/layouts/DashboardLayout'));
-const ForgotPasswordPage = lazy(() => import('./presentation/pages/ForgotPasswordPage'));
-const ResetPasswordPage = lazy(() => import('./presentation/pages/ResetPasswordPage'));
-
-
-// Loading fallback for lazy-loaded components
+// Loading fallback para componentes lazy-loaded
 const LoadingFallback = () => (
-  <div className="flex items-center justify-center min-h-screen">
-    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
-  </div>
+	<div className="flex items-center justify-center min-h-screen">
+		<div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
+	</div>
 );
 
-// Auth guard helper
-const isAuthenticated = (): boolean => {
-  const token = localStorage.getItem('auth_token');
-  return !!token;
-};
-
-// Protected route component
-const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  if (!isAuthenticated()) {
-    return <Navigate to="/login" replace />;
-  }
-  
-  return <>{children}</>;
+// Componente que renderiza las rutas definidas en appRoutes
+const AppRoutes: React.FC = () => {
+	const routes = useRoutes(appRoutes);
+	return routes;
 };
 
 const App: React.FC = () => {
-  return (
-    <Suspense fallback={<LoadingFallback />}>
-      <Routes>
-        <Route path="/" element={<MainLayout />}>
-          <Route index element={<HomePage />} />
-          <Route path="products/:id" element={<ProductItemPage />} />
-          <Route path="products" element={<ProductPage />} />
-          <Route path="categories" element={<CategoryPage />} />
-          <Route path="about" element={<AboutUsPage />} />
-          <Route path="contact" element={<ContactPage />} />
-          <Route path="faq" element={<FAQPage />} />
-          <Route path="favorites" element={<FavoritePage />} />
-          <Route path="cart" element={<CartPage />} />
-          <Route path="favorites" element={<FavoritePage />} />
-          <Route path="forgot-password" element={<ForgotPasswordPage />} />
-          <Route path="reset-password" element={<ResetPasswordPage />} />
-          {/* Ruta para el perfil de usuario que ahora está protegida correctamente */}
-          <Route 
-            path="account" 
-            element={
-              <ProtectedRoute>
-                <UserProfilePage />
-              </ProtectedRoute>
-            } 
-          />
-          
-          <Route 
-            path="login" 
-            element={
-              isAuthenticated() ? <Navigate to="/" replace /> : <LoginPage />
-            } 
-          />
-          <Route 
-            path="register" 
-            element={
-              isAuthenticated() ? <Navigate to="/" replace /> : <RegisterPage />
-            } 
-          />
-        </Route>
-        
-        <Route 
-          path="/dashboard" 
-          element={
-            <ProtectedRoute>
-              <DashboardLayout />
-            </ProtectedRoute>
-          }
-        >
-          {/* Dashboard routes will be added here */}
-        </Route>
-        
-        <Route path="*" element={<NotFoundPage />} />
-      </Routes>
-    </Suspense>
-  );
+	return (
+		<BrowserRouter>
+			<Suspense fallback={<LoadingFallback />}>
+				<AppRoutes />
+			</Suspense>
+		</BrowserRouter>
+	);
 };
 
 export default App;
