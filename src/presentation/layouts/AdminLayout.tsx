@@ -153,7 +153,7 @@ const AdminLayout: React.FC = () => {
 		<div className="flex h-screen bg-gray-100 dark:bg-gray-900">
 			{/* Sidebar */}
 			<aside
-				className={`bg-gray-900 text-white w-64 transition-all duration-300 ease-in-out ${
+				className={`bg-primary-700 dark:bg-primary-950 text-white w-64 transition-all duration-300 ease-in-out ${
 					isSidebarOpen ? "translate-x-0" : "-translate-x-full"
 				} fixed md:relative inset-y-0 left-0 z-30 flex flex-col`}
 			>
@@ -185,8 +185,8 @@ const AdminLayout: React.FC = () => {
 								to="/admin/dashboard"
 								className={`flex items-center px-3 py-2 rounded-md ${
 									isActive("/admin/dashboard")
-										? "bg-gray-800 text-white"
-										: "text-gray-300 hover:bg-gray-800 hover:text-white"
+										? "bg-gray-900 text-white"
+										: "text-gray-300 hover:bg-gray-950 hover:text-white"
 								}`}
 							>
 								<BarChart2 className="w-5 h-5 mr-3" />

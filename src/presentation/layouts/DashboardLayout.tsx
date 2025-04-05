@@ -24,7 +24,7 @@ const DashboardLayout: React.FC = () => {
     <div className="flex h-screen bg-gray-100">
       {/* Sidebar */}
       <aside 
-        className={`bg-primary-800 text-white w-64 flex-shrink-0 transition-all duration-300 ease-in-out ${
+        className={`bg-primary-700 text-white w-64 flex-shrink-0 transition-all duration-300 ease-in-out ${
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
         } md:translate-x-0 fixed md:static top-0 h-full z-10`}
       >
