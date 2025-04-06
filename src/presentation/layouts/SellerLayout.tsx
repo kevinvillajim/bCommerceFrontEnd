@@ -1,24 +1,18 @@
 import React, {useState, useEffect, useContext} from "react";
 import {Outlet, Link, useNavigate, useLocation} from "react-router-dom";
 import {
-	Package,
-	ShoppingBag,
-	Star,
 	User,
-	FileText,
-	MessageSquare,
-	BarChart2,
 	Settings,
 	Bell,
 	Menu,
-	X,
 	ChevronDown,
 	LogOut,
-	DollarSign,
-	Truck,
+	Package
 } from "lucide-react";
 import {AuthContext} from "../contexts/AuthContext";
 import ThemeToggle from "../components/common/ThemeToggle";
+import Sidebar from "../components/dashboard/SideBar";
+import sellerGroups from "./groups/sellerGroups";
 
 /**
  * Seller Layout Component
@@ -82,11 +76,6 @@ const SellerLayout: React.FC = () => {
 		return user?.name?.charAt(0).toUpperCase() || "S";
 	};
 
-	// Check if a navigation item is active
-	const isActive = (path: string) => {
-		return location.pathname.startsWith(path);
-	};
-
 	// Close menus when clicking outside
 	useEffect(() => {
 		const handleClickOutside = (event: MouseEvent) => {
@@ -116,201 +105,14 @@ const SellerLayout: React.FC = () => {
 	return (
 		<div className="flex h-screen bg-gray-100 dark:bg-gray-900">
 			{/* Sidebar */}
-			<aside
-				className={`bg-white dark:bg-gray-800 shadow-lg w-64 transition-all duration-300 ease-in-out ${
-					isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-				} fixed md:relative inset-y-0 left-0 z-30 flex flex-col`}
-			>
-				{/* Logo and brand */}
-				<div className="flex items-center justify-between px-6 py-4 border-b dark:border-gray-700">
-					<Link to="/seller/dashboard" className="flex items-center space-x-2">
-						<Package className="w-7 h-7 text-primary-600 dark:text-primary-400" />
-						<span className="text-xl font-bold text-gray-900 dark:text-white">
-							Portal del Vendedor
-						</span>
-					</Link>
-					<button
-						className="md:hidden text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-						onClick={toggleSidebar}
-					>
-						<X size={20} />
-					</button>
-				</div>
 
-				{/* Navigation links */}
-				<nav className="flex-1 px-4 py-6 overflow-y-auto">
-					<div className="space-y-8">
-						<div className="space-y-2">
-							<h3 className="px-3 text-xs font-semibold text-gray-500 uppercase dark:text-gray-400">
-								Principal
-							</h3>
-
-							<Link
-								to="/seller/dashboard"
-								className={`flex items-center px-3 py-2 rounded-md ${
-									isActive("/seller/dashboard")
-										? "bg-primary-50 text-primary-700 dark:bg-primary-900 dark:text-primary-300"
-										: "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
-								}`}
-							>
-								<BarChart2 className="w-5 h-5 mr-3" />
-								Dashboard
-							</Link>
-						</div>
-
-						<div className="space-y-2">
-							<h3 className="px-3 text-xs font-semibold text-gray-500 uppercase dark:text-gray-400">
-								Productos
-							</h3>
-
-							<Link
-								to="/seller/products"
-								className={`flex items-center px-3 py-2 rounded-md ${
-									isActive("/seller/products") &&
-									!isActive("/seller/products/create")
-										? "bg-primary-50 text-primary-700 dark:bg-primary-900 dark:text-primary-300"
-										: "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
-								}`}
-							>
-								<Package className="w-5 h-5 mr-3" />
-								Todos los Productos
-							</Link>
-
-							<Link
-								to="/seller/products/create"
-								className={`flex items-center px-3 py-2 rounded-md ${
-									isActive("/seller/products/create")
-										? "bg-primary-50 text-primary-700 dark:bg-primary-900 dark:text-primary-300"
-										: "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
-								}`}
-							>
-								<Package className="w-5 h-5 mr-3" />
-								Añadir Producto
-							</Link>
-						</div>
-
-						<div className="space-y-2">
-							<h3 className="px-3 text-xs font-semibold text-gray-500 uppercase dark:text-gray-400">
-								Pedidos
-							</h3>
-
-							<Link
-								to="/seller/orders"
-								className={`flex items-center px-3 py-2 rounded-md ${
-									isActive("/seller/orders")
-										? "bg-primary-50 text-primary-700 dark:bg-primary-900 dark:text-primary-300"
-										: "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
-								}`}
-							>
-								<ShoppingBag className="w-5 h-5 mr-3" />
-								Pedidos
-							</Link>
-
-							<Link
-								to="/seller/shipping"
-								className={`flex items-center px-3 py-2 rounded-md ${
-									isActive("/seller/shipping")
-										? "bg-primary-50 text-primary-700 dark:bg-primary-900 dark:text-primary-300"
-										: "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
-								}`}
-							>
-								<Truck className="w-5 h-5 mr-3" />
-								Envíos
-							</Link>
-						</div>
-
-						<div className="space-y-2">
-							<h3 className="px-3 text-xs font-semibold text-gray-500 uppercase dark:text-gray-400">
-								Clientes
-							</h3>
-
-							<Link
-								to="/seller/ratings"
-								className={`flex items-center px-3 py-2 rounded-md ${
-									isActive("/seller/ratings")
-										? "bg-primary-50 text-primary-700 dark:bg-primary-900 dark:text-primary-300"
-										: "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
-								}`}
-							>
-								<Star className="w-5 h-5 mr-3" />
-								Valoraciones y Reseñas
-							</Link>
-
-							<Link
-								to="/seller/messages"
-								className={`flex items-center px-3 py-2 rounded-md ${
-									isActive("/seller/messages")
-										? "bg-primary-50 text-primary-700 dark:bg-primary-900 dark:text-primary-300"
-										: "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
-								}`}
-							>
-								<MessageSquare className="w-5 h-5 mr-3" />
-								Mensajes
-							</Link>
-						</div>
-
-						<div className="space-y-2">
-							<h3 className="px-3 text-xs font-semibold text-gray-500 uppercase dark:text-gray-400">
-								Finanzas
-							</h3>
-
-							<Link
-								to="/seller/invoices"
-								className={`flex items-center px-3 py-2 rounded-md ${
-									isActive("/seller/invoices")
-										? "bg-primary-50 text-primary-700 dark:bg-primary-900 dark:text-primary-300"
-										: "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
-								}`}
-							>
-								<FileText className="w-5 h-5 mr-3" />
-								Facturas
-							</Link>
-
-							<Link
-								to="/seller/earnings"
-								className={`flex items-center px-3 py-2 rounded-md ${
-									isActive("/seller/earnings")
-										? "bg-primary-50 text-primary-700 dark:bg-primary-900 dark:text-primary-300"
-										: "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
-								}`}
-							>
-								<DollarSign className="w-5 h-5 mr-3" />
-								Ganancias
-							</Link>
-						</div>
-
-						<div className="space-y-2">
-							<h3 className="px-3 text-xs font-semibold text-gray-500 uppercase dark:text-gray-400">
-								Cuenta
-							</h3>
-
-							<Link
-								to="/seller/profile"
-								className={`flex items-center px-3 py-2 rounded-md ${
-									isActive("/seller/profile")
-										? "bg-primary-50 text-primary-700 dark:bg-primary-900 dark:text-primary-300"
-										: "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
-								}`}
-							>
-								<User className="w-5 h-5 mr-3" />
-								Perfil
-							</Link>
-
-							<Link
-								to="/seller/settings"
-								className={`flex items-center px-3 py-2 rounded-md ${
-									isActive("/seller/settings")
-										? "bg-primary-50 text-primary-700 dark:bg-primary-900 dark:text-primary-300"
-										: "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
-								}`}
-							>
-								<Settings className="w-5 h-5 mr-3" />
-								Configuración
-							</Link>
-						</div>
-					</div>
-				</nav>
-			</aside>
+			<Sidebar
+				groups={sellerGroups}
+				title={{
+					title: "Portal del Vendedor",
+					icon: <Package className="w-7 h-7 text-primary-400" />,
+				}}
+			/>
 
 			{/* Main Content */}
 			<div className="flex-1 flex flex-col overflow-hidden">

@@ -1,35 +1,26 @@
 import React, {useState, useEffect, useContext} from "react";
 import {Outlet, Link, useNavigate, useLocation} from "react-router-dom";
 import {
-	Users,
-	Package,
-	ShoppingBag,
-	Tag,
 	User,
-	FileText,
-	Shield,
-	Star,
 	Settings,
 	Bell,
 	Menu,
-	X,
 	ChevronDown,
 	LogOut,
-	BarChart2,
-	DollarSign,
-	MessageSquare,
 	AlertTriangle,
-	Truck,
-	Briefcase,
+	Shield,
 } from "lucide-react";
 import {AuthContext} from "../contexts/AuthContext";
 import ThemeToggle from "../components/common/ThemeToggle";
+import Sidebar from "../components/dashboard/SideBar";
+import adminGroups from "./groups/adminGroups";
 
 /**
  * Admin Layout Component
  * Layout for authenticated admin dashboard
  */
 const AdminLayout: React.FC = () => {
+
 	const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 	const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
 	const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -112,11 +103,6 @@ const AdminLayout: React.FC = () => {
 		return user?.name?.charAt(0).toUpperCase() || "A";
 	};
 
-	// Check if a navigation item is active
-	const isActive = (path: string) => {
-		return location.pathname.startsWith(path);
-	};
-
 	// Calculate total pending actions
 	const totalPendingActions =
 		pendingActions.ratings +
@@ -152,263 +138,8 @@ const AdminLayout: React.FC = () => {
 	return (
 		<div className="flex h-screen bg-gray-100 dark:bg-gray-900">
 			{/* Sidebar */}
-			<aside
-				className={`bg-primary-700 dark:bg-primary-950 text-white w-64 transition-all duration-300 ease-in-out ${
-					isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-				} fixed md:relative inset-y-0 left-0 z-30 flex flex-col`}
-			>
-				{/* Logo and brand */}
-				<div className="flex items-center justify-between px-6 py-4 border-b border-gray-800">
-					<Link to="/admin/dashboard" className="flex items-center space-x-2">
-						<Shield className="w-7 h-7 text-primary-400" />
-						<span className="text-xl font-bold">
-							Panel de Administración (Admin)
-						</span>
-					</Link>
-					<button
-						className="md:hidden text-gray-400 hover:text-white"
-						onClick={toggleSidebar}
-					>
-						<X size={20} />
-					</button>
-				</div>
-
-				{/* Navigation links */}
-				<nav className="flex-1 px-4 py-6 overflow-y-auto">
-					<div className="space-y-8">
-						<div className="space-y-2">
-							<h3 className="px-3 text-xs font-semibold text-gray-400 uppercase">
-								Principal
-							</h3>
-
-							<Link
-								to="/admin/dashboard"
-								className={`flex items-center px-3 py-2 rounded-md ${
-									isActive("/admin/dashboard")
-										? "bg-gray-900 text-white"
-										: "text-gray-300 hover:bg-gray-950 hover:text-white"
-								}`}
-							>
-								<BarChart2 className="w-5 h-5 mr-3" />
-								Dashboard
-							</Link>
-						</div>
-
-						<div className="space-y-2">
-							<h3 className="px-3 text-xs font-semibold text-gray-400 uppercase">
-								Gestión de Usuario
-							</h3>
-
-							<Link
-								to="/admin/users"
-								className={`flex items-center px-3 py-2 rounded-md ${
-									isActive("/admin/users")
-										? "bg-gray-800 text-white"
-										: "text-gray-300 hover:bg-gray-800 hover:text-white"
-								}`}
-							>
-								<Users className="w-5 h-5 mr-3" />
-								Usuarios
-							</Link>
-
-							<Link
-								to="/admin/sellers"
-								className={`flex items-center justify-between px-3 py-2 rounded-md ${
-									isActive("/admin/sellers")
-										? "bg-gray-800 text-white"
-										: "text-gray-300 hover:bg-gray-800 hover:text-white"
-								}`}
-							>
-								<div className="flex items-center">
-									<Briefcase className="w-5 h-5 mr-3" />
-									Vendedores
-								</div>
-								{pendingActions.sellerRequests > 0 && (
-									<span className="bg-red-500 text-white text-xs rounded-full px-2 py-0.5">
-										{pendingActions.sellerRequests}
-									</span>
-								)}
-							</Link>
-						</div>
-
-						<div className="space-y-2">
-							<h3 className="px-3 text-xs font-semibold text-gray-400 uppercase">
-								Productos
-							</h3>
-
-							<Link
-								to="/admin/products"
-								className={`flex items-center px-3 py-2 rounded-md ${
-									isActive("/admin/products")
-										? "bg-gray-800 text-white"
-										: "text-gray-300 hover:bg-gray-800 hover:text-white"
-								}`}
-							>
-								<Package className="w-5 h-5 mr-3" />
-								Productos
-							</Link>
-
-							<Link
-								to="/admin/categories"
-								className={`flex items-center px-3 py-2 rounded-md ${
-									isActive("/admin/categories")
-										? "bg-gray-800 text-white"
-										: "text-gray-300 hover:bg-gray-800 hover:text-white"
-								}`}
-							>
-								<Tag className="w-5 h-5 mr-3" />
-								Categorías
-							</Link>
-						</div>
-
-						<div className="space-y-2">
-							<h3 className="px-3 text-xs font-semibold text-gray-400 uppercase">
-								Pedidos
-							</h3>
-
-							<Link
-								to="/admin/orders"
-								className={`flex items-center px-3 py-2 rounded-md ${
-									isActive("/admin/orders")
-										? "bg-gray-800 text-white"
-										: "text-gray-300 hover:bg-gray-800 hover:text-white"
-								}`}
-							>
-								<ShoppingBag className="w-5 h-5 mr-3" />
-								Pedidos
-							</Link>
-
-							<Link
-								to="/admin/shipping"
-								className={`flex items-center px-3 py-2 rounded-md ${
-									isActive("/admin/shipping")
-										? "bg-gray-800 text-white"
-										: "text-gray-300 hover:bg-gray-800 hover:text-white"
-								}`}
-							>
-								<Truck className="w-5 h-5 mr-3" />
-								Envíos
-							</Link>
-						</div>
-
-						<div className="space-y-2">
-							<h3 className="px-3 text-xs font-semibold text-gray-400 uppercase">
-								Contenido
-							</h3>
-
-							<Link
-								to="/admin/ratings"
-								className={`flex items-center justify-between px-3 py-2 rounded-md ${
-									isActive("/admin/ratings")
-										? "bg-gray-800 text-white"
-										: "text-gray-300 hover:bg-gray-800 hover:text-white"
-								}`}
-							>
-								<div className="flex items-center">
-									<Star className="w-5 h-5 mr-3" />
-									Valoraciones y Reseñas
-								</div>
-								{pendingActions.ratings > 0 && (
-									<span className="bg-red-500 text-white text-xs rounded-full px-2 py-0.5">
-										{pendingActions.ratings}
-									</span>
-								)}
-							</Link>
-
-							<Link
-								to="/admin/feedback"
-								className={`flex items-center justify-between px-3 py-2 rounded-md ${
-									isActive("/admin/feedback")
-										? "bg-gray-800 text-white"
-										: "text-gray-300 hover:bg-gray-800 hover:text-white"
-								}`}
-							>
-								<div className="flex items-center">
-									<MessageSquare className="w-5 h-5 mr-3" />
-									Feedback y Comentarios
-								</div>
-								{pendingActions.feedback > 0 && (
-									<span className="bg-red-500 text-white text-xs rounded-full px-2 py-0.5">
-										{pendingActions.feedback}
-									</span>
-								)}
-							</Link>
-
-							<Link
-								to="/admin/discounts"
-								className={`flex items-center px-3 py-2 rounded-md ${
-									isActive("/admin/discounts")
-										? "bg-gray-800 text-white"
-										: "text-gray-300 hover:bg-gray-800 hover:text-white"
-								}`}
-							>
-								<DollarSign className="w-5 h-5 mr-3" />
-								Descuentos
-							</Link>
-						</div>
-
-						<div className="space-y-2">
-							<h3 className="px-3 text-xs font-semibold text-gray-400 uppercase">
-								Finanzas
-							</h3>
-
-							<Link
-								to="/admin/invoices"
-								className={`flex items-center px-3 py-2 rounded-md ${
-									isActive("/admin/invoices")
-										? "bg-gray-800 text-white"
-										: "text-gray-300 hover:bg-gray-800 hover:text-white"
-								}`}
-							>
-								<FileText className="w-5 h-5 mr-3" />
-								Facturas
-							</Link>
-
-							<Link
-								to="/admin/accounting"
-								className={`flex items-center px-3 py-2 rounded-md ${
-									isActive("/admin/accounting")
-										? "bg-gray-800 text-white"
-										: "text-gray-300 hover:bg-gray-800 hover:text-white"
-								}`}
-							>
-								<DollarSign className="w-5 h-5 mr-3" />
-								Contabilidad
-							</Link>
-						</div>
-
-						<div className="space-y-2">
-							<h3 className="px-3 text-xs font-semibold text-gray-400 uppercase">
-								Sistema
-							</h3>
-
-							<Link
-								to="/admin/settings"
-								className={`flex items-center px-3 py-2 rounded-md ${
-									isActive("/admin/settings")
-										? "bg-gray-800 text-white"
-										: "text-gray-300 hover:bg-gray-800 hover:text-white"
-								}`}
-							>
-								<Settings className="w-5 h-5 mr-3" />
-								Configuración
-							</Link>
-
-							<Link
-								to="/admin/logs"
-								className={`flex items-center px-3 py-2 rounded-md ${
-									isActive("/admin/logs")
-										? "bg-gray-800 text-white"
-										: "text-gray-300 hover:bg-gray-800 hover:text-white"
-								}`}
-							>
-								<AlertTriangle className="w-5 h-5 mr-3" />
-								Registros de Errores
-							</Link>
-						</div>
-					</div>
-				</nav>
-			</aside>
+			
+			<Sidebar groups={adminGroups} title={{title:"Panel de Administración (Admin)", icon:<Shield className="w-7 h-7 text-primary-400" />}} />
 
 			{/* Main Content */}
 			<div className="flex-1 flex flex-col overflow-hidden">
