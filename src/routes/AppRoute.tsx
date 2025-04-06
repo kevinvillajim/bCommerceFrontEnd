@@ -52,11 +52,11 @@ const AdminProductsPage = lazy(() => import('../presentation/pages/admin/AdminPr
 const AdminCategoriesPage = lazy(() => import('../presentation/pages/admin/AdminCategoriesPage'));
 const AdminOrdersPage = lazy(() => import('../presentation/pages/admin/AdminOrdersPage'));
 const AdminRatingsPage = lazy(() => import('../presentation/pages/admin/AdminRatingsPage'));
-// const AdminFeedbackPage = lazy(() => import('../presentation/pages/admin/AdminFeedbackPage'));
-// const AdminInvoicesPage = lazy(() => import('../presentation/pages/admin/AdminInvoicesPage'));
-// const AdminAccountingPage = lazy(() => import('../presentation/pages/admin/AdminAccountingPage'));
+const AdminFeedbackPage = lazy(() => import('../presentation/pages/admin/AdminFeedbackPage'));
+const AdminInvoicesPage = lazy(() => import('../presentation/pages/admin/AdminInvoicesPage'));
+const AdminAccountingPage = lazy(() => import('../presentation/pages/admin/AdminAccountingPage'));
 // const AdminSettingsPage = lazy(() => import('../presentation/pages/admin/AdminSettingsPage'));
-// const AdminDiscountsPage = lazy(() => import('../presentation/pages/admin/AdminDiscountsPage'));
+const AdminDiscountsPage = lazy(() => import('../presentation/pages/admin/AdminDiscountsPage'));
 // const AdminLogViewerPage = lazy(() => import('../presentation/pages/admin/AdminLogViewerPage'));
 const AdminShippingPage = lazy(() => import('../presentation/pages/admin/AdminShippingPage'));
 
@@ -369,23 +369,23 @@ const appRoutes: RouteObject[] = [
 				path: "ratings",
 				element: <AdminRatingsPage />,
 			},
-			// {
-			// 	path: "feedback",
-			// 	element: <AdminFeedbackPage />,
-			// },
-			// {
-			// 	path: "discounts",
-			// 	element: <AdminDiscountsPage />,
-			// },
-			// // Financial
-			// {
-			// 	path: "invoices",
-			// 	element: <AdminInvoicesPage />,
-			// },
-			// {
-			// 	path: "accounting",
-			// 	element: <AdminAccountingPage />,
-			// },
+			{
+				path: "feedback",
+				element: <AdminFeedbackPage />,
+			},
+			{
+				path: "discounts",
+				element: <AdminDiscountsPage />,
+			},
+			// Financial
+			{
+				path: "invoices",
+				element: <AdminInvoicesPage />,
+			},
+			{
+				path: "accounting",
+				element: <AdminAccountingPage />,
+			},
 			// // System
 			// {
 			// 	path: "settings",
