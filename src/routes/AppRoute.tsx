@@ -48,17 +48,17 @@ const SellerProductCreatePage = lazy(() => import('../presentation/pages/seller/
 const AdminDashboard = lazy(() => import('../presentation/pages/admin/AdminDashboard'));
 const AdminUsersPage = lazy(() => import('../presentation/pages/admin/AdminUsersPage'));
 const AdminSellersPage = lazy(() => import('../presentation/pages/admin/AdminSellersPage'));
-// const AdminProductsPage = lazy(() => import('../presentation/pages/admin/AdminProductsPage'));
-// const AdminCategoriesPage = lazy(() => import('../presentation/pages/admin/AdminCategoriesPage'));
-// const AdminOrdersPage = lazy(() => import('../presentation/pages/admin/AdminOrdersPage'));
-// const AdminRatingsPage = lazy(() => import('../presentation/pages/admin/AdminRatingsPage'));
+const AdminProductsPage = lazy(() => import('../presentation/pages/admin/AdminProductsPage'));
+const AdminCategoriesPage = lazy(() => import('../presentation/pages/admin/AdminCategoriesPage'));
+const AdminOrdersPage = lazy(() => import('../presentation/pages/admin/AdminOrdersPage'));
+const AdminRatingsPage = lazy(() => import('../presentation/pages/admin/AdminRatingsPage'));
 // const AdminFeedbackPage = lazy(() => import('../presentation/pages/admin/AdminFeedbackPage'));
 // const AdminInvoicesPage = lazy(() => import('../presentation/pages/admin/AdminInvoicesPage'));
 // const AdminAccountingPage = lazy(() => import('../presentation/pages/admin/AdminAccountingPage'));
 // const AdminSettingsPage = lazy(() => import('../presentation/pages/admin/AdminSettingsPage'));
 // const AdminDiscountsPage = lazy(() => import('../presentation/pages/admin/AdminDiscountsPage'));
 // const AdminLogViewerPage = lazy(() => import('../presentation/pages/admin/AdminLogViewerPage'));
-// const AdminShippingPage = lazy(() => import('../presentation/pages/admin/AdminShippingPage'));
+const AdminShippingPage = lazy(() => import('../presentation/pages/admin/AdminShippingPage'));
 
 //Route Guards
 import PrivateRoute from "./PrivateRoute";
@@ -346,29 +346,29 @@ const appRoutes: RouteObject[] = [
 				path: "sellers",
 				element: <AdminSellersPage />,
 			},
-			// // Product Management
-			// {
-			// 	path: "products",
-			// 	element: <AdminProductsPage />,
-			// },
-			// {
-			// 	path: "categories",
-			// 	element: <AdminCategoriesPage />,
-			// },
-			// // Order Management
-			// {
-			// 	path: "orders",
-			// 	element: <AdminOrdersPage />,
-			// },
-			// {
-			// 	path: "shipping",
-			// 	element: <AdminShippingPage />,
-			// },
+			// Product Management
+			{
+				path: "products",
+				element: <AdminProductsPage />,
+			},
+			{
+				path: "categories",
+				element: <AdminCategoriesPage />,
+			},
+			// Order Management
+			{
+				path: "orders",
+				element: <AdminOrdersPage />,
+			},
+			{
+				path: "shipping",
+				element: <AdminShippingPage />,
+			},
 			// // Content
-			// {
-			// 	path: "ratings",
-			// 	element: <AdminRatingsPage />,
-			// },
+			{
+				path: "ratings",
+				element: <AdminRatingsPage />,
+			},
 			// {
 			// 	path: "feedback",
 			// 	element: <AdminFeedbackPage />,
