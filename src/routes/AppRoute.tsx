@@ -33,7 +33,7 @@ const SellerDashboard = lazy(() => import('../presentation/pages/seller/SellerDa
 const SellerProductsPage = lazy(() => import('../presentation/pages/seller/SellerProductsPage'));
 const SellerProductCreatePage = lazy(() => import('../presentation/pages/seller/SellerProductCreatePage'));
 // const SellerProductEditPage = lazy(() => import('../presentation/pages/seller/SellerProductEditPage'));
-// const SellerOrdersPage = lazy(() => import('../presentation/pages/seller/SellerOrdersPage'));
+const SellerOrdersPage = lazy(() => import('../presentation/pages/seller/SellerOrdersPage'));
 // const SellerOrderDetailsPage = lazy(() => import('../presentation/pages/seller/SellerOrderDetailsPage'));
 // const SellerRatingsPage = lazy(() => import('../presentation/pages/seller/SellerRatingsPage'));
 // const SellerProfilePage = lazy(() => import('../presentation/pages/seller/SellerProfilePage'));
@@ -55,9 +55,9 @@ const AdminRatingsPage = lazy(() => import('../presentation/pages/admin/AdminRat
 const AdminFeedbackPage = lazy(() => import('../presentation/pages/admin/AdminFeedbackPage'));
 const AdminInvoicesPage = lazy(() => import('../presentation/pages/admin/AdminInvoicesPage'));
 const AdminAccountingPage = lazy(() => import('../presentation/pages/admin/AdminAccountingPage'));
-// const AdminSettingsPage = lazy(() => import('../presentation/pages/admin/AdminSettingsPage'));
+const AdminSettingsPage = lazy(() => import('../presentation/pages/admin/AdminSettingsPage'));
 const AdminDiscountsPage = lazy(() => import('../presentation/pages/admin/AdminDiscountsPage'));
-// const AdminLogViewerPage = lazy(() => import('../presentation/pages/admin/AdminLogViewerPage'));
+const AdminLogViewerPage = lazy(() => import('../presentation/pages/admin/AdminLogViewerPage'));
 const AdminShippingPage = lazy(() => import('../presentation/pages/admin/AdminShippingPage'));
 
 //Route Guards
@@ -179,14 +179,14 @@ const appRoutes: RouteObject[] = [
 					</PrivateRoute>
 				),
 			},
-			// {
-			// 	path: "orders",
-			// 	element: (
-			// 		<PrivateRoute>
-			// 			<OrdersPage />
-			// 		</PrivateRoute>
-			// 	),
-			// },
+			{
+				path: "orders",
+				element: (
+					<PrivateRoute>
+						<OrdersPage />
+					</PrivateRoute>
+				),
+			},
 			// {
 			// 	path: "orders/:id",
 			// 	element: (
@@ -386,15 +386,15 @@ const appRoutes: RouteObject[] = [
 				path: "accounting",
 				element: <AdminAccountingPage />,
 			},
-			// // System
-			// {
-			// 	path: "settings",
-			// 	element: <AdminSettingsPage />,
-			// },
-			// {
-			// 	path: "logs",
-			// 	element: <AdminLogViewerPage />,
-			// },
+			// System
+			{
+				path: "settings",
+				element: <AdminSettingsPage />,
+			},
+			{
+				path: "logs",
+				element: <AdminLogViewerPage />,
+			},
 		],
 	},
 
