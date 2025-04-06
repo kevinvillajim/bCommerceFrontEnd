@@ -1,17 +1,17 @@
 import React, {useState, useEffect} from "react";
+import Table from "../../components/dashboard/Table"; // Importar el componente Table que creamos
 import {
-	Search,
-	Filter,
 	User,
-	Edit,
-	Shield,
 	Lock,
 	Unlock,
 	Mail,
+	Edit,
+	Shield,
+	Filter,
 	RefreshCw,
 } from "lucide-react";
 
-// Example user type
+// Tipo de usuario
 interface UserData {
 	id: number;
 	name: string;
@@ -23,25 +23,25 @@ interface UserData {
 	ordersCount: number;
 }
 
+
 const AdminUsersPage: React.FC = () => {
 	const [users, setUsers] = useState<UserData[]>([]);
 	const [loading, setLoading] = useState(true);
-	const [searchTerm, setSearchTerm] = useState("");
 	const [roleFilter, setRoleFilter] = useState<string>("all");
 	const [statusFilter, setStatusFilter] = useState<string>("all");
 	const [pagination, setPagination] = useState({
 		currentPage: 1,
 		totalPages: 5,
-		totalUsers: 0,
+		totalItems: 48,
+		itemsPerPage: 10,
 	});
 
-	// Fetch users data - replace with actual API call
+	// Obtener datos de usuarios (simulado)
 	useEffect(() => {
-		// Simulate API call
 		const fetchUsers = () => {
 			setLoading(true);
 
-			// Mock data
+			// Datos de ejemplo
 			const mockUsers: UserData[] = [
 				{
 					id: 1,
@@ -150,29 +150,25 @@ const AdminUsersPage: React.FC = () => {
 				setPagination({
 					currentPage: 1,
 					totalPages: 5,
-					totalUsers: 48,
+					totalItems: 48,
+					itemsPerPage: 10,
 				});
 				setLoading(false);
-			}, 500); // Simulate network delay
+			}, 500); // Simular retardo de red
 		};
 
 		fetchUsers();
 	}, []);
 
-	// Filter users based on search term, role filter, and status filter
+	// Filtrar usuarios basado en rol y estado
 	const filteredUsers = users.filter((user) => {
-		const matchesSearch =
-			user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-			user.email.toLowerCase().includes(searchTerm.toLowerCase());
-
 		const matchesRole = roleFilter === "all" || user.role === roleFilter;
 		const matchesStatus =
 			statusFilter === "all" || user.status === statusFilter;
-
-		return matchesSearch && matchesRole && matchesStatus;
+		return matchesRole && matchesStatus;
 	});
 
-	// Handle user blocking/unblocking
+	// Manejar cambio de estado de usuario (bloquear/desbloquear)
 	const toggleUserStatus = (userId: number) => {
 		setUsers((prevUsers) =>
 			prevUsers.map((user) =>
@@ -183,11 +179,151 @@ const AdminUsersPage: React.FC = () => {
 		);
 	};
 
-	// Handle send password reset
+	// Manejar envío de restablecimiento de contraseña
 	const sendPasswordReset = (userId: number) => {
-		// In a real app, you would make an API call here
-		alert(`Password reset email sent to user #${userId}`);
+		// En una app real, harías una llamada a la API aquí
+		alert(
+			`Correo de restablecimiento de contraseña enviado al usuario #${userId}`
+		);
 	};
+
+	// Manejar cambio de página
+	const handlePageChange = (page: number) => {
+		setPagination((prev) => ({...prev, currentPage: page}));
+		// En una app real, aquí obtendrías los datos para la nueva página
+	};
+
+	// Refrescar datos
+	const refreshData = () => {
+		setLoading(true);
+		// Simular recarga de datos
+		setTimeout(() => {
+			setLoading(false);
+		}, 500);
+	};
+
+	// Definir columnas de la tabla
+	const columns = [
+		{
+			key: "user",
+			header: "Usuario",
+			sortable: true,
+			render: (user: UserData) => (
+				<div className="flex items-center">
+					<div className="flex-shrink-0 h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden">
+						<User className="h-6 w-6 text-gray-500 dark:text-gray-400" />
+					</div>
+					<div className="ml-4">
+						<div className="text-sm font-medium text-gray-900 dark:text-white">
+							{user.name}
+						</div>
+						<div className="text-sm text-gray-500 dark:text-gray-400">
+							{user.email}
+						</div>
+					</div>
+				</div>
+			),
+		},
+		{
+			key: "role",
+			header: "Rol",
+			sortable: true,
+			render: (user: UserData) => (
+				<span
+					className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+						user.role === "admin"
+							? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+							: user.role === "seller"
+								? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+								: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+					}`}
+				>
+					{user.role === "admin" && "Administrador"}
+					{user.role === "seller" && "Vendedor"}
+					{user.role === "customer" && "Cliente"}
+				</span>
+			),
+		},
+		{
+			key: "status",
+			header: "Estado",
+			sortable: true,
+			render: (user: UserData) => (
+				<span
+					className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+						user.status === "active"
+							? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+							: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+					}`}
+				>
+					{user.status === "active" ? "Activo" : "Bloqueado"}
+				</span>
+			),
+		},
+		{
+			key: "lastLogin",
+			header: "Último Acceso",
+			sortable: true,
+		},
+		{
+			key: "registeredDate",
+			header: "Registrado",
+			sortable: true,
+		},
+		{
+			key: "ordersCount",
+			header: "Pedidos",
+			sortable: true,
+		},
+		{
+			key: "actions",
+			header: "Acciones",
+			render: (user: UserData) => (
+				<div className="flex justify-end space-x-2">
+					<button
+						onClick={() => toggleUserStatus(user.id)}
+						className={`p-1 rounded-md ${
+							user.status === "active"
+								? "text-red-600 hover:bg-red-100 dark:text-red-400 dark:hover:bg-red-900"
+								: "text-green-600 hover:bg-green-100 dark:text-green-400 dark:hover:bg-green-900"
+						}`}
+						title={
+							user.status === "active"
+								? "Bloquear Usuario"
+								: "Desbloquear Usuario"
+						}
+					>
+						{user.status === "active" ? (
+							<Lock size={18} />
+						) : (
+							<Unlock size={18} />
+						)}
+					</button>
+					<button
+						onClick={() => sendPasswordReset(user.id)}
+						className="p-1 text-blue-600 hover:bg-blue-100 rounded-md dark:text-blue-400 dark:hover:bg-blue-900"
+						title="Enviar Restablecimiento de Contraseña"
+					>
+						<Mail size={18} />
+					</button>
+					<button
+						className="p-1 text-yellow-600 hover:bg-yellow-100 rounded-md dark:text-yellow-400 dark:hover:bg-yellow-900"
+						title="Editar Usuario"
+					>
+						<Edit size={18} />
+					</button>
+					{user.role !== "admin" && (
+						<button
+							className="p-1 text-purple-600 hover:bg-purple-100 rounded-md dark:text-purple-400 dark:hover:bg-purple-900"
+							title="Hacer Administrador"
+						>
+							<Shield size={18} />
+						</button>
+					)}
+				</div>
+			),
+		},
+	];
 
 	return (
 		<div className="space-y-6">
@@ -196,29 +332,20 @@ const AdminUsersPage: React.FC = () => {
 					Gestión de Usuarios
 				</h1>
 				<div className="flex space-x-2">
-					<button className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+					<button
+						onClick={refreshData}
+						className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+					>
 						<RefreshCw size={18} className="inline mr-2" />
 						Actualizar
 					</button>
 				</div>
 			</div>
 
-			{/* Filters */}
+			{/* Filtros */}
 			<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
 				<div className="flex flex-col md:flex-row gap-4">
-					{/* Search */}
-					<div className="relative flex-grow">
-						<input
-							type="text"
-							placeholder="Buscar por nombre o email..."
-							className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-							value={searchTerm}
-							onChange={(e) => setSearchTerm(e.target.value)}
-						/>
-						<Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
-					</div>
-
-					{/* Role Filter */}
+					{/* Filtro de Rol */}
 					<div className="flex items-center space-x-2">
 						<Filter className="h-5 w-5 text-gray-500 dark:text-gray-400" />
 						<select
@@ -233,7 +360,7 @@ const AdminUsersPage: React.FC = () => {
 						</select>
 					</div>
 
-					{/* Status Filter */}
+					{/* Filtro de Estado */}
 					<div className="flex items-center space-x-2">
 						<select
 							className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
@@ -248,260 +375,22 @@ const AdminUsersPage: React.FC = () => {
 				</div>
 			</div>
 
-			{/* Users Table */}
-			<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
-				{loading ? (
-					<div className="p-8 flex justify-center">
-						<div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
-					</div>
-				) : filteredUsers.length === 0 ? (
-					<div className="p-8 text-center">
-						<User className="h-12 w-12 mx-auto text-gray-400 dark:text-gray-600 mb-4" />
-						<h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-							No se encontraron usuarios
-						</h3>
-						<p className="text-gray-500 dark:text-gray-400">
-							Intente ajustar su búsqueda o filtro para encontrar lo que está
-							buscando.
-						</p>
-					</div>
-				) : (
-					<>
-						<div className="overflow-x-auto">
-							<table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-								<thead className="bg-gray-50 dark:bg-gray-700">
-									<tr>
-										<th
-											scope="col"
-											className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-										>
-											Usuario
-										</th>
-										<th
-											scope="col"
-											className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-										>
-											Rol
-										</th>
-										<th
-											scope="col"
-											className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-										>
-											Estado
-										</th>
-										<th
-											scope="col"
-											className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-										>
-											Último Acceso
-										</th>
-										<th
-											scope="col"
-											className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-										>
-											Registrado
-										</th>
-										<th
-											scope="col"
-											className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-										>
-											Pedidos
-										</th>
-										<th
-											scope="col"
-											className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-										>
-											Acciones
-										</th>
-									</tr>
-								</thead>
-								<tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-									{filteredUsers.map((user) => (
-										<tr
-											key={user.id}
-											className="hover:bg-gray-50 dark:hover:bg-gray-700"
-										>
-											<td className="px-6 py-4 whitespace-nowrap">
-												<div className="flex items-center">
-													<div className="flex-shrink-0 h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden">
-														<User className="h-6 w-6 text-gray-500 dark:text-gray-400" />
-													</div>
-													<div className="ml-4">
-														<div className="text-sm font-medium text-gray-900 dark:text-white">
-															{user.name}
-														</div>
-														<div className="text-sm text-gray-500 dark:text-gray-400">
-															{user.email}
-														</div>
-													</div>
-												</div>
-											</td>
-											<td className="px-6 py-4 whitespace-nowrap">
-												<span
-													className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-														user.role === "admin"
-															? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
-															: user.role === "seller"
-																? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
-																: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-													}`}
-												>
-													{user.role === "admin" && "Administrador"}
-													{user.role === "seller" && "Vendedor"}
-													{user.role === "customer" && "Cliente"}
-												</span>
-											</td>
-											<td className="px-6 py-4 whitespace-nowrap">
-												<span
-													className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-														user.status === "active"
-															? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-															: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
-													}`}
-												>
-													{user.status.charAt(0).toUpperCase() +
-														user.status.slice(1)}
-												</span>
-											</td>
-											<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-												{user.lastLogin}
-											</td>
-											<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-												{user.registeredDate}
-											</td>
-											<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-												{user.ordersCount}
-											</td>
-											<td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-												<div className="flex justify-end space-x-2">
-													<button
-														onClick={() => toggleUserStatus(user.id)}
-														className={`p-1 rounded-md ${
-															user.status === "active"
-																? "text-red-600 hover:bg-red-100 dark:text-red-400 dark:hover:bg-red-900"
-																: "text-green-600 hover:bg-green-100 dark:text-green-400 dark:hover:bg-green-900"
-														}`}
-														title={
-															user.status === "active"
-																? "Bloquear Usuario"
-																: "Desbloquear Usuario"
-														}
-													>
-														{user.status === "active" ? (
-															<Lock size={18} />
-														) : (
-															<Unlock size={18} />
-														)}
-													</button>
-													<button
-														onClick={() => sendPasswordReset(user.id)}
-														className="p-1 text-blue-600 hover:bg-blue-100 rounded-md dark:text-blue-400 dark:hover:bg-blue-900"
-														title="Enviar Restablecimiento de Contraseña"
-													>
-														<Mail size={18} />
-													</button>
-													<button
-														className="p-1 text-yellow-600 hover:bg-yellow-100 rounded-md dark:text-yellow-400 dark:hover:bg-yellow-900"
-														title="Editar Usuario"
-													>
-														<Edit size={18} />
-													</button>
-													{user.role !== "admin" && (
-														<button
-															className="p-1 text-purple-600 hover:bg-purple-100 rounded-md dark:text-purple-400 dark:hover:bg-purple-900"
-															title="Hacer Administrador"
-														>
-															<Shield size={18} />
-														</button>
-													)}
-												</div>
-											</td>
-										</tr>
-									))}
-								</tbody>
-							</table>
-						</div>
-
-						{/* Pagination */}
-						<div className="px-6 py-3 flex items-center justify-between border-t border-gray-200 dark:border-gray-700">
-							<div className="flex-1 flex justify-between sm:hidden">
-								<button className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700">
-									Anterior
-								</button>
-								<button className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700">
-									Siguiente
-								</button>
-							</div>
-							<div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-								<div>
-									<p className="text-sm text-gray-700 dark:text-gray-300">
-										Mostrando <span className="font-medium">1</span> a{" "}
-										<span className="font-medium">{filteredUsers.length}</span>{" "}
-										de{" "}
-										<span className="font-medium">{pagination.totalUsers}</span>{" "}
-										usuarios
-									</p>
-								</div>
-								<div>
-									<nav
-										className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px"
-										aria-label="Pagination"
-									>
-										<button className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700">
-											<span className="sr-only">Previous</span>
-											<svg
-												className="h-5 w-5"
-												xmlns="http://www.w3.org/2000/svg"
-												viewBox="0 0 20 20"
-												fill="currentColor"
-												aria-hidden="true"
-											>
-												<path
-													fillRule="evenodd"
-													d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
-													clipRule="evenodd"
-												/>
-											</svg>
-										</button>
-										{[...Array(Math.min(5, pagination.totalPages))].map(
-											(_, i) => (
-												<button
-													key={i}
-													className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-														pagination.currentPage === i + 1
-															? "z-10 bg-primary-50 border-primary-500 text-primary-600 dark:bg-primary-900 dark:border-primary-500 dark:text-primary-400"
-															: "bg-white border-gray-300 text-gray-500 hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-700"
-													}`}
-												>
-													{i + 1}
-												</button>
-											)
-										)}
-										<button className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700">
-											<span className="sr-only">Next</span>
-											<svg
-												className="h-5 w-5"
-												xmlns="http://www.w3.org/2000/svg"
-												viewBox="0 0 20 20"
-												fill="currentColor"
-												aria-hidden="true"
-											>
-												<path
-													fillRule="evenodd"
-													d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
-													clipRule="evenodd"
-												/>
-											</svg>
-										</button>
-									</nav>
-								</div>
-							</div>
-						</div>
-					</>
-				)}
-			</div>
+			{/* Tabla de Usuarios */}
+			<Table
+				data={filteredUsers}
+				columns={columns}
+				searchFields={["name", "email"]}
+				loading={loading}
+				emptyMessage="No se encontraron usuarios"
+				pagination={{
+					currentPage: pagination.currentPage,
+					totalPages: pagination.totalPages,
+					totalItems: pagination.totalItems,
+					itemsPerPage: pagination.itemsPerPage,
+					onPageChange: handlePageChange,
+				}}
+			/>
 		</div>
 	);
 };
-
 export default AdminUsersPage;

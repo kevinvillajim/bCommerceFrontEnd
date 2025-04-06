@@ -47,7 +47,7 @@ const SellerProductCreatePage = lazy(() => import('../presentation/pages/seller/
 //Admin Pages
 const AdminDashboard = lazy(() => import('../presentation/pages/admin/AdminDashboard'));
 const AdminUsersPage = lazy(() => import('../presentation/pages/admin/AdminUsersPage'));
-// const AdminSellersPage = lazy(() => import('../presentation/pages/admin/AdminSellersPage'));
+const AdminSellersPage = lazy(() => import('../presentation/pages/admin/AdminSellersPage'));
 // const AdminProductsPage = lazy(() => import('../presentation/pages/admin/AdminProductsPage'));
 // const AdminCategoriesPage = lazy(() => import('../presentation/pages/admin/AdminCategoriesPage'));
 // const AdminOrdersPage = lazy(() => import('../presentation/pages/admin/AdminOrdersPage'));
@@ -342,10 +342,10 @@ const appRoutes: RouteObject[] = [
 				path: "users",
 				element: <AdminUsersPage />,
 			},
-			// {
-			// 	path: "sellers",
-			// 	element: <AdminSellersPage />,
-			// },
+			{
+				path: "sellers",
+				element: <AdminSellersPage />,
+			},
 			// // Product Management
 			// {
 			// 	path: "products",
