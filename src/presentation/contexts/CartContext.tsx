@@ -4,6 +4,7 @@ import React, {
 	useEffect,
 	useCallback,
 	useContext,
+	useRef,
 } from "react";
 import type {ReactNode} from "react";
 import type {AxiosResponse} from "axios";
@@ -59,25 +60,39 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 	const [error, setError] = useState<string | null>(null);
 	const [itemCount, setItemCount] = useState<number>(0);
 	const [totalAmount, setTotalAmount] = useState<number>(0);
+
 	const {isAuthenticated} = useContext(AuthContext);
 
-	// Initialize cart on mount
+	// Referencias para controlar el flujo
+	const isInitialized = useRef(false);
+	const lastCartString = useRef("");
+	const isAuthenticatedRef = useRef(isAuthenticated);
+
+	// Actualizar el ref cuando cambia isAuthenticated
 	useEffect(() => {
+		isAuthenticatedRef.current = isAuthenticated;
+	}, [isAuthenticated]);
+
+	// Initialize cart on mount or when auth state changes - SOLO UNA VEZ
+	useEffect(() => {
+		// Si ya inicializamos, solo actualizamos cuando cambie isAuthenticated
+		if (
+			isInitialized.current &&
+			isAuthenticatedRef.current === isAuthenticated
+		) {
+			return;
+		}
+
 		const initCart = async () => {
 			const token = storageService.getItem(appConfig.storage.authTokenKey);
-			console.log("Token obtenido:", token);
 
 			if (token && isAuthenticated) {
 				try {
-					console.log(
-						"📦 Usuario autenticado, intentando obtener el carrito desde la API"
-					);
 					setLoading(true);
 
 					const response: AxiosResponse<any> = await axiosInstance.get(
 						API_ENDPOINTS.CART.GET
 					);
-					console.log("Respuesta de la API del carrito:", response);
 
 					// Analizar la estructura de respuesta
 					let cartData = null;
@@ -92,29 +107,23 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 					}
 
 					if (cartData) {
-						console.log("Datos del carrito obtenidos de la API:", cartData);
 						setCart(cartData);
-					} else {
-						throw new Error("Estructura de respuesta de carrito no reconocida");
+						// Actualizar referencia de último carrito conocido
+						lastCartString.current = JSON.stringify(cartData);
 					}
-				} catch (err: any) {
+				} catch (err) {
 					console.error("Error al obtener el carrito desde la API:", err);
-					console.log("Intentando obtener el carrito desde localStorage...");
 
+					// Intentar recuperar de localStorage como fallback
 					const localCart = storageService.getItem("cart");
-					console.log("Valor obtenido de localStorage:", localCart);
-
 					if (localCart) {
 						try {
 							const parsedCart =
 								typeof localCart === "string"
 									? JSON.parse(localCart)
 									: localCart;
-							console.log(
-								"Carrito parseado correctamente desde localStorage:",
-								parsedCart
-							);
 							setCart(parsedCart);
+							lastCartString.current = JSON.stringify(parsedCart);
 						} catch (e) {
 							console.error(
 								"Error al parsear el carrito desde localStorage:",
@@ -127,26 +136,23 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 					setLoading(false);
 				}
 			} else {
-				console.log("📦 Usuario no autenticado, usando carrito local");
-
+				// Usuario no autenticado, usar carrito local
 				const localCart = storageService.getItem("cart");
-				console.log("Valor obtenido de localStorage:", localCart);
-
 				if (localCart) {
 					try {
 						const parsedCart =
 							typeof localCart === "string" ? JSON.parse(localCart) : localCart;
-						console.log(
-							"Carrito parseado correctamente desde localStorage:",
-							parsedCart
-						);
 						setCart(parsedCart);
+						lastCartString.current = JSON.stringify(parsedCart);
 					} catch (e) {
 						console.error("Error al parsear el carrito desde localStorage:", e);
 						storageService.removeItem("cart");
 					}
 				}
 			}
+
+			// Marcar como inicializado
+			isInitialized.current = true;
 		};
 
 		initCart();
@@ -154,25 +160,34 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 
 	// Update derived states when cart changes
 	useEffect(() => {
-		if (cart) {
-			// Calcular contador de items
-			const count = cart.items
-				? cart.items.reduce((sum, item) => sum + item.quantity, 0)
-				: 0;
-			setItemCount(count);
-
-			// Usar el total proporcionado por la API o calcular
-			setTotalAmount(cart.total || 0);
-
-			// Sincronizar con localStorage para usuarios anónimos
-			if (!storageService.getItem(appConfig.storage.authTokenKey)) {
-				storageService.setItem("cart", JSON.stringify(cart));
-			}
-		} else {
+		if (!cart) {
 			setItemCount(0);
 			setTotalAmount(0);
+			return;
+		}
+
+		// Calcular contador de items
+		const count = cart.items
+			? cart.items.reduce((sum, item) => sum + item.quantity, 0)
+			: 0;
+		setItemCount(count);
+
+		// Usar el total proporcionado por la API o calcular
+		setTotalAmount(cart.total || 0);
+
+		// Sincronizar con localStorage para usuarios anónimos
+		// Solo guardar si el carrito ha cambiado realmente
+		const cartString = JSON.stringify(cart);
+		if (
+			!storageService.getItem(appConfig.storage.authTokenKey) &&
+			cartString !== lastCartString.current
+		) {
+			storageService.setItem("cart", cartString);
+			lastCartString.current = cartString;
 		}
 	}, [cart]);
+
+	// Métodos optimizados (dejando sólo los cambios necesarios)
 
 	// Add item to cart
 	const addToCart = useCallback(
@@ -183,7 +198,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 			try {
 				const token = storageService.getItem(appConfig.storage.authTokenKey);
 
-				if (token && isAuthenticated) {
+				if (token && isAuthenticatedRef.current) {
 					// Para usuarios autenticados, usar API
 					const apiRequest = {
 						product_id: request.productId,
@@ -196,8 +211,6 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 						apiRequest
 					);
 
-					console.log("Respuesta al añadir producto al carrito:", response);
-
 					// Verificar respuesta según la estructura documentada
 					if (
 						response.data &&
@@ -206,11 +219,13 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 						response.data.data.cart
 					) {
 						setCart(response.data.data.cart);
+						lastCartString.current = JSON.stringify(response.data.data.cart);
 						return true;
 					}
 					// Estructura alternativa
 					else if (response.data && response.data.cart) {
 						setCart(response.data.cart);
+						lastCartString.current = JSON.stringify(response.data.cart);
 						return true;
 					} else {
 						console.error(
@@ -233,6 +248,8 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 						(item) => item.productId === request.productId
 					);
 
+					let updatedCart: ShoppingCart;
+
 					if (existingItemIndex >= 0) {
 						// Actualizar item existente
 						const updatedItems = [...currentCart.items];
@@ -246,17 +263,16 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 							0
 						);
 
-						setCart({
+						updatedCart = {
 							...currentCart,
 							items: updatedItems,
 							total: newTotal,
-						});
+						};
 					} else {
-						// Añadir nuevo item (en una app real, deberías obtener el precio del producto de algún lado)
-						// Esto es simplificado - deberías obtener el precio del producto
-						const price = 0; // Esto debería venir de datos del producto
+						// Añadir nuevo item
+						const price = 0; // Obtener dinámicamente en app real
 						const newItem: CartItem = {
-							id: Date.now(), // ID generado localmente
+							id: Date.now(),
 							cartId: currentCart.id,
 							productId: request.productId,
 							quantity: request.quantity,
@@ -270,13 +286,15 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 							0
 						);
 
-						setCart({
+						updatedCart = {
 							...currentCart,
 							items: newItems,
 							total: newTotal,
-						});
+						};
 					}
 
+					setCart(updatedCart);
+					lastCartString.current = JSON.stringify(updatedCart);
 					return true;
 				}
 			} catch (err: any) {
@@ -291,10 +309,10 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 				setLoading(false);
 			}
 		},
-		[cart, isAuthenticated]
+		[cart]
 	);
 
-	// Remove item from cart
+	// Remove item from cart (optimizado pero manteniendo la lógica principal)
 	const removeFromCart = useCallback(
 		async (itemId: number): Promise<boolean> => {
 			setLoading(true);
@@ -303,15 +321,13 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 			try {
 				const token = storageService.getItem(appConfig.storage.authTokenKey);
 
-				if (token && isAuthenticated) {
+				if (token && isAuthenticatedRef.current) {
 					// Para usuarios autenticados, usar API
 					const response = await axiosInstance.delete(
 						API_ENDPOINTS.CART.REMOVE_ITEM(itemId)
 					);
 
-					console.log("Respuesta al eliminar producto del carrito:", response);
-
-					// Verificar respuesta según la estructura documentada
+					// Verificar respuesta y actualizar carrito
 					if (
 						response.data &&
 						response.data.status === "success" &&
@@ -319,11 +335,13 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 						response.data.data.cart
 					) {
 						setCart(response.data.data.cart);
+						lastCartString.current = JSON.stringify(response.data.data.cart);
 						return true;
 					}
 					// Estructura alternativa
 					else if (response.data && response.data.cart) {
 						setCart(response.data.cart);
+						lastCartString.current = JSON.stringify(response.data.cart);
 						return true;
 					} else {
 						console.error(
@@ -342,12 +360,14 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 						0
 					);
 
-					setCart({
+					const updatedCart = {
 						...cart,
 						items: updatedItems,
 						total: newTotal,
-					});
+					};
 
+					setCart(updatedCart);
+					lastCartString.current = JSON.stringify(updatedCart);
 					return true;
 				}
 			} catch (err: any) {
@@ -362,10 +382,10 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 				setLoading(false);
 			}
 		},
-		[cart, isAuthenticated]
+		[cart]
 	);
 
-	// Update cart item quantity
+	// Update cart item quantity (optimizado pero manteniendo la lógica principal)
 	const updateCartItem = useCallback(
 		async (data: CartItemUpdateData): Promise<boolean> => {
 			setLoading(true);
@@ -374,19 +394,13 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 			try {
 				const token = storageService.getItem(appConfig.storage.authTokenKey);
 
-				if (token && isAuthenticated) {
+				if (token && isAuthenticatedRef.current) {
 					// Para usuarios autenticados, usar API
 					const response = await axiosInstance.put(
 						API_ENDPOINTS.CART.UPDATE_ITEM(data.itemId),
 						{quantity: data.quantity}
 					);
 
-					console.log(
-						"Respuesta al actualizar producto del carrito:",
-						response
-					);
-
-					// Verificar respuesta según la estructura documentada
 					if (
 						response.data &&
 						response.data.status === "success" &&
@@ -394,11 +408,13 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 						response.data.data.cart
 					) {
 						setCart(response.data.data.cart);
+						lastCartString.current = JSON.stringify(response.data.data.cart);
 						return true;
 					}
 					// Estructura alternativa
 					else if (response.data && response.data.cart) {
 						setCart(response.data.cart);
+						lastCartString.current = JSON.stringify(response.data.cart);
 						return true;
 					} else {
 						console.error(
@@ -427,12 +443,14 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 						0
 					);
 
-					setCart({
+					const updatedCart = {
 						...cart,
 						items: updatedItems,
 						total: newTotal,
-					});
+					};
 
+					setCart(updatedCart);
+					lastCartString.current = JSON.stringify(updatedCart);
 					return true;
 				}
 			} catch (err: any) {
@@ -447,10 +465,10 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 				setLoading(false);
 			}
 		},
-		[cart, isAuthenticated]
+		[cart]
 	);
 
-	// Clear entire cart
+	// Clear entire cart (optimizado pero manteniendo la lógica principal)
 	const clearCart = useCallback(async (): Promise<boolean> => {
 		setLoading(true);
 		setError(null);
@@ -458,25 +476,25 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 		try {
 			const token = storageService.getItem(appConfig.storage.authTokenKey);
 
-			if (token && isAuthenticated) {
+			if (token && isAuthenticatedRef.current) {
 				// Para usuarios autenticados, usar API
 				const response = await axiosInstance.post(API_ENDPOINTS.CART.EMPTY);
 
-				console.log("Respuesta al vaciar carrito:", response);
-
-				// Verificar respuesta según la estructura documentada
 				if (response.data && response.data.status === "success") {
 					// La respuesta puede contener un carrito vacío o podemos crear uno
 					if (response.data.data && response.data.data.cart) {
 						setCart(response.data.data.cart);
+						lastCartString.current = JSON.stringify(response.data.data.cart);
 					} else {
 						// Crear un carrito vacío con la estructura correcta
-						setCart({
+						const emptyCart = {
 							id: cart?.id || 0,
 							userId: cart?.userId || 0,
 							items: [],
 							total: 0,
-						});
+						};
+						setCart(emptyCart);
+						lastCartString.current = JSON.stringify(emptyCart);
 					}
 					return true;
 				} else {
@@ -490,23 +508,18 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 				// Para usuarios anónimos, limpiar carrito local
 				if (cart) {
 					// Crear un carrito vacío manteniendo el ID
-					setCart({
+					const emptyCart = {
 						id: cart.id,
 						userId: cart.userId,
 						items: [],
 						total: 0,
-					});
+					};
+
+					setCart(emptyCart);
+					lastCartString.current = JSON.stringify(emptyCart);
 
 					// Actualizar localStorage
-					storageService.setItem(
-						"cart",
-						JSON.stringify({
-							id: cart.id,
-							userId: cart.userId,
-							items: [],
-							total: 0,
-						})
-					);
+					storageService.setItem("cart", JSON.stringify(emptyCart));
 				}
 
 				return true;
@@ -520,7 +533,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 		} finally {
 			setLoading(false);
 		}
-	}, [cart, isAuthenticated]);
+	}, [cart]);
 
 	// Devolver contexto
 	return (

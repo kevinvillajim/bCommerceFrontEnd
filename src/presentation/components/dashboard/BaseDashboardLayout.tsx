@@ -1,7 +1,5 @@
-import React, { useEffect, useContext } from "react";
 import type { ReactNode } from "react";
-import {Outlet, useNavigate} from "react-router-dom";
-import {AuthContext} from "../../contexts/AuthContext";
+import {Outlet} from "react-router-dom";
 import Sidebar from "../dashboard/SideBar";
 import DashboardHeader from "./DashboardHeader";
 import DashboardFooter from "./DashboardFooter";
@@ -54,8 +52,6 @@ const BaseDashboardLayout: React.FC<BaseDashboardLayoutProps> = ({
 	headerExtras,
 	footerExtras,
 }) => {
-	const {isAuthenticated} = useContext(AuthContext);
-	const navigate = useNavigate();
 	const {
 		isSidebarOpen,
 		toggleSidebar,
@@ -66,12 +62,6 @@ const BaseDashboardLayout: React.FC<BaseDashboardLayoutProps> = ({
 		dashboardType,
 	} = useDashboard();
 
-	// Si no hay autenticación, redirigir al login
-	useEffect(() => {
-		if (!isAuthenticated) {
-			navigate("/login");
-		}
-	}, [isAuthenticated, navigate]);
 
 	return (
 		<div className="flex h-screen bg-gray-100 dark:bg-gray-900">

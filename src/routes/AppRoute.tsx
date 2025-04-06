@@ -66,6 +66,7 @@ import PublicRoute from "./PublicRoute";
 import SellerRoute from "./SellerRoute";
 import AdminRoute from "./AdminRoute";
 import AuthRoute from "./AuthRoute";
+import AboutUs from "@/presentation/pages/AboutUsPage";
 
 // Define las rutas
 const appRoutes: RouteObject[] = [
@@ -119,6 +120,14 @@ const appRoutes: RouteObject[] = [
 				element: (
 					<PublicRoute>
 						<ContactPage />
+					</PublicRoute>
+				),
+			},
+			{
+				path: "about",
+				element: (
+					<PublicRoute>
+						<AboutUs />
 					</PublicRoute>
 				),
 			},
@@ -237,7 +246,7 @@ const appRoutes: RouteObject[] = [
 		path: "/seller",
 		element: (
 			// <SellerRoute>
-				<SellerLayout />
+			<SellerLayout />
 			// </SellerRoute>
 		),
 		children: [
@@ -316,7 +325,7 @@ const appRoutes: RouteObject[] = [
 		path: "/admin",
 		element: (
 			// <AdminRoute>
-				<AdminLayout />
+			<AdminLayout />
 			// </AdminRoute>
 		),
 		children: [

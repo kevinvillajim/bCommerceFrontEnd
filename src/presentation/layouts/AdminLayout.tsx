@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from "react";
-import type { ReactNode } from "react";
+import React, {useState, useEffect} from "react";
+import type {ReactNode} from "react";
 import {Shield, AlertTriangle} from "lucide-react";
 import {DashboardProvider} from "../components/dashboard/DashboardContext";
 import BaseDashboardLayout from "../components/dashboard/BaseDashboardLayout";
 import adminGroups from "./groups/adminGroups";
+import type {Notification, PendingActions} from "../components/dashboard";
 
 /**
  * Componente de Layout para el Panel de Administración
@@ -108,16 +109,14 @@ const AdminLayout: React.FC = () => {
 	};
 
 	return (
-		<BaseDashboardLayout
-			sidebarGroups={adminGroups}
-			sidebarTitle={sidebarTitle}
-			type="admin"
-			pageTitles={pageTitles}
-			notifications={notifications}
-			pendingActions={pendingActions}
-			headerExtras={<SystemAlertsHeader />}
-		/>
+		<DashboardProvider initialType="admin" initialPageTitles={pageTitles}>
+			<BaseDashboardLayout
+				sidebarGroups={adminGroups}
+				sidebarTitle={sidebarTitle}
+				headerExtras={<SystemAlertsHeader />}
+			/>
+		</DashboardProvider>
 	);
 };
 
-export default AdminLayout
+export default AdminLayout;
