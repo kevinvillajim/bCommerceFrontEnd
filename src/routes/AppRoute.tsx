@@ -33,16 +33,16 @@ const SellerDashboard = lazy(() => import('../presentation/pages/seller/SellerDa
 const SellerProductsPage = lazy(() => import('../presentation/pages/seller/SellerProductsPage'));
 const SellerProductCreatePage = lazy(() => import('../presentation/pages/seller/SellerProductCreatePage'));
 // const SellerProductEditPage = lazy(() => import('../presentation/pages/seller/SellerProductEditPage'));
-// const SellerOrdersPage = lazy(() => import('../presentation/pages/seller/SellerOrdersPage'));
+const SellerOrdersPage = lazy(() => import('../presentation/pages/seller/SellerOrdersPage'));
 // const SellerOrderDetailsPage = lazy(() => import('../presentation/pages/seller/SellerOrderDetailsPage'));
-// const SellerRatingsPage = lazy(() => import('../presentation/pages/seller/SellerRatingsPage'));
+const SellerRatingsPage = lazy(() => import('../presentation/pages/seller/SellerRatingsPage'));
 // const SellerProfilePage = lazy(() => import('../presentation/pages/seller/SellerProfilePage'));
 // const SellerInvoicesPage = lazy(() => import('../presentation/pages/seller/SellerInvoicesPage'));
 // const SellerInvoiceDetailsPage = lazy(() => import('../presentation/pages/seller/SellerInvoiceDetailsPage'));
-// const SellerMessagesPage = lazy(() => import('../presentation/pages/seller/SellerMessagesPage'));
+const SellerMessagesPage = lazy(() => import('../presentation/pages/seller/SellerMessagesPage'));
 // const SellerSettingsPage = lazy(() => import('../presentation/pages/seller/SellerSettingsPage'));
 // const SellerEarningsPage = lazy(() => import('../presentation/pages/seller/SellerEarningsPage'));
-// const SellerShippingPage = lazy(() => import('../presentation/pages/seller/SellerShippingPage'));
+const SellerShippingPage = lazy(() => import('../presentation/pages/seller/SellerShippingPage'));
 
 //Admin Pages
 const AdminDashboard = lazy(() => import('../presentation/pages/admin/AdminDashboard'));
@@ -272,29 +272,29 @@ const appRoutes: RouteObject[] = [
 			// 	element: <SellerProductEditPage />,
 			// },
 			// // Orders
-			// {
-			// 	path: "orders",
-			// 	element: <SellerOrdersPage />,
-			// },
+			{
+				path: "orders",
+				element: <SellerOrdersPage />,
+			},
 			// {
 			// 	path: "orders/:id",
 			// 	element: <SellerOrderDetailsPage />,
 			// },
-			// // Shipping
-			// {
-			// 	path: "shipping",
-			// 	element: <SellerShippingPage />,
-			// },
-			// // Ratings
-			// {
-			// 	path: "ratings",
-			// 	element: <SellerRatingsPage />,
-			// },
-			// // Messages
-			// {
-			// 	path: "messages",
-			// 	element: <SellerMessagesPage />,
-			// },
+			// Shipping
+			{
+				path: "shipping",
+				element: <SellerShippingPage />,
+			},
+			// Ratings
+			{
+				path: "ratings",
+				element: <SellerRatingsPage />,
+			},
+			// Messages
+			{
+				path: "messages",
+				element: <SellerMessagesPage />,
+			},
 			// // Finances
 			// {
 			// 	path: "invoices",
