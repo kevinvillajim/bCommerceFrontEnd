@@ -37,11 +37,11 @@ const SellerOrdersPage = lazy(() => import('../presentation/pages/seller/SellerO
 // const SellerOrderDetailsPage = lazy(() => import('../presentation/pages/seller/SellerOrderDetailsPage'));
 const SellerRatingsPage = lazy(() => import('../presentation/pages/seller/SellerRatingsPage'));
 // const SellerProfilePage = lazy(() => import('../presentation/pages/seller/SellerProfilePage'));
-// const SellerInvoicesPage = lazy(() => import('../presentation/pages/seller/SellerInvoicesPage'));
+const SellerInvoicesPage = lazy(() => import('../presentation/pages/seller/SellerInvoicesPage'));
 // const SellerInvoiceDetailsPage = lazy(() => import('../presentation/pages/seller/SellerInvoiceDetailsPage'));
 const SellerMessagesPage = lazy(() => import('../presentation/pages/seller/SellerMessagesPage'));
 // const SellerSettingsPage = lazy(() => import('../presentation/pages/seller/SellerSettingsPage'));
-// const SellerEarningsPage = lazy(() => import('../presentation/pages/seller/SellerEarningsPage'));
+const SellerEarningsPage = lazy(() => import('../presentation/pages/seller/SellerEarningsPage'));
 const SellerShippingPage = lazy(() => import('../presentation/pages/seller/SellerShippingPage'));
 
 //Admin Pages
@@ -295,19 +295,19 @@ const appRoutes: RouteObject[] = [
 				path: "messages",
 				element: <SellerMessagesPage />,
 			},
-			// // Finances
-			// {
-			// 	path: "invoices",
-			// 	element: <SellerInvoicesPage />,
-			// },
+			// Finances
+			{
+				path: "invoices",
+				element: <SellerInvoicesPage />,
+			},
 			// {
 			// 	path: "invoices/:id",
 			// 	element: <SellerInvoiceDetailsPage />,
 			// },
-			// {
-			// 	path: "earnings",
-			// 	element: <SellerEarningsPage />,
-			// },
+			{
+				path: "earnings",
+				element: <SellerEarningsPage />,
+			},
 			// // Account
 			// {
 			// 	path: "profile",
