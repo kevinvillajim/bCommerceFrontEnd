@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { DiscountCode } from "../../../core/domain/entities/DescountCode";
+import StatCardList from "../../components/dashboard/StatCardList";
 
 // Datos simulados para códigos de descuento
 const mockDiscounts: DiscountCode[] = [
@@ -193,16 +194,16 @@ const AdminDiscountsPage: React.FC = () => {
 			if (percentageFilter === "all") return true;
 
 			const percentage = parseInt(percentageFilter);
-			if (percentageFilter === "10") return discount.discountPercentage <= 10;
-			if (percentageFilter === "20")
+			if (percentage === 10) return discount.discountPercentage <= 10;
+			if (percentage === 20)
 				return (
 					discount.discountPercentage > 10 && discount.discountPercentage <= 20
 				);
-			if (percentageFilter === "30")
+			if (percentage === 30)
 				return (
 					discount.discountPercentage > 20 && discount.discountPercentage <= 30
 				);
-			if (percentageFilter === "50+") return discount.discountPercentage > 30;
+			if (percentage > 50) return discount.discountPercentage > 30;
 			return true;
 		})();
 
@@ -509,6 +510,53 @@ const AdminDiscountsPage: React.FC = () => {
 		},
 	];
 
+	const statItems = [
+		{ 
+		  title: "Total", 
+		  value: discounts.length, 
+		  description: "Códigos de descuento", 
+		  icon: Tag, 
+		  bgColor: "bg-blue-50 dark:bg-blue-900/20", 
+		  textColor: "text-blue-800 dark:text-blue-200", 
+		  valueColor: "text-blue-900 dark:text-blue-100", 
+		  descriptionColor: "text-blue-700 dark:text-blue-300", 
+		  iconColor: "text-blue-600 dark:text-blue-400", 
+		},
+		{ 
+		  title: "Activos", 
+		  value: discounts.filter((d) => !isDateExpired(d.expiresAt) && !d.isUsed).length, 
+		  description: "Disponibles para uso", 
+		  icon: CheckCircle, 
+		  bgColor: "bg-green-50 dark:bg-green-900/20", 
+		  textColor: "text-green-800 dark:text-green-200", 
+		  valueColor: "text-green-900 dark:text-green-100", 
+		  descriptionColor: "text-green-700 dark:text-green-300", 
+		  iconColor: "text-green-600 dark:text-green-400", 
+		},
+		{ 
+		  title: "Utilizados", 
+		  value: discounts.filter((d) => d.isUsed).length, 
+		  description: "Ya redimidos", 
+		  icon: Check, 
+		  bgColor: "bg-yellow-50 dark:bg-yellow-900/20", 
+		  textColor: "text-yellow-800 dark:text-yellow-200", 
+		  valueColor: "text-yellow-900 dark:text-yellow-100", 
+		  descriptionColor: "text-yellow-700 dark:text-yellow-300", 
+		  iconColor: "text-yellow-600 dark:text-yellow-400", 
+		},
+		{ 
+		  title: "Expirados", 
+		  value: discounts.filter((d) => isDateExpired(d.expiresAt) && !d.isUsed).length, 
+		  description: "Ya no válidos", 
+		  icon: XCircle, 
+		  bgColor: "bg-red-50 dark:bg-red-900/20", 
+		  textColor: "text-red-800 dark:text-red-200", 
+		  valueColor: "text-red-900 dark:text-red-100", 
+		  descriptionColor: "text-red-700 dark:text-red-300", 
+		  iconColor: "text-red-600 dark:text-red-400", 
+		}
+	  ];
+
 	return (
 		<div className="space-y-6">
 			<div className="flex justify-between items-center">
@@ -534,76 +582,7 @@ const AdminDiscountsPage: React.FC = () => {
 			</div>
 
 			{/* Panel de estadísticas */}
-			<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
-				<div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-					<div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
-						<div className="flex items-center justify-between">
-							<h3 className="text-lg font-medium text-blue-800 dark:text-blue-200">
-								Total
-							</h3>
-							<Tag className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-						</div>
-						<p className="text-2xl font-bold text-blue-900 dark:text-blue-100">
-							{discounts.length}
-						</p>
-						<p className="text-sm text-blue-700 dark:text-blue-300">
-							Códigos de descuento
-						</p>
-					</div>
-
-					<div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
-						<div className="flex items-center justify-between">
-							<h3 className="text-lg font-medium text-green-800 dark:text-green-200">
-								Activos
-							</h3>
-							<CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
-						</div>
-						<p className="text-2xl font-bold text-green-900 dark:text-green-100">
-							{
-								discounts.filter(
-									(d) => !isDateExpired(d.expiresAt) && !d.isUsed
-								).length
-							}
-						</p>
-						<p className="text-sm text-green-700 dark:text-green-300">
-							Disponibles para uso
-						</p>
-					</div>
-
-					<div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4">
-						<div className="flex items-center justify-between">
-							<h3 className="text-lg font-medium text-yellow-800 dark:text-yellow-200">
-								Utilizados
-							</h3>
-							<Check className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
-						</div>
-						<p className="text-2xl font-bold text-yellow-900 dark:text-yellow-100">
-							{discounts.filter((d) => d.isUsed).length}
-						</p>
-						<p className="text-sm text-yellow-700 dark:text-yellow-300">
-							Ya redimidos
-						</p>
-					</div>
-
-					<div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4">
-						<div className="flex items-center justify-between">
-							<h3 className="text-lg font-medium text-red-800 dark:text-red-200">
-								Expirados
-							</h3>
-							<XCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
-						</div>
-						<p className="text-2xl font-bold text-red-900 dark:text-red-100">
-							{
-								discounts.filter((d) => isDateExpired(d.expiresAt) && !d.isUsed)
-									.length
-							}
-						</p>
-						<p className="text-sm text-red-700 dark:text-red-300">
-							Ya no válidos
-						</p>
-					</div>
-				</div>
-			</div>
+			<StatCardList items={statItems} />
 
 			{/* Filtros */}
 			<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">

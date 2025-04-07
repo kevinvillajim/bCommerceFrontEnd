@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { Invoice } from "../../../core/domain/entities/Invoice";
+import StatCardList from "../../components/dashboard/StatCardList";
 
 // Datos simulados para facturas
 const mockInvoices: Invoice[] = [
@@ -743,6 +744,53 @@ const AdminInvoicesPage: React.FC = () => {
 		sellerStoreName: invoice.seller?.storeName || "",
 	}));
 
+	const statItems = [
+		{ 
+		  title: "Total", 
+		  value: invoices.length, 
+		  description: "Facturas", 
+		  icon: FileText, 
+		  bgColor: "bg-blue-50 dark:bg-blue-900/20", 
+		  textColor: "text-blue-800 dark:text-blue-200", 
+		  valueColor: "text-blue-900 dark:text-blue-100", 
+		  descriptionColor: "text-blue-700 dark:text-blue-300", 
+		  iconColor: "text-blue-600 dark:text-blue-400", 
+		},
+		{ 
+		  title: "Autorizadas", 
+		  value: invoices.filter((i) => i.status === "AUTHORIZED").length, 
+		  description: "En regla", 
+		  icon: CheckCircle, 
+		  bgColor: "bg-green-50 dark:bg-green-900/20", 
+		  textColor: "text-green-800 dark:text-green-200", 
+		  valueColor: "text-green-900 dark:text-green-100", 
+		  descriptionColor: "text-green-700 dark:text-green-300", 
+		  iconColor: "text-green-600 dark:text-green-400", 
+		},
+		{ 
+		  title: "Pendientes", 
+		  value: invoices.filter((i) => i.status === "DRAFT" || i.status === "ISSUED").length, 
+		  description: "Requieren atención", 
+		  icon: Clock, 
+		  bgColor: "bg-yellow-50 dark:bg-yellow-900/20", 
+		  textColor: "text-yellow-800 dark:text-yellow-200", 
+		  valueColor: "text-yellow-900 dark:text-yellow-100", 
+		  descriptionColor: "text-yellow-700 dark:text-yellow-300", 
+		  iconColor: "text-yellow-600 dark:text-yellow-400", 
+		},
+		{ 
+		  title: "Problemas", 
+		  value: invoices.filter((i) => i.status === "REJECTED" || i.status === "CANCELLED").length, 
+		  description: "Anuladas o rechazadas", 
+		  icon: AlertTriangle, 
+		  bgColor: "bg-red-50 dark:bg-red-900/20", 
+		  textColor: "text-red-800 dark:text-red-200", 
+		  valueColor: "text-red-900 dark:text-red-100", 
+		  descriptionColor: "text-red-700 dark:text-red-300", 
+		  iconColor: "text-red-600 dark:text-red-400", 
+		}
+	  ];
+
 	return (
 		<div className="space-y-6">
 			<div className="flex justify-between items-center">
@@ -761,76 +809,8 @@ const AdminInvoicesPage: React.FC = () => {
 			</div>
 
 			{/* Panel de estadísticas */}
-			<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
-				<div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-					<div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
-						<div className="flex items-center justify-between">
-							<h3 className="text-lg font-medium text-blue-800 dark:text-blue-200">
-								Total
-							</h3>
-							<FileText className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-						</div>
-						<p className="text-2xl font-bold text-blue-900 dark:text-blue-100">
-							{invoices.length}
-						</p>
-						<p className="text-sm text-blue-700 dark:text-blue-300">Facturas</p>
-					</div>
-
-					<div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
-						<div className="flex items-center justify-between">
-							<h3 className="text-lg font-medium text-green-800 dark:text-green-200">
-								Autorizadas
-							</h3>
-							<CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
-						</div>
-						<p className="text-2xl font-bold text-green-900 dark:text-green-100">
-							{invoices.filter((i) => i.status === "AUTHORIZED").length}
-						</p>
-						<p className="text-sm text-green-700 dark:text-green-300">
-							En regla
-						</p>
-					</div>
-
-					<div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4">
-						<div className="flex items-center justify-between">
-							<h3 className="text-lg font-medium text-yellow-800 dark:text-yellow-200">
-								Pendientes
-							</h3>
-							<Clock className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
-						</div>
-						<p className="text-2xl font-bold text-yellow-900 dark:text-yellow-100">
-							{
-								invoices.filter(
-									(i) => i.status === "DRAFT" || i.status === "ISSUED"
-								).length
-							}
-						</p>
-						<p className="text-sm text-yellow-700 dark:text-yellow-300">
-							Requieren atención
-						</p>
-					</div>
-
-					<div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4">
-						<div className="flex items-center justify-between">
-							<h3 className="text-lg font-medium text-red-800 dark:text-red-200">
-								Problemas
-							</h3>
-							<AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
-						</div>
-						<p className="text-2xl font-bold text-red-900 dark:text-red-100">
-							{
-								invoices.filter(
-									(i) => i.status === "REJECTED" || i.status === "CANCELLED"
-								).length
-							}
-						</p>
-						<p className="text-sm text-red-700 dark:text-red-300">
-							Anuladas o rechazadas
-						</p>
-					</div>
-				</div>
-			</div>
-
+			<StatCardList items={statItems} />
+			
 			{/* Filtros */}
 			<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
 				<div className="flex flex-col md:flex-row gap-4">

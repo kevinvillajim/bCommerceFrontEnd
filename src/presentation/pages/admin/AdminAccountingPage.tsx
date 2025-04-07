@@ -2,8 +2,6 @@ import React, {useState, useEffect} from "react";
 import {
 	DollarSign,
 	Filter,
-	FileText,
-	TrendingUp,
 	BarChart2,
 	X,
 	Plus,
@@ -15,9 +13,10 @@ import Table from "../../components/dashboard/Table";
 import type {
 	AccountingTransaction,
 	AccountingAccount,
-	AccountingEntry,
 	AccountingEntryCreationData,
 } from "../../../core/domain/entities/Accounting";
+import DashboardCardList from "../../components/dashboard/DashboardCardList";
+
 
 // Componente Modal
 interface ModalProps {
@@ -735,1100 +734,1092 @@ const AdminAccountingPage: React.FC = () => {
 
 	const totals = calculateTotals();
 
+	const cards = [
+		{
+		  title: "Ingresos Totales",
+		  value: formatCurrency(financialSummary.income),
+		  change: 0,
+		  icon: DollarSign,
+		  iconBgColor: "bg-green-50 dark:bg-green-900",
+		  iconColor: "text-green-600 dark:text-green-400",
+		},
+		{
+		  title: "Gastos Totales",
+		  value: formatCurrency(financialSummary.expenses),
+		  change: 0,
+		  icon: DollarSign,
+		  iconBgColor: "bg-red-50 dark:bg-red-900",
+		  iconColor: "text-red-600 dark:text-red-400",
+		},
+		{
+		  title: "Balance",
+		  value: formatCurrency(financialSummary.balance),
+		  change: 0,
+		  icon: BarChart2,
+		  iconBgColor: "bg-blue-50 dark:bg-blue-900",
+		  iconColor: "text-blue-600 dark:text-blue-400",
+		},
+		{
+		  title: "Beneficio Neto",
+		  value: formatCurrency(financialSummary.netProfit),
+		  change: financialSummary.netProfitPercentage,
+		  icon: DollarSign,
+		  iconBgColor: "bg-purple-50 dark:bg-purple-900",
+		  iconColor: "text-purple-600 dark:text-purple-400",
+		},
+	  ];
+
 	return (
-		<div>
-			<h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-				Gestión Contable
-			</h1>
+    <div>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+        Gestión Contable
+      </h1>
+      <div className="mb-5">
+        {/* Tarjetas de resumen */}
+        <DashboardCardList cards={cards} />
+      </div>
+      {/* Pestañas */}
+      <div className="mb-6">
+        <div className="border-b border-gray-200 dark:border-gray-700">
+          <nav className="-mb-px flex space-x-8">
+            <button
+              onClick={() => setActiveTab("transactions")}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                activeTab === "transactions"
+                  ? "border-primary-500 text-primary-600 dark:text-primary-400 dark:border-primary-400"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+              }`}
+            >
+              Transacciones
+            </button>
+            <button
+              onClick={() => setActiveTab("accounts")}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                activeTab === "accounts"
+                  ? "border-primary-500 text-primary-600 dark:text-primary-400 dark:border-primary-400"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+              }`}
+            >
+              Plan Contable
+            </button>
+            <button
+              onClick={() => setActiveTab("reports")}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                activeTab === "reports"
+                  ? "border-primary-500 text-primary-600 dark:text-primary-400 dark:border-primary-400"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+              }`}
+            >
+              Reportes
+            </button>
+          </nav>
+        </div>
+      </div>
 
-			{/* Tarjetas de resumen */}
-			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-				<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 flex items-start justify-between">
-					<div>
-						<p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-							Ingresos Totales
-						</p>
-						<p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-							{formatCurrency(financialSummary.income)}
-						</p>
-					</div>
-					<div className="p-3 bg-green-50 dark:bg-green-900 rounded-lg">
-						<DollarSign className="w-6 h-6 text-green-600 dark:text-green-400" />
-					</div>
-				</div>
+      {/* Filtros */}
+      {activeTab === "transactions" && (
+        <div className="mb-6 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+          <div className="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-4">
+            <div className="flex items-center">
+              <Filter className="h-5 w-5 text-gray-400 mr-2" />
+              <span className="text-gray-700 dark:text-gray-300">Filtrar:</span>
+            </div>
 
-				<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 flex items-start justify-between">
-					<div>
-						<p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-							Gastos Totales
-						</p>
-						<p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-							{formatCurrency(financialSummary.expenses)}
-						</p>
-					</div>
-					<div className="p-3 bg-red-50 dark:bg-red-900 rounded-lg">
-						<DollarSign className="w-6 h-6 text-red-600 dark:text-red-400" />
-					</div>
-				</div>
+            <div className="flex flex-wrap gap-4">
+              <div>
+                <label
+                  htmlFor="dateFrom"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >
+                  Fecha desde
+                </label>
+                <input
+                  type="date"
+                  id="dateFrom"
+                  value={dateRange.from}
+                  onChange={(e) =>
+                    setDateRange({ ...dateRange, from: e.target.value })
+                  }
+                  className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm dark:bg-gray-700 dark:text-white"
+                />
+              </div>
 
-				<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 flex items-start justify-between">
-					<div>
-						<p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-							Balance
-						</p>
-						<p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-							{formatCurrency(financialSummary.balance)}
-						</p>
-					</div>
-					<div className="p-3 bg-blue-50 dark:bg-blue-900 rounded-lg">
-						<BarChart2 className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-					</div>
-				</div>
+              <div>
+                <label
+                  htmlFor="dateTo"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >
+                  Fecha hasta
+                </label>
+                <input
+                  type="date"
+                  id="dateTo"
+                  value={dateRange.to}
+                  onChange={(e) =>
+                    setDateRange({ ...dateRange, to: e.target.value })
+                  }
+                  className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm dark:bg-gray-700 dark:text-white"
+                />
+              </div>
 
-				<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 flex items-start justify-between">
-					<div>
-						<p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-							Beneficio Neto
-						</p>
-						<p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-							{formatCurrency(financialSummary.netProfit)}
-						</p>
-						<div className="flex items-center mt-2 text-green-600 dark:text-green-400">
-							<TrendingUp size={16} />
-							<span className="ml-1 text-sm font-medium">
-								{financialSummary.netProfitPercentage}%
-							</span>
-						</div>
-					</div>
-					<div className="p-3 bg-purple-50 dark:bg-purple-900 rounded-lg">
-						<DollarSign className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-					</div>
-				</div>
-			</div>
+              <div>
+                <label
+                  htmlFor="type"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >
+                  Tipo
+                </label>
+                <select
+                  id="type"
+                  value={filterType}
+                  onChange={(e) => setFilterType(e.target.value)}
+                  className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm dark:bg-gray-700 dark:text-white"
+                >
+                  <option value="all">Todos</option>
+                  <option value="venta">Venta</option>
+                  <option value="compra">Compra</option>
+                  <option value="gasto">Gasto</option>
+                  <option value="devolucion">Devolución</option>
+                </select>
+              </div>
 
-			{/* Pestañas */}
-			<div className="mb-6">
-				<div className="border-b border-gray-200 dark:border-gray-700">
-					<nav className="-mb-px flex space-x-8">
-						<button
-							onClick={() => setActiveTab("transactions")}
-							className={`py-4 px-1 border-b-2 font-medium text-sm ${
-								activeTab === "transactions"
-									? "border-primary-500 text-primary-600 dark:text-primary-400 dark:border-primary-400"
-									: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
-							}`}
-						>
-							Transacciones
-						</button>
-						<button
-							onClick={() => setActiveTab("accounts")}
-							className={`py-4 px-1 border-b-2 font-medium text-sm ${
-								activeTab === "accounts"
-									? "border-primary-500 text-primary-600 dark:text-primary-400 dark:border-primary-400"
-									: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
-							}`}
-						>
-							Plan Contable
-						</button>
-						<button
-							onClick={() => setActiveTab("reports")}
-							className={`py-4 px-1 border-b-2 font-medium text-sm ${
-								activeTab === "reports"
-									? "border-primary-500 text-primary-600 dark:text-primary-400 dark:border-primary-400"
-									: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
-							}`}
-						>
-							Reportes
-						</button>
-					</nav>
-				</div>
-			</div>
+              <div>
+                <label
+                  htmlFor="status"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                >
+                  Estado
+                </label>
+                <select
+                  id="status"
+                  className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm dark:bg-gray-700 dark:text-white"
+                >
+                  <option value="all">Todos</option>
+                  <option value="posted">Contabilizados</option>
+                  <option value="pending">Pendientes</option>
+                </select>
+              </div>
+            </div>
 
-			{/* Filtros */}
-			{activeTab === "transactions" && (
-				<div className="mb-6 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
-					<div className="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-4">
-						<div className="flex items-center">
-							<Filter className="h-5 w-5 text-gray-400 mr-2" />
-							<span className="text-gray-700 dark:text-gray-300">Filtrar:</span>
-						</div>
+            <div className="ml-auto">
+              <button
+                type="button"
+                onClick={() => setIsNewTransactionModalOpen(true)}
+                className="px-4 py-2 bg-primary-600 border border-transparent rounded-md font-medium text-white shadow-sm hover:bg-primary-700 dark:bg-primary-700 dark:hover:bg-primary-800"
+              >
+                Nueva Transacción
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
-						<div className="flex flex-wrap gap-4">
-							<div>
-								<label
-									htmlFor="dateFrom"
-									className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-								>
-									Fecha desde
-								</label>
-								<input
-									type="date"
-									id="dateFrom"
-									value={dateRange.from}
-									onChange={(e) =>
-										setDateRange({...dateRange, from: e.target.value})
-									}
-									className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm dark:bg-gray-700 dark:text-white"
-								/>
-							</div>
+      {/* Contenido de pestañas */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+        {activeTab === "transactions" && (
+          <Table
+            data={transactions}
+            columns={transactionColumns}
+            loading={loading}
+            searchFields={["referenceNumber", "description", "type"]}
+            emptyMessage="No hay transacciones disponibles para los filtros aplicados"
+            pagination={{
+              currentPage,
+              totalPages,
+              totalItems: transactions.length,
+              itemsPerPage: 10,
+              onPageChange: setCurrentPage,
+            }}
+          />
+        )}
 
-							<div>
-								<label
-									htmlFor="dateTo"
-									className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-								>
-									Fecha hasta
-								</label>
-								<input
-									type="date"
-									id="dateTo"
-									value={dateRange.to}
-									onChange={(e) =>
-										setDateRange({...dateRange, to: e.target.value})
-									}
-									className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm dark:bg-gray-700 dark:text-white"
-								/>
-							</div>
+        {activeTab === "accounts" && (
+          <div>
+            <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-lg font-medium text-gray-900 dark:text-white">
+                Plan de Cuentas
+              </h2>
+              <button
+                type="button"
+                onClick={() => setIsNewAccountModalOpen(true)}
+                className="px-4 py-2 bg-primary-600 border border-transparent rounded-md font-medium text-white shadow-sm hover:bg-primary-700 dark:bg-primary-700 dark:hover:bg-primary-800"
+              >
+                Nueva Cuenta
+              </button>
+            </div>
+            <Table
+              data={accounts}
+              columns={accountColumns}
+              loading={loading}
+              searchFields={["code", "name", "type"]}
+              emptyMessage="No hay cuentas disponibles"
+              pagination={{
+                currentPage,
+                totalPages,
+                totalItems: accounts.length,
+                itemsPerPage: 10,
+                onPageChange: setCurrentPage,
+              }}
+            />
+          </div>
+        )}
 
-							<div>
-								<label
-									htmlFor="type"
-									className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-								>
-									Tipo
-								</label>
-								<select
-									id="type"
-									value={filterType}
-									onChange={(e) => setFilterType(e.target.value)}
-									className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm dark:bg-gray-700 dark:text-white"
-								>
-									<option value="all">Todos</option>
-									<option value="venta">Venta</option>
-									<option value="compra">Compra</option>
-									<option value="gasto">Gasto</option>
-									<option value="devolucion">Devolución</option>
-								</select>
-							</div>
+        {activeTab === "reports" && (
+          <div className="p-6">
+            <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+              Informes Financieros
+            </h2>
 
-							<div>
-								<label
-									htmlFor="status"
-									className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-								>
-									Estado
-								</label>
-								<select
-									id="status"
-									className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm dark:bg-gray-700 dark:text-white"
-								>
-									<option value="all">Todos</option>
-									<option value="posted">Contabilizados</option>
-									<option value="pending">Pendientes</option>
-								</select>
-							</div>
-						</div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-white dark:bg-gray-700 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-600">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+                  Balance General
+                </h3>
+                <p className="text-gray-600 dark:text-gray-300 mb-4">
+                  Resumen de activos, pasivos y patrimonio de la empresa.
+                </p>
+                <button
+                  type="button"
+                  className="px-4 py-2 bg-primary-600 border border-transparent rounded-md font-medium text-white shadow-sm hover:bg-primary-700 dark:bg-primary-700 dark:hover:bg-primary-800 w-full"
+                >
+                  Ver Balance General
+                </button>
+              </div>
 
-						<div className="ml-auto">
-							<button
-								type="button"
-								onClick={() => setIsNewTransactionModalOpen(true)}
-								className="px-4 py-2 bg-primary-600 border border-transparent rounded-md font-medium text-white shadow-sm hover:bg-primary-700 dark:bg-primary-700 dark:hover:bg-primary-800"
-							>
-								Nueva Transacción
-							</button>
-						</div>
-					</div>
-				</div>
-			)}
+              <div className="bg-white dark:bg-gray-700 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-600">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+                  Estado de Resultados
+                </h3>
+                <p className="text-gray-600 dark:text-gray-300 mb-4">
+                  Informe detallado de ingresos, gastos y beneficios.
+                </p>
+                <button
+                  type="button"
+                  className="px-4 py-2 bg-primary-600 border border-transparent rounded-md font-medium text-white shadow-sm hover:bg-primary-700 dark:bg-primary-700 dark:hover:bg-primary-800 w-full"
+                >
+                  Ver Estado de Resultados
+                </button>
+              </div>
 
-			{/* Contenido de pestañas */}
-			<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
-				{activeTab === "transactions" && (
-					<Table
-						data={transactions}
-						columns={transactionColumns}
-						loading={loading}
-						searchFields={["referenceNumber", "description", "type"]}
-						emptyMessage="No hay transacciones disponibles para los filtros aplicados"
-						pagination={{
-							currentPage,
-							totalPages,
-							totalItems: transactions.length,
-							itemsPerPage: 10,
-							onPageChange: setCurrentPage,
-						}}
-					/>
-				)}
+              <div className="bg-white dark:bg-gray-700 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-600">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+                  Libro Mayor
+                </h3>
+                <p className="text-gray-600 dark:text-gray-300 mb-4">
+                  Registro detallado de movimientos por cuenta.
+                </p>
+                <button
+                  type="button"
+                  className="px-4 py-2 bg-primary-600 border border-transparent rounded-md font-medium text-white shadow-sm hover:bg-primary-700 dark:bg-primary-700 dark:hover:bg-primary-800 w-full"
+                >
+                  Ver Libro Mayor
+                </button>
+              </div>
+            </div>
 
-				{activeTab === "accounts" && (
-					<div>
-						<div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
-							<h2 className="text-lg font-medium text-gray-900 dark:text-white">
-								Plan de Cuentas
-							</h2>
-							<button
-								type="button"
-								onClick={() => setIsNewAccountModalOpen(true)}
-								className="px-4 py-2 bg-primary-600 border border-transparent rounded-md font-medium text-white shadow-sm hover:bg-primary-700 dark:bg-primary-700 dark:hover:bg-primary-800"
-							>
-								Nueva Cuenta
-							</button>
-						</div>
-						<Table
-							data={accounts}
-							columns={accountColumns}
-							loading={loading}
-							searchFields={["code", "name", "type"]}
-							emptyMessage="No hay cuentas disponibles"
-							pagination={{
-								currentPage,
-								totalPages,
-								totalItems: accounts.length,
-								itemsPerPage: 10,
-								onPageChange: setCurrentPage,
-							}}
-						/>
-					</div>
-				)}
+            <div className="mt-8">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+                Generar Informes Personalizados
+              </h3>
 
-				{activeTab === "reports" && (
-					<div className="p-6">
-						<h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-							Informes Financieros
-						</h2>
+              <div className="bg-white dark:bg-gray-700 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-600">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                  <div>
+                    <label
+                      htmlFor="reportType"
+                      className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                    >
+                      Tipo de Informe
+                    </label>
+                    <select
+                      id="reportType"
+                      className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm dark:bg-gray-600 dark:text-white"
+                    >
+                      <option value="balance">Balance General</option>
+                      <option value="income">Estado de Resultados</option>
+                      <option value="ledger">Libro Mayor</option>
+                      <option value="tax">Informe de Impuestos</option>
+                    </select>
+                  </div>
 
-						<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-							<div className="bg-white dark:bg-gray-700 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-600">
-								<h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-									Balance General
-								</h3>
-								<p className="text-gray-600 dark:text-gray-300 mb-4">
-									Resumen de activos, pasivos y patrimonio de la empresa.
-								</p>
-								<button
-									type="button"
-									className="px-4 py-2 bg-primary-600 border border-transparent rounded-md font-medium text-white shadow-sm hover:bg-primary-700 dark:bg-primary-700 dark:hover:bg-primary-800 w-full"
-								>
-									Ver Balance General
-								</button>
-							</div>
+                  <div>
+                    <label
+                      htmlFor="reportDateFrom"
+                      className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                    >
+                      Fecha desde
+                    </label>
+                    <input
+                      type="date"
+                      id="reportDateFrom"
+                      className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm dark:bg-gray-600 dark:text-white"
+                    />
+                  </div>
 
-							<div className="bg-white dark:bg-gray-700 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-600">
-								<h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-									Estado de Resultados
-								</h3>
-								<p className="text-gray-600 dark:text-gray-300 mb-4">
-									Informe detallado de ingresos, gastos y beneficios.
-								</p>
-								<button
-									type="button"
-									className="px-4 py-2 bg-primary-600 border border-transparent rounded-md font-medium text-white shadow-sm hover:bg-primary-700 dark:bg-primary-700 dark:hover:bg-primary-800 w-full"
-								>
-									Ver Estado de Resultados
-								</button>
-							</div>
+                  <div>
+                    <label
+                      htmlFor="reportDateTo"
+                      className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                    >
+                      Fecha hasta
+                    </label>
+                    <input
+                      type="date"
+                      id="reportDateTo"
+                      className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm dark:bg-gray-600 dark:text-white"
+                    />
+                  </div>
 
-							<div className="bg-white dark:bg-gray-700 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-600">
-								<h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-									Libro Mayor
-								</h3>
-								<p className="text-gray-600 dark:text-gray-300 mb-4">
-									Registro detallado de movimientos por cuenta.
-								</p>
-								<button
-									type="button"
-									className="px-4 py-2 bg-primary-600 border border-transparent rounded-md font-medium text-white shadow-sm hover:bg-primary-700 dark:bg-primary-700 dark:hover:bg-primary-800 w-full"
-								>
-									Ver Libro Mayor
-								</button>
-							</div>
-						</div>
+                  <div>
+                    <label
+                      htmlFor="reportFormat"
+                      className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                    >
+                      Formato
+                    </label>
+                    <select
+                      id="reportFormat"
+                      className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm dark:bg-gray-600 dark:text-white"
+                    >
+                      <option value="pdf">PDF</option>
+                      <option value="excel">Excel</option>
+                      <option value="csv">CSV</option>
+                    </select>
+                  </div>
+                </div>
 
-						<div className="mt-8">
-							<h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-								Generar Informes Personalizados
-							</h3>
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    className="px-4 py-2 bg-primary-600 border border-transparent rounded-md font-medium text-white shadow-sm hover:bg-primary-700 dark:bg-primary-700 dark:hover:bg-primary-800"
+                  >
+                    Generar Informe
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
 
-							<div className="bg-white dark:bg-gray-700 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-600">
-								<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-									<div>
-										<label
-											htmlFor="reportType"
-											className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-										>
-											Tipo de Informe
-										</label>
-										<select
-											id="reportType"
-											className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm dark:bg-gray-600 dark:text-white"
-										>
-											<option value="balance">Balance General</option>
-											<option value="income">Estado de Resultados</option>
-											<option value="ledger">Libro Mayor</option>
-											<option value="tax">Informe de Impuestos</option>
-										</select>
-									</div>
+      {/* Modal de Nueva Transacción */}
+      <Modal
+        isOpen={isNewTransactionModalOpen}
+        onClose={() => setIsNewTransactionModalOpen(false)}
+        title="Nueva Transacción Contable"
+        size="lg"
+      >
+        <form className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label
+                htmlFor="referenceNumber"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                Número de Referencia
+              </label>
+              <input
+                type="text"
+                id="referenceNumber"
+                name="referenceNumber"
+                value={newTransaction.referenceNumber}
+                onChange={handleTransactionChange}
+                className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                placeholder="TRANS-XXX"
+                required
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="transactionDate"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                Fecha de Transacción
+              </label>
+              <input
+                type="date"
+                id="transactionDate"
+                name="transactionDate"
+                value={newTransaction.transactionDate}
+                onChange={handleTransactionChange}
+                className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                required
+              />
+            </div>
+          </div>
 
-									<div>
-										<label
-											htmlFor="reportDateFrom"
-											className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-										>
-											Fecha desde
-										</label>
-										<input
-											type="date"
-											id="reportDateFrom"
-											className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm dark:bg-gray-600 dark:text-white"
-										/>
-									</div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label
+                htmlFor="type"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                Tipo de Transacción
+              </label>
+              <select
+                id="type"
+                name="type"
+                value={newTransaction.type}
+                onChange={handleTransactionChange}
+                className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                required
+              >
+                <option value="Venta">Venta</option>
+                <option value="Compra">Compra</option>
+                <option value="Gasto">Gasto</option>
+                <option value="Devolución">Devolución</option>
+                <option value="Ajuste">Ajuste</option>
+              </select>
+            </div>
+            <div>
+              <label
+                htmlFor="description"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                Descripción
+              </label>
+              <input
+                type="text"
+                id="description"
+                name="description"
+                value={newTransaction.description}
+                onChange={handleTransactionChange}
+                className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                placeholder="Descripción de la transacción"
+                required
+              />
+            </div>
+          </div>
 
-									<div>
-										<label
-											htmlFor="reportDateTo"
-											className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-										>
-											Fecha hasta
-										</label>
-										<input
-											type="date"
-											id="reportDateTo"
-											className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm dark:bg-gray-600 dark:text-white"
-										/>
-									</div>
+          <div>
+            <div className="flex justify-between items-center mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Entradas Contables
+              </label>
+              <button
+                type="button"
+                onClick={addTransactionEntry}
+                className="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 flex items-center text-sm font-medium"
+              >
+                <Plus
+                  size={16}
+                  className="mr-1"
+                />{" "}
+                Añadir entrada
+              </button>
+            </div>
 
-									<div>
-										<label
-											htmlFor="reportFormat"
-											className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-										>
-											Formato
-										</label>
-										<select
-											id="reportFormat"
-											className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm dark:bg-gray-600 dark:text-white"
-										>
-											<option value="pdf">PDF</option>
-											<option value="excel">Excel</option>
-											<option value="csv">CSV</option>
-										</select>
-									</div>
-								</div>
+            <div className="overflow-x-auto border border-gray-300 dark:border-gray-600 rounded-md shadow-sm">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead className="bg-gray-50 dark:bg-gray-800">
+                  <tr>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      Cuenta
+                    </th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      Debe
+                    </th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      Haber
+                    </th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      Notas
+                    </th>
+                    <th className="px-3 py-2 text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      Acción
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                  {newTransaction.entries.map((entry, index) => (
+                    <tr key={index}>
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        <select
+                          value={entry.accountId}
+                          onChange={(e) =>
+                            handleEntryChange(
+                              index,
+                              "accountId",
+                              e.target.value
+                            )
+                          }
+                          className="block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-1 px-2 text-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                          required
+                        >
+                          <option value="">Seleccionar cuenta</option>
+                          {accounts.map((account) => (
+                            <option
+                              key={account.id}
+                              value={account.id}
+                            >
+                              {account.code} - {account.name}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        <input
+                          type="number"
+                          value={entry.debitAmount}
+                          onChange={(e) =>
+                            handleEntryChange(
+                              index,
+                              "debitAmount",
+                              e.target.value
+                            )
+                          }
+                          step="0.01"
+                          min="0"
+                          className="block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-1 px-2 text-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                        />
+                      </td>
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        <input
+                          type="number"
+                          value={entry.creditAmount}
+                          onChange={(e) =>
+                            handleEntryChange(
+                              index,
+                              "creditAmount",
+                              e.target.value
+                            )
+                          }
+                          step="0.01"
+                          min="0"
+                          className="block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-1 px-2 text-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                        />
+                      </td>
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        <input
+                          type="text"
+                          value={entry.notes || ""}
+                          onChange={(e) =>
+                            handleEntryChange(index, "notes", e.target.value)
+                          }
+                          className="block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-1 px-2 text-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                          placeholder="Notas"
+                        />
+                      </td>
+                      <td className="px-3 py-2 whitespace-nowrap text-center">
+                        <button
+                          type="button"
+                          onClick={() => removeTransactionEntry(index)}
+                          className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                        >
+                          <X size={16} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  <tr className="bg-gray-50 dark:bg-gray-700">
+                    <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                      Totales
+                    </td>
+                    <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                      {formatCurrency(totals.totalDebit)}
+                    </td>
+                    <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                      {formatCurrency(totals.totalCredit)}
+                    </td>
+                    <td
+                      colSpan={2}
+                      className="px-3 py-2 whitespace-nowrap text-sm font-medium"
+                    >
+                      <span
+                        className={`${totals.difference === 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
+                      >
+                        {totals.difference === 0
+                          ? "Transacción balanceada"
+                          : `Diferencia: ${formatCurrency(Math.abs(totals.difference))}`}
+                      </span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
 
-								<div className="flex justify-end">
-									<button
-										type="button"
-										className="px-4 py-2 bg-primary-600 border border-transparent rounded-md font-medium text-white shadow-sm hover:bg-primary-700 dark:bg-primary-700 dark:hover:bg-primary-800"
-									>
-										Generar Informe
-									</button>
-								</div>
-							</div>
-						</div>
-					</div>
-				)}
-			</div>
+          <div className="flex justify-end space-x-3">
+            <button
+              type="button"
+              onClick={() => setIsNewTransactionModalOpen(false)}
+              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={saveTransaction}
+              className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 dark:bg-primary-700 dark:hover:bg-primary-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 flex items-center"
+            >
+              <Save
+                size={16}
+                className="mr-2"
+              />{" "}
+              Guardar Transacción
+            </button>
+          </div>
+        </form>
+      </Modal>
 
-			{/* Modal de Nueva Transacción */}
-			<Modal
-				isOpen={isNewTransactionModalOpen}
-				onClose={() => setIsNewTransactionModalOpen(false)}
-				title="Nueva Transacción Contable"
-				size="lg"
-			>
-				<form className="space-y-6">
-					<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-						<div>
-							<label
-								htmlFor="referenceNumber"
-								className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-							>
-								Número de Referencia
-							</label>
-							<input
-								type="text"
-								id="referenceNumber"
-								name="referenceNumber"
-								value={newTransaction.referenceNumber}
-								onChange={handleTransactionChange}
-								className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
-								placeholder="TRANS-XXX"
-								required
-							/>
-						</div>
-						<div>
-							<label
-								htmlFor="transactionDate"
-								className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-							>
-								Fecha de Transacción
-							</label>
-							<input
-								type="date"
-								id="transactionDate"
-								name="transactionDate"
-								value={newTransaction.transactionDate}
-								onChange={handleTransactionChange}
-								className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
-								required
-							/>
-						</div>
-					</div>
+      {/* Modal de Nueva Cuenta */}
+      <Modal
+        isOpen={isNewAccountModalOpen}
+        onClose={() => setIsNewAccountModalOpen(false)}
+        title="Nueva Cuenta Contable"
+      >
+        <form className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label
+                htmlFor="code"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                Código de Cuenta
+              </label>
+              <input
+                type="text"
+                id="code"
+                name="code"
+                value={newAccount.code}
+                onChange={handleAccountChange}
+                className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                placeholder="Ej. 1000"
+                required
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="name"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                Nombre de Cuenta
+              </label>
+              <input
+                type="text"
+                id="name"
+                name="name"
+                value={newAccount.name}
+                onChange={handleAccountChange}
+                className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                placeholder="Ej. Efectivo"
+                required
+              />
+            </div>
+          </div>
 
-					<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-						<div>
-							<label
-								htmlFor="type"
-								className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-							>
-								Tipo de Transacción
-							</label>
-							<select
-								id="type"
-								name="type"
-								value={newTransaction.type}
-								onChange={handleTransactionChange}
-								className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
-								required
-							>
-								<option value="Venta">Venta</option>
-								<option value="Compra">Compra</option>
-								<option value="Gasto">Gasto</option>
-								<option value="Devolución">Devolución</option>
-								<option value="Ajuste">Ajuste</option>
-							</select>
-						</div>
-						<div>
-							<label
-								htmlFor="description"
-								className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-							>
-								Descripción
-							</label>
-							<input
-								type="text"
-								id="description"
-								name="description"
-								value={newTransaction.description}
-								onChange={handleTransactionChange}
-								className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
-								placeholder="Descripción de la transacción"
-								required
-							/>
-						</div>
-					</div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label
+                htmlFor="accountType"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
+                Tipo de Cuenta
+              </label>
+              <select
+                id="accountType"
+                name="type"
+                value={newAccount.type}
+                onChange={handleAccountChange}
+                className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                required
+              >
+                <option value="Activo">Activo</option>
+                <option value="Pasivo">Pasivo</option>
+                <option value="Patrimonio">Patrimonio</option>
+                <option value="Ingreso">Ingreso</option>
+                <option value="Gasto">Gasto</option>
+                <option value="Costo">Costo</option>
+              </select>
+            </div>
+            <div>
+              <label
+                htmlFor="isActive"
+                className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 mt-6"
+              >
+                <input
+                  type="checkbox"
+                  id="isActive"
+                  name="isActive"
+                  checked={newAccount.isActive}
+                  onChange={handleAccountChange}
+                  className="h-4 w-4 text-primary-600 dark:text-primary-500 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
+                />
+                <span className="ml-2">Cuenta Activa</span>
+              </label>
+            </div>
+          </div>
 
-					<div>
-						<div className="flex justify-between items-center mb-2">
-							<label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-								Entradas Contables
-							</label>
-							<button
-								type="button"
-								onClick={addTransactionEntry}
-								className="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 flex items-center text-sm font-medium"
-							>
-								<Plus size={16} className="mr-1" /> Añadir entrada
-							</button>
-						</div>
+          <div>
+            <label
+              htmlFor="description"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
+              Descripción
+            </label>
+            <textarea
+              id="description"
+              name="description"
+              value={newAccount.description}
+              onChange={handleAccountChange}
+              rows={3}
+              className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+              placeholder="Descripción detallada de la cuenta"
+            ></textarea>
+          </div>
 
-						<div className="overflow-x-auto border border-gray-300 dark:border-gray-600 rounded-md shadow-sm">
-							<table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-								<thead className="bg-gray-50 dark:bg-gray-800">
-									<tr>
-										<th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-											Cuenta
-										</th>
-										<th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-											Debe
-										</th>
-										<th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-											Haber
-										</th>
-										<th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-											Notas
-										</th>
-										<th className="px-3 py-2 text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-											Acción
-										</th>
-									</tr>
-								</thead>
-								<tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-									{newTransaction.entries.map((entry, index) => (
-										<tr key={index}>
-											<td className="px-3 py-2 whitespace-nowrap">
-												<select
-													value={entry.accountId}
-													onChange={(e) =>
-														handleEntryChange(
-															index,
-															"accountId",
-															e.target.value
-														)
-													}
-													className="block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-1 px-2 text-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
-													required
-												>
-													<option value="">Seleccionar cuenta</option>
-													{accounts.map((account) => (
-														<option key={account.id} value={account.id}>
-															{account.code} - {account.name}
-														</option>
-													))}
-												</select>
-											</td>
-											<td className="px-3 py-2 whitespace-nowrap">
-												<input
-													type="number"
-													value={entry.debitAmount}
-													onChange={(e) =>
-														handleEntryChange(
-															index,
-															"debitAmount",
-															e.target.value
-														)
-													}
-													step="0.01"
-													min="0"
-													className="block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-1 px-2 text-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
-												/>
-											</td>
-											<td className="px-3 py-2 whitespace-nowrap">
-												<input
-													type="number"
-													value={entry.creditAmount}
-													onChange={(e) =>
-														handleEntryChange(
-															index,
-															"creditAmount",
-															e.target.value
-														)
-													}
-													step="0.01"
-													min="0"
-													className="block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-1 px-2 text-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
-												/>
-											</td>
-											<td className="px-3 py-2 whitespace-nowrap">
-												<input
-													type="text"
-													value={entry.notes || ""}
-													onChange={(e) =>
-														handleEntryChange(index, "notes", e.target.value)
-													}
-													className="block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-1 px-2 text-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
-													placeholder="Notas"
-												/>
-											</td>
-											<td className="px-3 py-2 whitespace-nowrap text-center">
-												<button
-													type="button"
-													onClick={() => removeTransactionEntry(index)}
-													className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-												>
-													<X size={16} />
-												</button>
-											</td>
-										</tr>
-									))}
-									<tr className="bg-gray-50 dark:bg-gray-700">
-										<td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-											Totales
-										</td>
-										<td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-											{formatCurrency(totals.totalDebit)}
-										</td>
-										<td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-											{formatCurrency(totals.totalCredit)}
-										</td>
-										<td
-											colSpan={2}
-											className="px-3 py-2 whitespace-nowrap text-sm font-medium"
-										>
-											<span
-												className={`${totals.difference === 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
-											>
-												{totals.difference === 0
-													? "Transacción balanceada"
-													: `Diferencia: ${formatCurrency(Math.abs(totals.difference))}`}
-											</span>
-										</td>
-									</tr>
-								</tbody>
-							</table>
-						</div>
-					</div>
+          <div className="flex justify-end space-x-3">
+            <button
+              type="button"
+              onClick={() => setIsNewAccountModalOpen(false)}
+              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={saveAccount}
+              className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 dark:bg-primary-700 dark:hover:bg-primary-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 flex items-center"
+            >
+              <Save
+                size={16}
+                className="mr-2"
+              />{" "}
+              Guardar Cuenta
+            </button>
+          </div>
+        </form>
+      </Modal>
 
-					<div className="flex justify-end space-x-3">
-						<button
-							type="button"
-							onClick={() => setIsNewTransactionModalOpen(false)}
-							className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
-						>
-							Cancelar
-						</button>
-						<button
-							type="button"
-							onClick={saveTransaction}
-							className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 dark:bg-primary-700 dark:hover:bg-primary-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 flex items-center"
-						>
-							<Save size={16} className="mr-2" /> Guardar Transacción
-						</button>
-					</div>
-				</form>
-			</Modal>
-
-			{/* Modal de Nueva Cuenta */}
-			<Modal
-				isOpen={isNewAccountModalOpen}
-				onClose={() => setIsNewAccountModalOpen(false)}
-				title="Nueva Cuenta Contable"
-			>
-				<form className="space-y-6">
-					<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-						<div>
-							<label
-								htmlFor="code"
-								className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-							>
-								Código de Cuenta
-							</label>
-							<input
-								type="text"
-								id="code"
-								name="code"
-								value={newAccount.code}
-								onChange={handleAccountChange}
-								className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
-								placeholder="Ej. 1000"
-								required
-							/>
-						</div>
-						<div>
-							<label
-								htmlFor="name"
-								className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-							>
-								Nombre de Cuenta
-							</label>
-							<input
-								type="text"
-								id="name"
-								name="name"
-								value={newAccount.name}
-								onChange={handleAccountChange}
-								className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
-								placeholder="Ej. Efectivo"
-								required
-							/>
-						</div>
-					</div>
-
-					<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-						<div>
-							<label
-								htmlFor="accountType"
-								className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-							>
-								Tipo de Cuenta
-							</label>
-							<select
-								id="accountType"
-								name="type"
-								value={newAccount.type}
-								onChange={handleAccountChange}
-								className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
-								required
-							>
-								<option value="Activo">Activo</option>
-								<option value="Pasivo">Pasivo</option>
-								<option value="Patrimonio">Patrimonio</option>
-								<option value="Ingreso">Ingreso</option>
-								<option value="Gasto">Gasto</option>
-								<option value="Costo">Costo</option>
-							</select>
-						</div>
-						<div>
-							<label
-								htmlFor="isActive"
-								className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 mt-6"
-							>
-								<input
-									type="checkbox"
-									id="isActive"
-									name="isActive"
-									checked={newAccount.isActive}
-									onChange={handleAccountChange}
-									className="h-4 w-4 text-primary-600 dark:text-primary-500 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
-								/>
-								<span className="ml-2">Cuenta Activa</span>
-							</label>
-						</div>
-					</div>
-
-					<div>
-						<label
-							htmlFor="description"
-							className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-						>
-							Descripción
-						</label>
-						<textarea
-							id="description"
-							name="description"
-							value={newAccount.description}
-							onChange={handleAccountChange}
-							rows={3}
-							className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
-							placeholder="Descripción detallada de la cuenta"
-						></textarea>
-					</div>
-
-					<div className="flex justify-end space-x-3">
-						<button
-							type="button"
-							onClick={() => setIsNewAccountModalOpen(false)}
-							className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
-						>
-							Cancelar
-						</button>
-						<button
-							type="button"
-							onClick={saveAccount}
-							className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 dark:bg-primary-700 dark:hover:bg-primary-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 flex items-center"
-						>
-							<Save size={16} className="mr-2" /> Guardar Cuenta
-						</button>
-					</div>
-				</form>
-			</Modal>
-
-			{/* Modal de Detalle de Transacción */}
-			<Modal
-				isOpen={isTransactionDetailModalOpen}
-				onClose={() => setIsTransactionDetailModalOpen(false)}
-				title={`Detalles de Transacción: ${selectedTransaction?.referenceNumber}`}
-				size="lg"
-			>
-				{selectedTransaction && (
-					<div className="space-y-6">
-						<div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-							<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-								<div>
-									<h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-										Referencia
-									</h4>
-									<p className="mt-1 text-sm font-medium text-gray-900 dark:text-white">
-										{selectedTransaction.referenceNumber}
-									</p>
-								</div>
-								<div>
-									<h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-										Fecha
-									</h4>
-									<p className="mt-1 text-sm text-gray-900 dark:text-white">
-										{new Date(
-											selectedTransaction.transactionDate
-										).toLocaleDateString("es-ES")}
-									</p>
-								</div>
-								<div>
-									<h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-										Tipo
-									</h4>
-									<p className="mt-1">
-										<span
-											className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+      {/* Modal de Detalle de Transacción */}
+      <Modal
+        isOpen={isTransactionDetailModalOpen}
+        onClose={() => setIsTransactionDetailModalOpen(false)}
+        title={`Detalles de Transacción: ${selectedTransaction?.referenceNumber}`}
+        size="lg"
+      >
+        {selectedTransaction && (
+          <div className="space-y-6">
+            <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                    Referencia
+                  </h4>
+                  <p className="mt-1 text-sm font-medium text-gray-900 dark:text-white">
+                    {selectedTransaction.referenceNumber}
+                  </p>
+                </div>
+                <div>
+                  <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                    Fecha
+                  </h4>
+                  <p className="mt-1 text-sm text-gray-900 dark:text-white">
+                    {new Date(
+                      selectedTransaction.transactionDate
+                    ).toLocaleDateString("es-ES")}
+                  </p>
+                </div>
+                <div>
+                  <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                    Tipo
+                  </h4>
+                  <p className="mt-1">
+                    <span
+                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
                       ${
-												selectedTransaction.type === "Venta"
-													? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-													: selectedTransaction.type === "Compra"
-														? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
-														: selectedTransaction.type === "Gasto"
-															? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
-															: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"
-											}`}
-										>
-											{selectedTransaction.type}
-										</span>
-									</p>
-								</div>
-							</div>
-							<div className="mt-4">
-								<h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-									Descripción
-								</h4>
-								<p className="mt-1 text-sm text-gray-900 dark:text-white">
-									{selectedTransaction.description}
-								</p>
-							</div>
-							<div className="mt-4">
-								<h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-									Estado
-								</h4>
-								<p className="mt-1">
-									<span
-										className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                        selectedTransaction.type === "Venta"
+                          ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
+                          : selectedTransaction.type === "Compra"
+                            ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
+                            : selectedTransaction.type === "Gasto"
+                              ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
+                              : "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"
+                      }`}
+                    >
+                      {selectedTransaction.type}
+                    </span>
+                  </p>
+                </div>
+              </div>
+              <div className="mt-4">
+                <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                  Descripción
+                </h4>
+                <p className="mt-1 text-sm text-gray-900 dark:text-white">
+                  {selectedTransaction.description}
+                </p>
+              </div>
+              <div className="mt-4">
+                <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                  Estado
+                </h4>
+                <p className="mt-1">
+                  <span
+                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
                     ${selectedTransaction.isPosted ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300" : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"}`}
-									>
-										{selectedTransaction.isPosted
-											? "Contabilizado"
-											: "Pendiente"}
-									</span>
-								</p>
-							</div>
-							{selectedTransaction.orderId && (
-								<div className="mt-4">
-									<h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-										Orden relacionada
-									</h4>
-									<p className="mt-1 text-sm text-primary-600 dark:text-primary-400 font-medium">
-										#{selectedTransaction.orderId}
-									</p>
-								</div>
-							)}
-						</div>
+                  >
+                    {selectedTransaction.isPosted
+                      ? "Contabilizado"
+                      : "Pendiente"}
+                  </span>
+                </p>
+              </div>
+              {selectedTransaction.orderId && (
+                <div className="mt-4">
+                  <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                    Orden relacionada
+                  </h4>
+                  <p className="mt-1 text-sm text-primary-600 dark:text-primary-400 font-medium">
+                    #{selectedTransaction.orderId}
+                  </p>
+                </div>
+              )}
+            </div>
 
-						<div>
-							<h3 className="text-base font-medium text-gray-900 dark:text-white mb-3">
-								Entradas Contables
-							</h3>
-							<div className="overflow-x-auto border border-gray-300 dark:border-gray-600 rounded-md shadow-sm">
-								<table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-									<thead className="bg-gray-50 dark:bg-gray-800">
-										<tr>
-											<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-												Cuenta
-											</th>
-											<th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-												Debe
-											</th>
-											<th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-												Haber
-											</th>
-											<th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-												Notas
-											</th>
-										</tr>
-									</thead>
-									<tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-										{selectedTransaction.entries.map((entry) => {
-											// Encontrar la cuenta correspondiente
-											const account = accounts.find(
-												(a) => a.id === entry.accountId
-											);
+            <div>
+              <h3 className="text-base font-medium text-gray-900 dark:text-white mb-3">
+                Entradas Contables
+              </h3>
+              <div className="overflow-x-auto border border-gray-300 dark:border-gray-600 rounded-md shadow-sm">
+                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                  <thead className="bg-gray-50 dark:bg-gray-800">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        Cuenta
+                      </th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        Debe
+                      </th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        Haber
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        Notas
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    {selectedTransaction.entries.map((entry) => {
+                      // Encontrar la cuenta correspondiente
+                      const account = accounts.find(
+                        (a) => a.id === entry.accountId
+                      );
 
-											return (
-												<tr key={entry.id}>
-													<td className="px-4 py-3 text-sm text-gray-900 dark:text-white">
-														{account
-															? `${account.code} - ${account.name}`
-															: `Cuenta ID: ${entry.accountId}`}
-													</td>
-													<td className="px-4 py-3 text-sm text-right text-gray-900 dark:text-white">
-														{entry.debitAmount > 0
-															? formatCurrency(entry.debitAmount)
-															: ""}
-													</td>
-													<td className="px-4 py-3 text-sm text-right text-gray-900 dark:text-white">
-														{entry.creditAmount > 0
-															? formatCurrency(entry.creditAmount)
-															: ""}
-													</td>
-													<td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
-														{entry.notes}
-													</td>
-												</tr>
-											);
-										})}
+                      return (
+                        <tr key={entry.id}>
+                          <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">
+                            {account
+                              ? `${account.code} - ${account.name}`
+                              : `Cuenta ID: ${entry.accountId}`}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-right text-gray-900 dark:text-white">
+                            {entry.debitAmount > 0
+                              ? formatCurrency(entry.debitAmount)
+                              : ""}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-right text-gray-900 dark:text-white">
+                            {entry.creditAmount > 0
+                              ? formatCurrency(entry.creditAmount)
+                              : ""}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+                            {entry.notes}
+                          </td>
+                        </tr>
+                      );
+                    })}
 
-										{/* Fila de totales */}
-										<tr className="bg-gray-50 dark:bg-gray-700 font-medium">
-											<td className="px-4 py-3 text-sm text-gray-900 dark:text-white">
-												Totales
-											</td>
-											<td className="px-4 py-3 text-sm text-right text-gray-900 dark:text-white">
-												{formatCurrency(
-													selectedTransaction.entries.reduce(
-														(sum, entry) => sum + entry.debitAmount,
-														0
-													)
-												)}
-											</td>
-											<td className="px-4 py-3 text-sm text-right text-gray-900 dark:text-white">
-												{formatCurrency(
-													selectedTransaction.entries.reduce(
-														(sum, entry) => sum + entry.creditAmount,
-														0
-													)
-												)}
-											</td>
-											<td className="px-4 py-3 text-sm text-gray-900 dark:text-white">
-												{selectedTransaction.isBalanced ? (
-													<span className="text-green-600 dark:text-green-400">
-														Transacción balanceada
-													</span>
-												) : (
-													<span className="text-red-600 dark:text-red-400">
-														Transacción no balanceada
-													</span>
-												)}
-											</td>
-										</tr>
-									</tbody>
-								</table>
-							</div>
-						</div>
+                    {/* Fila de totales */}
+                    <tr className="bg-gray-50 dark:bg-gray-700 font-medium">
+                      <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">
+                        Totales
+                      </td>
+                      <td className="px-4 py-3 text-sm text-right text-gray-900 dark:text-white">
+                        {formatCurrency(
+                          selectedTransaction.entries.reduce(
+                            (sum, entry) => sum + entry.debitAmount,
+                            0
+                          )
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-right text-gray-900 dark:text-white">
+                        {formatCurrency(
+                          selectedTransaction.entries.reduce(
+                            (sum, entry) => sum + entry.creditAmount,
+                            0
+                          )
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">
+                        {selectedTransaction.isBalanced ? (
+                          <span className="text-green-600 dark:text-green-400">
+                            Transacción balanceada
+                          </span>
+                        ) : (
+                          <span className="text-red-600 dark:text-red-400">
+                            Transacción no balanceada
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
 
-						<div className="flex justify-end space-x-3">
-							{!selectedTransaction.isPosted && (
-								<button
-									type="button"
-									className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 flex items-center"
-								>
-									<Archive size={16} className="mr-2" /> Contabilizar
-								</button>
-							)}
-							<button
-								type="button"
-								onClick={() => setIsTransactionDetailModalOpen(false)}
-								className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
-							>
-								Cerrar
-							</button>
-						</div>
-					</div>
-				)}
-			</Modal>
+            <div className="flex justify-end space-x-3">
+              {!selectedTransaction.isPosted && (
+                <button
+                  type="button"
+                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 flex items-center"
+                >
+                  <Archive
+                    size={16}
+                    className="mr-2"
+                  />{" "}
+                  Contabilizar
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setIsTransactionDetailModalOpen(false)}
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
 
-			{/* Modal de Detalle de Cuenta */}
-			<Modal
-				isOpen={isAccountDetailModalOpen}
-				onClose={() => setIsAccountDetailModalOpen(false)}
-				title={`Detalles de Cuenta: ${selectedAccount?.code} - ${selectedAccount?.name}`}
-			>
-				{selectedAccount && (
-					<div className="space-y-6">
-						<div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-							<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-								<div>
-									<h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-										Código
-									</h4>
-									<p className="mt-1 text-sm font-medium text-gray-900 dark:text-white">
-										{selectedAccount.code}
-									</p>
-								</div>
-								<div>
-									<h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-										Nombre
-									</h4>
-									<p className="mt-1 text-sm text-gray-900 dark:text-white">
-										{selectedAccount.name}
-									</p>
-								</div>
-							</div>
-							<div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-								<div>
-									<h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-										Tipo
-									</h4>
-									<p className="mt-1">
-										<span
-											className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+      {/* Modal de Detalle de Cuenta */}
+      <Modal
+        isOpen={isAccountDetailModalOpen}
+        onClose={() => setIsAccountDetailModalOpen(false)}
+        title={`Detalles de Cuenta: ${selectedAccount?.code} - ${selectedAccount?.name}`}
+      >
+        {selectedAccount && (
+          <div className="space-y-6">
+            <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                    Código
+                  </h4>
+                  <p className="mt-1 text-sm font-medium text-gray-900 dark:text-white">
+                    {selectedAccount.code}
+                  </p>
+                </div>
+                <div>
+                  <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                    Nombre
+                  </h4>
+                  <p className="mt-1 text-sm text-gray-900 dark:text-white">
+                    {selectedAccount.name}
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                <div>
+                  <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                    Tipo
+                  </h4>
+                  <p className="mt-1">
+                    <span
+                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
                       ${
-												selectedAccount.type === "Activo"
-													? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
-													: selectedAccount.type === "Pasivo"
-														? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
-														: selectedAccount.type === "Ingreso"
-															? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-															: selectedAccount.type === "Gasto"
-																? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
-																: selectedAccount.type === "Costo"
-																	? "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300"
-																	: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"
-											}`}
-										>
-											{selectedAccount.type}
-										</span>
-									</p>
-								</div>
-								<div>
-									<h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-										Saldo
-									</h4>
-									<p className="mt-1 text-sm text-gray-900 dark:text-white">
-										<span
-											className={`font-medium ${selectedAccount.balance && selectedAccount.balance >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
-										>
-											{formatCurrency(selectedAccount.balance || 0)}
-										</span>
-									</p>
-								</div>
-							</div>
-							<div className="mt-4">
-								<h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-									Estado
-								</h4>
-								<p className="mt-1">
-									<span
-										className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                        selectedAccount.type === "Activo"
+                          ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
+                          : selectedAccount.type === "Pasivo"
+                            ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
+                            : selectedAccount.type === "Ingreso"
+                              ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
+                              : selectedAccount.type === "Gasto"
+                                ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
+                                : selectedAccount.type === "Costo"
+                                  ? "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300"
+                                  : "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"
+                      }`}
+                    >
+                      {selectedAccount.type}
+                    </span>
+                  </p>
+                </div>
+                <div>
+                  <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                    Saldo
+                  </h4>
+                  <p className="mt-1 text-sm text-gray-900 dark:text-white">
+                    <span
+                      className={`font-medium ${selectedAccount.balance && selectedAccount.balance >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
+                    >
+                      {formatCurrency(selectedAccount.balance || 0)}
+                    </span>
+                  </p>
+                </div>
+              </div>
+              <div className="mt-4">
+                <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                  Estado
+                </h4>
+                <p className="mt-1">
+                  <span
+                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
                     ${selectedAccount.isActive ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300" : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"}`}
-									>
-										{selectedAccount.isActive ? "Activa" : "Inactiva"}
-									</span>
-								</p>
-							</div>
-							<div className="mt-4">
-								<h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-									Descripción
-								</h4>
-								<p className="mt-1 text-sm text-gray-900 dark:text-white">
-									{selectedAccount.description || "Sin descripción"}
-								</p>
-							</div>
-						</div>
+                  >
+                    {selectedAccount.isActive ? "Activa" : "Inactiva"}
+                  </span>
+                </p>
+              </div>
+              <div className="mt-4">
+                <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                  Descripción
+                </h4>
+                <p className="mt-1 text-sm text-gray-900 dark:text-white">
+                  {selectedAccount.description || "Sin descripción"}
+                </p>
+              </div>
+            </div>
 
-						<div>
-							<h3 className="text-base font-medium text-gray-900 dark:text-white mb-3">
-								Movimientos Recientes
-							</h3>
-							<div className="border border-gray-300 dark:border-gray-600 rounded-md shadow-sm p-4 text-center text-gray-500 dark:text-gray-400">
-								<p>
-									Para ver los movimientos detallados de esta cuenta, genere un
-									informe de Libro Mayor.
-								</p>
-								<button
-									type="button"
-									className="mt-3 px-4 py-2 bg-primary-600 border border-transparent rounded-md font-medium text-white shadow-sm hover:bg-primary-700 dark:bg-primary-700 dark:hover:bg-primary-800"
-								>
-									Ver Libro Mayor
-								</button>
-							</div>
-						</div>
+            <div>
+              <h3 className="text-base font-medium text-gray-900 dark:text-white mb-3">
+                Movimientos Recientes
+              </h3>
+              <div className="border border-gray-300 dark:border-gray-600 rounded-md shadow-sm p-4 text-center text-gray-500 dark:text-gray-400">
+                <p>
+                  Para ver los movimientos detallados de esta cuenta, genere un
+                  informe de Libro Mayor.
+                </p>
+                <button
+                  type="button"
+                  className="mt-3 px-4 py-2 bg-primary-600 border border-transparent rounded-md font-medium text-white shadow-sm hover:bg-primary-700 dark:bg-primary-700 dark:hover:bg-primary-800"
+                >
+                  Ver Libro Mayor
+                </button>
+              </div>
+            </div>
 
-						<div className="flex justify-end space-x-3">
-							<button
-								type="button"
-								className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
-								onClick={() => setIsAccountDetailModalOpen(false)}
-							>
-								Cerrar
-							</button>
-							<button
-								type="button"
-								className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 dark:bg-primary-700 dark:hover:bg-primary-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 flex items-center"
-							>
-								Editar Cuenta
-							</button>
-						</div>
-					</div>
-				)}
-			</Modal>
-		</div>
-	);
+            <div className="flex justify-end space-x-3">
+              <button
+                type="button"
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                onClick={() => setIsAccountDetailModalOpen(false)}
+              >
+                Cerrar
+              </button>
+              <button
+                type="button"
+                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 dark:bg-primary-700 dark:hover:bg-primary-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 flex items-center"
+              >
+                Editar Cuenta
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
+    </div>
+  );
 };
 
 export default AdminAccountingPage;

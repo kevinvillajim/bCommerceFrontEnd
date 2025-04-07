@@ -5,12 +5,52 @@ import {
 	DollarSign,
 	TrendingUp,
 	Star,
-	ArrowUp,
-	ArrowDown,
 	ChevronRight,
 } from "lucide-react";
 import {Link} from "react-router-dom";
+import RatingStars from "@/presentation/components/common/RatingStars";
+import { formatCurrency } from "../../../utils/formatters/formatCurrency";
+import DashboardCardList from "../../components/dashboard/DashboardCardList";
 
+const cards = [
+	{
+	  title: "Ventas Totales",
+	  value: formatCurrency(12580.45),
+	  change: 12.5,
+	  icon: DollarSign,
+	  iconBgColor: "bg-primary-50 dark:bg-primary-900",
+	  iconColor: "text-primary-600 dark:text-primary-400",
+	},
+	{
+	  title: "Pedidos Totales",
+	  value: 157,
+	  change: 8.2,
+	  icon: ShoppingBag,
+	  iconBgColor: "bg-orange-50 dark:bg-orange-900",
+	  iconColor: "text-orange-600 dark:text-orange-400",
+	},
+	{
+	  title: "Productos Activos",
+	  value: `42 / 48`,
+	  change: 0,
+	  text: `42 productos activos`,
+	  icon: Package,
+	  iconBgColor: "bg-blue-50 dark:bg-blue-900",
+	  iconColor: "text-blue-600 dark:text-blue-400",
+	},
+	{
+	  title: "Promedio de Valoraciones",
+	  value: 4.7,
+	  change: 0, // o puedes omitirlo si no aplica
+	  text: (
+		<RatingStars rating={4.7} size={15}/>
+	  ),
+	  icon: Star,
+	  iconBgColor: "bg-yellow-50 dark:bg-yellow-900",
+	  iconColor: "text-yellow-600 dark:text-yellow-400",
+	},
+  ];
+  
 const SellerDashboard: React.FC = () => {
 	// Sample data - would be fetched from your API
 	const dashboardData = {
@@ -84,115 +124,7 @@ const SellerDashboard: React.FC = () => {
 			</h1>
 
 			{/* Stats Cards */}
-			<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-				{/* Total Sales */}
-				<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 flex items-start justify-between">
-					<div>
-						<p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-							Ventas Totales
-						</p>
-						<p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-							{formatCurrency(dashboardData.totalSales)}
-						</p>
-						<div
-							className={`flex items-center mt-2 ${dashboardData.salesChange >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
-						>
-							{dashboardData.salesChange >= 0 ? (
-								<ArrowUp size={16} />
-							) : (
-								<ArrowDown size={16} />
-							)}
-							<span className="ml-1 text-sm font-medium">
-								{Math.abs(dashboardData.salesChange)}% respecto al mes anterior
-							</span>
-						</div>
-					</div>
-					<div className="p-3 bg-primary-50 dark:bg-primary-900 rounded-lg">
-						<DollarSign className="w-6 h-6 text-primary-600 dark:text-primary-400" />
-					</div>
-				</div>
-
-				{/* Total Orders */}
-				<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 flex items-start justify-between">
-					<div>
-						<p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-							Pedidos Totales
-						</p>
-						<p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-							{dashboardData.totalOrders}
-						</p>
-						<div
-							className={`flex items-center mt-2 ${dashboardData.ordersChange >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
-						>
-							{dashboardData.ordersChange >= 0 ? (
-								<ArrowUp size={16} />
-							) : (
-								<ArrowDown size={16} />
-							)}
-							<span className="ml-1 text-sm font-medium">
-								{Math.abs(dashboardData.ordersChange)}% respecto al mes anterior
-							</span>
-						</div>
-					</div>
-					<div className="p-3 bg-orange-50 dark:bg-orange-900 rounded-lg">
-						<ShoppingBag className="w-6 h-6 text-orange-600 dark:text-orange-400" />
-					</div>
-				</div>
-
-				{/* Product Stats */}
-				<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 flex items-start justify-between">
-					<div>
-						<p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-							Productos
-						</p>
-						<p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-							{dashboardData.activeProducts}/{dashboardData.totalProducts}
-						</p>
-						<div className="flex items-center mt-2 text-gray-600 dark:text-gray-400">
-							<span className="text-sm font-medium">
-								{dashboardData.activeProducts} productos activos
-							</span>
-						</div>
-					</div>
-					<div className="p-3 bg-blue-50 dark:bg-blue-900 rounded-lg">
-						<Package className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-					</div>
-				</div>
-
-				{/* Average Rating */}
-				<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 flex items-start justify-between">
-					<div>
-						<p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-							Promedio de Valoraciónes
-						</p>
-						<p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-							{dashboardData.averageRating}
-						</p>
-						<div className="flex items-center mt-2 text-yellow-600 dark:text-yellow-400">
-							{/* Stars */}
-							{[...Array(5)].map((_, i) => (
-								<Star
-									key={i}
-									size={14}
-									fill={
-										i < Math.floor(dashboardData.averageRating)
-											? "currentColor"
-											: "none"
-									}
-									className={
-										i < Math.floor(dashboardData.averageRating)
-											? ""
-											: "text-gray-300 dark:text-gray-600"
-									}
-								/>
-							))}
-						</div>
-					</div>
-					<div className="p-3 bg-yellow-50 dark:bg-yellow-900 rounded-lg">
-						<Star className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
-					</div>
-				</div>
-			</div>
+			<DashboardCardList cards={cards} />
 
 			{/* Recent Orders & Top Products */}
 			<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

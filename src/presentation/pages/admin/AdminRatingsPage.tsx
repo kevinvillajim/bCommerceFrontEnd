@@ -12,14 +12,13 @@ import {
   CheckCircle,
   XCircle,
   AlertTriangle,
-  MessageSquare,
   Clock,
   Flag,
   BarChart2,
-  Edit
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { Rating } from "../../../core/domain/entities/Rating";
+import StatCardList from "../../components/dashboard/StatCardList";
 
 // Datos simulados para valoraciones y reseñas
 const mockRatings: Rating[] = [
@@ -658,6 +657,54 @@ const AdminRatingsPage: React.FC = () => {
     },
   ];
 
+  const statsItemsRating = [
+    {
+      title: "Total",
+      value: ratings.length,
+      description: "Valoraciones y reseñas",
+      icon: Star,
+      bgColor: "bg-blue-50 dark:bg-blue-900/20",
+      textColor: "text-blue-800 dark:text-blue-200",
+      valueColor: "text-blue-900 dark:text-blue-100",
+      descriptionColor: "text-blue-700 dark:text-blue-300",
+      iconColor: "text-blue-600 dark:text-blue-400",
+    },
+    {
+      title: "Pendientes",
+      value: ratings.filter((r) => r.status === "pending").length,
+      description: "Esperando moderación",
+      icon: Clock,
+      bgColor: "bg-yellow-50 dark:bg-yellow-900/20",
+      textColor: "text-yellow-800 dark:text-yellow-200",
+      valueColor: "text-yellow-900 dark:text-yellow-100",
+      descriptionColor: "text-yellow-700 dark:text-yellow-300",
+      iconColor: "text-yellow-600 dark:text-yellow-400",
+    },
+    {
+      title: "Aprobadas",
+      value: ratings.filter((r) => r.status === "approved").length,
+      description: "Publicadas",
+      icon: CheckCircle,
+      bgColor: "bg-green-50 dark:bg-green-900/20",
+      textColor: "text-green-800 dark:text-green-200",
+      valueColor: "text-green-900 dark:text-green-100",
+      descriptionColor: "text-green-700 dark:text-green-300",
+      iconColor: "text-green-600 dark:text-green-400",
+    },
+    {
+      title: "Rechazadas",
+      value: ratings.filter((r) => r.status === "rejected").length,
+      description: "Ocultadas del público",
+      icon: XCircle,
+      bgColor: "bg-red-50 dark:bg-red-900/20",
+      textColor: "text-red-800 dark:text-red-200",
+      valueColor: "text-red-900 dark:text-red-100",
+      descriptionColor: "text-red-700 dark:text-red-300",
+      iconColor: "text-red-600 dark:text-red-400",
+    },
+  ];
+  
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -683,69 +730,7 @@ const AdminRatingsPage: React.FC = () => {
       </div>
 
       {/* Panel de estadísticas */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium text-blue-800 dark:text-blue-200">
-                Total
-              </h3>
-              <Star className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-            </div>
-            <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">
-              {ratings.length}
-            </p>
-            <p className="text-sm text-blue-700 dark:text-blue-300">
-              Valoraciones y reseñas
-            </p>
-          </div>
-
-          <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium text-yellow-800 dark:text-yellow-200">
-                Pendientes
-              </h3>
-              <Clock className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
-            </div>
-            <p className="text-2xl font-bold text-yellow-900 dark:text-yellow-100">
-              {ratings.filter((r) => r.status === "pending").length}
-            </p>
-            <p className="text-sm text-yellow-700 dark:text-yellow-300">
-              Esperando moderación
-            </p>
-          </div>
-
-          <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium text-green-800 dark:text-green-200">
-                Aprobadas
-              </h3>
-              <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
-            </div>
-            <p className="text-2xl font-bold text-green-900 dark:text-green-100">
-              {ratings.filter((r) => r.status === "approved").length}
-            </p>
-            <p className="text-sm text-green-700 dark:text-green-300">
-              Publicadas
-            </p>
-          </div>
-
-          <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium text-red-800 dark:text-red-200">
-                Rechazadas
-              </h3>
-              <XCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
-            </div>
-            <p className="text-2xl font-bold text-red-900 dark:text-red-100">
-              {ratings.filter((r) => r.status === "rejected").length}
-            </p>
-            <p className="text-red-700 dark:text-red-300">
-              Ocultadas del público
-            </p>
-          </div>
-        </div>
-      </div>
+      <StatCardList items={statsItemsRating} />
 
       {/* Filtros */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">

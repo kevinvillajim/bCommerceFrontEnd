@@ -1,14 +1,18 @@
 import React, {useState, useEffect} from "react";
 import {
-	AlertTriangle,
-	Download,
-	RefreshCw,
-	Eye,
-	Clock,
-	Server,
-	User,
+  Download,
+  RefreshCw,
+  Eye,
+  Clock,
+  Server,
+  User,
+  Info,
+  AlertCircle,
+  XCircle,
+  AlertTriangle,
 } from "lucide-react";
 import Table from "../../components/dashboard/Table";
+import StatCardList from "../../components/dashboard/StatCardList";
 
 // Definir el tipo para una entrada de registro
 interface LogEntry {
@@ -246,6 +250,53 @@ const AdminLogViewerPage: React.FC = () => {
 		critical: logs.filter((log) => log.level === "critical").length,
 	};
 
+	const statItems = [
+		{ 
+		  title: "Info", 
+		  value: logSummary.info, 
+		  description: "Registros informativos", 
+		  icon: Info, 
+		  bgColor: "bg-blue-50 dark:bg-blue-900/20", 
+		  textColor: "text-blue-700 dark:text-blue-300", 
+		  valueColor: "text-blue-800 dark:text-blue-200", 
+		  descriptionColor: "text-blue-600 dark:text-blue-400", 
+		  iconColor: "text-blue-600 dark:text-blue-400", 
+		},
+		{ 
+		  title: "Advertencias", 
+		  value: logSummary.warning, 
+		  description: "Registros de advertencia", 
+		  icon: AlertCircle, 
+		  bgColor: "bg-yellow-50 dark:bg-yellow-900/20", 
+		  textColor: "text-yellow-700 dark:text-yellow-300", 
+		  valueColor: "text-yellow-800 dark:text-yellow-200", 
+		  descriptionColor: "text-yellow-600 dark:text-yellow-400", 
+		  iconColor: "text-yellow-600 dark:text-yellow-400", 
+		},
+		{ 
+		  title: "Errores", 
+		  value: logSummary.error, 
+		  description: "Registros de error", 
+		  icon: XCircle, 
+		  bgColor: "bg-red-50 dark:bg-red-900/20", 
+		  textColor: "text-red-700 dark:text-red-300", 
+		  valueColor: "text-red-800 dark:text-red-200", 
+		  descriptionColor: "text-red-600 dark:text-red-400", 
+		  iconColor: "text-red-600 dark:text-red-400", 
+		},
+		{ 
+		  title: "Críticos", 
+		  value: logSummary.critical, 
+		  description: "Registros críticos", 
+		  icon: AlertTriangle, 
+		  bgColor: "bg-purple-50 dark:bg-purple-900/20", 
+		  textColor: "text-purple-700 dark:text-purple-300", 
+		  valueColor: "text-purple-800 dark:text-purple-200", 
+		  descriptionColor: "text-purple-600 dark:text-purple-400", 
+		  iconColor: "text-purple-600 dark:text-purple-400", 
+		}
+	  ];
+
 	return (
 		<div className="space-y-6">
 			<div className="flex justify-between items-center">
@@ -271,60 +322,7 @@ const AdminLogViewerPage: React.FC = () => {
 			</div>
 
 			{/* Tarjetas de resumen */}
-			<div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-				<div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg shadow-sm">
-					<div className="flex justify-between items-center mb-2">
-						<h3 className="text-sm font-semibold text-blue-700 dark:text-blue-300">
-							Info
-						</h3>
-						<span className="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-800 text-blue-800 dark:text-blue-200 rounded-full">
-							{logSummary.info}
-						</span>
-					</div>
-					<p className="text-xs text-blue-600 dark:text-blue-400">
-						Registros informativos
-					</p>
-				</div>
-				<div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg shadow-sm">
-					<div className="flex justify-between items-center mb-2">
-						<h3 className="text-sm font-semibold text-yellow-700 dark:text-yellow-300">
-							Advertencias
-						</h3>
-						<span className="text-xs px-2 py-1 bg-yellow-100 dark:bg-yellow-800 text-yellow-800 dark:text-yellow-200 rounded-full">
-							{logSummary.warning}
-						</span>
-					</div>
-					<p className="text-xs text-yellow-600 dark:text-yellow-400">
-						Registros de advertencia
-					</p>
-				</div>
-				<div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg shadow-sm">
-					<div className="flex justify-between items-center mb-2">
-						<h3 className="text-sm font-semibold text-red-700 dark:text-red-300">
-							Errores
-						</h3>
-						<span className="text-xs px-2 py-1 bg-red-100 dark:bg-red-800 text-red-800 dark:text-red-200 rounded-full">
-							{logSummary.error}
-						</span>
-					</div>
-					<p className="text-xs text-red-600 dark:text-red-400">
-						Registros de error
-					</p>
-				</div>
-				<div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg shadow-sm">
-					<div className="flex justify-between items-center mb-2">
-						<h3 className="text-sm font-semibold text-purple-700 dark:text-purple-300">
-							Críticos
-						</h3>
-						<span className="text-xs px-2 py-1 bg-purple-100 dark:bg-purple-800 text-purple-800 dark:text-purple-200 rounded-full">
-							{logSummary.critical}
-						</span>
-					</div>
-					<p className="text-xs text-purple-600 dark:text-purple-400">
-						Registros críticos
-					</p>
-				</div>
-			</div>
+			<StatCardList items={statItems} />
 
 			{/* Filtros */}
 			<div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm space-y-4">
