@@ -36,7 +36,7 @@ const SellerProductCreatePage = lazy(() => import('../presentation/pages/seller/
 const SellerOrdersPage = lazy(() => import('../presentation/pages/seller/SellerOrdersPage'));
 // const SellerOrderDetailsPage = lazy(() => import('../presentation/pages/seller/SellerOrderDetailsPage'));
 const SellerRatingsPage = lazy(() => import('../presentation/pages/seller/SellerRatingsPage'));
-// const SellerProfilePage = lazy(() => import('../presentation/pages/seller/SellerProfilePage'));
+const SellerProfilePage = lazy(() => import('../presentation/pages/seller/SellerProfilePage'));
 const SellerInvoicesPage = lazy(() => import('../presentation/pages/seller/SellerInvoicesPage'));
 // const SellerInvoiceDetailsPage = lazy(() => import('../presentation/pages/seller/SellerInvoiceDetailsPage'));
 const SellerMessagesPage = lazy(() => import('../presentation/pages/seller/SellerMessagesPage'));
@@ -308,11 +308,11 @@ const appRoutes: RouteObject[] = [
 				path: "earnings",
 				element: <SellerEarningsPage />,
 			},
-			// // Account
-			// {
-			// 	path: "profile",
-			// 	element: <SellerProfilePage />,
-			// },
+			// Account
+			{
+				path: "profile",
+				element: <SellerProfilePage />,
+			},
 			// {
 			// 	path: "settings",
 			// 	element: <SellerSettingsPage />,

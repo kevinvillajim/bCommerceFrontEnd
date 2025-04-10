@@ -9,9 +9,11 @@ import {
   FileText,
   Truck,
   Package,
+  BarChart2
 } from "lucide-react";
 import Table from "../../components/dashboard/Table";
 import { formatCurrency } from "../../../utils/formatters/formatCurrency";
+import {SellerStatCardList} from "../../components/dashboard/SellerStatCardList";
 
 // Tipos para pedidos
 interface OrderItem {
@@ -519,6 +521,33 @@ const SellerOrdersPage: React.FC = () => {
     },
   ];
 
+const statsData = [
+	{
+		label: "Total Pedidos",
+		value: orders.length,
+		icon: <ShoppingBag className="h-5 w-5 text-blue-600 dark:text-blue-400" />,
+		color: "blue",
+	},
+	{
+		label: "Pendientes",
+		value: orders.filter((order) => order.status === "pending").length,
+		icon: <Package className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />,
+		color: "yellow",
+	},
+	{
+		label: "En Proceso",
+		value: orders.filter((order) => order.status === "processing").length,
+		icon: <ShoppingBag className="h-5 w-5 text-blue-600 dark:text-blue-400" />,
+		color: "blue",
+	},
+	{
+		label: "Total Ventas",
+		value: formatCurrency(orders.reduce((sum, order) => sum + order.total, 0)),
+		icon: <BarChart2 className="h-5 w-5 text-green-600 dark:text-green-400" />,
+		color: "green",
+	},
+];
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -624,62 +653,9 @@ const SellerOrdersPage: React.FC = () => {
           </button>
         </div>
       </div>
-
       {/* Estadísticas resumidas */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
-          <div className="flex justify-between items-start">
-            <div>
-              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Pedidos</h3>
-              <p className="text-2xl font-bold text-gray-900 dark:text-white">{orders.length}</p>
-            </div>
-            <div className="p-2 bg-blue-50 dark:bg-blue-900 rounded-lg">
-              <ShoppingBag className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
-          <div className="flex justify-between items-start">
-            <div>
-              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Pendientes</h3>
-              <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
-                {orders.filter(order => order.status === 'pending').length}
-              </p>
-            </div>
-            <div className="p-2 bg-yellow-50 dark:bg-yellow-900 rounded-lg">
-              <Package className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
-          <div className="flex justify-between items-start">
-            <div>
-              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">En Proceso</h3>
-              <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                {orders.filter(order => order.status === 'processing').length}
-              </p>
-            </div>
-            <div className="p-2 bg-blue-50 dark:bg-blue-900 rounded-lg">
-              <ShoppingBag className="h-6 w-6 text-blue-600 dark:text-blue-400" />
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
-          <div className="flex justify-between items-start">
-            <div>
-              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Ventas</h3>
-              <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                {formatCurrency(orders.reduce((sum, order) => sum + order.total, 0))}
-              </p>
-            </div>
-            <div className="p-2 bg-green-50 dark:bg-green-900 rounded-lg">
-              <Truck className="h-6 w-6 text-green-600 dark:text-green-400" />
-            </div>
-          </div>
-        </div>
+        <SellerStatCardList items={statsData} />
       </div>
 
       {/* Tabla de Pedidos */}

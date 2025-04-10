@@ -1,17 +1,22 @@
 import React, { useState, useEffect } from "react";
 import {
-  DollarSign,
-  TrendingUp,
-  Calendar,
-  RefreshCw,
-  Download,
-  CreditCard,
-  ArrowRight,
-  Wallet,
-  PieChart,
-  BarChart2
+	DollarSign,
+	TrendingUp,
+	Calendar,
+	RefreshCw,
+	Download,
+	CreditCard,
+	ArrowRight,
+	Wallet,
+	PieChart,
+	ShoppingBag,
+	Package,
+	Star,
+	BarChart2,
 } from "lucide-react";
 import { formatCurrency } from "../../../utils/formatters/formatCurrency";
+import RatingStars from "@/presentation/components/common/RatingStars";
+import DashboardCardList from "@/presentation/components/dashboard/DashboardCardList";
 
 // Tipos
 interface PaymentMethod {
@@ -79,14 +84,6 @@ const SellerEarningsPage: React.FC = () => {
     setTimeout(() => {
       // Datos de ejemplo
       const mockStats: EarningsStats = {
-        totalEarnings: 12580.45,
-        pendingPayments: 1458.32,
-        salesThisMonth: 3450.80,
-        salesGrowth: 12.5,
-        commissionsThisMonth: 517.62,
-        commissionsPercentage: 15, // 15% de comisión
-        netEarningsThisMonth: 2933.18,
-        earningsGrowth: 8.2,
         paymentMethods: [
           { method: "Tarjeta de Crédito", amount: 7548.27, percentage: 60, color: "bg-blue-500" },
           { method: "Transferencia", amount: 2516.09, percentage: 20, color: "bg-green-500" },
@@ -134,7 +131,8 @@ const SellerEarningsPage: React.FC = () => {
       setStats(mockStats);
       setLoading(false);
     }, 800);
-  };
+	};
+	
 
   // Renderiza un gráfico simple de barras para las ventas mensuales
   const renderSalesChart = (monthlySales: MonthlySales[]) => {
@@ -389,6 +387,57 @@ const SellerEarningsPage: React.FC = () => {
 		);
 	};
 
+	const statsE =
+	{
+		totalEarnings: 12580.45,
+		pendingPayments: 1458.32,
+		salesThisMonth: 3450.8,
+		salesGrowth: 12.5,
+		commissionsThisMonth: 517.62,
+		commissionsPercentage: 15, // 15% de comisión
+		netEarningsThisMonth: 2933.18,
+		earningsGrowth: 8.2,
+	};
+	
+
+	const cards = [
+		{
+			title: "Total Ganancias",
+			value: formatCurrency(statsE.totalEarnings),
+			change: 0,
+			icon: DollarSign,
+			iconBgColor: "bg-green-50 dark:bg-green-900",
+			iconColor: "text-green-600 dark:text-green-400",
+		},
+		{
+			title: "Ventas este mes",
+			value: formatCurrency(statsE.salesThisMonth),
+			change: statsE.salesGrowth,
+			text: `${Math.abs(statsE.salesGrowth)}% respecto al mes anterior`,
+			icon: TrendingUp,
+			iconBgColor: "bg-blue-50 dark:bg-blue-900",
+			iconColor: "text-blue-600 dark:text-blue-400",
+		},
+		{
+			title: "Comisiones este mes",
+			value: formatCurrency(statsE.commissionsThisMonth),
+			change: 0,
+			text: `${statsE.commissionsPercentage}% de comisión`,
+			icon: CreditCard,
+			iconBgColor: "bg-red-50 dark:bg-red-900",
+			iconColor: "text-red-600 dark:text-red-400",
+		},
+		{
+			title: "Ganancias netas este mes",
+			value: formatCurrency(statsE.netEarningsThisMonth),
+			change: statsE.earningsGrowth,
+			text: `${Math.abs(statsE.earningsGrowth)}% respecto al mes anterior`,
+			icon: Wallet,
+			iconBgColor: "bg-indigo-50 dark:bg-indigo-900",
+			iconColor: "text-indigo-600 dark:text-indigo-400",
+		},
+	];
+
   return (
 		<div className="space-y-6">
 			<div className="flex justify-between items-center">
@@ -462,109 +511,7 @@ const SellerEarningsPage: React.FC = () => {
 			) : stats ? (
 				<>
 					{/* Tarjetas de estadísticas principales */}
-					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-						<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-							<div className="flex items-center justify-between">
-								<div>
-									<p className="text-sm text-gray-500 dark:text-gray-400">
-										Total Ganancias
-									</p>
-									<p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-										{formatCurrency(stats.totalEarnings)}
-									</p>
-								</div>
-								<div className="p-3 bg-green-50 dark:bg-green-900 rounded-full">
-									<DollarSign className="w-6 h-6 text-green-600 dark:text-green-400" />
-								</div>
-							</div>
-						</div>
-
-						<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-							<div className="flex items-center justify-between">
-								<div>
-									<p className="text-sm text-gray-500 dark:text-gray-400">
-										Ventas este mes
-									</p>
-									<p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-										{formatCurrency(stats.salesThisMonth)}
-									</p>
-									{stats.salesGrowth !== 0 && (
-										<div
-											className={`flex items-center mt-1 ${stats.salesGrowth >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
-										>
-											{stats.salesGrowth >= 0 ? (
-												<TrendingUp size={14} className="mr-1" />
-											) : (
-												<TrendingUp
-													size={14}
-													className="mr-1 transform rotate-180"
-												/>
-											)}
-											<span className="text-xs font-medium">
-												{Math.abs(stats.salesGrowth)}% respecto al mes anterior
-											</span>
-										</div>
-									)}
-								</div>
-								<div className="p-3 bg-blue-50 dark:bg-blue-900 rounded-full">
-									<TrendingUp className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-								</div>
-							</div>
-						</div>
-
-						<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-							<div className="flex items-center justify-between">
-								<div>
-									<p className="text-sm text-gray-500 dark:text-gray-400">
-										Comisiones este mes
-									</p>
-									<p className="text-2xl font-bold text-red-600 dark:text-red-400 mt-1">
-										{formatCurrency(stats.commissionsThisMonth)}
-									</p>
-									<p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-										{stats.commissionsPercentage}% de comisión
-									</p>
-								</div>
-								<div className="p-3 bg-red-50 dark:bg-red-900 rounded-full">
-									<CreditCard className="w-6 h-6 text-red-600 dark:text-red-400" />
-								</div>
-							</div>
-						</div>
-
-						<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-							<div className="flex items-center justify-between">
-								<div>
-									<p className="text-sm text-gray-500 dark:text-gray-400">
-										Ganancias netas este mes
-									</p>
-									<p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
-										{formatCurrency(stats.netEarningsThisMonth)}
-									</p>
-									{stats.earningsGrowth !== 0 && (
-										<div
-											className={`flex items-center mt-1 ${stats.earningsGrowth >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
-										>
-											{stats.earningsGrowth >= 0 ? (
-												<TrendingUp size={14} className="mr-1" />
-											) : (
-												<TrendingUp
-													size={14}
-													className="mr-1 transform rotate-180"
-												/>
-											)}
-											<span className="text-xs font-medium">
-												{Math.abs(stats.earningsGrowth)}% respecto al mes
-												anterior
-											</span>
-										</div>
-									)}
-								</div>
-								<div className="p-3 bg-indigo-50 dark:bg-indigo-900 rounded-full">
-									<Wallet className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
-								</div>
-							</div>
-						</div>
-					</div>
+					<DashboardCardList cards={cards} />
 
 					{/* Contenedor principal con gráficos y pagos */}
 					<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import Table from "../../components/dashboard/Table";
 import { formatCurrency } from "../../../utils/formatters/formatCurrency";
+import {SellerStatCardList} from "../../components/dashboard/SellerStatCardList";
 
 // Tipos para envíos
 interface ShippingItem {
@@ -709,231 +710,193 @@ const SellerShippingPage: React.FC = () => {
     totalShippingCost: shippingItems.reduce((sum, item) => sum + item.shippingCost, 0),
   };
 
+  const statsData = [
+		{
+			label: "Pendientes",
+			value: shippingStats.pending,
+			icon: (
+				<Package className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+			),
+			color: "yellow",
+		},
+		{
+			label: "Listos",
+			value: shippingStats.readyToShip,
+			icon: <Package className="h-5 w-5 text-blue-600 dark:text-blue-400" />,
+			color: "blue",
+		},
+		{
+			label: "En Tránsito",
+			value: shippingStats.inTransit,
+			icon: <Truck className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />,
+			color: "indigo",
+		},
+		{
+			label: "Entregados",
+			value: shippingStats.delivered,
+			icon: (
+				<PackageCheck className="h-5 w-5 text-green-600 dark:text-green-400" />
+			),
+			color: "green",
+		},
+		{
+			label: "Fallidos",
+			value: shippingStats.failed,
+			icon: (
+				<AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
+			),
+			color: "red",
+		},
+		{
+			label: "Devueltos",
+			value: shippingStats.returned,
+			icon: <MapPin className="h-5 w-5 text-orange-600 dark:text-orange-400" />,
+			color: "orange",
+		},
+		{
+			label: "Coste Envíos",
+			value: formatCurrency(shippingStats.totalShippingCost),
+			icon: (
+				<BarChart2 className="h-5 w-5 text-primary-600 dark:text-primary-400" />
+			),
+			color: "primary",
+		},
+	];
+
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          Gestión de Envíos
-        </h1>
-        <div className="flex space-x-2">
-          <button
-            onClick={refreshData}
-            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-          >
-            <RefreshCw size={18} className="inline mr-2" />
-            Actualizar
-          </button>
-        </div>
-      </div>
+		<div className="space-y-6">
+			<div className="flex justify-between items-center">
+				<h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+					Gestión de Envíos
+				</h1>
+				<div className="flex space-x-2">
+					<button
+						onClick={refreshData}
+						className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+					>
+						<RefreshCw size={18} className="inline mr-2" />
+						Actualizar
+					</button>
+				</div>
+			</div>
 
-      {/* Panel de filtros */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
-        <div className="flex flex-col md:flex-row gap-4">
-          {/* Buscador */}
-          <div className="relative flex-grow">
-            <input
-              type="text"
-              placeholder="Buscar por número de pedido, seguimiento, cliente..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
-          </div>
+			{/* Panel de filtros */}
+			<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+				<div className="flex flex-col md:flex-row gap-4">
+					{/* Buscador */}
+					<div className="relative flex-grow">
+						<input
+							type="text"
+							placeholder="Buscar por número de pedido, seguimiento, cliente..."
+							className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+							value={searchTerm}
+							onChange={(e) => setSearchTerm(e.target.value)}
+						/>
+						<Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+					</div>
 
-          {/* Filtro de Estado */}
-          <div className="flex items-center space-x-2">
-            <Filter className="h-5 w-5 text-gray-500 dark:text-gray-400" />
-            <select
-              className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-            >
-              <option value="all">Todos los estados</option>
-              <option value="pending">Pendientes</option>
-              <option value="ready_to_ship">Listos para enviar</option>
-              <option value="in_transit">En tránsito</option>
-              <option value="delivered">Entregados</option>
-              <option value="failed">Fallidos</option>
-              <option value="returned">Devueltos</option>
-            </select>
-          </div>
+					{/* Filtro de Estado */}
+					<div className="flex items-center space-x-2">
+						<Filter className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+						<select
+							className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+							value={statusFilter}
+							onChange={(e) => setStatusFilter(e.target.value)}
+						>
+							<option value="all">Todos los estados</option>
+							<option value="pending">Pendientes</option>
+							<option value="ready_to_ship">Listos para enviar</option>
+							<option value="in_transit">En tránsito</option>
+							<option value="delivered">Entregados</option>
+							<option value="failed">Fallidos</option>
+							<option value="returned">Devueltos</option>
+						</select>
+					</div>
 
-          {/* Filtro de Transportista */}
-          <div className="flex items-center space-x-2">
-            <select
-              className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-              value={carrierFilter}
-              onChange={(e) => setCarrierFilter(e.target.value)}
-            >
-              <option value="all">Todos los transportistas</option>
-              <option value="correos">Correos Express</option>
-              <option value="seur">SEUR</option>
-              <option value="mrw">MRW</option>
-            </select>
-          </div>
+					{/* Filtro de Transportista */}
+					<div className="flex items-center space-x-2">
+						<select
+							className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+							value={carrierFilter}
+							onChange={(e) => setCarrierFilter(e.target.value)}
+						>
+							<option value="all">Todos los transportistas</option>
+							<option value="correos">Correos Express</option>
+							<option value="seur">SEUR</option>
+							<option value="mrw">MRW</option>
+						</select>
+					</div>
 
-          {/* Filtro de Fecha */}
-          <div className="flex items-center space-x-2">
-            <select
-              className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-              value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value)}
-            >
-              <option value="all">Todas las fechas</option>
-              <option value="today">Hoy</option>
-              <option value="week">Esta semana</option>
-              <option value="month">Este mes</option>
-              <option value="custom">Personalizado</option>
-            </select>
-            {dateFilter === "custom" && (
-              <div className="flex items-center space-x-2">
-                <input
-                  type="date"
-                  className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-                />
-                <span className="text-gray-500 dark:text-gray-400">a</span>
-                <input
-                  type="date"
-                  className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
-                />
-              </div>
-            )}
-          </div>
+					{/* Filtro de Fecha */}
+					<div className="flex items-center space-x-2">
+						<select
+							className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+							value={dateFilter}
+							onChange={(e) => setDateFilter(e.target.value)}
+						>
+							<option value="all">Todas las fechas</option>
+							<option value="today">Hoy</option>
+							<option value="week">Esta semana</option>
+							<option value="month">Este mes</option>
+							<option value="custom">Personalizado</option>
+						</select>
+						{dateFilter === "custom" && (
+							<div className="flex items-center space-x-2">
+								<input
+									type="date"
+									className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+								/>
+								<span className="text-gray-500 dark:text-gray-400">a</span>
+								<input
+									type="date"
+									className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+								/>
+							</div>
+						)}
+					</div>
 
-          {/* Botón para limpiar filtros */}
-          <button
-            onClick={() => {
-              setStatusFilter("all");
-              setCarrierFilter("all");
-              setDateFilter("all");
-              setSearchTerm("");
-            }}
-            className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-          >
-            Limpiar filtros
-          </button>
-        </div>
-      </div>
+					{/* Botón para limpiar filtros */}
+					<button
+						onClick={() => {
+							setStatusFilter("all");
+							setCarrierFilter("all");
+							setDateFilter("all");
+							setSearchTerm("");
+						}}
+						className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+					>
+						Limpiar filtros
+					</button>
+				</div>
+			</div>
 
-      {/* Estadísticas resumidas */}
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-7 gap-4">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 col-span-1">
-          <div className="flex justify-between items-start">
-            <div>
-              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Pendientes</h3>
-              <p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
-                {shippingStats.pending}
-              </p>
-            </div>
-            <div className="p-2 bg-yellow-50 dark:bg-yellow-900 rounded-lg">
-              <Package className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 col-span-1">
-          <div className="flex justify-between items-start">
-            <div>
-              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Listos</h3>
-              <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                {shippingStats.readyToShip}
-              </p>
-            </div>
-            <div className="p-2 bg-blue-50 dark:bg-blue-900 rounded-lg">
-              <Package className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 col-span-1">
-          <div className="flex justify-between items-start">
-            <div>
-              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">En Tránsito</h3>
-              <p className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
-                {shippingStats.inTransit}
-              </p>
-            </div>
-            <div className="p-2 bg-indigo-50 dark:bg-indigo-900 rounded-lg">
-              <Truck className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 col-span-1">
-          <div className="flex justify-between items-start">
-            <div>
-              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Entregados</h3>
-              <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                {shippingStats.delivered}
-              </p>
-            </div>
-            <div className="p-2 bg-green-50 dark:bg-green-900 rounded-lg">
-              <PackageCheck className="h-5 w-5 text-green-600 dark:text-green-400" />
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 col-span-1">
-          <div className="flex justify-between items-start">
-            <div>
-              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Fallidos</h3>
-              <p className="text-2xl font-bold text-red-600 dark:text-red-400">
-                {shippingStats.failed}
-              </p>
-            </div>
-            <div className="p-2 bg-red-50 dark:bg-red-900 rounded-lg">
-              <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 col-span-1">
-          <div className="flex justify-between items-start">
-            <div>
-              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Devueltos</h3>
-              <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">
-                {shippingStats.returned}
-              </p>
-            </div>
-            <div className="p-2 bg-orange-50 dark:bg-orange-900 rounded-lg">
-              <MapPin className="h-5 w-5 text-orange-600 dark:text-orange-400" />
-            </div>
-          </div>
-        </div>
-        
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 col-span-1">
-          <div className="flex justify-between items-start">
-            <div>
-              <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Coste Envíos</h3>
-              <p className="text-2xl font-bold text-primary-600 dark:text-primary-400">
-                {formatCurrency(shippingStats.totalShippingCost)}
-              </p>
-            </div>
-            <div className="p-2 bg-primary-50 dark:bg-primary-900 rounded-lg">
-              <BarChart2 className="h-5 w-5 text-primary-600 dark:text-primary-400" />
-            </div>
-          </div>
-        </div>
-      </div>
+			{/* Estadísticas resumidas */}
+			<div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-7 gap-4">
+				<SellerStatCardList items={statsData} />
+			</div>
 
-      {/* Tabla de Envíos */}
-      <Table
-        data={filteredShippingItems}
-        columns={columns}
-        searchFields={["orderNumber", "trackingNumber", "customer.name", "shippingAddress"]}
-        loading={loading}
-        emptyMessage="No se encontraron envíos"
-        pagination={{
-          currentPage: pagination.currentPage,
-          totalPages: pagination.totalPages,
-          totalItems: pagination.totalItems,
-          itemsPerPage: pagination.itemsPerPage,
-          onPageChange: handlePageChange,
-        }}
-      />
-    </div>
-  );
+			{/* Tabla de Envíos */}
+			<Table
+				data={filteredShippingItems}
+				columns={columns}
+				searchFields={[
+					"orderNumber",
+					"trackingNumber",
+					"customer.name",
+					"shippingAddress",
+				]}
+				loading={loading}
+				emptyMessage="No se encontraron envíos"
+				pagination={{
+					currentPage: pagination.currentPage,
+					totalPages: pagination.totalPages,
+					totalItems: pagination.totalItems,
+					itemsPerPage: pagination.itemsPerPage,
+					onPageChange: handlePageChange,
+				}}
+			/>
+		</div>
+	);
 };
 
 export default SellerShippingPage;

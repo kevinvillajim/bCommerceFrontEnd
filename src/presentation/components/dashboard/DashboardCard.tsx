@@ -43,9 +43,9 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
           </div>
         )}
         {text && (
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+          <span className="text-sm text-gray-500 dark:text-gray-400 mt-2">
             {text}
-          </p>
+          </span>
         )}
       </div>
       <div className={`p-3 rounded-lg ${iconBgColor}`}>
