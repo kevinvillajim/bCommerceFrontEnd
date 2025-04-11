@@ -10,135 +10,91 @@ import {
 	Eye,
 	EyeOff,
 } from "lucide-react";
+import useSellerProducts from "../../hooks/useSellerProducts";
+import useCategories from "../../hooks/useCategories";
+import {formatCurrency} from "../../../utils/formatters/formatCurrency";
 
-// Example product type
-interface Product {
+// Adaptador para productos en la tabla
+interface ProductTableItem {
 	id: number;
 	name: string;
 	price: number;
 	stock: number;
 	category: string;
+	categoryId: number;
 	status: "active" | "inactive" | "draft";
 	createdAt: string;
 }
 
 const SellerProductsPage: React.FC = () => {
-	const [products, setProducts] = useState<Product[]>([]);
-	const [loading, setLoading] = useState(true);
+	// Estado y hooks
+	const {
+		products,
+		loading,
+		error,
+		fetchSellerProducts,
+		deleteProduct,
+		toggleProductStatus,
+	} = useSellerProducts();
+
+	const {categories, fetchCategories} = useCategories();
 	const [searchTerm, setSearchTerm] = useState("");
 	const [statusFilter, setStatusFilter] = useState<string>("all");
+	const [adaptedProducts, setAdaptedProducts] = useState<ProductTableItem[]>(
+		[]
+	);
 
-	// Fetch products data - replace with actual API call
+	// Cargar categorías al iniciar
 	useEffect(() => {
-		// Simulate API call
-		const fetchProducts = () => {
-			setLoading(true);
+		fetchCategories();
+	}, [fetchCategories]);
 
-			// Mock data
-			const mockProducts: Product[] = [
-				{
-					id: 1,
-					name: "Wireless Earbuds",
-					price: 59.99,
-					stock: 32,
-					category: "Electronics",
-					status: "active",
-					createdAt: "2023-10-15",
-				},
-				{
-					id: 2,
-					name: "Smartphone Case",
-					price: 19.99,
-					stock: 65,
-					category: "Accessories",
-					status: "active",
-					createdAt: "2023-10-12",
-				},
-				{
-					id: 3,
-					name: "Bluetooth Speaker",
-					price: 49.99,
-					stock: 18,
-					category: "Electronics",
-					status: "active",
-					createdAt: "2023-10-05",
-				},
-				{
-					id: 4,
-					name: "Gaming Mouse",
-					price: 29.99,
-					stock: 42,
-					category: "Computers",
-					status: "active",
-					createdAt: "2023-09-28",
-				},
-				{
-					id: 5,
-					name: "Desk Lamp",
-					price: 24.99,
-					stock: 27,
-					category: "Home",
-					status: "inactive",
-					createdAt: "2023-09-20",
-				},
-				{
-					id: 6,
-					name: "USB-C Cable",
-					price: 9.99,
-					stock: 120,
-					category: "Accessories",
-					status: "active",
-					createdAt: "2023-09-15",
-				},
-				{
-					id: 7,
-					name: "Mechanical Keyboard",
-					price: 89.99,
-					stock: 15,
-					category: "Computers",
-					status: "active",
-					createdAt: "2023-09-10",
-				},
-				{
-					id: 8,
-					name: "Smart Watch",
-					price: 129.99,
-					stock: 8,
-					category: "Electronics",
-					status: "active",
-					createdAt: "2023-09-05",
-				},
-				{
-					id: 9,
-					name: "External Hard Drive",
-					price: 79.99,
-					stock: 0,
-					category: "Computers",
-					status: "inactive",
-					createdAt: "2023-08-28",
-				},
-				{
-					id: 10,
-					name: "Wireless Charger",
-					price: 34.99,
-					stock: 22,
-					category: "Electronics",
-					status: "draft",
-					createdAt: "2023-08-20",
-				},
-			];
+	// Adaptar productos de la API al formato de la tabla
+	useEffect(() => {
+		if (products && products.length > 0) {
+			// Crear un mapa de IDs de categoría a nombres para búsqueda rápida
+			const categoryMap = new Map();
+			categories.forEach((category) => {
+				if (category.id) {
+					categoryMap.set(category.id, category.name);
+				}
+			});
 
-			setTimeout(() => {
-				setProducts(mockProducts);
-				setLoading(false);
-			}, 500); // Simulate network delay
-		};
+			const tableProducts = products.map((product) => {
+				// Obtener categoría del mapa o mostrar el ID si no se encuentra
+				const categoryId = product.categoryId || product.category_id || 0;
+				const categoryName =
+					categoryMap.get(categoryId) || `Categoría ${categoryId}`;
 
-		fetchProducts();
-	}, []);
+				return {
+					id: product.id || 0,
+					name: product.name,
+					price:
+						typeof product.price === "number"
+							? product.price
+							: parseFloat(String(product.price)) || 0,
+					stock:
+						typeof product.stock === "number"
+							? product.stock
+							: parseInt(String(product.stock)) || 0,
+					categoryId: categoryId,
+					category: categoryName,
+					status:
+						(product.status as "active" | "inactive" | "draft") || "inactive",
+					createdAt:
+						product.created_at ||
+						product.createdAt ||
+						new Date().toISOString().split("T")[0],
+				};
+			});
+			setAdaptedProducts(tableProducts);
+		} else {
+			setAdaptedProducts([]);
+		}
+	}, [products, categories]);
 
-	// Filter products based on search term and status filter
-	const filteredProducts = products.filter((product) => {
+	// Filtrar productos basados en búsqueda y estado
+	const filteredProducts = adaptedProducts.filter((product) => {
 		const matchesSearch =
 			product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
 			product.category.toLowerCase().includes(searchTerm.toLowerCase());
@@ -149,33 +105,28 @@ const SellerProductsPage: React.FC = () => {
 		return matchesSearch && matchesStatus;
 	});
 
-	// Format price
-	const formatPrice = (price: number) => {
-		return new Intl.NumberFormat("en-US", {
-			style: "currency",
-			currency: "USD",
-		}).format(price);
-	};
-
-	// Handle product deletion
-	const handleDelete = (id: number) => {
-		if (window.confirm("Are you sure you want to delete this product?")) {
-			// In a real app, you would make an API call here
-			setProducts(products.filter((product) => product.id !== id));
+	// Manejar eliminación de producto
+	const handleDelete = async (id: number) => {
+		if (window.confirm("¿Estás seguro de que deseas eliminar este producto?")) {
+			const success = await deleteProduct(id);
+			if (!success) {
+				// Manejar error de eliminación
+				alert("No se pudo eliminar el producto. Inténtalo de nuevo más tarde.");
+			}
 		}
 	};
 
-	// Toggle product status
-	const toggleStatus = (id: number) => {
-		setProducts(
-			products.map((product) => {
-				if (product.id === id) {
-					const newStatus = product.status === "active" ? "inactive" : "active";
-					return {...product, status: newStatus};
-				}
-				return product;
-			})
-		);
+	// Cambiar estado del producto (activar/desactivar)
+	const handleToggleStatus = async (
+		id: number,
+		currentStatus: "active" | "inactive" | "draft"
+	) => {
+		const success = await toggleProductStatus(id, currentStatus);
+		if (!success) {
+			alert(
+				"No se pudo cambiar el estado del producto. Inténtalo de nuevo más tarde."
+			);
+		}
 	};
 
 	return (
@@ -200,7 +151,7 @@ const SellerProductsPage: React.FC = () => {
 					<div className="relative flex-grow">
 						<input
 							type="text"
-							placeholder="Search products..."
+							placeholder="Buscar productos..."
 							className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
 							value={searchTerm}
 							onChange={(e) => setSearchTerm(e.target.value)}
@@ -231,6 +182,20 @@ const SellerProductsPage: React.FC = () => {
 					<div className="p-8 flex justify-center">
 						<div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
 					</div>
+				) : error ? (
+					<div className="p-8 text-center">
+						<Package className="h-12 w-12 mx-auto text-gray-400 dark:text-gray-600 mb-4" />
+						<h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+							Error al cargar productos
+						</h3>
+						<p className="text-gray-500 dark:text-gray-400 mb-4">{error}</p>
+						<button
+							onClick={() => fetchSellerProducts()}
+							className="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+						>
+							Intentar de nuevo
+						</button>
+					</div>
 				) : filteredProducts.length === 0 ? (
 					<div className="p-8 text-center">
 						<Package className="h-12 w-12 mx-auto text-gray-400 dark:text-gray-600 mb-4" />
@@ -238,9 +203,9 @@ const SellerProductsPage: React.FC = () => {
 							No se encontraron productos
 						</h3>
 						<p className="text-gray-500 dark:text-gray-400 mb-4">
-							{searchTerm
-								? "Try adjusting your search or filter to find what you're looking for."
-								: "Get started by adding your first product."}
+							{searchTerm || statusFilter !== "all"
+								? "Intenta ajustar tu búsqueda o filtro para encontrar lo que buscas."
+								: "Comienza agregando tu primer producto."}
 						</p>
 						<Link
 							to="/seller/products/create"
@@ -322,12 +287,12 @@ const SellerProductsPage: React.FC = () => {
 										</td>
 										<td className="px-6 py-4 whitespace-nowrap">
 											<div className="text-sm text-gray-900 dark:text-white">
-												{product.category}
+												{product.category || "Sin categoría"}
 											</div>
 										</td>
 										<td className="px-6 py-4 whitespace-nowrap">
 											<div className="text-sm text-gray-900 dark:text-white">
-												{formatPrice(product.price)}
+												{formatCurrency(product.price)}
 											</div>
 										</td>
 										<td className="px-6 py-4 whitespace-nowrap">
@@ -358,7 +323,9 @@ const SellerProductsPage: React.FC = () => {
 										<td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
 											<div className="flex justify-end space-x-2">
 												<button
-													onClick={() => toggleStatus(product.id)}
+													onClick={() =>
+														handleToggleStatus(product.id, product.status)
+													}
 													className={`p-1 rounded-md ${
 														product.status === "active"
 															? "text-yellow-600 hover:bg-yellow-100 dark:text-yellow-400 dark:hover:bg-yellow-900"

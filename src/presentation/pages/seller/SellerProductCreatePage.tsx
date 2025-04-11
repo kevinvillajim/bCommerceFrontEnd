@@ -1,10 +1,15 @@
 import React, {useState} from "react";
 import {useNavigate} from "react-router-dom";
 import {Save, X, Upload, Plus, Trash2} from "lucide-react";
+import useSellerProducts from "../../hooks/useSellerProducts";
+import useCategoriesSelect from "../../hooks/useCategoriesSelect";
 
 const SellerProductCreatePage: React.FC = () => {
 	const navigate = useNavigate();
-	const [loading, setLoading] = useState(false);
+	const [saving, setSaving] = useState(false);
+	const {createProduct} = useSellerProducts();
+	const {categoryOptions, loading: loadingCategories} = useCategoriesSelect();
+
 	const [formData, setFormData] = useState({
 		name: "",
 		description: "",
@@ -93,23 +98,52 @@ const SellerProductCreatePage: React.FC = () => {
 	// Submit form
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
-		setLoading(true);
+		setSaving(true);
 
 		try {
-			// In a real app, you would submit this to your API
-			// using FormData to include files
-			console.log("Submitting product data:", formData);
+			// Validar formulario
+			if (
+				!formData.name ||
+				!formData.description ||
+				!formData.price ||
+				!formData.stock ||
+				!formData.category
+			) {
+				throw new Error("Por favor, completa todos los campos obligatorios");
+			}
 
-			// Simulate API call
-			await new Promise((resolve) => setTimeout(resolve, 1000));
+			// Preparar datos para enviar a la API
+			const productData = {
+				name: formData.name,
+				description: formData.description,
+				price: parseFloat(formData.price),
+				stock: parseInt(formData.stock),
+				// Usar el nombre que espera la API (category_id)
+				category_id: parseInt(formData.category),
+				// También incluimos categoryId para compatibilidad con ambos formatos
+				categoryId: parseInt(formData.category),
+				status: formData.status,
+				tags: formData.tags,
+				images: formData.images,
+			};
 
-			// Success! Navigate back to products list
-			navigate("/seller/products");
+			// Log para depuración
+			console.log("Enviando datos de producto:", productData);
+
+			// Crear producto
+			const result = await createProduct(productData);
+
+			if (result) {
+				// Redirigir a la lista de productos
+				navigate("/seller/products");
+			} else {
+				throw new Error("No se pudo crear el producto");
+			}
 		} catch (error) {
-			console.error("Error creating product:", error);
-			// Handle error (show error message, etc.)
+			console.error("Error al crear producto:", error);
+			alert(error instanceof Error ? error.message : "Error al crear producto");
 		} finally {
-			setLoading(false);
+			setSaving(false);
 		}
 	};
 
@@ -130,13 +164,13 @@ const SellerProductCreatePage: React.FC = () => {
 					<button
 						type="button"
 						onClick={handleSubmit}
-						disabled={loading}
+						disabled={saving}
 						className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
 					>
-						{loading ? (
+						{saving ? (
 							<>
 								<span className="inline-block animate-spin mr-1">⟳</span>{" "}
-								Saving...
+								Guardando...
 							</>
 						) : (
 							<>
@@ -181,22 +215,27 @@ const SellerProductCreatePage: React.FC = () => {
 							>
 								Categoría <span className="text-red-500">*</span>
 							</label>
-							<select
-								id="category"
-								name="category"
-								required
-								value={formData.category}
-								onChange={handleInputChange}
-								className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-							>
-								<option value="">Seleccionar Categoría</option>
-								<option value="Electronics">Electrónica</option>
-								<option value="Computers">Ordenadores</option>
-								<option value="Accessories">Accesorios</option>
-								<option value="Home">Hogar</option>
-								<option value="Fashion">Moda</option>
-								<option value="Beauty">Belleza</option>
-							</select>
+							{loadingCategories ? (
+								<div className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500">
+									Cargando categorías...
+								</div>
+							) : (
+								<select
+									id="category"
+									name="category"
+									required
+									value={formData.category}
+									onChange={handleInputChange}
+									className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+								>
+									<option value="">Seleccionar Categoría</option>
+									{categoryOptions.map((option) => (
+										<option key={option.value} value={option.value}>
+											{option.label}
+										</option>
+									))}
+								</select>
+							)}
 						</div>
 
 						{/* Description */}
@@ -397,10 +436,10 @@ const SellerProductCreatePage: React.FC = () => {
 				<div className="flex justify-end">
 					<button
 						type="submit"
-						disabled={loading}
+						disabled={saving}
 						className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
 					>
-						{loading ? "Guardando..." : "Guardar Producto"}
+						{saving ? "Guardando..." : "Guardar Producto"}
 					</button>
 				</div>
 			</form>
