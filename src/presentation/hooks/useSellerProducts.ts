@@ -33,9 +33,12 @@ export const useSellerProducts = () => {
 			setLoading(true);
 			setError(null);
 
-			try {
-				// Usamos el ID del vendedor desde la información del rol
-				const sellerId = roleInfo?.sellerInfo?.id;
+            try {
+                // Modo depuración para verificar información del vendedor
+                console.log("Usuario actual:", user);
+                
+                // Usamos el ID del vendedor desde la información del rol
+				const sellerId = user?.id;
 				if (!sellerId) {
 					throw new Error("No se pudo obtener el ID del vendedor");
 				}
