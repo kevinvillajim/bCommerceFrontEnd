@@ -8,13 +8,20 @@ const SellerProductCreatePage: React.FC = () => {
 	const navigate = useNavigate();
 	const [saving, setSaving] = useState(false);
 	const {createProduct} = useSellerProducts();
-	const {categoryOptions, loading: loadingCategories} = useCategoriesSelect();
+	const {
+		parentCategoryOptions,
+		subcategoryOptions,
+		selectedParentId,
+		setSelectedParentId,
+		loading: loadingCategories,
+	} = useCategoriesSelect();
 
 	const [formData, setFormData] = useState({
 		name: "",
 		description: "",
 		price: "",
 		stock: "",
+		parentCategory: "",
 		category: "",
 		status: "active",
 		images: [] as File[],
@@ -31,6 +38,13 @@ const SellerProductCreatePage: React.FC = () => {
 	) => {
 		const {name, value} = e.target;
 		setFormData((prev) => ({...prev, [name]: value}));
+
+		// Si cambia la categoría padre, actualizar el estado para el filtrado de subcategorías
+		if (name === "parentCategory" && value) {
+			setSelectedParentId(parseInt(value));
+			// Resetear la selección de subcategoría
+			setFormData((prev) => ({...prev, category: ""}));
+		}
 	};
 
 	// Handle image upload
@@ -207,13 +221,13 @@ const SellerProductCreatePage: React.FC = () => {
 							/>
 						</div>
 
-						{/* Category */}
+						{/* Parent Category */}
 						<div>
 							<label
-								htmlFor="category"
+								htmlFor="parentCategory"
 								className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
 							>
-								Categoría <span className="text-red-500">*</span>
+								Categoría Principal <span className="text-red-500">*</span>
 							</label>
 							{loadingCategories ? (
 								<div className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500">
@@ -221,21 +235,59 @@ const SellerProductCreatePage: React.FC = () => {
 								</div>
 							) : (
 								<select
-									id="category"
-									name="category"
+									id="parentCategory"
+									name="parentCategory"
 									required
-									value={formData.category}
+									value={formData.parentCategory}
 									onChange={handleInputChange}
 									className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
 								>
-									<option value="">Seleccionar Categoría</option>
-									{categoryOptions.map((option) => (
+									<option value="">Seleccionar Categoría Principal</option>
+									{parentCategoryOptions.map((option) => (
 										<option key={option.value} value={option.value}>
 											{option.label}
 										</option>
 									))}
 								</select>
 							)}
+						</div>
+
+						{/* Subcategory */}
+						<div className={formData.parentCategory ? "" : "opacity-50"}>
+							<label
+								htmlFor="category"
+								className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+							>
+								Subcategoría <span className="text-red-500">*</span>
+							</label>
+							<select
+								id="category"
+								name="category"
+								required
+								value={formData.category}
+								onChange={handleInputChange}
+								disabled={!formData.parentCategory}
+								className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white disabled:bg-gray-100 disabled:cursor-not-allowed dark:disabled:bg-gray-700"
+							>
+								<option value="">
+									{formData.parentCategory
+										? subcategoryOptions.length > 0
+											? "Seleccionar Subcategoría"
+											: "No hay subcategorías disponibles"
+										: "Primero selecciona una categoría principal"}
+								</option>
+								{subcategoryOptions.map((option) => (
+									<option key={option.value} value={option.value}>
+										{option.label}
+									</option>
+								))}
+								{/* Opción para usar la categoría principal si no hay subcategorías */}
+								{formData.parentCategory && subcategoryOptions.length === 0 && (
+									<option value={formData.parentCategory}>
+										Usar categoría principal
+									</option>
+								)}
+							</select>
 						</div>
 
 						{/* Description */}

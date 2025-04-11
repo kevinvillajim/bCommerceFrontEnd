@@ -62,7 +62,7 @@ const SellerProductsPage: React.FC = () => {
 
 			const tableProducts = products.map((product) => {
 				// Obtener categoría del mapa o mostrar el ID si no se encuentra
-				const categoryId = product.categoryId || product.category_id || 0;
+				const categoryId = product.category_id || 0;
 				const categoryName =
 					categoryMap.get(categoryId) || `Categoría ${categoryId}`;
 
@@ -83,7 +83,6 @@ const SellerProductsPage: React.FC = () => {
 						(product.status as "active" | "inactive" | "draft") || "inactive",
 					createdAt:
 						product.created_at ||
-						product.createdAt ||
 						new Date().toISOString().split("T")[0],
 				};
 			});

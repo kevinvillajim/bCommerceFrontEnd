@@ -2,72 +2,93 @@ import type {Category} from "./Category";
 import type {Seller} from "./Seller";
 
 /**
- * Product entity
+ * Product entity based on API documentation
  */
 export interface Product {
 	id?: number;
-	userId?: number;
-	user_id?: number; // Compatibilidad con snake_case
-	categoryId?: number;
-	category_id?: number; // Compatibilidad con snake_case
+	user_id?: number;
+	category_id?: number;
 	name: string;
 	slug: string;
 	description: string;
+	short_description?: string;
+	rating?: number;
+	rating_count?: number;
 	price: number;
 	stock: number;
-	weight?: number;
-	width?: number;
-	height?: number;
-	depth?: number;
-	dimensions?: string;
+	weight?: number | null;
+	width?: number | null;
+	height?: number | null;
+	depth?: number | null;
+	dimensions?: string | null;
 	colors?: string[];
 	sizes?: string[];
 	tags?: string[];
 	sku?: string;
 	attributes?: Record<string, any>;
-	images?: string[];
+	images?: {
+		original: string;
+		thumbnail: string;
+		medium: string;
+		large: string;
+	}[];
 	featured: boolean;
 	published: boolean;
 	status: string;
-	viewCount?: number;
-	view_count?: number; // Compatibilidad con snake_case
-	salesCount?: number;
-	sales_count?: number; // Compatibilidad con snake_case
-	discountPercentage?: number;
-	discount_percentage?: number; // Compatibilidad con snake_case
-	finalPrice?: number;
-	final_price?: number; // Compatibilidad con snake_case
-	isInStock?: boolean;
-	is_in_stock?: boolean; // Compatibilidad con snake_case
-	rating?: number;
-	rating_count?: number; // Compatibilidad con snake_case
-	createdAt?: string;
-	created_at?: string; // Compatibilidad con snake_case
-	updatedAt?: string;
-	updated_at?: string; // Compatibilidad con snake_case
+	view_count?: number;
+	sales_count?: number;
+	discount_percentage?: number;
+	created_at?: string;
+	updated_at?: string;
+
+	// Campos calculados (solo en respuestas)
+	final_price?: number;
+	main_image?: string;
+	is_in_stock?: boolean;
+
+	// Campo para relación con categoría, puede venir al obtener producto por ID/slug
+	category?: Category;
 }
 
 /**
  * Product with related data
  */
-export interface ProductDetail
-	extends Omit<Product, "categoryId" | "category_id"> {
-	category: Category;
-	seller: Seller;
-	reviewCount?: number;
-	review_count?: number; // Compatibilidad con snake_case
+export interface ProductDetail extends Product {
+	seller?: Seller;
+	related_products?: Product[];
 }
 
 /**
- * Product list response
+ * Product list response según la documentación
  */
 export interface ProductListResponse {
 	data: Product[];
 	meta: {
 		total: number;
+		count: number;
 		limit: number;
 		offset: number;
+		page?: number;
+		pages?: number;
+		term?: string;
+		filters?: {
+			category_id?: number;
+			price_min?: number;
+			published?: boolean;
+			status?: string;
+			min_discount?: number;
+			seller_id?: number;
+			featured?: boolean;
+			sortBy?: string;
+			sortDir?: string;
+		};
+		category?: Category;
+		includeSubcategories?: boolean;
+		categoryIds?: number[];
+		tags?: string[];
+		min_discount?: number;
 	};
+	related_products?: Product[]; // Para respuesta de producto por slug
 }
 
 /**
@@ -75,22 +96,27 @@ export interface ProductListResponse {
  */
 export interface ProductCreationData {
 	name: string;
-	categoryId: number;
+	slug?: string;
+	category_id: number;
 	description: string;
+	short_description?: string;
 	price: number;
 	stock: number;
 	weight?: number;
+	width?: number;
+	height?: number;
+	depth?: number;
 	dimensions?: string;
-	colors?: string[];
-	sizes?: string[];
-	tags?: string[];
+	colors?: string[] | string;
+	sizes?: string[] | string;
+	tags?: string[] | string;
 	sku?: string;
 	attributes?: Record<string, any>;
 	images?: File[];
 	featured?: boolean;
 	published?: boolean;
 	status?: string;
-	discountPercentage?: number;
+	discount_percentage?: number;
 }
 
 /**
@@ -98,27 +124,29 @@ export interface ProductCreationData {
  */
 export interface ProductUpdateData extends Partial<ProductCreationData> {
 	id: number;
+	replace_images?: boolean;
+	remove_images?: number[];
 }
 
 /**
- * Product filter params
+ * Product filter params según la documentación
  */
 export interface ProductFilterParams {
+	limit?: number;
+	offset?: number;
+	page?: number;
 	term?: string;
 	categoryId?: number;
 	categoryIds?: number[];
 	minPrice?: number;
 	maxPrice?: number;
 	rating?: number;
-	featured?: boolean;
-	sellerId?: number;
-	status?: string;
-	tags?: string[];
-	colors?: string[];
-	sizes?: string[];
+	minDiscount?: number;
+	colors?: string[] | string;
+	sizes?: string[] | string;
+	tags?: string[] | string;
 	inStock?: boolean;
-	limit?: number;
-	offset?: number;
-	sortBy?: string;
+	isNew?: boolean;
+	sortBy?: "price" | "created_at" | "rating" | "sales_count";
 	sortDir?: "asc" | "desc";
 }
