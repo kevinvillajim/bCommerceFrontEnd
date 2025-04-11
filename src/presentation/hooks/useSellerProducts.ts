@@ -17,7 +17,7 @@ const productService = new ProductService();
  * Hook personalizado para gestionar los productos del vendedor
  */
 export const useSellerProducts = () => {
-	const {user} = useAuth();
+	const {user, roleInfo} = useAuth(); // Asegúrate de importar roleInfo del contexto de autenticación
 	const [loading, setLoading] = useState<boolean>(false);
 	const [error, setError] = useState<string | null>(null);
 	const [products, setProducts] = useState<Product[]>([]);
@@ -34,31 +34,30 @@ export const useSellerProducts = () => {
 			setError(null);
 
 			try {
-				// Usamos el endpoint de productos por vendedor, usando el ID del usuario actual
-				const userId = user?.id;
-				if (!userId) {
+				// Usamos el ID del vendedor desde la información del rol
+				const sellerId = roleInfo?.sellerInfo?.id;
+				if (!sellerId) {
 					throw new Error("No se pudo obtener el ID del vendedor");
 				}
 
-				// Usamos el endpoint específico de vendedor con filtrado
+				// Crear parámetros de filtro para productos del vendedor
 				const filterParams: ProductFilterParams = {
 					limit,
 					offset: (page - 1) * limit,
 					page,
-					categoryId: undefined, // No filtramos por categoría
+					sellerId: sellerId,
 					sortBy: "created_at",
 					sortDir: "desc",
+					// Añadir propiedades adicionales para satisfacer el tipo
+					featured: undefined,
+					status: undefined,
 				};
 
 				const response = await productService.getProducts(filterParams);
 
 				// Adaptar los productos a la estructura esperada
 				if (response) {
-					if (Array.isArray(response)) {
-						// Si es un array directo
-						setProducts(response);
-						setTotalProducts(response.length);
-					} else if (Array.isArray(response.data)) {
+					if (Array.isArray(response.data)) {
 						// Si tiene una propiedad data que es un array
 						setProducts(response.data);
 						setTotalProducts(response.meta?.total || response.data.length);
@@ -77,11 +76,13 @@ export const useSellerProducts = () => {
 						: "Error al obtener productos del vendedor";
 				setError(errorMessage);
 				console.error("Error al obtener productos del vendedor:", err);
+				setProducts([]);
+				setTotalProducts(0);
 			} finally {
 				setLoading(false);
 			}
 		},
-		[user]
+		[roleInfo] // Depender de roleInfo
 	);
 
 	/**

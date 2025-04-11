@@ -149,4 +149,7 @@ export interface ProductFilterParams {
 	isNew?: boolean;
 	sortBy?: "price" | "created_at" | "rating" | "sales_count";
 	sortDir?: "asc" | "desc";
+	sellerId?: number;
+	featured?: boolean;
+	status?: "active" | "inactive" | "draft";
 }

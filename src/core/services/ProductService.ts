@@ -22,6 +22,31 @@ export class ProductService implements IProductService {
 	): Promise<ProductListResponse> {
 		try {
 			console.log("Obteniendo productos con parámetros:", filterParams);
+// Si hay un sellerId, usar el endpoint específico de productos por vendedor
+			if (filterParams?.sellerId) {
+				const response = await ApiClient.get<any>(
+					API_ENDPOINTS.PRODUCTS.BY_SELLER(filterParams.sellerId),
+					{
+						limit: filterParams.limit,
+						offset: filterParams.offset,
+						page: filterParams.page
+					}
+				);
+
+				console.log("Respuesta de productos por vendedor:", response);
+
+				return {
+					data: response.data || [],
+					meta: response.meta || {
+						total: 0,
+						count: 0,
+						limit: filterParams?.limit || 10,
+						offset: filterParams?.offset || 0,
+						page: filterParams?.page || 1,
+						pages: 0
+					}
+				};
+			}
 
 			// Adaptamos los nombres de los parámetros para la API
 			const apiParams: Record<string, any> = {};
@@ -126,7 +151,17 @@ export class ProductService implements IProductService {
 
 			return {
 				data: productData,
-				meta: metaData,
+				meta: {
+					total: metaData.total,
+					count: productData.length,
+					limit: filterParams?.limit || 10,
+					offset: filterParams?.offset || 0,
+					page: filterParams?.page || 1,
+					pages:
+						metaData.total > 0
+							? Math.ceil(metaData.total / (filterParams?.limit || 10))
+							: 0,
+				},
 			};
 		} catch (error) {
 			console.error("Error al obtener productos:", error);
@@ -137,6 +172,7 @@ export class ProductService implements IProductService {
 					total: 0,
 					limit: filterParams?.limit || 10,
 					offset: filterParams?.offset || 0,
+					count: 0,
 				},
 			};
 		}
@@ -220,12 +256,12 @@ export class ProductService implements IProductService {
 			});
 
 			// Adaptamos los nombres si es necesario - transform camelCase to snake_case
-			if (data.categoryId !== undefined) {
-				formData.append("category_id", String(data.categoryId));
+			if (data.category_id !== undefined) {
+				formData.append("category_id", String(data.category_id));
 			}
 
-			if (data.discountPercentage !== undefined) {
-				formData.append("discount_percentage", String(data.discountPercentage));
+			if (data.discount_percentage !== undefined) {
+				formData.append("discount_percentage", String(data.discount_percentage));
 			}
 
 			// Agregamos los archivos de imágenes
