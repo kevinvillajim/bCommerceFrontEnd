@@ -127,49 +127,22 @@ const SellerProductEditPage: React.FC = () => {
 					throw new Error("No se pudo obtener la información del producto");
 				}
 
-				// Encontrar la categoría padre
-				const parentCategory = product.category_id
-					? parentCategoryOptions.find((cat) => {
-							// Si la categoría actual es una subcategoría, buscar su padre
-							const subcat = subcategoryOptions.find(
-								(sub) => sub.value === product.category_id
-							);
-							return subcat
-								? cat.value === subcat.parentId
-								: cat.value === product.category_id;
-						})
-					: null;
+				// Encontrar la categoría principal
+				const parentCategory = parentCategoryOptions.find(
+					(cat) => cat.value === product.category?.parent_id
+				);
 
-				// Establecer la categoría padre si se encontró
+				const subcategory = subcategoryOptions.find(
+					(sub) => sub.value === product.category_id
+				);
+
 				if (parentCategory) {
 					setSelectedParentId(parentCategory.value);
 				}
 
-				// Adaptar imágenes existentes
-				const existingImages =
-					product.images && Array.isArray(product.images)
-						? product.images
-								.map((img) => {
-									if (typeof img === "string") {
-										// Si es una string, crear un objeto compatible
-										return {
-											original: img,
-											thumbnail: img,
-											medium: img,
-											large: img,
-										};
-									} else if (typeof img === "object" && img !== null) {
-										// Si ya es un objeto, mantener su estructura
-										return img;
-									}
-									return null;
-								})
-								.filter(Boolean)
-						: [];
-
 				// Configurar el estado inicial con los datos del producto
-				setFormData({
-					...formData,
+				setFormData((prev) => ({
+					...prev,
 					name: product.name || "",
 					description: product.description || "",
 					short_description: product.short_description || "",
@@ -187,22 +160,28 @@ const SellerProductEditPage: React.FC = () => {
 					featured: !!product.featured,
 					published: !!product.published,
 					parentCategory: parentCategory ? parentCategory.value.toString() : "",
-					category: product.category_id ? product.category_id.toString() : "",
-					tags: Array.isArray(product.tags) ? [...product.tags] : [],
-					colors: Array.isArray(product.colors) ? [...product.colors] : [],
-					sizes: Array.isArray(product.sizes) ? [...product.sizes] : [],
-					attributes: [] as Array<{key: string; value: string}>,
-					existingImages: [] as {
-						id?: number;
-						original: string;
-						thumbnail: string;
-						medium: string;
-						large: string;
-					}[],
+					category: subcategory
+						? subcategory.value.toString()
+						: product.category_id?.toString() || "",
+					tags: product.tags || [],
+					colors: product.colors || [],
+					sizes: product.sizes || [],
+					attributes: product.attributes || [],
+					existingImages:
+						product.images?.map((img) =>
+							typeof img === "string"
+								? {original: img, thumbnail: img, medium: img, large: img}
+								: img
+						) || [],
 					images: [],
-					previewImages: [],
+					previewImages:
+						product.images?.map((img) =>
+							typeof img === "string"
+								? img
+								: img.original || img.medium || img.thumbnail
+						) || [],
 					imagesToRemove: [],
-				});
+				}));
 			} catch (error) {
 				console.error("Error al cargar los datos del producto:", error);
 				alert("No se pudo cargar el producto. Inténtalo de nuevo más tarde.");
@@ -666,288 +645,7 @@ const SellerProductEditPage: React.FC = () => {
 
 			{/* Formulario de edición */}
 			<form onSubmit={handleSubmit} className="space-y-6">
-				{/* Información Básica */}
-				<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-					<SectionHeader
-						title="Categorización"
-						section="categorization"
-						icon={Tag}
-					/>
-
-					{expandedSections.categorization && (
-						<div className="mt-4 space-y-6">
-							<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-								{/* Categoría Principal */}
-								<div>
-									<label
-										htmlFor="parentCategory"
-										className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-									>
-										Categoría Principal <span className="text-red-500">*</span>
-									</label>
-									{loadingCategories ? (
-										<div className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500">
-											Cargando categorías...
-										</div>
-									) : (
-										<select
-											id="parentCategory"
-											name="parentCategory"
-											value={formData.parentCategory}
-											onChange={handleInputChange}
-											className={`w-full px-3 py-2 border ${
-												validationErrors.parentCategory
-													? "border-red-500"
-													: "border-gray-300 dark:border-gray-600"
-											} rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white`}
-										>
-											<option value="">Seleccionar Categoría Principal</option>
-											{parentCategoryOptions.map((option) => (
-												<option key={option.value} value={option.value}>
-													{option.label}
-												</option>
-											))}
-										</select>
-									)}
-									{validationErrors.parentCategory && (
-										<p className="mt-1 text-sm text-red-500">
-											{validationErrors.parentCategory}
-										</p>
-									)}
-								</div>
-
-								{/* Subcategoría */}
-								<div className={formData.parentCategory ? "" : "opacity-50"}>
-									<label
-										htmlFor="category"
-										className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-									>
-										Subcategoría <span className="text-red-500">*</span>
-									</label>
-									<select
-										id="category"
-										name="category"
-										value={formData.category}
-										onChange={handleInputChange}
-										disabled={!formData.parentCategory}
-										className={`w-full px-3 py-2 border ${
-											validationErrors.category
-												? "border-red-500"
-												: "border-gray-300 dark:border-gray-600"
-										} rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white disabled:bg-gray-100 disabled:cursor-not-allowed dark:disabled:bg-gray-700`}
-									>
-										<option value="">
-											{formData.parentCategory
-												? subcategoryOptions.length > 0
-													? "Seleccionar Subcategoría"
-													: "No hay subcategorías disponibles"
-												: "Primero selecciona una categoría principal"}
-										</option>
-										{subcategoryOptions.map((option) => (
-											<option key={option.value} value={option.value}>
-												{option.label}
-											</option>
-										))}
-										{/* Opción para usar la categoría principal si no hay subcategorías */}
-										{formData.parentCategory &&
-											subcategoryOptions.length === 0 && (
-												<option value={formData.parentCategory}>
-													Usar categoría principal
-												</option>
-											)}
-									</select>
-									{validationErrors.category && (
-										<p className="mt-1 text-sm text-red-500">
-											{validationErrors.category}
-										</p>
-									)}
-								</div>
-							</div>
-
-							{/* Etiquetas (Tags) */}
-							<div>
-								<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-									Etiquetas (Tags)
-								</label>
-								<div className="flex">
-									<input
-										type="text"
-										placeholder="Añade una etiqueta y presiona Enter"
-										value={formData.currentTag}
-										onChange={(e) =>
-											setFormData((prev) => ({
-												...prev,
-												currentTag: e.target.value,
-											}))
-										}
-										onKeyDown={handleTagKeyDown}
-										className="flex-grow px-3 py-2 border border-gray-300 rounded-l-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-									/>
-									<button
-										type="button"
-										onClick={addTag}
-										className="px-4 py-2 bg-primary-600 text-white rounded-r-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-									>
-										<Plus size={18} />
-									</button>
-								</div>
-								<div className="flex flex-wrap gap-2 mt-2">
-									{formData.tags.map((tag) => (
-										<div
-											key={tag}
-											className="bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 px-2 py-1 rounded-md flex items-center"
-										>
-											<span>{tag}</span>
-											<button
-												type="button"
-												onClick={() => removeTag(tag)}
-												className="ml-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-											>
-												<X size={14} />
-											</button>
-										</div>
-									))}
-									{formData.tags.length === 0 && (
-										<p className="text-sm text-gray-500 dark:text-gray-400">
-											Aún no se han añadido etiquetas
-										</p>
-									)}
-								</div>
-							</div>
-						</div>
-					)}
-				</div>
-
-				{/* Características Físicas */}
-				<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-					<SectionHeader
-						title="Características Físicas"
-						section="physical"
-						icon={PackageOpen}
-					/>
-
-					{expandedSections.physical && (
-						<div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-							{/* Peso */}
-							<div>
-								<label
-									htmlFor="weight"
-									className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-								>
-									Peso (kg)
-								</label>
-								<input
-									type="number"
-									id="weight"
-									name="weight"
-									min="0"
-									step="0.001"
-									value={formData.weight}
-									onChange={handleInputChange}
-									className={`w-full px-3 py-2 border ${
-										validationErrors.weight
-											? "border-red-500"
-											: "border-gray-300 dark:border-gray-600"
-									} rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white`}
-								/>
-								{validationErrors.weight && (
-									<p className="mt-1 text-sm text-red-500">
-										{validationErrors.weight}
-									</p>
-								)}
-							</div>
-
-							{/* Ancho */}
-							<div>
-								<label
-									htmlFor="width"
-									className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-								>
-									Ancho (cm)
-								</label>
-								<input
-									type="number"
-									id="width"
-									name="width"
-									min="0"
-									step="0.1"
-									value={formData.width}
-									onChange={handleInputChange}
-									className={`w-full px-3 py-2 border ${
-										validationErrors.width
-											? "border-red-500"
-											: "border-gray-300 dark:border-gray-600"
-									} rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white`}
-								/>
-								{validationErrors.width && (
-									<p className="mt-1 text-sm text-red-500">
-										{validationErrors.width}
-									</p>
-								)}
-							</div>
-
-							{/* Alto */}
-							<div>
-								<label
-									htmlFor="height"
-									className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-								>
-									Alto (cm)
-								</label>
-								<input
-									type="number"
-									id="height"
-									name="height"
-									min="0"
-									step="0.1"
-									value={formData.height}
-									onChange={handleInputChange}
-									className={`w-full px-3 py-2 border ${
-										validationErrors.height
-											? "border-red-500"
-											: "border-gray-300 dark:border-gray-600"
-									} rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white`}
-								/>
-								{validationErrors.height && (
-									<p className="mt-1 text-sm text-red-500">
-										{validationErrors.height}
-									</p>
-								)}
-							</div>
-
-							{/* Profundidad */}
-							<div>
-								<label
-									htmlFor="depth"
-									className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-								>
-									Profundidad (cm)
-								</label>
-								<input
-									type="number"
-									id="depth"
-									name="depth"
-									min="0"
-									step="0.1"
-									value={formData.depth}
-									onChange={handleInputChange}
-									className={`w-full px-3 py-2 border ${
-										validationErrors.depth
-											? "border-red-500"
-											: "border-gray-300 dark:border-gray-600"
-									} rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white`}
-								/>
-								{validationErrors.depth && (
-									<p className="mt-1 text-sm text-red-500">
-										{validationErrors.depth}
-									</p>
-								)}
-							</div>
-						</div>
-					)}
-				</div>
-
-				{/* Variaciones */}
+				{/* Información básica */}
 				<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
 					<SectionHeader
 						title="Información Básica"
