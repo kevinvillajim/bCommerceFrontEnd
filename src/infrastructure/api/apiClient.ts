@@ -211,6 +211,42 @@ export class ApiClient {
 			throw error;
 		}
 	}
+	
+	/**
+	 * Actualiza archivo(s) con multipart/form-data
+	 * @param url - URL del endpoint de la API
+	 * @param formData - FormData con archivo(s) y otros datos
+	 * @param config - Configuración adicional de axios
+	 */
+	public static async updateFile<T>(
+		url: string,
+		formData: FormData,
+		config?: AxiosRequestConfig
+	): Promise<T> {
+		try {
+			console.log("ApiClient: Actualizando archivo en:", url);
+
+			const response: AxiosResponse = await axiosInstance.put(url, formData, {
+				headers: {
+					"Content-Type": "multipart/form-data",
+				},
+				...config,
+			});
+
+			console.log(
+				"ApiClient: Respuesta de actualización de archivo a",
+				url,
+				":",
+				response.status
+			);
+
+			// Validar y transformar la respuesta
+			return this.handleApiResponse<T>(response);
+		} catch (error) {
+			this.handleApiError(error, url, "UPDATE");
+			throw error;
+		}
+	}
 
 	/**
 	 * Transforma parámetros de camelCase a snake_case

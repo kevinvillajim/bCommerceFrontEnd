@@ -33,6 +33,7 @@ const SellerProductEditPage: React.FC = () => {
 	const {
 		parentCategoryOptions,
 		subcategoryOptions,
+		selectedParentId,
 		setSelectedParentId,
 		loading: loadingCategories,
 	} = useCategoriesSelect();
@@ -154,17 +155,28 @@ const SellerProductEditPage: React.FC = () => {
 				// 	}
 				// }
 
-				const parentCategoryId =
-					product.category?.parent_id || product.category_id;
-				const categoryId = product.category_id;
-
-				console.log("⭐ Valores de categoría:", {parentCategoryId, categoryId});
-
-				// Actualizar selectedParentId para filtrar subcategorías
-				if (parentCategoryId) {
-					console.log("⭐ Estableciendo selectedParentId a:", parentCategoryId);
-					setSelectedParentId(parentCategoryId);
+				let parentCategoryId = product.category?.parent_id;
+				let categoryId = product.category_id;
+      
+				// Si la categoría no tiene padre, entonces es una categoría principal
+				if (!parentCategoryId) {
+					parentCategoryId = categoryId;
 				}
+      
+				console.log("⭐ Valores de categoría actualizados:", {
+					parentCategoryId,
+					categoryId,
+					categoryIdType: typeof categoryId,
+					parentCategoryIdType: typeof parentCategoryId
+				});
+				
+				// Importante: Actualizar selectedParentId antes de establecer formData
+				setSelectedParentId(Number(parentCategoryId));
+      
+				// Pequeña pausa para permitir que selectedParentId se actualice
+				await new Promise(resolve => setTimeout(resolve, 10));
+
+				
 
 				//////////////////////////////////////////////////////////
 
@@ -204,35 +216,41 @@ const SellerProductEditPage: React.FC = () => {
 				};
 
 				// Configurar el estado inicial con los datos del producto
-				setFormData((prev) => ({
-					...prev,
-					name: product.name || "",
-					description: product.description || "",
-					short_description: product.short_description || "",
-					price: product.price ? product.price.toString() : "",
-					stock: product.stock ? product.stock.toString() : "",
-					discount_percentage: product.discount_percentage
-						? product.discount_percentage.toString()
-						: "",
-					weight: product.weight ? product.weight.toString() : "",
-					width: product.width ? product.width.toString() : "",
-					height: product.height ? product.height.toString() : "",
-					depth: product.depth ? product.depth.toString() : "",
-					dimensions: product.dimensions || "",
-					status: product.status || "active",
-					featured: !!product.featured,
-					published: !!product.published,
-					parentCategory: parentCategoryId ? String(parentCategoryId) : "",
-					category: categoryId ? String(categoryId) : "",
-					// Procesar arrays que podrían venir en formato incorrecto
-					tags: processArray(product.tags || []),
-					colors: processArray(product.colors || []),
-					sizes: processArray(product.sizes || []),
-					// Parsear los atributos correctamente
-					attributes: Array.isArray(product.attributes)
-						? product.attributes
-						: typeof product.attributes === "string" && product.attributes
-							? (() => {
+				setFormData(prev => {
+					console.log("Actualizando formData con valores:", {
+						parentCategory: String(parentCategoryId),
+						category: String(categoryId)
+					});
+        
+					return {
+						...prev,
+						name: product.name || "",
+						description: product.description || "",
+						short_description: product.short_description || "",
+						price: product.price ? product.price.toString() : "",
+						stock: product.stock ? product.stock.toString() : "",
+						discount_percentage: product.discount_percentage
+							? product.discount_percentage.toString()
+							: "",
+						weight: product.weight ? product.weight.toString() : "",
+						width: product.width ? product.width.toString() : "",
+						height: product.height ? product.height.toString() : "",
+						depth: product.depth ? product.depth.toString() : "",
+						dimensions: product.dimensions || "",
+						status: product.status || "active",
+						featured: !!product.featured,
+						published: !!product.published,
+						parentCategory: parentCategoryId ? String(parentCategoryId) : "",
+						category: categoryId ? String(categoryId) : "",
+						// Procesar arrays que podrían venir en formato incorrecto
+						tags: processArray(product.tags || []),
+						colors: processArray(product.colors || []),
+						sizes: processArray(product.sizes || []),
+						// Parsear los atributos correctamente
+						attributes: Array.isArray(product.attributes)
+							? product.attributes
+							: typeof product.attributes === "string" && product.attributes
+								? (() => {
 									try {
 										return JSON.parse(product.attributes);
 									} catch (e) {
@@ -240,9 +258,9 @@ const SellerProductEditPage: React.FC = () => {
 										return [];
 									}
 								})()
-							: [],
-					existingImages: Array.isArray(product.images)
-						? product.images.map((img) => {
+								: [],
+						existingImages: Array.isArray(product.images)
+							? product.images.map((img) => {
 								if (typeof img === "string") {
 									return {
 										original: img,
@@ -254,10 +272,10 @@ const SellerProductEditPage: React.FC = () => {
 									return img;
 								}
 							})
-						: [],
-					images: [],
-					previewImages: Array.isArray(product.images)
-						? product.images.map((img) => {
+							: [],
+						images: [],
+						previewImages: Array.isArray(product.images)
+							? product.images.map((img) => {
 								const baseUrl = appConfig.imageBaseUrl; // URL base para imágenes
 								let imagePath;
 
@@ -274,18 +292,11 @@ const SellerProductEditPage: React.FC = () => {
 								}
 								return imagePath;
 							})
-						: [],
-					imagesToRemove: [],
-				}));
-
-				console.log("⭐ Valores establecidos en formData:", {
-					parentCategory: formData.parentCategory,
-					category: formData.category,
-					dataTypes: {
-						parentCategoryType: typeof formData.parentCategory,
-						categoryType: typeof formData.category,
-					},
+							: [],
+						imagesToRemove: [],
+					}
 				});
+
 			} catch (error) {
 				console.error("Error al cargar los datos del producto:", error);
 				alert("No se pudo cargar el producto. Inténtalo de nuevo más tarde.");
@@ -297,6 +308,21 @@ const SellerProductEditPage: React.FC = () => {
 
 		loadProductData();
 	}, [productId, navigate, fetchProductById]);
+
+	useEffect(() => {
+		// Solo ejecutar si tenemos la categoría ya cargada y selectedParentId cambia
+		if (!isLoading && formData.category) {
+			console.log("selectedParentId cambió a:", selectedParentId);
+
+			// Actualiza el formData con el nuevo selectedParentId como categoría padre
+			if (selectedParentId) {
+				setFormData((prev) => ({
+					...prev,
+					parentCategory: String(selectedParentId),
+				}));
+			}
+		}
+	}, [selectedParentId, isLoading]);
 
 	// Toggle para expandir/colapsar secciones
 	const toggleSection = (section: keyof typeof expandedSections) => {
@@ -980,18 +1006,17 @@ const SellerProductEditPage: React.FC = () => {
 											} rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white`}
 										>
 											<option value="">Seleccionar Categoría Principal</option>
-											{parentCategoryOptions.map((option) => {
-												// Puedes hacer el console.log aquí fuera del JSX
-												console.log(
-													`Opción: ${option.label}, Value: ${option.value}, Selected: ${formData.parentCategory === String(option.value)}`
-												);
-
-												return (
-													<option key={option.value} value={option.value}>
-														{option.label}
-													</option>
-												);
-											})}
+											{parentCategoryOptions.map((option) => (
+												<option
+													key={option.value}
+													value={option.value}
+													selected={
+														String(option.value) === formData.parentCategory
+													}
+												>
+													{option.label}
+												</option>
+											))}
 										</select>
 									)}
 									{validationErrors.parentCategory && (

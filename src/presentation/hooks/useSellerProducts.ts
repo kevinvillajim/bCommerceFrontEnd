@@ -366,9 +366,9 @@ export const useSellerProducts = () => {
 				}
 
 				// Realizar la petición directamente usando ApiClient
-				const response = await ApiClient.uploadFile(
+				const response = await ApiClient.updateFile(
 					API_ENDPOINTS.PRODUCTS.UPDATE(data.id),
-					formData
+					formData,
 				);
 
 				// Verificar la respuesta y extraer el producto actualizado
