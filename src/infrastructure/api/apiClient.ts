@@ -226,7 +226,9 @@ export class ApiClient {
 		try {
 			console.log("ApiClient: Actualizando archivo en:", url);
 
-			const response: AxiosResponse = await axiosInstance.put(url, formData, {
+			formData.append("_method", "PUT");
+
+			const response: AxiosResponse = await axiosInstance.post(url, formData, {
 				headers: {
 					"Content-Type": "multipart/form-data",
 				},

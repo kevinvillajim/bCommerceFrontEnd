@@ -131,30 +131,6 @@ const SellerProductEditPage: React.FC = () => {
 				console.log("Category ID:", product.category_id);
 				console.log("Category:", product.category);
 
-				// Encontrar la categoría principal y categoría
-				// let parentCategoryId = null;
-				// let categoryId = product.category_id;
-
-				// // Obtener información detallada de la categoría
-				// if (product.category) {
-				// 	// Si la categoría tiene parent_id, entonces es una subcategoría
-				// 	if (product.category.parent_id) {
-				// 		parentCategoryId = product.category.parent_id;
-				// 	} else {
-				// 		// La categoría principal es la misma categoría del producto
-				// 		parentCategoryId = product.category_id;
-				// 	}
-				// } else if (product.category_id) {
-				// 	// Si no hay información de categoría pero hay ID, intentamos encontrarla
-				// 	// entre las categorías principales
-				// 	const categoryOption = parentCategoryOptions.find(
-				// 		(option) => option.value === product.category_id
-				// 	);
-				// 	if (categoryOption) {
-				// 		parentCategoryId = product.category_id;
-				// 	}
-				// }
-
 				let parentCategoryId = product.category?.parent_id;
 				let categoryId = product.category_id;
       
@@ -175,8 +151,6 @@ const SellerProductEditPage: React.FC = () => {
       
 				// Pequeña pausa para permitir que selectedParentId se actualice
 				await new Promise(resolve => setTimeout(resolve, 10));
-
-				
 
 				//////////////////////////////////////////////////////////
 
@@ -332,35 +306,48 @@ const SellerProductEditPage: React.FC = () => {
 		}));
 	};
 
-	// Handle input changes para campos simples
+	// Agregar console.log en handleInputChange para verificar actualizaciones
 	const handleInputChange = (
 		e: React.ChangeEvent<
 			HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
 		>
 	) => {
-		const {name, value, type} = e.target;
+		const { name, value, type } = e.target;
 
 		// Manejar checkboxes
 		if (type === "checkbox") {
 			const checked = (e.target as HTMLInputElement).checked;
-			setFormData((prev) => ({...prev, [name]: checked}));
+			setFormData((prev) => {
+				const updatedFormData = { ...prev, [name]: checked };
+				console.log("handleInputChange - Checkbox actualizado:", updatedFormData);
+				return updatedFormData;
+			});
 			return;
 		}
 
-		setFormData((prev) => ({...prev, [name]: value}));
+		setFormData((prev) => {
+			const updatedFormData = { ...prev, [name]: value };
+			console.log("handleInputChange - Input actualizado:", updatedFormData);
+			return updatedFormData;
+		});
 
 		// Si cambia la categoría padre, actualizar el estado para el filtrado de subcategorías
 		if (name === "parentCategory" && value) {
 			setSelectedParentId(parseInt(value));
 			// Resetear la selección de subcategoría
-			setFormData((prev) => ({...prev, category: ""}));
+			setFormData((prev) => {
+				const updatedFormData = { ...prev, category: "" };
+				console.log("handleInputChange - parentCategory cambiado, subcategoría reseteada:", updatedFormData);
+				return updatedFormData;
+			});
 		}
 
 		// Limpiar errores de validación al cambiar un campo
 		if (validationErrors[name]) {
 			setValidationErrors((prev) => {
-				const newErrors = {...prev};
+				const newErrors = { ...prev };
 				delete newErrors[name];
+				console.log("handleInputChange - Error de validación eliminado para:", name);
 				return newErrors;
 			});
 		}
@@ -607,17 +594,16 @@ const SellerProductEditPage: React.FC = () => {
 		return Object.keys(errors).length === 0;
 	};
 
-	// Submit form
+	// Asegurar que los datos enviados al backend estén completos y en el formato correcto
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 
 		// Validar formulario
 		if (!validateForm()) {
-			// Mostrar mensaje de error y detener la presentación
 			const firstErrorField = Object.keys(validationErrors)[0];
 			const errorElement = document.getElementById(firstErrorField);
 			if (errorElement) {
-				errorElement.scrollIntoView({behavior: "smooth", block: "center"});
+				errorElement.scrollIntoView({ behavior: "smooth", block: "center" });
 				errorElement.focus();
 			}
 			return;
@@ -636,10 +622,7 @@ const SellerProductEditPage: React.FC = () => {
 				stock: parseInt(formData.stock),
 				category_id: parseInt(formData.category),
 				status: formData.status,
-				tags: formData.tags.length > 0 ? formData.tags : undefined,
-				images: formData.images.length > 0 ? formData.images : undefined,
-
-				// Campos opcionales adicionales
+				tags: formData.tags,
 				discount_percentage: formData.discount_percentage
 					? parseFloat(formData.discount_percentage)
 					: undefined,
@@ -647,32 +630,21 @@ const SellerProductEditPage: React.FC = () => {
 				width: formData.width ? parseFloat(formData.width) : undefined,
 				height: formData.height ? parseFloat(formData.height) : undefined,
 				depth: formData.depth ? parseFloat(formData.depth) : undefined,
-				dimensions: formData.dimensions || undefined,
-				colors: formData.colors.length > 0 ? formData.colors : undefined,
-				sizes: formData.sizes.length > 0 ? formData.sizes : undefined,
-				attributes:
-					formData.attributes.length > 0 ? formData.attributes : undefined,
+				colors: formData.colors,
+				sizes: formData.sizes,
 				featured: formData.featured,
 				published: formData.published,
-
-				// Indicar imágenes a eliminar
-				remove_images:
-					formData.imagesToRemove.length > 0
-						? formData.imagesToRemove
-						: undefined,
-
-				// No reemplazar todas las imágenes, solo añadir las nuevas
-				replace_images: false,
+				replace_images: false, // Asegurar que este campo esté presente
 			};
 
 			// Log para depuración
-			console.log("Enviando datos de actualización del producto:", productData);
+			console.log("Datos enviados al backend:", productData);
 
 			// Actualizar producto
 			const result = await updateProduct(productData);
 
 			if (result) {
-				// Redirigir a la lista de productos
+				console.log("Respuesta del servidor después de la actualización:", result);
 				navigate("/seller/products");
 			} else {
 				throw new Error("No se pudo actualizar el producto");
@@ -687,7 +659,6 @@ const SellerProductEditPage: React.FC = () => {
 		}
 	};
 
-	// Componente para los encabezados de sección
 	const SectionHeader = ({
 		title,
 		section,
