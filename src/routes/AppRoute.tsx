@@ -2,63 +2,125 @@ import {lazy} from "react";
 import type {RouteObject} from "react-router";
 
 // Layouts
-const MainLayout = lazy(() => import('../presentation/layouts/MainLayout'));
-const DashboardLayout = lazy(() => import('../presentation/layouts/DashboardLayout'));
-const SellerLayout = lazy(() => import('../presentation/layouts/SellerLayout'));
-const AdminLayout = lazy(() => import('../presentation/layouts/AdminLayout'));
+const MainLayout = lazy(() => import("../presentation/layouts/MainLayout"));
+const DashboardLayout = lazy(
+	() => import("../presentation/layouts/DashboardLayout")
+);
+const SellerLayout = lazy(() => import("../presentation/layouts/SellerLayout"));
+const AdminLayout = lazy(() => import("../presentation/layouts/AdminLayout"));
 
 //Public Pages
-const HomePage = lazy(() => import('../presentation/pages/HomePage'));
-const ProductItemPage = lazy(() => import('../presentation/pages/ProductItemPage'));
-const ProductPage = lazy(() => import('../presentation/pages/ProductPage'));
-const LoginPage = lazy(() => import('../presentation/pages/LoginPage'));
-const RegisterPage = lazy(() => import('../presentation/pages/RegisterPage'));
-const NotFoundPage = lazy(() => import('../presentation/pages/NotFoundPage'));
-const CategoryPage = lazy(() => import('../presentation/pages/CategoryPage'));
-const ContactPage = lazy(() => import('../presentation/pages/ContactPage'));
-const FAQPage = lazy(() => import('../presentation/pages/FAQPage'));
-const ForgotPasswordPage = lazy(() => import('@/presentation/pages/ForgotPasswordPage'));
-const ResetPasswordPage = lazy(() => import('@/presentation/pages/ResetPasswordPage'));
+const HomePage = lazy(() => import("../presentation/pages/HomePage"));
+const ProductItemPage = lazy(
+	() => import("../presentation/pages/ProductItemPage")
+);
+const ProductPage = lazy(() => import("../presentation/pages/ProductPage"));
+const LoginPage = lazy(() => import("../presentation/pages/LoginPage"));
+const RegisterPage = lazy(() => import("../presentation/pages/RegisterPage"));
+const NotFoundPage = lazy(() => import("../presentation/pages/NotFoundPage"));
+const CategoryPage = lazy(() => import("../presentation/pages/CategoryPage"));
+const ContactPage = lazy(() => import("../presentation/pages/ContactPage"));
+const FAQPage = lazy(() => import("../presentation/pages/FAQPage"));
+const ForgotPasswordPage = lazy(
+	() => import("@/presentation/pages/ForgotPasswordPage")
+);
+const ResetPasswordPage = lazy(
+	() => import("@/presentation/pages/ResetPasswordPage")
+);
 
 // User Pages
-const UserProfilePage = lazy(() => import('../presentation/pages/UserProfilePage'));
-const CartPage = lazy(() => import('../presentation/pages/CartPage'));
-const FavoritePage = lazy(() => import('../presentation/pages/FavoritePage'));
+const UserProfilePage = lazy(
+	() => import("../presentation/pages/UserProfilePage")
+);
+const CartPage = lazy(() => import("../presentation/pages/CartPage"));
+const FavoritePage = lazy(() => import("../presentation/pages/FavoritePage"));
 // const CheckoutPage = lazy(() => import('../presentation/pages/CheckoutPage'));
 // const OrdersPage = lazy(() => import('../presentation/pages/OrdersPage'));
 // const OrderDetailsPage = lazy(() => import('../presentation/pages/OrderDetailsPage'));
 
 // Seller Pages
-const SellerDashboard = lazy(() => import('../presentation/pages/seller/SellerDashboard'));
-const SellerProductsPage = lazy(() => import('../presentation/pages/seller/SellerProductsPage'));
-const SellerProductCreatePage = lazy(() => import('../presentation/pages/seller/SellerProductCreatePage'));
-const SellerProductEditPage = lazy(() => import('../presentation/pages/seller/SellerProductEditPage'));
-const SellerOrdersPage = lazy(() => import('../presentation/pages/seller/SellerOrdersPage'));
-// const SellerOrderDetailsPage = lazy(() => import('../presentation/pages/seller/SellerOrderDetailsPage'));
-const SellerRatingsPage = lazy(() => import('../presentation/pages/seller/SellerRatingsPage'));
-const SellerProfilePage = lazy(() => import('../presentation/pages/seller/SellerProfilePage'));
-const SellerInvoicesPage = lazy(() => import('../presentation/pages/seller/SellerInvoicesPage'));
+const SellerDashboard = lazy(
+	() => import("../presentation/pages/seller/SellerDashboard")
+);
+const SellerProductsPage = lazy(
+	() => import("../presentation/pages/seller/SellerProductsPage")
+);
+const SellerProductCreatePage = lazy(
+	() => import("../presentation/pages/seller/SellerProductCreatePage")
+);
+const SellerProductEditPage = lazy(
+	() => import("../presentation/pages/seller/SellerProductEditPage")
+);
+const SellerOrdersPage = lazy(
+	() => import("../presentation/pages/seller/SellerOrdersPage")
+);
+const OrderDetailPage = lazy(
+	() => import("../presentation/pages/seller/OrderDetailPage")
+);
+const SellerRatingsPage = lazy(
+	() => import("../presentation/pages/seller/SellerRatingsPage")
+);
+const SellerProfilePage = lazy(
+	() => import("../presentation/pages/seller/SellerProfilePage")
+);
+const SellerInvoicesPage = lazy(
+	() => import("../presentation/pages/seller/SellerInvoicesPage")
+);
 // const SellerInvoiceDetailsPage = lazy(() => import('../presentation/pages/seller/SellerInvoiceDetailsPage'));
-const SellerMessagesPage = lazy(() => import('../presentation/pages/seller/SellerMessagesPage'));
+const SellerMessagesPage = lazy(
+	() => import("../presentation/pages/seller/SellerMessagesPage")
+);
 // const SellerSettingsPage = lazy(() => import('../presentation/pages/seller/SellerSettingsPage'));
-const SellerEarningsPage = lazy(() => import('../presentation/pages/seller/SellerEarningsPage'));
-const SellerShippingPage = lazy(() => import('../presentation/pages/seller/SellerShippingPage'));
+const SellerEarningsPage = lazy(
+	() => import("../presentation/pages/seller/SellerEarningsPage")
+);
+const SellerShippingPage = lazy(
+	() => import("../presentation/pages/seller/SellerShippingPage")
+);
 
 //Admin Pages
-const AdminDashboard = lazy(() => import('../presentation/pages/admin/AdminDashboard'));
-const AdminUsersPage = lazy(() => import('../presentation/pages/admin/AdminUsersPage'));
-const AdminSellersPage = lazy(() => import('../presentation/pages/admin/AdminSellersPage'));
-const AdminProductsPage = lazy(() => import('../presentation/pages/admin/AdminProductsPage'));
-const AdminCategoriesPage = lazy(() => import('../presentation/pages/admin/AdminCategoriesPage'));
-const AdminOrdersPage = lazy(() => import('../presentation/pages/admin/AdminOrdersPage'));
-const AdminRatingsPage = lazy(() => import('../presentation/pages/admin/AdminRatingsPage'));
-const AdminFeedbackPage = lazy(() => import('../presentation/pages/admin/AdminFeedbackPage'));
-const AdminInvoicesPage = lazy(() => import('../presentation/pages/admin/AdminInvoicesPage'));
-const AdminAccountingPage = lazy(() => import('../presentation/pages/admin/AdminAccountingPage'));
-const AdminSettingsPage = lazy(() => import('../presentation/pages/admin/AdminSettingsPage'));
-const AdminDiscountsPage = lazy(() => import('../presentation/pages/admin/AdminDiscountsPage'));
-const AdminLogViewerPage = lazy(() => import('../presentation/pages/admin/AdminLogViewerPage'));
-const AdminShippingPage = lazy(() => import('../presentation/pages/admin/AdminShippingPage'));
+const AdminDashboard = lazy(
+	() => import("../presentation/pages/admin/AdminDashboard")
+);
+const AdminUsersPage = lazy(
+	() => import("../presentation/pages/admin/AdminUsersPage")
+);
+const AdminSellersPage = lazy(
+	() => import("../presentation/pages/admin/AdminSellersPage")
+);
+const AdminProductsPage = lazy(
+	() => import("../presentation/pages/admin/AdminProductsPage")
+);
+const AdminCategoriesPage = lazy(
+	() => import("../presentation/pages/admin/AdminCategoriesPage")
+);
+const AdminOrdersPage = lazy(
+	() => import("../presentation/pages/admin/AdminOrdersPage")
+);
+const AdminRatingsPage = lazy(
+	() => import("../presentation/pages/admin/AdminRatingsPage")
+);
+const AdminFeedbackPage = lazy(
+	() => import("../presentation/pages/admin/AdminFeedbackPage")
+);
+const AdminInvoicesPage = lazy(
+	() => import("../presentation/pages/admin/AdminInvoicesPage")
+);
+const AdminAccountingPage = lazy(
+	() => import("../presentation/pages/admin/AdminAccountingPage")
+);
+const AdminSettingsPage = lazy(
+	() => import("../presentation/pages/admin/AdminSettingsPage")
+);
+const AdminDiscountsPage = lazy(
+	() => import("../presentation/pages/admin/AdminDiscountsPage")
+);
+const AdminLogViewerPage = lazy(
+	() => import("../presentation/pages/admin/AdminLogViewerPage")
+);
+const AdminShippingPage = lazy(
+	() => import("../presentation/pages/admin/AdminShippingPage")
+);
 
 //Route Guards
 import PrivateRoute from "./PrivateRoute";
@@ -276,10 +338,18 @@ const appRoutes: RouteObject[] = [
 				path: "orders",
 				element: <SellerOrdersPage />,
 			},
-			// {
-			// 	path: "orders/:id",
-			// 	element: <SellerOrderDetailsPage />,
-			// },
+			{
+				path: "orders/:id",
+				element: <OrderDetailPage />,
+			},
+			{
+				path: "invoices/generate/:orderId",
+				element: <SellerInvoicesPage />,
+			},
+			{
+				path: "shipping/:orderId",
+				element: <SellerShippingPage />,
+			},
 			// Shipping
 			{
 				path: "shipping",
