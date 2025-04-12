@@ -22,31 +22,31 @@ import useSellerProducts from "../../hooks/useSellerProducts";
 import useCategoriesSelect from "../../hooks/useCategoriesSelect";
 
 const SellerProductCreatePage: React.FC = () => {
-  const navigate = useNavigate();
-  const [saving, setSaving] = useState(false);
-  const { createProduct } = useSellerProducts();
-  const {
-    parentCategoryOptions,
-    subcategoryOptions,
-    selectedParentId,
-    setSelectedParentId,
-    loading: loadingCategories,
-  } = useCategoriesSelect();
+	const navigate = useNavigate();
+	const [saving, setSaving] = useState(false);
+	const {createProduct} = useSellerProducts();
+	const {
+		parentCategoryOptions,
+		subcategoryOptions,
+		selectedParentId,
+		setSelectedParentId,
+		loading: loadingCategories,
+	} = useCategoriesSelect();
 
-  // Estados para controlar las secciones expandidas
-  const [expandedSections, setExpandedSections] = useState({
-    basic: true,
-    pricing: true,
-    categorization: true,
-    physical: false,
-    variations: false,
-    media: true,
-    seo: false,
-    advanced: false,
-  });
+	// Estados para controlar las secciones expandidas
+	const [expandedSections, setExpandedSections] = useState({
+		basic: true,
+		pricing: true,
+		categorization: true,
+		physical: false,
+		variations: false,
+		media: true,
+		seo: false,
+		advanced: false,
+	});
 
-  // Estado del formulario con todos los campos posibles
-  const [formData, setFormData] = useState({
+	// Estado del formulario con todos los campos posibles
+	const [formData, setFormData] = useState({
 		// Información básica (requerida)
 		name: "",
 		description: "",
@@ -91,180 +91,184 @@ const SellerProductCreatePage: React.FC = () => {
 		published: true,
 	});
 
-  // Validación de campos requeridos
-  const requiredFields = ["name", "description", "price", "stock", "category"];
-  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+	// Validación de campos requeridos
+	const requiredFields = ["name", "description", "price", "stock", "category"];
+	const [validationErrors, setValidationErrors] = useState<
+		Record<string, string>
+	>({});
 
-  // Toggle para expandir/colapsar secciones
-  const toggleSection = (section: keyof typeof expandedSections) => {
-    setExpandedSections(prev => ({
-      ...prev,
-      [section]: !prev[section]
-    }));
-  };
+	// Toggle para expandir/colapsar secciones
+	const toggleSection = (section: keyof typeof expandedSections) => {
+		setExpandedSections((prev) => ({
+			...prev,
+			[section]: !prev[section],
+		}));
+	};
 
-  // Handle input changes para campos simples
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-  ) => {
-    const { name, value, type } = e.target;
-    
-    // Manejar checkboxes
-    if (type === 'checkbox') {
-      const checked = (e.target as HTMLInputElement).checked;
-      setFormData(prev => ({ ...prev, [name]: checked }));
-      return;
-    }
-    
-    setFormData(prev => ({ ...prev, [name]: value }));
+	// Handle input changes para campos simples
+	const handleInputChange = (
+		e: React.ChangeEvent<
+			HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+		>
+	) => {
+		const {name, value, type} = e.target;
 
-    // Si cambia la categoría padre, actualizar el estado para el filtrado de subcategorías
-    if (name === "parentCategory" && value) {
-      setSelectedParentId(parseInt(value));
-      // Resetear la selección de subcategoría
-      setFormData(prev => ({ ...prev, category: "" }));
-    }
-    
-    // Limpiar errores de validación al cambiar un campo
-    if (validationErrors[name]) {
-      setValidationErrors(prev => {
-        const newErrors = { ...prev };
-        delete newErrors[name];
-        return newErrors;
-      });
-    }
-  };
+		// Manejar checkboxes
+		if (type === "checkbox") {
+			const checked = (e.target as HTMLInputElement).checked;
+			setFormData((prev) => ({...prev, [name]: checked}));
+			return;
+		}
 
-  // Handle checkbox changes
-  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, checked } = e.target;
-    setFormData(prev => ({ ...prev, [name]: checked }));
-  };
+		setFormData((prev) => ({...prev, [name]: value}));
 
-  // Handle image upload
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const newImages = Array.from(e.target.files);
-      const newPreviews = newImages.map(file => URL.createObjectURL(file));
+		// Si cambia la categoría padre, actualizar el estado para el filtrado de subcategorías
+		if (name === "parentCategory" && value) {
+			setSelectedParentId(parseInt(value));
+			// Resetear la selección de subcategoría
+			setFormData((prev) => ({...prev, category: ""}));
+		}
 
-      setFormData(prev => ({
-        ...prev,
-        images: [...prev.images, ...newImages],
-        previewImages: [...prev.previewImages, ...newPreviews]
-      }));
-    }
-  };
+		// Limpiar errores de validación al cambiar un campo
+		if (validationErrors[name]) {
+			setValidationErrors((prev) => {
+				const newErrors = {...prev};
+				delete newErrors[name];
+				return newErrors;
+			});
+		}
+	};
 
-  // Remove image
-  const removeImage = (index: number) => {
-    const newImages = [...formData.images];
-    const newPreviews = [...formData.previewImages];
+	// Handle checkbox changes
+	const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const {name, checked} = e.target;
+		setFormData((prev) => ({...prev, [name]: checked}));
+	};
 
-    // Revoke object URL to prevent memory leaks
-    URL.revokeObjectURL(newPreviews[index]);
+	// Handle image upload
+	const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+		if (e.target.files && e.target.files.length > 0) {
+			const newImages = Array.from(e.target.files);
+			const newPreviews = newImages.map((file) => URL.createObjectURL(file));
 
-    newImages.splice(index, 1);
-    newPreviews.splice(index, 1);
+			setFormData((prev) => ({
+				...prev,
+				images: [...prev.images, ...newImages],
+				previewImages: [...prev.previewImages, ...newPreviews],
+			}));
+		}
+	};
 
-    setFormData(prev => ({
-      ...prev,
-      images: newImages,
-      previewImages: newPreviews
-    }));
-  };
+	// Remove image
+	const removeImage = (index: number) => {
+		const newImages = [...formData.images];
+		const newPreviews = [...formData.previewImages];
 
-  // Add tag
-  const addTag = () => {
-    if (
-      formData.currentTag.trim() &&
-      !formData.tags.includes(formData.currentTag.trim())
-    ) {
-      setFormData(prev => ({
-        ...prev,
-        tags: [...prev.tags, prev.currentTag.trim()],
-        currentTag: ""
-      }));
-    }
-  };
+		// Revoke object URL to prevent memory leaks
+		URL.revokeObjectURL(newPreviews[index]);
 
-  // Remove tag
-  const removeTag = (tag: string) => {
-    setFormData(prev => ({
-      ...prev,
-      tags: prev.tags.filter(t => t !== tag)
-    }));
-  };
+		newImages.splice(index, 1);
+		newPreviews.splice(index, 1);
 
-  // Handle tag input keydown
-  const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      addTag();
-    }
-  };
+		setFormData((prev) => ({
+			...prev,
+			images: newImages,
+			previewImages: newPreviews,
+		}));
+	};
 
-  // Add color
-  const addColor = () => {
-    if (
-      formData.currentColor.trim() &&
-      !formData.colors.includes(formData.currentColor.trim())
-    ) {
-      setFormData(prev => ({
-        ...prev,
-        colors: [...prev.colors, prev.currentColor.trim()],
-        currentColor: ""
-      }));
-    }
-  };
+	// Add tag
+	const addTag = () => {
+		if (
+			formData.currentTag.trim() &&
+			!formData.tags.includes(formData.currentTag.trim())
+		) {
+			setFormData((prev) => ({
+				...prev,
+				tags: [...prev.tags, prev.currentTag.trim()],
+				currentTag: "",
+			}));
+		}
+	};
 
-  // Remove color
-  const removeColor = (color: string) => {
-    setFormData(prev => ({
-      ...prev,
-      colors: prev.colors.filter(c => c !== color)
-    }));
-  };
+	// Remove tag
+	const removeTag = (tag: string) => {
+		setFormData((prev) => ({
+			...prev,
+			tags: prev.tags.filter((t) => t !== tag),
+		}));
+	};
 
-  // Handle color input keydown
-  const handleColorKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      addColor();
-    }
-  };
+	// Handle tag input keydown
+	const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+		if (e.key === "Enter") {
+			e.preventDefault();
+			addTag();
+		}
+	};
 
-  // Add size
-  const addSize = () => {
-    if (
-      formData.currentSize.trim() &&
-      !formData.sizes.includes(formData.currentSize.trim())
-    ) {
-      setFormData(prev => ({
-        ...prev,
-        sizes: [...prev.sizes, prev.currentSize.trim()],
-        currentSize: ""
-      }));
-    }
-  };
+	// Add color
+	const addColor = () => {
+		if (
+			formData.currentColor.trim() &&
+			!formData.colors.includes(formData.currentColor.trim())
+		) {
+			setFormData((prev) => ({
+				...prev,
+				colors: [...prev.colors, prev.currentColor.trim()],
+				currentColor: "",
+			}));
+		}
+	};
 
-  // Remove size
-  const removeSize = (size: string) => {
-    setFormData(prev => ({
-      ...prev,
-      sizes: prev.sizes.filter(s => s !== size)
-    }));
-  };
+	// Remove color
+	const removeColor = (color: string) => {
+		setFormData((prev) => ({
+			...prev,
+			colors: prev.colors.filter((c) => c !== color),
+		}));
+	};
 
-  // Handle size input keydown
-  const handleSizeKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      addSize();
-    }
-  };
+	// Handle color input keydown
+	const handleColorKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+		if (e.key === "Enter") {
+			e.preventDefault();
+			addColor();
+		}
+	};
 
-  // Add attribute
-  const addAttribute = () => {
+	// Add size
+	const addSize = () => {
+		if (
+			formData.currentSize.trim() &&
+			!formData.sizes.includes(formData.currentSize.trim())
+		) {
+			setFormData((prev) => ({
+				...prev,
+				sizes: [...prev.sizes, prev.currentSize.trim()],
+				currentSize: "",
+			}));
+		}
+	};
+
+	// Remove size
+	const removeSize = (size: string) => {
+		setFormData((prev) => ({
+			...prev,
+			sizes: prev.sizes.filter((s) => s !== size),
+		}));
+	};
+
+	// Handle size input keydown
+	const handleSizeKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+		if (e.key === "Enter") {
+			e.preventDefault();
+			addSize();
+		}
+	};
+
+	// Add attribute
+	const addAttribute = () => {
 		const key = formData.currentAttributeKey.trim();
 		const value = formData.currentAttributeValue.trim();
 
@@ -278,7 +282,7 @@ const SellerProductCreatePage: React.FC = () => {
 		}
 	};
 
-  // Remove attribute
+	// Remove attribute
 	const removeAttribute = (index: number) => {
 		setFormData((prev) => {
 			const newAttributes = [...prev.attributes];
@@ -289,87 +293,98 @@ const SellerProductCreatePage: React.FC = () => {
 			};
 		});
 	};
-  // Handle attribute input keydown
-  const handleAttributeKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      // Mover el foco al campo de valor
-      const valueInput = document.getElementById("attributeValue");
-      if (valueInput) {
-        valueInput.focus();
-      }
-    }
-  };
+	// Handle attribute input keydown
+	const handleAttributeKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+		if (e.key === "Enter") {
+			e.preventDefault();
+			// Mover el foco al campo de valor
+			const valueInput = document.getElementById("attributeValue");
+			if (valueInput) {
+				valueInput.focus();
+			}
+		}
+	};
 
-  const handleAttributeValueKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      addAttribute();
-    }
-  };
+	const handleAttributeValueKeyDown = (
+		e: React.KeyboardEvent<HTMLInputElement>
+	) => {
+		if (e.key === "Enter") {
+			e.preventDefault();
+			addAttribute();
+		}
+	};
 
-  // Validar el formulario
-  const validateForm = (): boolean => {
-    const errors: Record<string, string> = {};
-    
-    // Validar campos requeridos
-    requiredFields.forEach(field => {
-      if (!formData[field as keyof typeof formData]) {
-        errors[field] = `El campo ${field} es obligatorio`;
-      }
-    });
-    
-    // Validar que el precio sea un número positivo
-    if (formData.price && (isNaN(Number(formData.price)) || Number(formData.price) <= 0)) {
-      errors.price = "El precio debe ser un número mayor que cero";
-    }
-    
-    // Validar que el stock sea un número no negativo
-    if (formData.stock && (isNaN(Number(formData.stock)) || Number(formData.stock) < 0)) {
-      errors.stock = "El stock debe ser un número no negativo";
-    }
-    
-    // Validar que el descuento sea un número entre 0 y 100
-    if (formData.discount_percentage && 
-       (isNaN(Number(formData.discount_percentage)) || 
-        Number(formData.discount_percentage) < 0 || 
-        Number(formData.discount_percentage) > 100)) {
-      errors.discount_percentage = "El descuento debe ser un porcentaje entre 0 y 100";
-    }
-    
-    // Validar dimensiones numéricas si se proporcionan
-    ['weight', 'width', 'height', 'depth'].forEach(field => {
-      const value = formData[field as keyof typeof formData] as string;
-      if (value && isNaN(Number(value))) {
-        errors[field] = `El campo ${field} debe ser un número`;
-      }
-    });
-    
-    setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
+	// Validar el formulario
+	const validateForm = (): boolean => {
+		const errors: Record<string, string> = {};
 
-  // Submit form
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Validar formulario
-    if (!validateForm()) {
-      // Mostrar mensaje de error y detener la presentación
-      const firstErrorField = Object.keys(validationErrors)[0];
-      const errorElement = document.getElementById(firstErrorField);
-      if (errorElement) {
-        errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        errorElement.focus();
-      }
-      return;
-    }
-    
-    setSaving(true);
+		// Validar campos requeridos
+		requiredFields.forEach((field) => {
+			if (!formData[field as keyof typeof formData]) {
+				errors[field] = `El campo ${field} es obligatorio`;
+			}
+		});
 
-    try {
-      // Preparar datos para enviar a la API
-      const productData = {
+		// Validar que el precio sea un número positivo
+		if (
+			formData.price &&
+			(isNaN(Number(formData.price)) || Number(formData.price) <= 0)
+		) {
+			errors.price = "El precio debe ser un número mayor que cero";
+		}
+
+		// Validar que el stock sea un número no negativo
+		if (
+			formData.stock &&
+			(isNaN(Number(formData.stock)) || Number(formData.stock) < 0)
+		) {
+			errors.stock = "El stock debe ser un número no negativo";
+		}
+
+		// Validar que el descuento sea un número entre 0 y 100
+		if (
+			formData.discount_percentage &&
+			(isNaN(Number(formData.discount_percentage)) ||
+				Number(formData.discount_percentage) < 0 ||
+				Number(formData.discount_percentage) > 100)
+		) {
+			errors.discount_percentage =
+				"El descuento debe ser un porcentaje entre 0 y 100";
+		}
+
+		// Validar dimensiones numéricas si se proporcionan
+		["weight", "width", "height", "depth"].forEach((field) => {
+			const value = formData[field as keyof typeof formData] as string;
+			if (value && isNaN(Number(value))) {
+				errors[field] = `El campo ${field} debe ser un número`;
+			}
+		});
+
+		setValidationErrors(errors);
+		return Object.keys(errors).length === 0;
+	};
+
+	// Submit form
+	const handleSubmit = async (e: React.FormEvent) => {
+		e.preventDefault();
+
+		// Validar formulario
+		if (!validateForm()) {
+			// Mostrar mensaje de error y detener la presentación
+			const firstErrorField = Object.keys(validationErrors)[0];
+			const errorElement = document.getElementById(firstErrorField);
+			if (errorElement) {
+				errorElement.scrollIntoView({behavior: "smooth", block: "center"});
+				errorElement.focus();
+			}
+			return;
+		}
+
+		setSaving(true);
+
+		try {
+			// Preparar datos para enviar a la API
+			const productData = {
 				name: formData.name,
 				description: formData.description,
 				short_description: formData.short_description || undefined,
@@ -392,58 +407,61 @@ const SellerProductCreatePage: React.FC = () => {
 				dimensions: formData.dimensions || undefined,
 				colors: formData.colors.length > 0 ? formData.colors : undefined,
 				sizes: formData.sizes.length > 0 ? formData.sizes : undefined,
-				attributes:formData.attributes.length > 0 ? formData.attributes : undefined,
+				attributes:
+					formData.attributes.length > 0 ? formData.attributes : undefined,
 				featured: formData.featured,
 				published: formData.published,
 			};
 
-      // Log para depuración
-      console.log("Enviando datos de producto:", productData);
+			// Log para depuración
+			console.log("Enviando datos de producto:", productData);
 
-      // Crear producto
-      const result = await createProduct(productData);
+			// Crear producto
+			const result = await createProduct(productData);
 
-      if (result) {
-        // Redirigir a la lista de productos
-        navigate("/seller/products");
-      } else {
-        throw new Error("No se pudo crear el producto");
-      }
-    } catch (error) {
-      console.error("Error al crear producto:", error);
-      alert(error instanceof Error ? error.message : "Error al crear producto");
-    } finally {
-      setSaving(false);
-    }
-  };
+			if (result) {
+				// Redirigir a la lista de productos
+				navigate("/seller/products");
+			} else {
+				throw new Error("No se pudo crear el producto");
+			}
+		} catch (error) {
+			console.error("Error al crear producto:", error);
+			alert(error instanceof Error ? error.message : "Error al crear producto");
+		} finally {
+			setSaving(false);
+		}
+	};
 
-  // Componente para los encabezados de sección
-  const SectionHeader = ({ 
-    title, 
-    section, 
-    icon: Icon 
-  }: { 
-    title: string; 
-    section: keyof typeof expandedSections; 
-    icon: React.ElementType 
-  }) => (
-    <div 
-      className="flex items-center justify-between cursor-pointer py-3 border-b border-gray-200 dark:border-gray-700"
-      onClick={() => toggleSection(section)}
-    >
-      <div className="flex items-center">
-        <Icon className="w-5 h-5 text-primary-600 dark:text-primary-400 mr-2" />
-        <h3 className="text-lg font-medium text-gray-900 dark:text-white">{title}</h3>
-      </div>
-      {expandedSections[section] ? (
-        <ChevronUp className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-      ) : (
-        <ChevronDown className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-      )}
-    </div>
-  );
+	// Componente para los encabezados de sección
+	const SectionHeader = ({
+		title,
+		section,
+		icon: Icon,
+	}: {
+		title: string;
+		section: keyof typeof expandedSections;
+		icon: React.ElementType;
+	}) => (
+		<div
+			className="flex items-center justify-between cursor-pointer py-3 border-b border-gray-200 dark:border-gray-700"
+			onClick={() => toggleSection(section)}
+		>
+			<div className="flex items-center">
+				<Icon className="w-5 h-5 text-primary-600 dark:text-primary-400 mr-2" />
+				<h3 className="text-lg font-medium text-gray-900 dark:text-white">
+					{title}
+				</h3>
+			</div>
+			{expandedSections[section] ? (
+				<ChevronUp className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+			) : (
+				<ChevronDown className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+			)}
+		</div>
+	);
 
-  return (
+	return (
 		<div className="space-y-6">
 			<div className="flex justify-between items-center">
 				<h1 className="text-2xl font-bold text-gray-900 dark:text-white">

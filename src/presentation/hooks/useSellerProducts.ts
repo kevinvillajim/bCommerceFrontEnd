@@ -168,7 +168,11 @@ export const useSellerProducts = () => {
 
 				// Añadir atributos si existen
 				if (data.attributes && data.attributes.length > 0) {
-					formData.append("attributes", JSON.stringify(data.attributes));
+					// Enviar cada atributo con la notación de corchetes que Laravel reconoce automáticamente
+					data.attributes.forEach((attr, index) => {
+						formData.append(`attributes[${index}][key]`, attr.key);
+						formData.append(`attributes[${index}][value]`, attr.value);
+					});
 				}
 
 				// Añadir imágenes
@@ -313,8 +317,12 @@ export const useSellerProducts = () => {
 				}
 
 				// Añadir atributos si existen
-				if (data.attributes && Object.keys(data.attributes).length > 0) {
-					formData.append("attributes", JSON.stringify(data.attributes));
+				if (data.attributes && data.attributes.length > 0) {
+					// Enviar cada atributo con la notación de corchetes que Laravel reconoce automáticamente
+					data.attributes.forEach((attr, index) => {
+						formData.append(`attributes[${index}][key]`, attr.key);
+						formData.append(`attributes[${index}][value]`, attr.value);
+					});
 				}
 
 				// Opciones de manejo de imágenes
