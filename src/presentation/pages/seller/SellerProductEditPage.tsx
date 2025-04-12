@@ -131,38 +131,52 @@ const SellerProductEditPage: React.FC = () => {
 				console.log("Category:", product.category);
 
 				// Encontrar la categoría principal y categoría
-				let parentCategoryId = null;
-				let categoryId = product.category_id;
+				// let parentCategoryId = null;
+				// let categoryId = product.category_id;
 
-				// Obtener información detallada de la categoría
-				if (product.category) {
-					// Si la categoría tiene parent_id, entonces es una subcategoría
-					if (product.category.parent_id) {
-						parentCategoryId = product.category.parent_id;
-					} else {
-						// La categoría principal es la misma categoría del producto
-						parentCategoryId = product.category_id;
-					}
-				} else if (product.category_id) {
-					// Si no hay información de categoría pero hay ID, intentamos encontrarla
-					// entre las categorías principales
-					const categoryOption = parentCategoryOptions.find(
-						(option) => option.value === product.category_id
-					);
-					if (categoryOption) {
-						parentCategoryId = product.category_id;
-					}
+				// // Obtener información detallada de la categoría
+				// if (product.category) {
+				// 	// Si la categoría tiene parent_id, entonces es una subcategoría
+				// 	if (product.category.parent_id) {
+				// 		parentCategoryId = product.category.parent_id;
+				// 	} else {
+				// 		// La categoría principal es la misma categoría del producto
+				// 		parentCategoryId = product.category_id;
+				// 	}
+				// } else if (product.category_id) {
+				// 	// Si no hay información de categoría pero hay ID, intentamos encontrarla
+				// 	// entre las categorías principales
+				// 	const categoryOption = parentCategoryOptions.find(
+				// 		(option) => option.value === product.category_id
+				// 	);
+				// 	if (categoryOption) {
+				// 		parentCategoryId = product.category_id;
+				// 	}
+				// }
+
+				const parentCategoryId =
+					product.category?.parent_id || product.category_id;
+				const categoryId = product.category_id;
+
+				console.log("⭐ Valores de categoría:", {parentCategoryId, categoryId});
+
+				// Actualizar selectedParentId para filtrar subcategorías
+				if (parentCategoryId) {
+					console.log("⭐ Estableciendo selectedParentId a:", parentCategoryId);
+					setSelectedParentId(parentCategoryId);
 				}
+
+				//////////////////////////////////////////////////////////
 
 				// Actualizar selectedParentId para filtrar subcategorías
 				if (parentCategoryId) {
 					setSelectedParentId(parentCategoryId);
 				}
 
-				console.log("Información de categoría:", {
-					categoría: product.category,
+				console.log("Estableciendo categorías:", {
 					parentCategoryId,
 					categoryId,
+					subcategoryOptions,
 				});
 
 				// Procesar arrays que vienen como strings (colores, tamaños, etiquetas)
@@ -208,8 +222,8 @@ const SellerProductEditPage: React.FC = () => {
 					status: product.status || "active",
 					featured: !!product.featured,
 					published: !!product.published,
-					parentCategory: parentCategoryId ? parentCategoryId.toString() : "",
-					category: product.category_id ? product.category_id.toString() : "",
+					parentCategory: parentCategoryId ? String(parentCategoryId) : "",
+					category: categoryId ? String(categoryId) : "",
 					// Procesar arrays que podrían venir en formato incorrecto
 					tags: processArray(product.tags || []),
 					colors: processArray(product.colors || []),
@@ -264,10 +278,13 @@ const SellerProductEditPage: React.FC = () => {
 					imagesToRemove: [],
 				}));
 
-				console.log("Formulario inicializado:", {
-					parentCategoryId,
-					categoryId: product.category_id,
-					shortDescription: product.short_description,
+				console.log("⭐ Valores establecidos en formData:", {
+					parentCategory: formData.parentCategory,
+					category: formData.category,
+					dataTypes: {
+						parentCategoryType: typeof formData.parentCategory,
+						categoryType: typeof formData.category,
+					},
 				});
 			} catch (error) {
 				console.error("Error al cargar los datos del producto:", error);
@@ -279,13 +296,7 @@ const SellerProductEditPage: React.FC = () => {
 		};
 
 		loadProductData();
-	}, [
-		productId,
-		navigate,
-		fetchProductById,
-		parentCategoryOptions,
-		setSelectedParentId,
-	]);
+	}, [productId, navigate, fetchProductById]);
 
 	// Toggle para expandir/colapsar secciones
 	const toggleSection = (section: keyof typeof expandedSections) => {
@@ -969,11 +980,18 @@ const SellerProductEditPage: React.FC = () => {
 											} rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white`}
 										>
 											<option value="">Seleccionar Categoría Principal</option>
-											{parentCategoryOptions.map((option) => (
-												<option key={option.value} value={option.value}>
-													{option.label}
-												</option>
-											))}
+											{parentCategoryOptions.map((option) => {
+												// Puedes hacer el console.log aquí fuera del JSX
+												console.log(
+													`Opción: ${option.label}, Value: ${option.value}, Selected: ${formData.parentCategory === String(option.value)}`
+												);
+
+												return (
+													<option key={option.value} value={option.value}>
+														{option.label}
+													</option>
+												);
+											})}
 										</select>
 									)}
 									{validationErrors.parentCategory && (
@@ -1003,28 +1021,30 @@ const SellerProductEditPage: React.FC = () => {
 												: "border-gray-300 dark:border-gray-600"
 										} rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white disabled:bg-gray-100 disabled:cursor-not-allowed dark:disabled:bg-gray-700`}
 									>
-										<option value="">
-											{formData.parentCategory
-												? subcategoryOptions.length > 0
-													? formData.category
-														? ""
-														: "Seleccionar Subcategoría"
-													: "No hay subcategorías disponibles"
-												: "Primero selecciona una categoría principal"}
-										</option>
+										{/* Eliminar la primera opción condicional complicada y usar esto: */}
+										{!formData.category && (
+											<option value="">
+												{!formData.parentCategory
+													? "Primero selecciona una categoría principal"
+													: subcategoryOptions.length > 0
+														? "Seleccionar Subcategoría"
+														: "No hay subcategorías disponibles"}
+											</option>
+										)}
+
+										{/* Opciones de subcategorías */}
 										{subcategoryOptions.map((option) => (
 											<option key={option.value} value={option.value}>
 												{option.label}
 											</option>
 										))}
-										{/* Opción para usar la categoría principal si no hay subcategorías */}
-										{formData.parentCategory &&
-											(subcategoryOptions.length === 0 ||
-												formData.category === formData.parentCategory) && (
-												<option value={formData.parentCategory}>
-													Usar categoría principal
-												</option>
-											)}
+
+										{/* Opción de usar categoría principal */}
+										{formData.parentCategory && (
+											<option value={formData.parentCategory}>
+												Usar categoría principal
+											</option>
+										)}
 									</select>
 									{validationErrors.category && (
 										<p className="mt-1 text-sm text-red-500">
