@@ -126,7 +126,9 @@ const SellerProductEditPage: React.FC = () => {
 					throw new Error("No se pudo obtener la información del producto");
 				}
 
-				console.log("Producto cargado:", product);
+				console.log("Producto recibido:", product);
+				console.log("Category ID:", product.category_id);
+				console.log("Category:", product.category);
 
 				// Encontrar la categoría principal y categoría
 				let parentCategoryId = null;
