@@ -16,7 +16,6 @@ import {
   FileText,
   Image,
   Store,
-  AlertTriangle,
   Loader
 } from "lucide-react";
 import useSellerProducts from "../../hooks/useSellerProducts";
