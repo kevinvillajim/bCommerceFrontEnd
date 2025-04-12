@@ -1,25 +1,26 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import React, {useState, useEffect} from "react";
+import {useNavigate, useParams} from "react-router-dom";
 import {
-  Save,
-  X,
-  Upload,
-  Plus,
-  Trash2,
-  ChevronDown,
-  ChevronUp,
-  Palette,
-  Ruler,
-  Tag,
-  DollarSign,
-  PackageOpen,
-  FileText,
-  Image,
-  Store,
-  Loader
+	Save,
+	X,
+	Upload,
+	Plus,
+	Trash2,
+	ChevronDown,
+	ChevronUp,
+	Palette,
+	Ruler,
+	Tag,
+	DollarSign,
+	PackageOpen,
+	FileText,
+	Image,
+	Store,
+	Loader,
 } from "lucide-react";
 import useSellerProducts from "../../hooks/useSellerProducts";
 import useCategoriesSelect from "../../hooks/useCategoriesSelect";
+import appConfig from "../../../config/appConfig";
 
 const SellerProductEditPage: React.FC = () => {
 	const navigate = useNavigate();
@@ -28,11 +29,10 @@ const SellerProductEditPage: React.FC = () => {
 
 	const [isLoading, setIsLoading] = useState(true);
 	const [saving, setSaving] = useState(false);
-	const {updateProduct, fetchProductById, products} = useSellerProducts();
+	const {updateProduct, fetchProductById} = useSellerProducts();
 	const {
 		parentCategoryOptions,
 		subcategoryOptions,
-		selectedParentId,
 		setSelectedParentId,
 		loading: loadingCategories,
 	} = useCategoriesSelect();
@@ -126,18 +126,66 @@ const SellerProductEditPage: React.FC = () => {
 					throw new Error("No se pudo obtener la información del producto");
 				}
 
-				// Encontrar la categoría principal
-				const parentCategory = parentCategoryOptions.find(
-					(cat) => cat.value === product.category?.parent_id
-				);
+				console.log("Producto cargado:", product);
 
-				const subcategory = subcategoryOptions.find(
-					(sub) => sub.value === product.category_id
-				);
+				// Encontrar la categoría principal y categoría
+				let parentCategoryId = null;
+				let categoryId = product.category_id;
 
-				if (parentCategory) {
-					setSelectedParentId(parentCategory.value);
+				// Obtener información detallada de la categoría
+				if (product.category) {
+					// Si la categoría tiene parent_id, entonces es una subcategoría
+					if (product.category.parent_id) {
+						parentCategoryId = product.category.parent_id;
+					} else {
+						// La categoría principal es la misma categoría del producto
+						parentCategoryId = product.category_id;
+					}
+				} else if (product.category_id) {
+					// Si no hay información de categoría pero hay ID, intentamos encontrarla
+					// entre las categorías principales
+					const categoryOption = parentCategoryOptions.find(
+						(option) => option.value === product.category_id
+					);
+					if (categoryOption) {
+						parentCategoryId = product.category_id;
+					}
 				}
+
+				// Actualizar selectedParentId para filtrar subcategorías
+				if (parentCategoryId) {
+					setSelectedParentId(parentCategoryId);
+				}
+
+				console.log("Información de categoría:", {
+					categoría: product.category,
+					parentCategoryId,
+					categoryId,
+				});
+
+				// Procesar arrays que vienen como strings (colores, tamaños, etiquetas)
+				const processArray = (data: any[]): string[] => {
+					if (!Array.isArray(data) || data.length === 0) return [];
+
+					// Para el formato específico que viene en la respuesta:
+					// Cuando los arrays vienen fragmentados como ['[\"rojo\"', '\"negro\"', '\"blanco\"]']
+					if (
+						data.some((item) => typeof item === "string" && item.includes('"'))
+					) {
+						const combinedString = data.join("");
+						const matches = combinedString.match(/\"([^\"]+)\"/g) || [];
+						return matches.map((m) => m.replace(/"/g, ""));
+					}
+
+					// Para arrays normales
+					return data
+						.map((item) =>
+							typeof item === "string"
+								? item.replace(/[\[\]"\\]/g, "").trim()
+								: String(item)
+						)
+						.filter(Boolean);
+				};
 
 				// Configurar el estado inicial con los datos del producto
 				setFormData((prev) => ({
@@ -158,29 +206,67 @@ const SellerProductEditPage: React.FC = () => {
 					status: product.status || "active",
 					featured: !!product.featured,
 					published: !!product.published,
-					parentCategory: parentCategory ? parentCategory.value.toString() : "",
-					category: subcategory
-						? subcategory.value.toString()
-						: product.category_id?.toString() || "",
-					tags: product.tags || [],
-					colors: product.colors || [],
-					sizes: product.sizes || [],
-					attributes: product.attributes || [],
-					existingImages:
-						product.images?.map((img) =>
-							typeof img === "string"
-								? {original: img, thumbnail: img, medium: img, large: img}
-								: img
-						) || [],
+					parentCategory: parentCategoryId ? parentCategoryId.toString() : "",
+					category: product.category_id ? product.category_id.toString() : "",
+					// Procesar arrays que podrían venir en formato incorrecto
+					tags: processArray(product.tags || []),
+					colors: processArray(product.colors || []),
+					sizes: processArray(product.sizes || []),
+					// Parsear los atributos correctamente
+					attributes: Array.isArray(product.attributes)
+						? product.attributes
+						: typeof product.attributes === "string" && product.attributes
+							? (() => {
+									try {
+										return JSON.parse(product.attributes);
+									} catch (e) {
+										console.error("Error al parsear atributos:", e);
+										return [];
+									}
+								})()
+							: [],
+					existingImages: Array.isArray(product.images)
+						? product.images.map((img) => {
+								if (typeof img === "string") {
+									return {
+										original: img,
+										thumbnail: img,
+										medium: img,
+										large: img,
+									};
+								} else {
+									return img;
+								}
+							})
+						: [],
 					images: [],
-					previewImages:
-						product.images?.map((img) =>
-							typeof img === "string"
-								? img
-								: img.original || img.medium || img.thumbnail
-						) || [],
+					previewImages: Array.isArray(product.images)
+						? product.images.map((img) => {
+								const baseUrl = appConfig.imageBaseUrl; // URL base para imágenes
+								let imagePath;
+
+								if (typeof img === "string") {
+									imagePath = img;
+								} else {
+									// Obtener ruta de imagen
+									imagePath = img.original || img.medium || img.thumbnail;
+								}
+
+								// Asegurarnos de que la ruta esté completa
+								if (imagePath && !imagePath.startsWith("http")) {
+									return `${baseUrl}${imagePath}`;
+								}
+								return imagePath;
+							})
+						: [],
 					imagesToRemove: [],
 				}));
+
+				console.log("Formulario inicializado:", {
+					parentCategoryId,
+					categoryId: product.category_id,
+					shortDescription: product.short_description,
+				});
 			} catch (error) {
 				console.error("Error al cargar los datos del producto:", error);
 				alert("No se pudo cargar el producto. Inténtalo de nuevo más tarde.");
@@ -196,7 +282,7 @@ const SellerProductEditPage: React.FC = () => {
 		navigate,
 		fetchProductById,
 		parentCategoryOptions,
-		subcategoryOptions,
+		setSelectedParentId,
 	]);
 
 	// Toggle para expandir/colapsar secciones
@@ -239,12 +325,6 @@ const SellerProductEditPage: React.FC = () => {
 				return newErrors;
 			});
 		}
-	};
-
-	// Handle checkbox changes
-	const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const {name, checked} = e.target;
-		setFormData((prev) => ({...prev, [name]: checked}));
 	};
 
 	// Handle image upload
@@ -338,7 +418,7 @@ const SellerProductEditPage: React.FC = () => {
 		) {
 			setFormData((prev) => ({
 				...prev,
-				colors: [...prev.colors, prev.currentColor.trim()],
+				colors: [...prev.colors, formData.currentColor.trim()],
 				currentColor: "",
 			}));
 		}
@@ -368,7 +448,7 @@ const SellerProductEditPage: React.FC = () => {
 		) {
 			setFormData((prev) => ({
 				...prev,
-				sizes: [...prev.sizes, prev.currentSize.trim()],
+				sizes: [...prev.sizes, formData.currentSize.trim()],
 				currentSize: "",
 			}));
 		}
@@ -924,7 +1004,9 @@ const SellerProductEditPage: React.FC = () => {
 										<option value="">
 											{formData.parentCategory
 												? subcategoryOptions.length > 0
-													? "Seleccionar Subcategoría"
+													? formData.category
+														? ""
+														: "Seleccionar Subcategoría"
 													: "No hay subcategorías disponibles"
 												: "Primero selecciona una categoría principal"}
 										</option>
@@ -935,7 +1017,8 @@ const SellerProductEditPage: React.FC = () => {
 										))}
 										{/* Opción para usar la categoría principal si no hay subcategorías */}
 										{formData.parentCategory &&
-											subcategoryOptions.length === 0 && (
+											(subcategoryOptions.length === 0 ||
+												formData.category === formData.parentCategory) && (
 												<option value={formData.parentCategory}>
 													Usar categoría principal
 												</option>
@@ -1375,34 +1458,91 @@ const SellerProductEditPage: React.FC = () => {
 								</label>
 							</div>
 
-							{/* Image Previews */}
-							{formData.previewImages.length > 0 && (
-								<div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mt-4">
-									{formData.previewImages.map((preview, index) => (
-										<div key={index} className="relative group">
-											<div className="aspect-w-1 aspect-h-1 w-full overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-700">
-												<img
-													src={preview}
-													alt={`Vista previa ${index + 1}`}
-													className="h-full w-full object-cover object-center"
-												/>
-											</div>
-											<button
-												type="button"
-												onClick={() => removeNewImage(index)}
-												className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-											>
-												<Trash2 size={14} />
-											</button>
-											{index === 0 && (
-												<div className="absolute bottom-2 left-2 bg-primary-500 text-white text-xs py-1 px-2 rounded-md">
-													Principal
+							{/* Imágenes existentes */}
+							{formData.existingImages.length > 0 && (
+								<div>
+									<h4 className="text-md font-medium text-gray-800 dark:text-gray-200 mb-3">
+										Imágenes actuales
+									</h4>
+									<div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+										{formData.existingImages.map((image, index) => {
+											// Construir URL de imagen completa
+											const baseUrl = appConfig.imageBaseUrl;
+											let imagePath =
+												image.original || image.medium || image.thumbnail;
+											const imageUrl = imagePath.startsWith("http")
+												? imagePath
+												: `${baseUrl}${imagePath}`;
+
+											return (
+												<div
+													key={`existing-${index}`}
+													className="relative group"
+												>
+													<div className="aspect-w-1 aspect-h-1 w-full overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-700">
+														<img
+															src={imageUrl}
+															alt={
+																formData.name || `Imagen existente ${index + 1}`
+															}
+															className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+														/>
+													</div>
+													<button
+														type="button"
+														onClick={() => removeExistingImage(index)}
+														className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+													>
+														<Trash2 size={14} />
+													</button>
+													{index === 0 && (
+														<div className="absolute bottom-2 left-2 bg-primary-500 text-white text-xs py-1 px-2 rounded-md">
+															Principal
+														</div>
+													)}
 												</div>
-											)}
-										</div>
-									))}
+											);
+										})}
+									</div>
 								</div>
 							)}
+
+							{/* Nuevas imágenes */}
+							{formData.images.length > 0 && (
+								<div>
+									<h4 className="text-md font-medium text-gray-800 dark:text-gray-200 mb-3">
+										Nuevas imágenes a agregar
+									</h4>
+									<div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+										{formData.images.map((_, index) => (
+											<div key={`new-${index}`} className="relative group">
+												<div className="aspect-w-1 aspect-h-1 w-full overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-700">
+													<img
+														src={formData.previewImages[index]}
+														alt={formData.name || `Nueva imagen ${index + 1}`}
+														className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+													/>
+												</div>
+												<button
+													type="button"
+													onClick={() => removeNewImage(index)}
+													className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+												>
+													<Trash2 size={14} />
+												</button>
+											</div>
+										))}
+									</div>
+								</div>
+							)}
+
+							{formData.existingImages.length === 0 &&
+								formData.images.length === 0 && (
+									<p className="text-sm text-gray-500 dark:text-gray-400 text-center mt-4">
+										No hay imágenes para este producto. Agrega al menos una
+										imagen.
+									</p>
+								)}
 						</div>
 					)}
 				</div>
