@@ -7,8 +7,6 @@ import {
 	Check,
 	X,
 	FileText,
-	Edit,
-	Clock,
 } from "lucide-react";
 import {formatCurrency} from "../../../utils/formatters/formatCurrency";
 import {formatDate} from "../../../utils/formatters/formatDate";
