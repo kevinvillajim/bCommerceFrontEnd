@@ -25,7 +25,7 @@ export interface Product {
 	sizes?: string[];
 	tags?: string[];
 	sku?: string;
-	attributes?: Record<string, any>;
+	attributes?: Array<{key: string; value: string}>;
 	images?: {
 		original: string;
 		thumbnail: string;
@@ -111,7 +111,7 @@ export interface ProductCreationData {
 	sizes?: string[] | string;
 	tags?: string[] | string;
 	sku?: string;
-	attributes?: Record<string, any>;
+	attributes?: Array<{key: string; value: string}>;
 	images?: File[];
 	featured?: boolean;
 	published?: boolean;

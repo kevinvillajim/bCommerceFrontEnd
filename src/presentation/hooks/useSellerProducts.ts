@@ -167,7 +167,7 @@ export const useSellerProducts = () => {
 				}
 
 				// Añadir atributos si existen
-				if (data.attributes && Object.keys(data.attributes).length > 0) {
+				if (data.attributes && data.attributes.length > 0) {
 					formData.append("attributes", JSON.stringify(data.attributes));
 				}
 
