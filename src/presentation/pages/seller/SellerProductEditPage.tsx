@@ -82,13 +82,20 @@ const SellerProductEditPage: React.FC = () => {
 		currentSize: "",
 
 		// Atributos personalizados
-		attributes: {} as Record<string, string>,
+		attributes: [] as Array<{key: string; value: string}>,
 		currentAttributeKey: "",
 		currentAttributeValue: "",
 
 		// Multimedia
 		images: [] as File[],
-		existingImages: [] as {id?: number; url: string}[],
+		// Primero, corregir el tipo de existingImages en formData
+		existingImages: [] as {
+			id?: number;
+			original: string;
+			thumbnail: string;
+			medium: string;
+			large: string;
+		}[],
 		previewImages: [] as string[],
 		imagesToRemove: [] as number[],
 
@@ -139,20 +146,26 @@ const SellerProductEditPage: React.FC = () => {
 				}
 
 				// Adaptar imágenes existentes
-				const existingImages = [];
-				if (product.images && Array.isArray(product.images)) {
-					for (const img of product.images) {
-						if (typeof img === "string") {
-							existingImages.push({url: img});
-						} else if (typeof img === "object" && img !== null) {
-							existingImages.push({
-								id: img.id || undefined,
-								url:
-									img.original || img.url || img.medium || img.thumbnail || "",
-							});
-						}
-					}
-				}
+				const existingImages =
+					product.images && Array.isArray(product.images)
+						? product.images
+								.map((img) => {
+									if (typeof img === "string") {
+										// Si es una string, crear un objeto compatible
+										return {
+											original: img,
+											thumbnail: img,
+											medium: img,
+											large: img,
+										};
+									} else if (typeof img === "object" && img !== null) {
+										// Si ya es un objeto, mantener su estructura
+										return img;
+									}
+									return null;
+								})
+								.filter(Boolean)
+						: [];
 
 				// Configurar el estado inicial con los datos del producto
 				setFormData({
@@ -178,8 +191,14 @@ const SellerProductEditPage: React.FC = () => {
 					tags: Array.isArray(product.tags) ? [...product.tags] : [],
 					colors: Array.isArray(product.colors) ? [...product.colors] : [],
 					sizes: Array.isArray(product.sizes) ? [...product.sizes] : [],
-					attributes: product.attributes || {},
-					existingImages: existingImages,
+					attributes: [] as Array<{key: string; value: string}>,
+					existingImages: [] as {
+						id?: number;
+						original: string;
+						thumbnail: string;
+						medium: string;
+						large: string;
+					}[],
 					images: [],
 					previewImages: [],
 					imagesToRemove: [],
@@ -401,10 +420,7 @@ const SellerProductEditPage: React.FC = () => {
 		if (key && value) {
 			setFormData((prev) => ({
 				...prev,
-				attributes: {
-					...prev.attributes,
-					[key]: value,
-				},
+				attributes: [...prev.attributes, {key, value}],
 				currentAttributeKey: "",
 				currentAttributeValue: "",
 			}));
@@ -412,10 +428,10 @@ const SellerProductEditPage: React.FC = () => {
 	};
 
 	// Remove attribute
-	const removeAttribute = (key: string) => {
+	const removeAttribute = (index: number) => {
 		setFormData((prev) => {
-			const newAttributes = {...prev.attributes};
-			delete newAttributes[key];
+			const newAttributes = [...prev.attributes];
+			newAttributes.splice(index, 1);
 			return {
 				...prev,
 				attributes: newAttributes,
@@ -538,9 +554,7 @@ const SellerProductEditPage: React.FC = () => {
 				colors: formData.colors.length > 0 ? formData.colors : undefined,
 				sizes: formData.sizes.length > 0 ? formData.sizes : undefined,
 				attributes:
-					Object.keys(formData.attributes).length > 0
-						? formData.attributes
-						: undefined,
+					formData.attributes.length > 0 ? formData.attributes : undefined,
 				featured: formData.featured,
 				published: formData.published,
 
@@ -1678,7 +1692,7 @@ const SellerProductEditPage: React.FC = () => {
 											</div>
 											<button
 												type="button"
-												onClick={() => removeImage(index)}
+												onClick={() => removeNewImage(index)}
 												className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
 											>
 												<Trash2 size={14} />
