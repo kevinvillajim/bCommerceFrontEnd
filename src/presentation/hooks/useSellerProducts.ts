@@ -2,6 +2,7 @@ import {useState, useCallback, useEffect} from "react";
 import {ProductService} from "../../core/services/ProductService";
 import type {
 	Product,
+	ProductDetail,
 	ProductFilterParams,
 	ProductCreationData,
 	ProductUpdateData,
@@ -17,10 +18,13 @@ const productService = new ProductService();
  * Hook personalizado para gestionar los productos del vendedor
  */
 export const useSellerProducts = () => {
-	const {user, roleInfo} = useAuth(); // Asegúrate de importar roleInfo del contexto de autenticación
+	const {user, roleInfo} = useAuth();
 	const [loading, setLoading] = useState<boolean>(false);
 	const [error, setError] = useState<string | null>(null);
 	const [products, setProducts] = useState<Product[]>([]);
+	const [productDetail, setProductDetail] = useState<ProductDetail | null>(
+		null
+	);
 	const [totalProducts, setTotalProducts] = useState<number>(0);
 	const [page, setPage] = useState<number>(1);
 	const [itemsPerPage, setItemsPerPage] = useState<number>(10);
@@ -33,11 +37,11 @@ export const useSellerProducts = () => {
 			setLoading(true);
 			setError(null);
 
-            try {
-                // Modo depuración para verificar información del vendedor
-                console.log("Usuario actual:", user);
-                
-                // Usamos el ID del vendedor desde la información del rol
+			try {
+				// Modo depuración para verificar información del vendedor
+				console.log("Usuario actual:", user);
+
+				// Usamos el ID del vendedor desde la información del rol
 				const sellerId = user?.id;
 				if (!sellerId) {
 					throw new Error("No se pudo obtener el ID del vendedor");
@@ -85,7 +89,34 @@ export const useSellerProducts = () => {
 				setLoading(false);
 			}
 		},
-		[roleInfo] // Depender de roleInfo
+		[user]
+	);
+
+	/**
+	 * Obtiene los detalles de un producto específico por su ID
+	 */
+	const fetchProductById = useCallback(
+		async (id: number): Promise<ProductDetail | null> => {
+			setLoading(true);
+			setError(null);
+
+			try {
+				const product = await productService.getProductById(id);
+				setProductDetail(product);
+				return product;
+			} catch (err) {
+				const errorMessage =
+					err instanceof Error
+						? err.message
+						: "Error al obtener los detalles del producto";
+				setError(errorMessage);
+				console.error("Error al obtener detalles del producto:", err);
+				return null;
+			} finally {
+				setLoading(false);
+			}
+		},
+		[]
 	);
 
 	/**
@@ -167,12 +198,8 @@ export const useSellerProducts = () => {
 				}
 
 				// Añadir atributos si existen
-				if (data.attributes && data.attributes.length > 0) {
-					// Enviar cada atributo con la notación de corchetes que Laravel reconoce automáticamente
-					data.attributes.forEach((attr, index) => {
-						formData.append(`attributes[${index}][key]`, attr.key);
-						formData.append(`attributes[${index}][value]`, attr.value);
-					});
+				if (data.attributes && Object.keys(data.attributes).length > 0) {
+					formData.append("attributes", JSON.stringify(data.attributes));
 				}
 
 				// Añadir imágenes
@@ -248,6 +275,7 @@ export const useSellerProducts = () => {
 			setError(null);
 
 			try {
+				console.log("Actualizando producto con datos:", data);
 				// Crear un FormData manualmente
 				const formData = new FormData();
 
@@ -317,12 +345,8 @@ export const useSellerProducts = () => {
 				}
 
 				// Añadir atributos si existen
-				if (data.attributes && data.attributes.length > 0) {
-					// Enviar cada atributo con la notación de corchetes que Laravel reconoce automáticamente
-					data.attributes.forEach((attr, index) => {
-						formData.append(`attributes[${index}][key]`, attr.key);
-						formData.append(`attributes[${index}][value]`, attr.value);
-					});
+				if (data.attributes && Object.keys(data.attributes).length > 0) {
+					formData.append("attributes", JSON.stringify(data.attributes));
 				}
 
 				// Opciones de manejo de imágenes
@@ -472,12 +496,14 @@ export const useSellerProducts = () => {
 
 	return {
 		products,
+		productDetail,
 		totalProducts,
 		loading,
 		error,
 		page,
 		itemsPerPage,
 		fetchSellerProducts,
+		fetchProductById,
 		createProduct,
 		updateProduct,
 		deleteProduct,

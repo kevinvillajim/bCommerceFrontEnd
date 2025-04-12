@@ -1,5 +1,5 @@
 import React, {useState, useEffect} from "react";
-import {Link} from "react-router-dom";
+import {Link, useNavigate} from "react-router-dom";
 import {
 	Package,
 	Edit,
@@ -9,6 +9,7 @@ import {
 	PlusCircle,
 	Eye,
 	EyeOff,
+	AlertCircle,
 } from "lucide-react";
 import useSellerProducts from "../../hooks/useSellerProducts";
 import useCategories from "../../hooks/useCategories";
@@ -28,6 +29,7 @@ interface ProductTableItem {
 
 const SellerProductsPage: React.FC = () => {
 	// Estado y hooks
+	const navigate = useNavigate();
 	const {
 		products,
 		loading,
@@ -43,6 +45,8 @@ const SellerProductsPage: React.FC = () => {
 	const [adaptedProducts, setAdaptedProducts] = useState<ProductTableItem[]>(
 		[]
 	);
+	const [isDeleting, setIsDeleting] = useState<number | null>(null);
+	const [isTogglingStatus, setIsTogglingStatus] = useState<number | null>(null);
 
 	// Cargar categorías al iniciar
 	useEffect(() => {
@@ -82,8 +86,7 @@ const SellerProductsPage: React.FC = () => {
 					status:
 						(product.status as "active" | "inactive" | "draft") || "inactive",
 					createdAt:
-						product.created_at ||
-						new Date().toISOString().split("T")[0],
+						product.created_at || new Date().toISOString().split("T")[0],
 				};
 			});
 			setAdaptedProducts(tableProducts);
@@ -107,10 +110,17 @@ const SellerProductsPage: React.FC = () => {
 	// Manejar eliminación de producto
 	const handleDelete = async (id: number) => {
 		if (window.confirm("¿Estás seguro de que deseas eliminar este producto?")) {
-			const success = await deleteProduct(id);
-			if (!success) {
-				// Manejar error de eliminación
-				alert("No se pudo eliminar el producto. Inténtalo de nuevo más tarde.");
+			try {
+				setIsDeleting(id);
+				const success = await deleteProduct(id);
+				if (!success) {
+					// Manejar error de eliminación
+					alert(
+						"No se pudo eliminar el producto. Inténtalo de nuevo más tarde."
+					);
+				}
+			} finally {
+				setIsDeleting(null);
 			}
 		}
 	};
@@ -120,12 +130,22 @@ const SellerProductsPage: React.FC = () => {
 		id: number,
 		currentStatus: "active" | "inactive" | "draft"
 	) => {
-		const success = await toggleProductStatus(id, currentStatus);
-		if (!success) {
-			alert(
-				"No se pudo cambiar el estado del producto. Inténtalo de nuevo más tarde."
-			);
+		try {
+			setIsTogglingStatus(id);
+			const success = await toggleProductStatus(id, currentStatus);
+			if (!success) {
+				alert(
+					"No se pudo cambiar el estado del producto. Inténtalo de nuevo más tarde."
+				);
+			}
+		} finally {
+			setIsTogglingStatus(null);
 		}
+	};
+
+	// Navegar a la página de edición
+	const handleEdit = (id: number) => {
+		navigate(`/seller/products/edit/${id}`);
 	};
 
 	return (
@@ -183,7 +203,7 @@ const SellerProductsPage: React.FC = () => {
 					</div>
 				) : error ? (
 					<div className="p-8 text-center">
-						<Package className="h-12 w-12 mx-auto text-gray-400 dark:text-gray-600 mb-4" />
+						<AlertCircle className="h-12 w-12 mx-auto text-red-500 dark:text-red-400 mb-4" />
 						<h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
 							Error al cargar productos
 						</h3>
@@ -321,14 +341,18 @@ const SellerProductsPage: React.FC = () => {
 										</td>
 										<td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
 											<div className="flex justify-end space-x-2">
+												{/* Botón para activar/desactivar */}
 												<button
 													onClick={() =>
 														handleToggleStatus(product.id, product.status)
 													}
+													disabled={isTogglingStatus === product.id}
 													className={`p-1 rounded-md ${
-														product.status === "active"
-															? "text-yellow-600 hover:bg-yellow-100 dark:text-yellow-400 dark:hover:bg-yellow-900"
-															: "text-green-600 hover:bg-green-100 dark:text-green-400 dark:hover:bg-green-900"
+														isTogglingStatus === product.id
+															? "opacity-50 cursor-not-allowed"
+															: product.status === "active"
+																? "text-yellow-600 hover:bg-yellow-100 dark:text-yellow-400 dark:hover:bg-yellow-900"
+																: "text-green-600 hover:bg-green-100 dark:text-green-400 dark:hover:bg-green-900"
 													}`}
 													title={
 														product.status === "active"
@@ -336,25 +360,40 @@ const SellerProductsPage: React.FC = () => {
 															: "Activar"
 													}
 												>
-													{product.status === "active" ? (
+													{isTogglingStatus === product.id ? (
+														<div className="animate-spin h-4 w-4"></div>
+													) : product.status === "active" ? (
 														<EyeOff size={18} />
 													) : (
 														<Eye size={18} />
 													)}
 												</button>
-												<Link
-													to={`/seller/products/edit/${product.id}`}
+
+												{/* Botón para editar */}
+												<button
+													onClick={() => handleEdit(product.id)}
 													className="p-1 text-blue-600 hover:bg-blue-100 rounded-md dark:text-blue-400 dark:hover:bg-blue-900"
 													title="Editar producto"
 												>
 													<Edit size={18} />
-												</Link>
+												</button>
+
+												{/* Botón para eliminar */}
 												<button
 													onClick={() => handleDelete(product.id)}
-													className="p-1 text-red-600 hover:bg-red-100 rounded-md dark:text-red-400 dark:hover:bg-red-900"
+													disabled={isDeleting === product.id}
+													className={`p-1 text-red-600 hover:bg-red-100 rounded-md dark:text-red-400 dark:hover:bg-red-900 ${
+														isDeleting === product.id
+															? "opacity-50 cursor-not-allowed"
+															: ""
+													}`}
 													title="Eliminar producto"
 												>
-													<Trash2 size={18} />
+													{isDeleting === product.id ? (
+														<div className="animate-spin h-4 w-4"></div>
+													) : (
+														<Trash2 size={18} />
+													)}
 												</button>
 											</div>
 										</td>

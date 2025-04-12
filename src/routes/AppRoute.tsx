@@ -32,7 +32,7 @@ const FavoritePage = lazy(() => import('../presentation/pages/FavoritePage'));
 const SellerDashboard = lazy(() => import('../presentation/pages/seller/SellerDashboard'));
 const SellerProductsPage = lazy(() => import('../presentation/pages/seller/SellerProductsPage'));
 const SellerProductCreatePage = lazy(() => import('../presentation/pages/seller/SellerProductCreatePage'));
-// const SellerProductEditPage = lazy(() => import('../presentation/pages/seller/SellerProductEditPage'));
+const SellerProductEditPage = lazy(() => import('../presentation/pages/seller/SellerProductEditPage'));
 const SellerOrdersPage = lazy(() => import('../presentation/pages/seller/SellerOrdersPage'));
 // const SellerOrderDetailsPage = lazy(() => import('../presentation/pages/seller/SellerOrderDetailsPage'));
 const SellerRatingsPage = lazy(() => import('../presentation/pages/seller/SellerRatingsPage'));
@@ -267,11 +267,11 @@ const appRoutes: RouteObject[] = [
 				path: "products/create",
 				element: <SellerProductCreatePage />,
 			},
-			// {
-			// 	path: "products/edit/:id",
-			// 	element: <SellerProductEditPage />,
-			// },
-			// // Orders
+			{
+				path: "products/edit/:id",
+				element: <SellerProductEditPage />,
+			},
+			// Orders
 			{
 				path: "orders",
 				element: <SellerOrdersPage />,
