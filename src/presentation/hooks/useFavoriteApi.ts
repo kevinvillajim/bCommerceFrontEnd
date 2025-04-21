@@ -102,10 +102,32 @@ export const useFavoriteApi = (): UseFavoriteApiReturn => {
 				}
 			);
 
+			// Verificamos la estructura real de la respuesta
+			// Según la respuesta del servidor, los favoritos están en `data` y son un array
+			const apiData = response?.data || [];
+
+			// Procesamos los datos para el formato que espera nuestra aplicación
+			const favorites = apiData.map((item, index) => {
+				// El backend envía `favorite` como un objeto vacío y toda la información está en `product`
+				return {
+					favorite: {
+						// Usamos el ID del producto como ID del favorito, con un prefijo para garantizar unicidad
+						id: item.product?.id ? item.product.id + 1000 : index + 1000,
+						userId: 0, // No tenemos este dato
+						productId: item.product?.id || 0,
+						// Valores por defecto para las notificaciones ya que el backend no los envía
+						notifyPriceChange: true,
+						notifyPromotion: true,
+						notifyLowStock: true,
+					},
+					product: item.product,
+				};
+			});
+
 			return {
-				favorites: response?.data || [],
+				favorites,
 				meta: response?.meta || {
-					total: 0,
+					total: favorites.length,
 					limit,
 					offset,
 					has_more: false,

@@ -227,10 +227,23 @@ const FavoritePage: React.FC = () => {
 			const offset = (currentPage - 1) * limit;
 			const result = await getUserFavorites(limit, offset);
 
-			setFavorites(result.favorites);
+			// Asegúrate de que los datos tengan el formato correcto
+			const formattedFavorites = result.favorites.map((item) => ({
+				favorite: {
+					id: item.favorite.id || 0, // Asigna un valor por defecto si es undefined
+					userId: item.favorite.userId,
+					productId: item.favorite.productId,
+					notifyPriceChange: item.favorite.notifyPriceChange || false,
+					notifyPromotion: item.favorite.notifyPromotion || false,
+					notifyLowStock: item.favorite.notifyLowStock || false,
+				},
+				product: item.product,
+			}));
+
+			setFavorites(formattedFavorites);
 			setTotal(result.meta.total);
 			setHasMore(result.meta.has_more);
-			setIsEmpty(result.favorites.length === 0 && currentPage === 1);
+			setIsEmpty(formattedFavorites.length === 0 && currentPage === 1);
 		} catch (err) {
 			console.error("Error fetching favorites:", err);
 			setError(
@@ -317,7 +330,9 @@ const FavoritePage: React.FC = () => {
 	};
 
 	const openPreferences = (favoriteId: number) => {
-		setActivePreferences(favoriteId);
+		if (favoriteId) {
+			setActivePreferences(favoriteId);
+		}
 	};
 
 	const closePreferences = () => {
