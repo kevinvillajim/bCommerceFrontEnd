@@ -1,5 +1,6 @@
 /**
- * Order entity
+ * Archivo: src/core/domain/entities/Order.ts
+ * Entidades relacionadas con órdenes de compra y sus tipos
  */
 export interface Order {
 	id?: number;
@@ -16,6 +17,8 @@ export interface Order {
 	orderNumber: string;
 	createdAt?: string;
 	updatedAt?: string;
+	user_name?: string; // Añadido para compatibilidad con API
+	user_email?: string; // Añadido para compatibilidad con API
 }
 
 /**
@@ -36,64 +39,20 @@ export interface OrderItem {
 	};
 	createdAt?: string;
 	updatedAt?: string;
+	product_name?: string; // Para compatibilidad con API
+	product_sku?: string; // Para compatibilidad con API
+	product_image?: string; // Para compatibilidad con API
 }
 
 /**
  * Order detail entity - Versión extendida con información adicional
  */
 export interface OrderDetail extends Order {
-	user_name?: string;
-	user_email?: string;
 	items: (OrderItem & {
 		product_name?: string;
 		product_sku?: string;
 		product_image?: string;
 	})[];
-}
-
-/**
- * Order status type
- */
-export type OrderStatus =
-	| "pending"
-	| "processing"
-	| "paid"
-	| "shipped"
-	| "delivered"
-	| "completed"
-	| "cancelled";
-
-/**
- * Payment method type
- */
-export type PaymentMethod =
-	| "credit_card"
-	| "paypal"
-	| "transfer"
-	| "other"
-	| null;
-
-/**
- * Payment status type
- */
-export type PaymentStatus = "pending" | "completed" | "failed" | null;
-
-/**
- * Shipping data type
- */
-export interface ShippingData {
-	address: string;
-	city: string;
-	state: string;
-	country: string;
-	postalCode: string;
-	phone?: string;
-	name?: string;
-	tracking_number?: string;
-	shipping_company?: string;
-	estimated_delivery?: string;
-	notes?: string;
-	cancel_reason?: string;
 }
 
 /**
@@ -188,4 +147,49 @@ export interface OrderStats {
 	completedOrders: number;
 	cancelledOrders: number;
 	totalSales: number;
+}
+
+/**
+ * Order status type - Actualizada para incluir 'paid'
+ */
+export type OrderStatus =
+	| "pending"
+	| "processing"
+	| "paid" // Añadido para compatibilidad
+	| "shipped"
+	| "delivered"
+	| "completed"
+	| "cancelled";
+
+/**
+ * Payment method type
+ */
+export type PaymentMethod =
+	| "credit_card"
+	| "paypal"
+	| "transfer"
+	| "other"
+	| null;
+
+/**
+ * Payment status type
+ */
+export type PaymentStatus = "pending" | "completed" | "failed" | null;
+
+/**
+ * Shipping data type
+ */
+export interface ShippingData {
+	address: string;
+	city: string;
+	state: string;
+	country: string;
+	postalCode: string;
+	phone?: string;
+	name?: string;
+	tracking_number?: string;
+	shipping_company?: string;
+	estimated_delivery?: string;
+	notes?: string;
+	cancel_reason?: string;
 }

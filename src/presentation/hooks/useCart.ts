@@ -1,4 +1,3 @@
-// src/presentation/hooks/useCart.ts
 import { useContext } from 'react';
 import { CartContext } from '../contexts/CartContext';
 

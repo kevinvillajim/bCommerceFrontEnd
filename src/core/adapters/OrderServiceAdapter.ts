@@ -5,6 +5,47 @@ import {UpdateOrderStatusUseCase} from "../useCases/order/UpdateOrderStatusUseCa
 import {GetOrderDetailUseCase} from "../useCases/order/GetOrderDetailUseCase";
 import type {OrderStatus, OrderDetail} from "../domain/entities/Order";
 
+// Interface para la respuesta adaptada para la UI
+export interface OrderUI {
+	id: string;
+	orderNumber: string;
+	date: string;
+	customer: {
+		id: number;
+		name: string;
+		email: string;
+	};
+	total: number;
+	items: {
+		id: number;
+		productId: number;
+		name: string;
+		quantity: number;
+		price: number;
+		subtotal: number;
+	}[];
+	status:
+		| "pending"
+		| "processing"
+		| "paid"
+		| "shipped"
+		| "delivered"
+		| "completed"
+		| "cancelled";
+	paymentStatus: "pending" | "paid" | "rejected";
+	shippingAddress: string;
+	notes?: string;
+}
+
+// Interface para la respuesta de estadísticas adaptada para la UI
+export interface OrderStatUI {
+	label: string;
+	value: number | string;
+	icon: React.ReactNode;
+	color: string;
+	isCurrency?: boolean;
+}
+
 /**
  * Adaptador para transformar datos de la API al formato esperado por SellerOrdersPage
  */
@@ -41,7 +82,7 @@ export class OrderServiceAdapter {
 			const response = await this.getSellerOrdersUseCase.execute(filters);
 
 			// Adaptar el formato de respuesta de la API al formato esperado por la UI
-			const adaptedOrders = response.data.map((order) => ({
+			const adaptedOrders: OrderUI[] = response.data.map((order) => ({
 				id: String(order.id),
 				orderNumber: order.orderNumber,
 				date: order.createdAt || new Date().toISOString(),
@@ -59,7 +100,7 @@ export class OrderServiceAdapter {
 					price: item.price,
 					subtotal: item.subtotal,
 				})),
-				status: order.status,
+				status: this.mapOrderStatus(order.status),
 				paymentStatus: this.mapPaymentStatus(order.paymentStatus),
 				shippingAddress: this.formatShippingAddress(order.shippingData),
 				notes: order.shippingData?.notes,
@@ -83,39 +124,40 @@ export class OrderServiceAdapter {
 	/**
 	 * Obtiene estadísticas de órdenes
 	 */
-	async getOrderStats() {
+	async getOrderStats(): Promise<OrderStatUI[]> {
 		try {
 			const stats = await this.getOrderStatsUseCase.execute();
 
+			// Aquí no devolvemos el objeto estadísticas directamente, sino un array de objetos formateados
 			return [
 				{
 					label: "Total Pedidos",
 					value: stats.totalOrders,
-					icon: "ShoppingBag",
+					icon: null, // El componente SellerOrdersPage asignará el icono
 					color: "blue",
 				},
 				{
 					label: "Pendientes",
 					value: stats.pendingOrders,
-					icon: "Package",
+					icon: null,
 					color: "yellow",
 				},
 				{
 					label: "En Proceso",
 					value: stats.processingOrders,
-					icon: "Package",
+					icon: null,
 					color: "blue",
 				},
 				{
 					label: "Enviados",
 					value: stats.shippedOrders,
-					icon: "Truck",
+					icon: null,
 					color: "indigo",
 				},
 				{
 					label: "Total Ventas",
 					value: stats.totalSales,
-					icon: "BarChart2",
+					icon: null,
 					color: "green",
 					isCurrency: true,
 				},
@@ -129,9 +171,18 @@ export class OrderServiceAdapter {
 	/**
 	 * Actualiza el estado de una orden
 	 */
-	async updateOrderStatus(orderId: string, newStatus: OrderStatus) {
+	async updateOrderStatus(
+		orderId: string,
+		newStatus: string
+	): Promise<boolean> {
 		try {
-			await this.updateOrderStatusUseCase.execute(Number(orderId), newStatus);
+			// Mapear el estado de la UI al dominio
+			const domainStatus = this.mapUiStatusToDomain(newStatus);
+
+			await this.updateOrderStatusUseCase.execute(
+				Number(orderId),
+				domainStatus
+			);
 			return true;
 		} catch (error) {
 			console.error(
@@ -139,6 +190,54 @@ export class OrderServiceAdapter {
 				error
 			);
 			return false;
+		}
+	}
+
+	/**
+	 * Mapea el estado de la UI al dominio
+	 */
+	private mapUiStatusToDomain(uiStatus: string): OrderStatus {
+		switch (uiStatus) {
+			case "pending":
+				return "pending";
+			case "processing":
+				return "processing";
+			case "paid":
+				return "paid";
+			case "shipped":
+				return "shipped";
+			case "delivered":
+				return "delivered";
+			case "completed":
+				return "completed";
+			case "cancelled":
+				return "cancelled";
+			default:
+				throw new Error(`Estado desconocido: ${uiStatus}`);
+		}
+	}
+
+	/**
+	 * Mapea el estado del dominio a la UI
+	 */
+	private mapOrderStatus(status: OrderStatus | undefined): OrderUI["status"] {
+		switch (status) {
+			case "pending":
+				return "pending";
+			case "processing":
+				return "processing";
+			case "paid":
+				return "paid";
+			case "shipped":
+				return "shipped";
+			case "delivered":
+				return "delivered";
+			case "completed":
+				return "completed";
+			case "cancelled":
+				return "cancelled";
+			default:
+				return "pending";
 		}
 	}
 
@@ -185,7 +284,6 @@ export class OrderServiceAdapter {
 			);
 
 			// Asegurarse de que los datos estén en el formato esperado por el frontend
-			// Esto maneja posibles diferencias entre lo que devuelve la API y lo que espera la UI
 			return {
 				...orderDetail,
 				// Asegurar que los datos necesarios estén presentes

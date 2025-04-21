@@ -1,13 +1,6 @@
 import React, {useState, useEffect} from "react";
 import {useParams, useNavigate, Link} from "react-router-dom";
-import {
-	ArrowLeft,
-	Truck,
-	Package,
-	Check,
-	X,
-	FileText,
-} from "lucide-react";
+import {ArrowLeft, Truck, Package, Check, X, FileText} from "lucide-react";
 import {formatCurrency} from "../../../utils/formatters/formatCurrency";
 import {formatDate} from "../../../utils/formatters/formatDate";
 import {OrderServiceAdapter} from "../../../core/adapters/OrderServiceAdapter";
