@@ -18,6 +18,20 @@ import {AuthContext} from "./AuthContext";
 import {CartService} from "../../core/services/CartService";
 import appConfig from "../../config/appConfig";
 
+// Tipos para las notificaciones del carrito
+export enum NotificationType {
+	SUCCESS = "success",
+	ERROR = "error",
+	INFO = "info",
+	WARNING = "warning",
+}
+
+interface CartNotification {
+	id: string;
+	type: NotificationType;
+	message: string;
+}
+
 // Define context interface
 interface CartContextProps {
 	cart: ShoppingCart | null;
@@ -30,6 +44,10 @@ interface CartContextProps {
 	fetchCart: () => Promise<void>;
 	itemCount: number;
 	totalAmount: number;
+	// Propiedades de notificación
+	notification: CartNotification | null;
+	showNotification: (type: NotificationType, message: string) => void;
+	hideNotification: () => void;
 }
 
 // Create context with default values
@@ -44,6 +62,9 @@ export const CartContext = createContext<CartContextProps>({
 	fetchCart: async () => {},
 	itemCount: 0,
 	totalAmount: 0,
+	notification: null,
+	showNotification: () => {},
+	hideNotification: () => {},
 });
 
 // Storage service instance
@@ -61,6 +82,9 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 	const [error, setError] = useState<string | null>(null);
 	const [itemCount, setItemCount] = useState<number>(0);
 	const [totalAmount, setTotalAmount] = useState<number>(0);
+	const [notification, setNotification] = useState<CartNotification | null>(
+		null
+	);
 
 	const {isAuthenticated} = useContext(AuthContext);
 
@@ -68,11 +92,54 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 	const isInitialized = useRef(false);
 	const lastCartString = useRef("");
 	const isAuthenticatedRef = useRef(isAuthenticated);
+	const notificationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
 	// Actualizar el ref cuando cambia isAuthenticated
 	useEffect(() => {
 		isAuthenticatedRef.current = isAuthenticated;
 	}, [isAuthenticated]);
+
+	// Función para mostrar una notificación
+	const showNotification = useCallback(
+		(type: NotificationType, message: string) => {
+			// Limpiar cualquier temporizador existente
+			if (notificationTimeoutRef.current) {
+				clearTimeout(notificationTimeoutRef.current);
+			}
+
+			// Crear y mostrar la nueva notificación
+			setNotification({
+				id: Date.now().toString(),
+				type,
+				message,
+			});
+
+			// Establecer temporizador para ocultar la notificación después de 3 segundos
+			notificationTimeoutRef.current = setTimeout(() => {
+				setNotification(null);
+				notificationTimeoutRef.current = null;
+			}, 3000);
+		},
+		[]
+	);
+
+	// Función para ocultar manualmente la notificación
+	const hideNotification = useCallback(() => {
+		if (notificationTimeoutRef.current) {
+			clearTimeout(notificationTimeoutRef.current);
+			notificationTimeoutRef.current = null;
+		}
+		setNotification(null);
+	}, []);
+
+	// Limpiar temporizador al desmontar
+	useEffect(() => {
+		return () => {
+			if (notificationTimeoutRef.current) {
+				clearTimeout(notificationTimeoutRef.current);
+			}
+		};
+	}, []);
 
 	// Función para cargar el carrito desde la API
 	const fetchCartFromAPI = useCallback(async () => {
@@ -450,11 +517,58 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 				fetchCart,
 				itemCount,
 				totalAmount,
+				notification,
+				showNotification,
+				hideNotification,
 			}}
 		>
 			{children}
+			{/* Renderizar notificación si existe */}
+			{notification && (
+				<div className="fixed bottom-4 right-4 z-50 max-w-sm">
+					<div
+						className={`px-4 py-3 rounded-lg shadow-lg flex items-center ${
+							notification.type === NotificationType.SUCCESS
+								? "bg-green-500 text-white"
+								: notification.type === NotificationType.ERROR
+									? "bg-red-500 text-white"
+									: notification.type === NotificationType.WARNING
+										? "bg-yellow-500 text-white"
+										: "bg-blue-500 text-white"
+						}`}
+					>
+						{notification.type === NotificationType.SUCCESS && (
+							<span className="mr-2">✅</span>
+						)}
+						{notification.type === NotificationType.ERROR && (
+							<span className="mr-2">❌</span>
+						)}
+						{notification.type === NotificationType.WARNING && (
+							<span className="mr-2">⚠️</span>
+						)}
+						{notification.type === NotificationType.INFO && (
+							<span className="mr-2">ℹ️</span>
+						)}
+						<span className="flex-1">{notification.message}</span>
+						<button onClick={hideNotification} className="ml-2 text-white">
+							×
+						</button>
+					</div>
+				</div>
+			)}
 		</CartContext.Provider>
 	);
+};
+
+// Custom hook para usar el contexto de carrito con notificaciones
+export const useCartWithNotifications = () => {
+	const context = useContext(CartContext);
+	if (!context) {
+		throw new Error(
+			"useCartWithNotifications debe usarse dentro de un CartProvider"
+		);
+	}
+	return context;
 };
 
 export default CartProvider;

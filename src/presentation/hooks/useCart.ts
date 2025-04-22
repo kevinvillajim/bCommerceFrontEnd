@@ -1,5 +1,5 @@
 import {useContext, useState, useCallback} from "react";
-import {CartContext} from "../contexts/CartContext";
+import {CartContext, NotificationType} from "../contexts/CartContext";
 import {CartService} from "../../core/services/CartService";
 import type {
 	AddToCartRequest,
@@ -37,6 +37,13 @@ export const useCart = () => {
 				if (response && response.status === "success") {
 					// Actualizar el carrito completo después de añadir
 					await cartContext.fetchCart();
+
+					// Mostrar notificación de éxito
+					cartContext.showNotification(
+						NotificationType.SUCCESS,
+						"Producto agregado al carrito correctamente"
+					);
+
 					return true;
 				}
 
@@ -50,6 +57,10 @@ export const useCart = () => {
 						: "Error al agregar producto al carrito";
 				setActionError(errorMessage);
 				console.error("Error al agregar producto al carrito:", error);
+
+				// Mostrar notificación de error
+				cartContext.showNotification(NotificationType.ERROR, errorMessage);
+
 				return false;
 			} finally {
 				setLoadingAction(false);
@@ -79,6 +90,13 @@ export const useCart = () => {
 				if (response && response.status === "success") {
 					// Actualizar el carrito completo después de eliminar
 					await cartContext.fetchCart();
+
+					// Mostrar notificación de éxito
+					cartContext.showNotification(
+						NotificationType.SUCCESS,
+						"Producto eliminado del carrito"
+					);
+
 					return true;
 				}
 
@@ -92,6 +110,10 @@ export const useCart = () => {
 						: "Error al eliminar producto del carrito";
 				setActionError(errorMessage);
 				console.error("Error al eliminar producto del carrito:", error);
+
+				// Mostrar notificación de error
+				cartContext.showNotification(NotificationType.ERROR, errorMessage);
+
 				return false;
 			} finally {
 				setLoadingAction(false);
@@ -124,6 +146,13 @@ export const useCart = () => {
 				if (response && response.status === "success") {
 					// Actualizar el carrito completo después de actualizar
 					await cartContext.fetchCart();
+
+					// Mostrar notificación de éxito
+					cartContext.showNotification(
+						NotificationType.SUCCESS,
+						"Producto actualizado correctamente"
+					);
+
 					return true;
 				}
 
@@ -137,6 +166,10 @@ export const useCart = () => {
 						: "Error al actualizar producto del carrito";
 				setActionError(errorMessage);
 				console.error("Error al actualizar producto del carrito:", error);
+
+				// Mostrar notificación de error
+				cartContext.showNotification(NotificationType.ERROR, errorMessage);
+
 				return false;
 			} finally {
 				setLoadingAction(false);
@@ -164,6 +197,13 @@ export const useCart = () => {
 			if (response && response.status === "success") {
 				// Actualizar el carrito completo después de vaciarlo
 				await cartContext.fetchCart();
+
+				// Mostrar notificación de éxito
+				cartContext.showNotification(
+					NotificationType.SUCCESS,
+					"Carrito vaciado correctamente"
+				);
+
 				return true;
 			}
 
@@ -173,6 +213,10 @@ export const useCart = () => {
 				error instanceof Error ? error.message : "Error al vaciar el carrito";
 			setActionError(errorMessage);
 			console.error("Error al vaciar el carrito:", error);
+
+			// Mostrar notificación de error
+			cartContext.showNotification(NotificationType.ERROR, errorMessage);
+
 			return false;
 		} finally {
 			setLoadingAction(false);
