@@ -68,6 +68,7 @@ export interface ShoppingCartResponse {
 export interface CartItemResponse {
 	id: number;
 	product: {
+		main_image: string | undefined;
 		id: number;
 		name: string;
 		price: number;

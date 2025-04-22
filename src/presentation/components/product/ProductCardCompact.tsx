@@ -4,7 +4,7 @@ import {Link} from "react-router-dom";
 import RatingStars from "../common/RatingStars";
 import {useCart} from "../../hooks/useCart";
 import {useFavorites} from "../../hooks/useFavorites";
-import {NotificationType} from "../../contexts/CartContext"; // Importación añadida
+import {NotificationType} from "../../contexts/CartContext";
 
 interface ProductCardProps {
 	id: number;
@@ -19,6 +19,9 @@ interface ProductCardProps {
 	color?: boolean;
 	stock?: number;
 	slug?: string;
+	// Props opcionales para funciones externas
+	onAddToCart?: (id: number) => void;
+	onAddToWishlist?: (id: number) => void;
 }
 
 const ProductCardCompact: React.FC<ProductCardProps> = ({
@@ -34,9 +37,14 @@ const ProductCardCompact: React.FC<ProductCardProps> = ({
 	color = true,
 	stock = 10, // Valor predeterminado para stock
 	slug,
+	// Funciones externas opcionales
+	onAddToCart,
+	onAddToWishlist,
 }) => {
-	// Estado para controlar la animación de agregar al carrito
+	// Estados para controlar las animaciones
 	const [isAddingToCart, setIsAddingToCart] = useState(false);
+	const [isAddingToWishlist, setIsAddingToWishlist] = useState(false);
+	const [isFavorite, setIsFavorite] = useState(false);
 
 	// Hooks para carrito y favoritos
 	const {addToCart, showNotification} = useCart();
@@ -64,19 +72,24 @@ const ProductCardCompact: React.FC<ProductCardProps> = ({
 		setIsAddingToCart(true);
 
 		try {
-			// Llamar a la API para agregar al carrito
-			const success = await addToCart({
-				productId: id,
-				quantity: 1,
-			});
-
-			if (success) {
-				showNotification(
-					NotificationType.SUCCESS,
-					`${name} ha sido agregado al carrito`
-				);
+			// Si hay una función externa, usarla primero
+			if (onAddToCart) {
+				onAddToCart(id);
 			} else {
-				throw new Error("No se pudo agregar el producto al carrito");
+				// Llamar a la API para agregar al carrito
+				const success = await addToCart({
+					productId: id,
+					quantity: 1,
+				});
+
+				if (success) {
+					showNotification(
+						NotificationType.SUCCESS,
+						`${name} ha sido agregado al carrito`
+					);
+				} else {
+					throw new Error("No se pudo agregar el producto al carrito");
+				}
 			}
 		} catch (error) {
 			console.error("Error al agregar al carrito:", error);
@@ -97,19 +110,30 @@ const ProductCardCompact: React.FC<ProductCardProps> = ({
 		e.preventDefault(); // Evitar navegación
 		e.stopPropagation(); // Evitar propagación a elementos padres
 
-		try {
-			const result = await toggleFavorite(id);
+		setIsAddingToWishlist(true);
 
-			if (result) {
-				showNotification(
-					NotificationType.SUCCESS,
-					"Producto añadido a favoritos"
-				);
+		try {
+			// Si hay una función externa, usarla primero
+			if (onAddToWishlist) {
+				onAddToWishlist(id);
+				setIsFavorite(!isFavorite);
 			} else {
-				showNotification(
-					NotificationType.INFO,
-					"Producto eliminado de favoritos"
-				);
+				// Llamar a la API para alternar favorito
+				const result = await toggleFavorite(id);
+
+				setIsFavorite(result);
+
+				if (result) {
+					showNotification(
+						NotificationType.SUCCESS,
+						"Producto añadido a favoritos"
+					);
+				} else {
+					showNotification(
+						NotificationType.INFO,
+						"Producto eliminado de favoritos"
+					);
+				}
 			}
 		} catch (error) {
 			console.error("Error al manejar favorito:", error);
@@ -117,6 +141,11 @@ const ProductCardCompact: React.FC<ProductCardProps> = ({
 				NotificationType.ERROR,
 				"Error al gestionar favoritos. Inténtalo de nuevo."
 			);
+		} finally {
+			// Restaurar el estado después de un breve tiempo para la animación
+			setTimeout(() => {
+				setIsAddingToWishlist(false);
+			}, 1000);
 		}
 	};
 
@@ -157,7 +186,11 @@ const ProductCardCompact: React.FC<ProductCardProps> = ({
 						className="cursor-pointer bg-white p-2 rounded-full hover:bg-primary-50 hover:text-primary-600 transition-colors"
 						aria-label="Añadir a favoritos"
 					>
-						<Heart size={18} />
+						{isAddingToWishlist || isFavorite ? (
+							<Heart size={18} className="text-red-500 fill-current" />
+						) : (
+							<Heart size={18} />
+						)}
 					</button>
 					<button
 						onClick={handleAddToCart}
@@ -226,7 +259,11 @@ const ProductCardCompact: React.FC<ProductCardProps> = ({
 							className="text-gray-500 hover:text-primary-600 transition-colors"
 							aria-label="Añadir a favoritos"
 						>
-							<Heart size={16} />
+							{isAddingToWishlist || isFavorite ? (
+								<Heart size={16} className="text-red-500 fill-current" />
+							) : (
+								<Heart size={16} />
+							)}
 						</button>
 						<button
 							onClick={handleAddToCart}

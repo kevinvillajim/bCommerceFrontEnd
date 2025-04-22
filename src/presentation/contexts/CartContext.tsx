@@ -185,7 +185,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 						attributes: item.attributes,
 						product: {
 							name: item.product.name,
-							image: item.product.image,
+							image: item.product.main_image || item.product.image,
 							slug: item.product.slug,
 							stockAvailable: item.product.stock,
 						},

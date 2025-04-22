@@ -34,7 +34,7 @@ const UserProfilePage = lazy(
 );
 const CartPage = lazy(() => import("../presentation/pages/CartPage"));
 const FavoritePage = lazy(() => import("../presentation/pages/FavoritePage"));
-// const CheckoutPage = lazy(() => import('../presentation/pages/CheckoutPage'));
+const CheckoutPage = lazy(() => import('../presentation/pages/CheckoutPage'));
 // const OrdersPage = lazy(() => import('../presentation/pages/OrdersPage'));
 // const OrderDetailsPage = lazy(() => import('../presentation/pages/OrderDetailsPage'));
 
@@ -217,14 +217,14 @@ const appRoutes: RouteObject[] = [
 					</PublicRoute>
 				),
 			},
-			// {
-			// 	path: "checkout",
-			// 	element: (
-			// 		<PrivateRoute>
-			// 			<CheckoutPage />
-			// 		</PrivateRoute>
-			// 	),
-			// },
+			{
+				path: "checkout",
+				element: (
+					<PrivateRoute>
+						<CheckoutPage />
+					</PrivateRoute>
+				),
+			},
 			{
 				path: "favorites",
 				element: (

@@ -230,6 +230,28 @@ const CartPage: React.FC = () => {
 		navigate("/checkout");
 	};
 
+	// Función para obtener la imagen del producto
+
+	const getProductImage = (product: any): string => {
+		if (product?.image) {
+			return product.image;
+		}
+
+		if (product?.main_image) {
+			return product.main_image;
+		}
+
+		if (product?.images && product.images.length > 0) {
+			return (
+				product.images[0].original ||
+				product.images[0].medium ||
+				product.images[0].thumbnail
+			);
+		}
+
+		return "/placeholder-image.jpg";
+	};
+
 	return (
 		<div className="container mx-auto px-4 lg:px-8 py-10">
 			<h1 className="text-3xl font-bold mb-8">Mi Carrito</h1>
@@ -289,7 +311,7 @@ const CartPage: React.FC = () => {
 												className="w-24 h-24 flex-shrink-0"
 											>
 												<img
-													src={item.product?.image || "/placeholder-image.jpg"}
+													src={getProductImage(item.product)}
 													alt={
 														item.product?.name || `Producto ${item.productId}`
 													}

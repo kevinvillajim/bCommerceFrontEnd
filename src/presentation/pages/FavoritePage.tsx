@@ -483,18 +483,24 @@ const FavoritePage: React.FC = () => {
 										<div className="flex space-x-2">
 											<button
 												onClick={() => openPreferences(item.favorite.id)}
-												className="text-gray-400 hover:text-blue-500 transition-colors"
+												className="cursor-pointer text-gray-400 hover:text-blue-500 transition-colors"
 												aria-label="Configurar notificaciones"
 											>
-												<Settings size={20} />
+												<Settings
+													size={20}
+													className="stroke-current" // Esto asegura que el trazo del SVG cambie con la clase text-*
+												/>
 											</button>
 
 											<button
 												onClick={() => handleRemoveFromWishlist(product.id)}
-												className="text-gray-400 hover:text-red-500 transition-colors"
+												className="cursor-pointer text-gray-400 hover:text-red-500 transition-colors"
 												aria-label="Eliminar de favoritos"
 											>
-												<Trash2 size={20} />
+												<Trash2
+													size={20}
+													className="stroke-current" // Esto asegura que el trazo del SVG cambie con la clase text-*
+												/>
 											</button>
 										</div>
 									</div>
@@ -529,7 +535,7 @@ const FavoritePage: React.FC = () => {
 										<button
 											onClick={() => handleAddToCart(product)}
 											disabled={!isInStock}
-											className={`inline-flex items-center px-5 py-2.5 rounded-lg text-white font-medium transition-all ${
+											className={`cursor-pointer inline-flex items-center px-5 py-2.5 rounded-lg text-white font-medium transition-all ${
 												isInStock
 													? "bg-primary-600 hover:bg-primary-700 shadow-sm hover:shadow"
 													: "bg-gray-400 cursor-not-allowed"
