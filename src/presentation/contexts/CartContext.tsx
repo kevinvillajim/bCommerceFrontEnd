@@ -529,7 +529,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 					<div
 						className={`px-4 py-3 rounded-lg shadow-lg flex items-center ${
 							notification.type === NotificationType.SUCCESS
-								? "bg-green-500 text-white"
+								? "bg-green-600 text-white"
 								: notification.type === NotificationType.ERROR
 									? "bg-red-500 text-white"
 									: notification.type === NotificationType.WARNING
@@ -537,18 +537,6 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 										: "bg-blue-500 text-white"
 						}`}
 					>
-						{notification.type === NotificationType.SUCCESS && (
-							<span className="mr-2">✅</span>
-						)}
-						{notification.type === NotificationType.ERROR && (
-							<span className="mr-2">❌</span>
-						)}
-						{notification.type === NotificationType.WARNING && (
-							<span className="mr-2">⚠️</span>
-						)}
-						{notification.type === NotificationType.INFO && (
-							<span className="mr-2">ℹ️</span>
-						)}
 						<span className="flex-1">{notification.message}</span>
 						<button onClick={hideNotification} className="ml-2 text-white">
 							×

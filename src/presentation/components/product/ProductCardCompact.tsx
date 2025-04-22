@@ -4,10 +4,7 @@ import {Link} from "react-router-dom";
 import RatingStars from "../common/RatingStars";
 import {useCart} from "../../hooks/useCart";
 import {useFavorites} from "../../hooks/useFavorites";
-import {
-	useCartNotification,
-	NotificationType,
-} from "../common/CartNotification";
+import {NotificationType} from "../../contexts/CartContext"; // Importación añadida
 
 interface ProductCardProps {
 	id: number;
@@ -42,9 +39,8 @@ const ProductCardCompact: React.FC<ProductCardProps> = ({
 	const [isAddingToCart, setIsAddingToCart] = useState(false);
 
 	// Hooks para carrito y favoritos
-	const {addToCart} = useCart();
+	const {addToCart, showNotification} = useCart();
 	const {toggleFavorite} = useFavorites();
-	const {showNotification} = useCartNotification();
 
 	// Calculate discounted price
 	const discountedPrice = discount ? price - price * (discount / 100) : price;

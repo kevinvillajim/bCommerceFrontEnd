@@ -10,11 +10,8 @@ import {
 } from "lucide-react";
 import {useCart} from "../hooks/useCart";
 import {useFavorites} from "../hooks/useFavorites";
-import {
-	useCartNotification,
-	NotificationType,
-} from "../components/common/CartNotification";
 import {formatCurrency} from "../../utils/formatters/formatCurrency";
+import {NotificationType} from "../contexts/CartContext";
 
 const CartPage: React.FC = () => {
 	const [isLoading, setIsLoading] = useState(true);
@@ -25,7 +22,6 @@ const CartPage: React.FC = () => {
 	const [loadingItem, setLoadingItem] = useState<number | null>(null);
 
 	const navigate = useNavigate();
-	const {showNotification} = useCartNotification();
 
 	// Obtener datos del carrito y funciones para manipularlo
 	const {
@@ -34,12 +30,11 @@ const CartPage: React.FC = () => {
 		error,
 		fetchCart,
 		itemCount,
-		totalAmount,
-		addToCart,
 		removeFromCart,
 		updateCartItem,
 		clearCart,
 		loadingAction,
+		showNotification,
 	} = useCart();
 
 	const {toggleFavorite} = useFavorites();
@@ -62,7 +57,7 @@ const CartPage: React.FC = () => {
 		};
 
 		loadCart();
-	}, [fetchCart]);
+	}, [fetchCart, showNotification]);
 
 	// Actualizar estado de carrito vacío cuando cambia el carrito
 	useEffect(() => {
