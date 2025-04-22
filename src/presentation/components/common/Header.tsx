@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useContext } from 'react';
 import { ShoppingCart, User, Menu, X, Search, Heart, Bell, LogOut, Settings, ShoppingBag } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
-import { useCart } from '../../hooks/useCart';
-import { useFavorites } from '../../hooks/useFavorites';
 import { useNotifications } from '../../hooks/useNotifications';
-import ThemeToggle from './ThemeToggle'
+import ThemeToggle from './ThemeToggle';
+import { CartContext } from "../../contexts/CartContext";
+import { FavoriteContext } from "../../contexts/FavoriteContext";
 
 // Interfaz para el logo
 interface Logo {
@@ -41,11 +41,8 @@ const Header: React.FC<HeaderProps> = ({
   // Obtener información del usuario y estado de autenticación
   const { user, isAuthenticated, logout } = useAuth();
   
-  // Obtener información del carrito utilizando el hook useCart
-  const { itemCount: cartItemCount } = useCart();
-  
-  
-  const { favoriteCount } = useFavorites();
+  const { cartItemCount } = useContext(CartContext);
+  const { favoriteCount } = useContext(FavoriteContext);
   const { unreadCount: notificationCount } = useNotifications();
 
 

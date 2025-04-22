@@ -48,6 +48,7 @@ interface CartContextProps {
 	notification: CartNotification | null;
 	showNotification: (type: NotificationType, message: string) => void;
 	hideNotification: () => void;
+	cartItemCount: number;
 }
 
 // Create context with default values
@@ -65,6 +66,7 @@ export const CartContext = createContext<CartContextProps>({
 	notification: null,
 	showNotification: () => {},
 	hideNotification: () => {},
+	cartItemCount: 0,
 });
 
 // Storage service instance
@@ -271,9 +273,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 		}
 
 		// Calcular contador de items
-		const count = cart.items
-			? cart.items.reduce((sum, item) => sum + item.quantity, 0)
-			: 0;
+		const count = cart.items ? cart.items.length : 0;
 		setItemCount(count);
 
 		// Usar el total proporcionado por la API o calcular
@@ -359,14 +359,27 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 	const addToCart = useCallback(
 		async (request: AddToCartRequest): Promise<boolean> => {
 			if (!isAuthenticatedRef.current) {
-				return addToCartLocal(request);
+				const result = await addToCartLocal(request);
+				await fetchCart();
+				return result;
 			}
-
-			// La implementación para usuarios autenticados es manejada por el hook useCart
-			// que usará cartService para interactuar con la API
-			return true;
+			try {
+				setLoading(true);
+				const response = await cartService.addToCart(request);
+				if (response && response.status === "success") {
+					await fetchCart();
+					return true;
+				}
+				throw new Error(response?.message || "No se pudo agregar al carrito");
+			} catch (err) {
+				console.error("Error al agregar producto al carrito:", err);
+				setError(err instanceof Error ? err.message : "Error al agregar producto al carrito");
+				return false;
+			} finally {
+				setLoading(false);
+			}
 		},
-		[addToCartLocal]
+		[addToCartLocal, fetchCart]
 	);
 
 	// Remove item from cart - versión local
@@ -402,14 +415,27 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 	const removeFromCart = useCallback(
 		async (itemId: number): Promise<boolean> => {
 			if (!isAuthenticatedRef.current) {
-				return removeFromCartLocal(itemId);
+				const result = await removeFromCartLocal(itemId);
+				await fetchCart();
+				return result;
 			}
-
-			// La implementación para usuarios autenticados es manejada por el hook useCart
-			// que usará cartService para interactuar con la API
-			return true;
+			try {
+				setLoading(true);
+				const response = await cartService.removeFromCart(itemId);
+				if (response && response.status === "success") {
+					await fetchCart();
+					return true;
+				}
+				throw new Error(response?.message || "No se pudo eliminar del carrito");
+			} catch (err) {
+				console.error("Error al eliminar producto del carrito:", err);
+				setError(err instanceof Error ? err.message : "Error al eliminar producto del carrito");
+				return false;
+			} finally {
+				setLoading(false);
+			}
 		},
-		[removeFromCartLocal]
+		[removeFromCartLocal, fetchCart]
 	);
 
 	// Update cart item quantity - versión local
@@ -455,14 +481,27 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 	const updateCartItem = useCallback(
 		async (data: CartItemUpdateData): Promise<boolean> => {
 			if (!isAuthenticatedRef.current) {
-				return updateCartItemLocal(data);
+				const result = await updateCartItemLocal(data);
+				await fetchCart();
+				return result;
 			}
-
-			// La implementación para usuarios autenticados es manejada por el hook useCart
-			// que usará cartService para interactuar con la API
-			return true;
+			try {
+				setLoading(true);
+				const response = await cartService.updateCartItem(data.itemId, data.quantity);
+				if (response && response.status === "success") {
+					await fetchCart();
+					return true;
+				}
+				throw new Error(response?.message || "No se pudo actualizar el carrito");
+			} catch (err) {
+				console.error("Error al actualizar producto del carrito:", err);
+				setError(err instanceof Error ? err.message : "Error al actualizar producto del carrito");
+				return false;
+			} finally {
+				setLoading(false);
+			}
 		},
-		[updateCartItemLocal]
+		[updateCartItemLocal, fetchCart]
 	);
 
 	// Clear entire cart - versión local
@@ -495,13 +534,26 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 	// Clear entire cart
 	const clearCart = useCallback(async (): Promise<boolean> => {
 		if (!isAuthenticatedRef.current) {
-			return clearCartLocal();
+			const result = await clearCartLocal();
+			await fetchCart();
+			return result;
 		}
-
-		// La implementación para usuarios autenticados es manejada por el hook useCart
-		// que usará cartService para interactuar con la API
-		return true;
-	}, [clearCartLocal]);
+		try {
+			setLoading(true);
+			const response = await cartService.clearCart();
+			if (response && response.status === "success") {
+				await fetchCart();
+				return true;
+			}
+			throw new Error(response?.message || "No se pudo vaciar el carrito");
+		} catch (err) {
+			console.error("Error al vaciar carrito:", err);
+			setError(err instanceof Error ? err.message : "Error al vaciar carrito");
+			return false;
+		} finally {
+			setLoading(false);
+		}
+	}, [clearCartLocal, fetchCart]);
 
 	// Devolver contexto
 	return (
@@ -520,6 +572,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 				notification,
 				showNotification,
 				hideNotification,
+				cartItemCount: itemCount,
 			}}
 		>
 			{children}

@@ -33,7 +33,6 @@ const CartPage: React.FC = () => {
 		removeFromCart,
 		updateCartItem,
 		clearCart,
-		loadingAction,
 		showNotification,
 	} = useCart();
 
@@ -190,7 +189,7 @@ const CartPage: React.FC = () => {
 	};
 
 	const handleEmptyCart = async () => {
-		if (loadingAction) return;
+		if (loading) return;
 
 		try {
 			const result = await clearCart();
@@ -389,7 +388,7 @@ const CartPage: React.FC = () => {
 							<div className="flex justify-between items-center p-5 bg-gray-50">
 								<button
 									onClick={handleEmptyCart}
-									disabled={isEmpty || loadingAction}
+									disabled={isEmpty || loading}
 									className="px-4 py-2 text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50"
 								>
 									Vaciar carrito
@@ -480,7 +479,7 @@ const CartPage: React.FC = () => {
 								{/* Botón de checkout */}
 								<button
 									onClick={handleCheckout}
-									disabled={isEmpty || loadingAction}
+									disabled={isEmpty || loading}
 									className="mt-8 w-full bg-primary-600 hover:bg-primary-700 text-white font-medium py-3 px-4 rounded-md transition-colors disabled:opacity-50"
 								>
 									Proceder al pago
