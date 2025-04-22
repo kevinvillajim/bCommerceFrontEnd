@@ -1,3 +1,4 @@
+// src/presentation/contexts/CartContext.tsx
 import React, {
 	createContext,
 	useState,
@@ -143,6 +144,12 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 		};
 	}, []);
 
+	// Calcular el número total de elementos en el carrito (sumando cantidades)
+	const calculateTotalItems = useCallback((cartItems: CartItem[]): number => {
+		if (!cartItems || cartItems.length === 0) return 0;
+		return cartItems.reduce((total, item) => total + item.quantity, 0);
+	}, []);
+
 	// Función para cargar el carrito desde la API
 	const fetchCartFromAPI = useCallback(async () => {
 		try {
@@ -168,10 +175,14 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 							stockAvailable: item.product.stock,
 						},
 					})),
+					item_count: response.data.item_count || 0,
 				};
 
 				setCart(cartData);
-				setItemCount(response.data.item_count);
+				// Usar el campo item_count si está disponible, o calcular el total
+				const totalItems =
+					response.data.item_count || calculateTotalItems(cartData.items);
+				setItemCount(totalItems);
 				setTotalAmount(cartData.total);
 				lastCartString.current = JSON.stringify(cartData);
 				return cartData;
@@ -193,13 +204,8 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 					setCart(parsedCart);
 					lastCartString.current = JSON.stringify(parsedCart);
 					// Calcular totales
-					const count = parsedCart.items
-						? parsedCart.items.reduce(
-								(sum: number, item: CartItem) => sum + item.quantity,
-								0
-							)
-						: 0;
-					setItemCount(count);
+					const totalItems = calculateTotalItems(parsedCart.items || []);
+					setItemCount(totalItems);
 					setTotalAmount(parsedCart.total || 0);
 				} catch (e) {
 					console.error("Error al usar caché local del carrito:", e);
@@ -209,7 +215,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 		} finally {
 			setLoading(false);
 		}
-	}, []);
+	}, [calculateTotalItems]);
 
 	// Cargar carrito (desde API o localStorage)
 	const fetchCart = useCallback(async () => {
@@ -225,13 +231,8 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 					setCart(parsedCart);
 					lastCartString.current = JSON.stringify(parsedCart);
 					// Calcular totales
-					const count = parsedCart.items
-						? parsedCart.items.reduce(
-								(sum: number, item: CartItem) => sum + item.quantity,
-								0
-							)
-						: 0;
-					setItemCount(count);
+					const totalItems = calculateTotalItems(parsedCart.items || []);
+					setItemCount(totalItems);
 					setTotalAmount(parsedCart.total || 0);
 				} catch (e) {
 					console.error("Error al parsear carrito del localStorage:", e);
@@ -248,7 +249,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 				setTotalAmount(0);
 			}
 		}
-	}, [fetchCartFromAPI]);
+	}, [fetchCartFromAPI, calculateTotalItems]);
 
 	// Initialize cart on mount or when auth state changes
 	useEffect(() => {
@@ -264,6 +265,22 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 		isInitialized.current = true;
 	}, [isAuthenticated, fetchCart]);
 
+	// SOLUCIÓN: Añadir un useEffect para cargar el carrito al inicio y periódicamente
+	useEffect(() => {
+		// Cargar carrito al montar el componente
+		fetchCart();
+
+		// Opcionalmente, establecer un intervalo para actualizar el carrito
+		const cartRefreshInterval = setInterval(() => {
+			fetchCart();
+		}, 60000); // Actualizar cada minuto
+
+		// Limpiar intervalo al desmontar
+		return () => {
+			clearInterval(cartRefreshInterval);
+		};
+	}, []); // Sin dependencias para que solo se ejecute al montar
+
 	// Update derived states when cart changes
 	useEffect(() => {
 		if (!cart) {
@@ -272,9 +289,9 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 			return;
 		}
 
-		// Calcular contador de items
-		const count = cart.items ? cart.items.length : 0;
-		setItemCount(count);
+		// Calcular contador de items - sumando las cantidades
+		const totalItems = calculateTotalItems(cart.items || []);
+		setItemCount(totalItems);
 
 		// Usar el total proporcionado por la API o calcular
 		setTotalAmount(cart.total || 0);
@@ -286,7 +303,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 			storageService.setItem(appConfig.storage.cartKey, cartString);
 			lastCartString.current = cartString;
 		}
-	}, [cart]);
+	}, [cart, calculateTotalItems]);
 
 	// Add item to cart - versión local
 	const addToCartLocal = useCallback(
@@ -373,7 +390,11 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 				throw new Error(response?.message || "No se pudo agregar al carrito");
 			} catch (err) {
 				console.error("Error al agregar producto al carrito:", err);
-				setError(err instanceof Error ? err.message : "Error al agregar producto al carrito");
+				setError(
+					err instanceof Error
+						? err.message
+						: "Error al agregar producto al carrito"
+				);
 				return false;
 			} finally {
 				setLoading(false);
@@ -429,7 +450,11 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 				throw new Error(response?.message || "No se pudo eliminar del carrito");
 			} catch (err) {
 				console.error("Error al eliminar producto del carrito:", err);
-				setError(err instanceof Error ? err.message : "Error al eliminar producto del carrito");
+				setError(
+					err instanceof Error
+						? err.message
+						: "Error al eliminar producto del carrito"
+				);
 				return false;
 			} finally {
 				setLoading(false);
@@ -487,15 +512,24 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 			}
 			try {
 				setLoading(true);
-				const response = await cartService.updateCartItem(data.itemId, data.quantity);
+				const response = await cartService.updateCartItem(
+					data.itemId,
+					data.quantity
+				);
 				if (response && response.status === "success") {
 					await fetchCart();
 					return true;
 				}
-				throw new Error(response?.message || "No se pudo actualizar el carrito");
+				throw new Error(
+					response?.message || "No se pudo actualizar el carrito"
+				);
 			} catch (err) {
 				console.error("Error al actualizar producto del carrito:", err);
-				setError(err instanceof Error ? err.message : "Error al actualizar producto del carrito");
+				setError(
+					err instanceof Error
+						? err.message
+						: "Error al actualizar producto del carrito"
+				);
 				return false;
 			} finally {
 				setLoading(false);
@@ -572,7 +606,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 				notification,
 				showNotification,
 				hideNotification,
-				cartItemCount: itemCount,
+				cartItemCount: itemCount, // Asegurar que cartItemCount refleje el valor actual de itemCount
 			}}
 		>
 			{children}
