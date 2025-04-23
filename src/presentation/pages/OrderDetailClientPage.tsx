@@ -4,7 +4,7 @@ import {ArrowLeft, FileText, Truck, Package} from "lucide-react";
 import {formatCurrency} from "../../utils/formatters/formatCurrency";
 import {formatDate} from "../../utils/formatters/formatDate";
 import OrderStatusBadge from "../components/orders/OrderStatusBadge";
-import {OrderServiceAdapter} from "../../core/adapters/OrderServiceAdapter";
+import OrderServiceAdapter from "../../core/adapters/OrderServiceAdapter";
 import type {OrderDetail} from "../../core/domain/entities/Order";
 
 const OrderDetailClientPage: React.FC = () => {
@@ -26,21 +26,6 @@ const OrderDetailClientPage: React.FC = () => {
 		setLoading(true);
 		try {
 			const orderDetail = await orderAdapter.getOrderDetails(id, true);
-			// Asegurarse de que los cálculos sean correctos
-			if (orderDetail && orderDetail.items) {
-				const subtotal = orderDetail.items.reduce(
-					(sum, item) => sum + item.price * item.quantity,
-					0
-				);
-				// IVA del 15%
-				const taxRate = 0.15;
-				const taxAmount = subtotal * taxRate;
-				// Comprobar si el total incluye el IVA
-				if (Math.abs(orderDetail.total - (subtotal + taxAmount)) > 0.01) {
-					// Si el total no incluye el IVA, corregirlo
-					orderDetail.total = subtotal + taxAmount;
-				}
-			}
 			setOrder(orderDetail);
 			setError(null);
 		} catch (err) {
@@ -272,7 +257,7 @@ const OrderDetailClientPage: React.FC = () => {
 											>
 												<Package size={20} />
 											</div>
-											<span className="text-xs mt-1">Procesando</span>
+											<span className="text-xs mt-1 text-white">Procesando</span>
 										</div>
 										<div className="flex-1 h-1 mx-2 bg-gray-200 dark:bg-gray-700"></div>
 										<div className="flex flex-col items-center">
@@ -287,7 +272,7 @@ const OrderDetailClientPage: React.FC = () => {
 											>
 												<Truck size={20} />
 											</div>
-											<span className="text-xs mt-1">Enviado</span>
+											<span className="text-xs mt-1 text-white">Enviado</span>
 										</div>
 										<div className="flex-1 h-1 mx-2 bg-gray-200 dark:bg-gray-700"></div>
 										<div className="flex flex-col items-center">
@@ -301,7 +286,7 @@ const OrderDetailClientPage: React.FC = () => {
 											>
 												<Package size={20} />
 											</div>
-											<span className="text-xs mt-1">Entregado</span>
+											<span className="text-xs mt-1 text-white">Entregado</span>
 										</div>
 									</div>
 								</div>
@@ -351,11 +336,13 @@ const OrderDetailClientPage: React.FC = () => {
 											<tr key={item.id}>
 												<td className="px-6 py-4 whitespace-nowrap">
 													<div className="flex items-center">
-														{item.product?.image && (
+														{(item.product?.image || item.product_image) && (
 															<div className="flex-shrink-0 h-10 w-10 mr-3">
 																<img
 																	className="h-10 w-10 rounded-md object-cover"
-																	src={item.product.image}
+																	src={
+																		item.product?.image || item.product_image
+																	}
 																	alt={
 																		item.product?.name ||
 																		item.product_name ||

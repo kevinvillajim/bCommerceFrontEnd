@@ -1,5 +1,4 @@
 // src/presentation/pages/seller/SellerOrdersPage.tsx
-// Actualización para utilizar el total con IVA incluido
 
 import React, {useState, useEffect} from "react";
 import {Link} from "react-router-dom";
@@ -17,7 +16,7 @@ import {
 import Table from "../../components/dashboard/Table";
 import {formatCurrency} from "../../../utils/formatters/formatCurrency";
 import {SellerStatCardList} from "../../components/dashboard/SellerStatCardList";
-import {OrderServiceAdapter} from "../../../core/adapters/OrderServiceAdapter";
+import OrderServiceAdapter from "../../../core/adapters/OrderServiceAdapter";
 import type {
 	OrderUI,
 	OrderStatUI,
@@ -121,7 +120,7 @@ const SellerOrdersPage: React.FC = () => {
 			const stats = await orderAdapter.getOrderStats();
 
 			// Añadir los iconos a las estadísticas
-			const statsWithIcons = stats.map((stat) => {
+			const statsWithIcons = stats.map((stat: OrderStatUI) => {
 				let icon;
 				switch (stat.label) {
 					case "Total Pedidos":
@@ -581,7 +580,7 @@ const SellerOrdersPage: React.FC = () => {
 			<Table
 				data={orders}
 				columns={columns}
-				searchFields={["orderNumber", "customer.name", "customer.email"]}
+				searchFields={["orderNumber"]}
 				loading={loading}
 				emptyMessage="No se encontraron pedidos"
 				pagination={{

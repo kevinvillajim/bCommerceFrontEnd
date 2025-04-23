@@ -3,8 +3,11 @@ import {useParams, useNavigate, Link} from "react-router-dom";
 import {ArrowLeft, Truck, Package, Check, X, FileText} from "lucide-react";
 import {formatCurrency} from "../../../utils/formatters/formatCurrency";
 import {formatDate} from "../../../utils/formatters/formatDate";
-import {OrderServiceAdapter} from "../../../core/adapters/OrderServiceAdapter";
-import type {OrderDetail} from "../../../core/domain/entities/Order";
+import OrderServiceAdapter from "../../../core/adapters/OrderServiceAdapter";
+import type {
+	OrderDetail,
+	OrderStatus,
+} from "../../../core/domain/entities/Order";
 
 const OrderDetailPage: React.FC = () => {
 	const {id} = useParams<{id: string}>();
@@ -37,7 +40,7 @@ const OrderDetailPage: React.FC = () => {
 		}
 	};
 
-	const handleStatusChange = async (newStatus: string) => {
+	const handleStatusChange = async (newStatus: OrderStatus) => {
 		if (!id || !order) return;
 
 		setIsUpdating(true);
@@ -46,7 +49,7 @@ const OrderDetailPage: React.FC = () => {
 
 			if (success) {
 				// Actualizar el estado de la orden localmente
-				setOrder((prev) => (prev ? {...prev, status: newStatus as any} : null));
+				setOrder((prev) => (prev ? {...prev, status: newStatus} : null));
 			} else {
 				throw new Error("No se pudo actualizar el estado");
 			}
@@ -386,12 +389,16 @@ const OrderDetailPage: React.FC = () => {
 										<tr key={item.id}>
 											<td className="px-6 py-4 whitespace-nowrap">
 												<div className="flex items-center">
-													{item.product?.image && (
+													{(item.product?.image || item.product_image) && (
 														<div className="flex-shrink-0 h-10 w-10 mr-3">
 															<img
 																className="h-10 w-10 rounded-md object-cover"
-																src={item.product.image}
-																alt={item.product.name || "Producto"}
+																src={item.product?.image || item.product_image}
+																alt={
+																	item.product?.name ||
+																	item.product_name ||
+																	"Producto"
+																}
 															/>
 														</div>
 													)}
@@ -452,6 +459,19 @@ const OrderDetailPage: React.FC = () => {
 								</span>
 							</div>
 							{/* Añadir impuestos u otros cargos si es necesario */}
+							<div className="flex justify-between items-center pb-2">
+								<span className="text-gray-600 dark:text-gray-400">
+									IVA (15%):
+								</span>
+								<span className="text-gray-900 dark:text-gray-100">
+									{formatCurrency(
+										order.items.reduce(
+											(sum, item) => sum + item.price * item.quantity,
+											0
+										) * 0.15
+									)}
+								</span>
+							</div>
 							<div className="flex justify-between items-center pt-3 border-t border-gray-200 dark:border-gray-700 font-medium">
 								<span className="text-gray-900 dark:text-gray-100">Total:</span>
 								<span className="text-lg text-gray-900 dark:text-gray-100">

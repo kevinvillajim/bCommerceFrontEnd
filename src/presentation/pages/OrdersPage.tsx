@@ -8,7 +8,7 @@ import {formatCurrency} from "../../utils/formatters/formatCurrency";
 import {formatDate} from "../../utils/formatters/formatDate";
 import OrderStatusBadge from "../components/orders/OrderStatusBadge";
 import Table from "../components/dashboard/Table";
-import {OrderServiceAdapter} from "../../core/adapters/OrderServiceAdapter";
+import OrderServiceAdapter from "../../core/adapters/OrderServiceAdapter";
 import {useAuth} from "../hooks/useAuth";
 
 const OrdersPage: React.FC = () => {
@@ -197,6 +197,7 @@ const OrdersPage: React.FC = () => {
 						<div className="flex items-center space-x-2">
 							<Filter className="h-5 w-5 text-gray-500" />
 							<select
+								name="status"
 								className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 								value={statusFilter}
 								onChange={(e) => setStatusFilter(e.target.value)}
@@ -204,6 +205,7 @@ const OrdersPage: React.FC = () => {
 								<option value="all">Todos los estados</option>
 								<option value="pending">Pendientes</option>
 								<option value="processing">En Proceso</option>
+								<option value="paid">Pagados</option>
 								<option value="shipped">Enviados</option>
 								<option value="delivered">Entregados</option>
 								<option value="completed">Completados</option>
