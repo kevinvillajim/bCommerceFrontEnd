@@ -165,7 +165,7 @@ const OrdersPage: React.FC = () => {
 		<div className="py-8 px-4 md:px-8 max-w-7xl mx-auto">
 			<div className="space-y-6">
 				<div className="flex justify-between items-center">
-					<h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+					<h1 className="text-2xl font-bold text-gray-800">
 						Mis Pedidos
 					</h1>
 					<div className="flex space-x-2">

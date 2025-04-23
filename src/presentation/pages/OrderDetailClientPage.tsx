@@ -55,7 +55,7 @@ const OrderDetailClientPage: React.FC = () => {
 					<h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
 						Error al cargar el pedido
 					</h2>
-					<p className="text-gray-600 dark:text-gray-400 mb-6">
+					<p className="text-gray-700 dark:text-gray-400 mb-6">
 						{error || "No se pudo encontrar el pedido solicitado"}
 					</p>
 					<button
@@ -77,12 +77,12 @@ const OrderDetailClientPage: React.FC = () => {
 					<div>
 						<button
 							onClick={() => navigate("/orders")}
-							className="flex items-center text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 mb-2"
+							className="cursor-pointer flex items-center text-gray-600 hover:text-primary-600 dark:hover:text-primary-400 mb-2"
 						>
 							<ArrowLeft size={16} className="mr-1" />
 							<span>Volver a mis pedidos</span>
 						</button>
-						<h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+						<h1 className="text-2xl font-bold text-gray-800">
 							Pedido #{order.orderNumber}
 						</h1>
 					</div>

@@ -77,7 +77,7 @@ export class OrderService {
 			console.log(`OrderService: Obteniendo detalle de orden ${orderId}`);
 
 			const response = await ApiClient.get<any>(
-				API_ENDPOINTS.ORDERS.DETAILS(orderId)
+				API_ENDPOINTS.USER.ORDER_DETAILS(orderId)
 			);
 
 			console.log(`OrderService: Respuesta para orden ${orderId}:`, response);
@@ -364,8 +364,9 @@ export class OrderService {
 				filters
 			);
 
+			// CORRECCIÓN: Usar la ruta correcta de las órdenes de usuario
 			const response = await ApiClient.get<any>(
-				API_ENDPOINTS.ORDERS.LIST,
+				API_ENDPOINTS.USER.ORDERS, // Cambiado de ORDERS.LIST a USER.ORDERS
 				filters
 			);
 

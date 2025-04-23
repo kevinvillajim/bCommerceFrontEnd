@@ -25,6 +25,14 @@ export const API_ENDPOINTS = {
 		UPDATE: "/profile",
 	},
 
+	USER: {
+		ORDERS: "/user/orders", // Esta es la correcta para clientes
+		ORDER_DETAILS: (id: number) => `/user/orders/${id}`,
+		ORDER_STATS: "/user/orders/stats",
+		REORDER: (id: number) => `/user/orders/${id}/reorder`,
+		CONFIRM_RECEPTION: (id: number) => `/user/orders/${id}/confirm-reception`,
+	},
+
 	// Products
 	PRODUCTS: {
 		LIST: "/products",

@@ -56,6 +56,7 @@ export class OrderServiceAdapter {
 	private getOrderStatsUseCase: GetOrderStatsUseCase;
 	private updateOrderStatusUseCase: UpdateOrderStatusUseCase;
 	private getOrderDetailUseCase: GetOrderDetailUseCase;
+	private getUserOrdersUseCase: GetUserOrdersUseCase;
 
 	constructor() {
 		this.orderService = new OrderService();
@@ -65,6 +66,7 @@ export class OrderServiceAdapter {
 			this.orderService
 		);
 		this.getOrderDetailUseCase = new GetOrderDetailUseCase(this.orderService);
+		this.getUserOrdersUseCase = new GetUserOrdersUseCase(this.orderService);
 	}
 
 	/**
@@ -83,7 +85,8 @@ export class OrderServiceAdapter {
 			const response = await this.getSellerOrdersUseCase.execute(filters);
 
 			// Adaptar el formato de respuesta de la API al formato esperado por la UI
-			const adaptedOrders: OrderUI[] = response.data.map((order) => ({
+			const ordersArray = Array.isArray(response.data) ? response.data : [];
+			const adaptedOrders: OrderUI[] = ordersArray.map((order) => ({
 				id: String(order.id),
 				orderNumber: order.orderNumber,
 				date: order.createdAt || new Date().toISOString(),
@@ -276,35 +279,50 @@ export class OrderServiceAdapter {
 	}
 
 	/**
-	 * Obtiene el detalle de una orden específica
+	 * Obtiene el detalle de una orden específica (adaptado para cliente)
 	 */
-	async getOrderDetails(orderId: string): Promise<OrderDetail> {
+	async getOrderDetails(orderId: string | number, isUser: boolean = false) {
 		try {
-			const orderDetail = await this.getOrderDetailUseCase.execute(
-				Number(orderId)
-			);
+			const orderService = new (await import("../services/OrderService")).OrderService();
+			const orderDetail = await orderService.getOrderDetails(Number(orderId), isUser);
 
-			// Asegurarse de que los datos estén en el formato esperado por el frontend
+			// Adaptar campos snake_case a camelCase
 			return {
-				...orderDetail,
-				// Asegurar que los datos necesarios estén presentes
-				id: orderDetail.id || 0,
-				orderNumber: orderDetail.orderNumber || `ORD-${orderId}`,
-				items: orderDetail.items.map((item) => ({
-					...item,
-					product_name: item.product_name || item.product?.name || "Producto",
-					product_sku: item.product_sku || item.product?.sku || "N/A",
-					product_image: item.product_image || item.product?.image || undefined,
-				})),
+				id: orderDetail.id,
+				orderNumber: orderDetail.order_number,
+				date: orderDetail.created_at || orderDetail.date,
+				total: orderDetail.total,
+				status: this.mapOrderStatus(orderDetail.status),
+				paymentStatus: this.mapPaymentStatus(orderDetail.payment_status),
+				paymentMethod: orderDetail.payment_method,
+				customer: {
+					id: orderDetail.user_id,
+					name: orderDetail.user_name,
+					email: orderDetail.user_email,
+				},
+				items: Array.isArray(orderDetail.items)
+					? orderDetail.items.map((item: any) => ({
+						id: item.id,
+						productId: item.product_id,
+						name: item.product_name,
+						quantity: item.quantity,
+						price: item.price,
+						subtotal: item.subtotal,
+						image: item.product_image,
+						sku: item.product_sku,
+					}))
+					: [],
+				shippingAddress: this.formatShippingAddress(orderDetail.shipping_data),
+				notes: orderDetail.shipping_data?.notes,
+				createdAt: orderDetail.created_at,
+				updatedAt: orderDetail.updated_at,
 			};
 		} catch (error) {
-			console.error(
-				`Error en OrderServiceAdapter.getOrderDetails para orden ${orderId}:`,
-				error
-			);
+			console.error("Error en OrderServiceAdapter.getOrderDetails:", error);
 			throw error;
 		}
 	}
+
 	/**
 	 * Obtiene las órdenes del cliente adaptadas al formato de la UI
 	 */
@@ -317,8 +335,10 @@ export class OrderServiceAdapter {
 			const getUserOrdersUseCase = new GetUserOrdersUseCase(this.orderService);
 			const response = await getUserOrdersUseCase.execute(filters);
 
-			// Adaptar el formato de respuesta de la API al formato esperado por la UI
-			const adaptedOrders: OrderUI[] = response.data.map((order) => ({
+			 // Asegura que response.data es un array
+			const ordersArray = Array.isArray(response.data) ? response.data : [];
+
+			const adaptedOrders: OrderUI[] = ordersArray.map((order) => ({
 				id: String(order.id),
 				orderNumber: order.orderNumber,
 				date: order.createdAt || new Date().toISOString(),
@@ -328,27 +348,34 @@ export class OrderServiceAdapter {
 					email: order.user_email || "email@example.com",
 				},
 				total: order.total,
-				items: order.items.map((item) => ({
+				items: Array.isArray(order.items) ? order.items.map((item) => ({
 					id: item.id || 0,
 					productId: item.productId,
 					name: item.product?.name || "Producto",
 					quantity: item.quantity,
 					price: item.price,
 					subtotal: item.subtotal,
-				})),
+				})) : [],
 				status: this.mapOrderStatus(order.status),
 				paymentStatus: this.mapPaymentStatus(order.paymentStatus),
 				shippingAddress: this.formatShippingAddress(order.shippingData),
 				notes: order.shippingData?.notes,
 			}));
 
+			// Adaptar la paginación a la respuesta real del backend
+			const meta = response.meta || {};
+			const currentPage = Number(meta.current_page) || 1;
+			const itemsPerPage = Number(meta.per_page) || 10;
+			const totalItems = Number(meta.total) || 0;
+			const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+
 			return {
 				orders: adaptedOrders,
 				pagination: {
-					currentPage: response.meta.current_page,
-					totalPages: response.meta.last_page,
-					totalItems: response.meta.total,
-					itemsPerPage: response.meta.per_page,
+					currentPage,
+					totalPages,
+					totalItems,
+					itemsPerPage,
 				},
 			};
 		} catch (error) {
