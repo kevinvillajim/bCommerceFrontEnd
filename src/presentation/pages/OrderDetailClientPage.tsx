@@ -25,7 +25,7 @@ const OrderDetailClientPage: React.FC = () => {
 
 		setLoading(true);
 		try {
-			const orderDetail = await orderAdapter.getOrderDetails(id, true);
+			const orderDetail = await orderAdapter.getOrderDetails(id);
 			setOrder(orderDetail);
 			setError(null);
 		} catch (err) {
@@ -166,7 +166,9 @@ const OrderDetailClientPage: React.FC = () => {
 										Fecha:
 									</span>
 									<span className="text-gray-900 dark:text-gray-100">
-										{formatDate(order.createdAt || "")}
+										{order.createdAt
+											? formatDate(order.createdAt)
+											: "Sin fecha"}
 									</span>
 								</div>
 							</div>
@@ -192,7 +194,8 @@ const OrderDetailClientPage: React.FC = () => {
 											</p>
 											<p className="text-gray-900 dark:text-gray-100">
 												{order.shippingData.country},{" "}
-												{order.shippingData.postalCode}
+												{order.shippingData.postalCode ||
+													order.shippingData.postalCode}
 											</p>
 										</div>
 										{order.shippingData.phone && (
@@ -257,7 +260,11 @@ const OrderDetailClientPage: React.FC = () => {
 											>
 												<Package size={20} />
 											</div>
-											<span className="text-xs mt-1 text-white">Procesando</span>
+											<span className="text-xs mt-1">
+												{order.status !== "pending"
+													? "Procesando"
+													: "Pendiente"}
+											</span>
 										</div>
 										<div className="flex-1 h-1 mx-2 bg-gray-200 dark:bg-gray-700"></div>
 										<div className="flex flex-col items-center">
@@ -272,7 +279,7 @@ const OrderDetailClientPage: React.FC = () => {
 											>
 												<Truck size={20} />
 											</div>
-											<span className="text-xs mt-1 text-white">Enviado</span>
+											<span className="text-xs mt-1">Enviado</span>
 										</div>
 										<div className="flex-1 h-1 mx-2 bg-gray-200 dark:bg-gray-700"></div>
 										<div className="flex flex-col items-center">
@@ -286,7 +293,7 @@ const OrderDetailClientPage: React.FC = () => {
 											>
 												<Package size={20} />
 											</div>
-											<span className="text-xs mt-1 text-white">Entregado</span>
+											<span className="text-xs mt-1">Entregado</span>
 										</div>
 									</div>
 								</div>

@@ -381,6 +381,7 @@ const SellerOrdersPage: React.FC = () => {
 						paymentText = "Pendiente";
 						break;
 					case "paid":
+					case "completed": // Manejar "completed" como "Pagado"
 						paymentClass =
 							"bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
 						paymentText = "Pagado";
@@ -514,7 +515,7 @@ const SellerOrdersPage: React.FC = () => {
 						>
 							<option value="all">Todos los pagos</option>
 							<option value="pending">Pago Pendiente</option>
-							<option value="paid">Pagados</option>
+							<option value="completed">Pagados</option>
 							<option value="rejected">Rechazados</option>
 						</select>
 					</div>

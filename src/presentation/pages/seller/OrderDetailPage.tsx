@@ -28,8 +28,7 @@ const OrderDetailPage: React.FC = () => {
 
 		setLoading(true);
 		try {
-			// Para seller, pasar isUser=false explícitamente
-			const orderDetail = await orderAdapter.getOrderDetails(id, false);
+			const orderDetail = await orderAdapter.getOrderDetails(id);
 			setOrder(orderDetail);
 			setError(null);
 		} catch (err) {
@@ -87,11 +86,28 @@ const OrderDetailPage: React.FC = () => {
 			case "pending":
 				return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
 			case "completed":
+			case "paid":
 				return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
 			case "failed":
+			case "rejected":
 				return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
 			default:
 				return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200";
+		}
+	};
+
+	const getPaymentStatusText = (status: string | null | undefined) => {
+		switch (status) {
+			case "pending":
+				return "Pendiente";
+			case "completed":
+			case "paid":
+				return "Completado";
+			case "failed":
+			case "rejected":
+				return "Fallido";
+			default:
+				return "Desconocido";
 		}
 	};
 
@@ -108,6 +124,25 @@ const OrderDetailPage: React.FC = () => {
 		};
 
 		return statusFlow[currentStatus]?.includes(newStatus) || false;
+	};
+
+	// Función para calcular subtotal
+	const calculateSubtotal = () => {
+		if (!order || !order.items || order.items.length === 0) return 0;
+		return order.items.reduce(
+			(sum, item) => sum + item.price * item.quantity,
+			0
+		);
+	};
+
+	// Función para calcular IVA (15%)
+	const calculateTax = () => {
+		return calculateSubtotal() * 0.15;
+	};
+
+	// Función para calcular total con IVA
+	const calculateTotal = () => {
+		return calculateSubtotal() + calculateTax();
 	};
 
 	if (loading) {
@@ -261,10 +296,7 @@ const OrderDetailPage: React.FC = () => {
 								<span
 									className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${getPaymentStatusClass(order.paymentStatus)}`}
 								>
-									{order.paymentStatus === "pending" && "Pendiente"}
-									{order.paymentStatus === "completed" && "Completado"}
-									{order.paymentStatus === "failed" && "Fallido"}
-									{!order.paymentStatus && "No disponible"}
+									{getPaymentStatusText(order.paymentStatus)}
 								</span>
 							</div>
 							<div className="flex justify-between items-center">
@@ -283,7 +315,7 @@ const OrderDetailPage: React.FC = () => {
 							<div className="flex justify-between items-center">
 								<span className="text-gray-600 dark:text-gray-400">Fecha:</span>
 								<span className="text-gray-900 dark:text-gray-100">
-									{formatDate(order.createdAt || "")}
+									{order.createdAt ? formatDate(order.createdAt) : "Sin fecha"}
 								</span>
 							</div>
 						</div>
@@ -326,9 +358,11 @@ const OrderDetailPage: React.FC = () => {
 											</p>
 											<p>
 												{order.shippingData.country},{" "}
-												{order.shippingData.postalCode}
+												{order.shippingData.postalCode ||
+													order.shippingData.postalCode}
 											</p>
-											{order.shippingData.phone && (
+											{(order.shippingData.phone ||
+												order.shippingData.phone) && (
 												<p>Tel: {order.shippingData.phone}</p>
 											)}
 										</div>
@@ -430,7 +464,7 @@ const OrderDetailPage: React.FC = () => {
 												{item.quantity}
 											</td>
 											<td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100 text-right">
-												{formatCurrency(item.subtotal)}
+												{formatCurrency(item.price * item.quantity)}
 											</td>
 										</tr>
 									))}
@@ -450,12 +484,7 @@ const OrderDetailPage: React.FC = () => {
 									Subtotal:
 								</span>
 								<span className="text-gray-900 dark:text-gray-100">
-									{formatCurrency(
-										order.items.reduce(
-											(sum, item) => sum + item.price * item.quantity,
-											0
-										)
-									)}
+									{formatCurrency(calculateSubtotal())}
 								</span>
 							</div>
 							{/* Añadir impuestos u otros cargos si es necesario */}
@@ -464,18 +493,13 @@ const OrderDetailPage: React.FC = () => {
 									IVA (15%):
 								</span>
 								<span className="text-gray-900 dark:text-gray-100">
-									{formatCurrency(
-										order.items.reduce(
-											(sum, item) => sum + item.price * item.quantity,
-											0
-										) * 0.15
-									)}
+									{formatCurrency(calculateTax())}
 								</span>
 							</div>
 							<div className="flex justify-between items-center pt-3 border-t border-gray-200 dark:border-gray-700 font-medium">
 								<span className="text-gray-900 dark:text-gray-100">Total:</span>
 								<span className="text-lg text-gray-900 dark:text-gray-100">
-									{formatCurrency(order.total)}
+									{formatCurrency(calculateTotal())}
 								</span>
 							</div>
 						</div>

@@ -4,9 +4,9 @@ import type {OrderStatus} from "../../../core/domain/entities/Order";
 // Definir el tipo PaymentStatus con todos los valores posibles
 type PaymentStatus =
 	| "pending"
-	| "completed"
-	| "failed"
+	| "completed" // Añadido "completed" que viene de la API
 	| "paid"
+	| "failed"
 	| "rejected"
 	| null
 	| undefined;

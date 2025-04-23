@@ -11,7 +11,6 @@ import type {
 	OrderStats,
 	OrderStatus,
 } from "../domain/entities/Order";
-import {formatDate} from "../../utils/formatters/formatDate";
 
 // Interface para las estadísticas en la UI
 export interface OrderStatUI {
@@ -45,7 +44,7 @@ export interface OrderUI {
 		image?: string;
 	}[];
 	status: OrderStatus;
-	paymentStatus: "pending" | "paid" | "rejected";
+	paymentStatus: "pending" | "paid" | "rejected" | "completed"; // Añadido "completed" para compatibilidad con la API
 	shippingAddress?: string;
 	notes?: string;
 }
@@ -258,13 +257,9 @@ export class OrderServiceAdapter {
 	/**
 	 * Obtiene los detalles de una orden específica
 	 * @param orderId ID de la orden a consultar
-	 * @param isUser Si el solicitante es un usuario final (true) o un vendedor (false)
 	 * @returns Detalles de la orden
 	 */
-	async getOrderDetails(
-		orderId: string | number,
-		isUser: boolean = false
-	): Promise<OrderDetail> {
+	async getOrderDetails(orderId: string | number): Promise<OrderDetail> {
 		try {
 			// Convertir orderId a número si viene como string
 			const id = typeof orderId === "string" ? parseInt(orderId) : orderId;
@@ -336,6 +331,13 @@ export class OrderServiceAdapter {
 			? `${order.shippingData.address}, ${order.shippingData.city}, ${order.shippingData.state}, ${order.shippingData.country}`
 			: undefined;
 
+		// Manejar el estado de pago (compatibilidad con "completed" de la API)
+		const paymentStatus = order.paymentStatus as
+			| "pending"
+			| "paid"
+			| "rejected"
+			| "completed";
+
 		// Construir objeto final
 		return {
 			id: String(order.id),
@@ -351,7 +353,7 @@ export class OrderServiceAdapter {
 			total,
 			items: adaptedItems,
 			status: order.status || "pending",
-			paymentStatus: order.paymentStatus || "pending",
+			paymentStatus,
 			shippingAddress,
 			notes: order.shippingData?.notes,
 		};
