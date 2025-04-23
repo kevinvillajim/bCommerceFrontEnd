@@ -24,14 +24,42 @@ export class CartService {
 
 			// Asegurarse de que los productos tienen la información del vendedor
 			if (response && response.data && response.data.items) {
-				// Verificar si hay información completa del producto, incluyendo el seller_id
+				// Intentar enriquecer la información de los productos
 				response.data.items.forEach((item) => {
-					if (
-						item.product &&
-						!item.product.sellerId &&
-						!item.product.seller_id
-					) {
-						console.warn("CartService: Producto sin seller_id:", item.product);
+					if (item.product) {
+						// Intentar detectar el seller_id desde diferentes propiedades
+						const sellerId =
+							item.product.sellerId ||
+							item.product.seller_id ||
+							(item.product.seller && item.product.seller.id) ||
+							item.product.user_id;
+
+						// Si no hay seller_id en la respuesta, intentar extraerlo de otras propiedades
+						if (!sellerId) {
+							// Verificar si hay propiedades adicionales que podrían contener el seller_id
+							if (
+								item.product.seller_data &&
+								typeof item.product.seller_data === "object"
+							) {
+								item.product.seller_id = item.product.seller_data.id || null;
+							} else if (item.seller_id) {
+								// Si el item tiene seller_id pero el producto no, copiarlo
+								item.product.seller_id = item.seller_id;
+							}
+
+							// Registrar para depuración que este producto no tiene seller_id
+							if (
+								!item.product.sellerId &&
+								!item.product.seller_id &&
+								(!item.product.seller || !item.product.seller.id) &&
+								!item.product.user_id
+							) {
+								console.warn(
+									"CartService: Producto sin seller_id:",
+									item.product
+								);
+							}
+						}
 					}
 				});
 			}

@@ -11,7 +11,8 @@ import {
 import {useCart} from "../hooks/useCart";
 import {useFavorites} from "../hooks/useFavorites";
 import {formatCurrency} from "../../utils/formatters/formatCurrency";
-import {NotificationType} from "../contexts/CartContext";
+import { NotificationType } from "../contexts/CartContext";
+import CartSellerDebug from "../components/cart/CartSellerDebug";
 
 const CartPage: React.FC = () => {
 	const [isLoading, setIsLoading] = useState(true);
@@ -538,6 +539,26 @@ const CartPage: React.FC = () => {
 			)}
 		</div>
 	);
+	{
+		/* Mostrar errores de la API */
+	}
+	{
+		error && (
+			<div className="mt-4 p-4 bg-red-50 text-red-700 rounded-lg">
+				<p className="font-medium">Error: {error}</p>
+				<button onClick={() => fetchCart()} className="underline text-sm mt-1">
+					Reintentar cargar el carrito
+				</button>
+			</div>
+		);
+	}
+
+	{
+		/* Herramienta de depuración de seller_id - solo en desarrollo */
+	}
+	{
+		process.env.NODE_ENV === "development" && <CartSellerDebug />;
+	}
 };
 
 export default CartPage;
