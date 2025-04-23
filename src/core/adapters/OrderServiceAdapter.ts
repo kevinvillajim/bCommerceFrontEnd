@@ -47,6 +47,13 @@ export interface OrderUI {
 	paymentStatus: "pending" | "paid" | "rejected" | "completed"; // Añadido "completed" para compatibilidad con la API
 	shippingAddress?: string;
 	notes?: string;
+	itemCount?: number; // Número de items en la orden - campo adicional
+}
+
+// Extendemos la interfaz Order para incluir el campo date que viene de la API pero no está en la definición
+interface OrderWithAPIFields extends Order {
+	date?: string;
+	itemCount?: number; // Número de items en la orden que podría venir del API
 }
 
 /**
@@ -149,16 +156,20 @@ export class OrderServiceAdapter {
 			const response = await this.userOrdersUseCase.execute(filters);
 
 			// Adaptar las órdenes al formato requerido por la UI
-			const orders: OrderUI[] = response.data.map((order) =>
-				this.adaptOrderToUI(order)
+			const orders: OrderUI[] = response.data.map(
+				(order: OrderWithAPIFields) => {
+					return this.adaptOrderToUI(order);
+				}
 			);
 
 			// Adaptar información de paginación
 			const pagination = {
-				currentPage: response.meta.current_page,
-				totalPages: response.meta.last_page,
-				totalItems: response.meta.total,
-				itemsPerPage: response.meta.per_page,
+				currentPage: Number(response.meta.current_page) || 1,
+				totalPages: Math.ceil(
+					response.meta.total / Number(response.meta.last_page || 10)
+				),
+				totalItems: Number(response.meta.total) || 0,
+				itemsPerPage: Number(response.meta.per_page) || 10,
 			};
 
 			return {orders, pagination};
@@ -299,7 +310,7 @@ export class OrderServiceAdapter {
 	 * @param order Orden proveniente del backend
 	 * @returns Orden formateada para la UI
 	 */
-	private adaptOrderToUI(order: Order): OrderUI {
+	private adaptOrderToUI(order: OrderWithAPIFields): OrderUI {
 		// Calcular subtotal y monto de impuesto
 		const subtotal =
 			order.items?.reduce((sum, item) => sum + item.price * item.quantity, 0) ||
@@ -309,12 +320,15 @@ export class OrderServiceAdapter {
 		const taxAmount = subtotal * taxRate;
 
 		// Asegurarse de que el total incluya el impuesto
-		const total =
-			Math.abs(order.total - (subtotal + taxAmount)) > 0.01
-				? subtotal + taxAmount
-				: order.total;
+		// Si no hay subtotal calculado, usar directamente el total de la orden
+		const total = subtotal > 0 ? subtotal + taxAmount : order.total || 0;
 
-		// Adaptar los items
+		// Determinar el número de ítems
+		// Si tenemos items, usar la longitud del array
+		// Si no, usar itemCount si existe, si no, no proporcionar un valor
+		const itemCount = order.items?.length || order.itemCount || undefined;
+
+		// Adaptar los items - si no hay items, dejamos un array vacío
 		const adaptedItems =
 			order.items?.map((item) => ({
 				id: item.id || 0,
@@ -342,7 +356,8 @@ export class OrderServiceAdapter {
 		return {
 			id: String(order.id),
 			orderNumber: order.orderNumber,
-			date: order.createdAt || new Date().toISOString(),
+			// Usar la fecha que viene de la API o caer en la fecha actual si no existe
+			date: order.date || order.createdAt || new Date().toISOString(),
 			customer: {
 				id: order.userId,
 				name: order.user_name || "Cliente",
@@ -356,6 +371,7 @@ export class OrderServiceAdapter {
 			paymentStatus,
 			shippingAddress,
 			notes: order.shippingData?.notes,
+			itemCount: itemCount,
 		};
 	}
 }

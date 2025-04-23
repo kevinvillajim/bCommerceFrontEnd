@@ -1,22 +1,29 @@
 // src/presentation/pages/OrdersPage.tsx
-// Actualización para utilizar el total con IVA incluido
-
 import React, {useState, useEffect} from "react";
 import {Link} from "react-router-dom";
-import {Search, Filter, RefreshCw, Eye, FileText} from "lucide-react";
+import {
+	Search,
+	Filter,
+	RefreshCw,
+	Eye,
+	FileText,
+	ShoppingBag,
+} from "lucide-react";
 import {formatCurrency} from "../../utils/formatters/formatCurrency";
 import {formatDate} from "../../utils/formatters/formatDate";
 import OrderStatusBadge from "../components/orders/OrderStatusBadge";
 import Table from "../components/dashboard/Table";
 import OrderServiceAdapter from "../../core/adapters/OrderServiceAdapter";
 import {useAuth} from "../hooks/useAuth";
+import type {OrderUI} from "../../core/adapters/OrderServiceAdapter";
 
 const OrdersPage: React.FC = () => {
 	const {isAuthenticated} = useAuth();
 	const orderAdapter = new OrderServiceAdapter();
 
-	const [orders, setOrders] = useState<any[]>([]);
+	const [orders, setOrders] = useState<OrderUI[]>([]);
 	const [loading, setLoading] = useState(true);
+	const [error, setError] = useState<string | null>(null);
 	const [statusFilter, setStatusFilter] = useState<string>("all");
 	const [searchTerm, setSearchTerm] = useState<string>("");
 	const [pagination, setPagination] = useState({
@@ -50,11 +57,19 @@ const OrdersPage: React.FC = () => {
 			// Obtener órdenes del adaptador
 			const result = await orderAdapter.getUserOrders(filters);
 
-			// Las órdenes ya vienen con el total calculado correctamente desde el adaptador
-			setOrders(result.orders);
-			setPagination(result.pagination);
+			if (result && result.orders) {
+				console.log("Órdenes recibidas:", result.orders);
+				setOrders(result.orders);
+				setPagination(result.pagination);
+			} else {
+				console.error("No se recibieron órdenes en la respuesta");
+				setOrders([]);
+				setError("No se pudieron cargar las órdenes");
+			}
 		} catch (error) {
 			console.error("Error al cargar órdenes:", error);
+			setError("Error al cargar órdenes");
+			setOrders([]);
 		} finally {
 			setLoading(false);
 		}
@@ -77,7 +92,6 @@ const OrdersPage: React.FC = () => {
 		const searchLower = searchTerm.toLowerCase();
 		return (
 			order.orderNumber?.toLowerCase().includes(searchLower) ||
-			false ||
 			order.shippingAddress?.toLowerCase().includes(searchLower) ||
 			false
 		);
@@ -89,7 +103,7 @@ const OrdersPage: React.FC = () => {
 			key: "orderNumber",
 			header: "Número de Pedido",
 			sortable: true,
-			render: (order: any) => (
+			render: (order: OrderUI) => (
 				<Link
 					to={`/orders/${order.id}`}
 					className="font-medium text-primary-600 dark:text-primary-400 hover:underline"
@@ -102,41 +116,56 @@ const OrdersPage: React.FC = () => {
 			key: "date",
 			header: "Fecha",
 			sortable: true,
-			render: (order: any) => formatDate(order.date),
+			render: (order: OrderUI) => {
+				// Asegurarse de que la fecha sea válida antes de formatearla
+				return order.date ? formatDate(order.date) : "Fecha no disponible";
+			},
 		},
 		{
 			key: "total",
 			header: "Total",
 			sortable: true,
-			render: (order: any) => (
-				<span className="font-medium">{formatCurrency(order.total)}</span>
+			render: (order: OrderUI) => (
+				<span className="font-medium">{formatCurrency(order.total || 0)}</span>
 			),
 		},
 		{
 			key: "items",
 			header: "Productos",
-			render: (order: any) => (
-				<span className="text-center">{order.items?.length || 0}</span>
+			render: (order: OrderUI) => (
+				<div className="flex items-center justify-center">
+					{order.items && order.items.length > 0 ? (
+						<span className="text-center">{order.items.length}</span>
+					) : (
+						<Link
+							to={`/orders/${order.id}`}
+							className="flex items-center text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-300"
+						>
+							<ShoppingBag size={16} className="mr-1" />
+							<span>Ver detalle</span>
+						</Link>
+					)}
+				</div>
 			),
 		},
 		{
 			key: "status",
 			header: "Estado",
 			sortable: true,
-			render: (order: any) => <OrderStatusBadge status={order.status} />,
+			render: (order: OrderUI) => <OrderStatusBadge status={order.status} />,
 		},
 		{
 			key: "payment",
 			header: "Pago",
 			sortable: true,
-			render: (order: any) => (
+			render: (order: OrderUI) => (
 				<OrderStatusBadge status={order.paymentStatus} type="payment" />
 			),
 		},
 		{
 			key: "actions",
 			header: "Acciones",
-			render: (order: any) => (
+			render: (order: OrderUI) => (
 				<div className="flex justify-end space-x-2">
 					{/* Ver detalles */}
 					<Link
@@ -166,7 +195,9 @@ const OrdersPage: React.FC = () => {
 		<div className="py-8 px-4 md:px-8 max-w-7xl mx-auto">
 			<div className="space-y-6">
 				<div className="flex justify-between items-center">
-					<h1 className="text-2xl font-bold text-gray-800">Mis Pedidos</h1>
+					<h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">
+						Mis Pedidos
+					</h1>
 					<div className="flex space-x-2">
 						<button
 							onClick={refreshData}
@@ -178,15 +209,25 @@ const OrdersPage: React.FC = () => {
 					</div>
 				</div>
 
+				{/* Mostrar error si existe */}
+				{error && (
+					<div
+						className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative"
+						role="alert"
+					>
+						<span className="block sm:inline">{error}</span>
+					</div>
+				)}
+
 				{/* Panel de filtros */}
-				<div className="bg-white rounded-lg shadow-sm p-4">
+				<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
 					<div className="flex flex-col md:flex-row gap-4">
 						{/* Buscador */}
 						<div className="relative flex-grow">
 							<input
 								type="text"
 								placeholder="Buscar por número de pedido..."
-								className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+								className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
 								value={searchTerm}
 								onChange={(e) => setSearchTerm(e.target.value)}
 							/>
@@ -195,10 +236,10 @@ const OrdersPage: React.FC = () => {
 
 						{/* Filtro de Estado */}
 						<div className="flex items-center space-x-2">
-							<Filter className="h-5 w-5 text-gray-500" />
+							<Filter className="h-5 w-5 text-gray-500 dark:text-gray-400" />
 							<select
 								name="status"
-								className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+								className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
 								value={statusFilter}
 								onChange={(e) => setStatusFilter(e.target.value)}
 							>
