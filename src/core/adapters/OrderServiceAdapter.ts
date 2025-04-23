@@ -286,36 +286,38 @@ export class OrderServiceAdapter {
 			const orderService = new (await import("../services/OrderService")).OrderService();
 			const orderDetail = await orderService.getOrderDetails(Number(orderId), isUser);
 
-			// Adaptar campos snake_case a camelCase
+			// Adaptar campos del backend a la interfaz OrderDetail (camelCase)
 			return {
 				id: orderDetail.id,
-				orderNumber: orderDetail.order_number,
-				date: orderDetail.created_at || orderDetail.date,
+				orderNumber: orderDetail.orderNumber ?? orderDetail.order_number,
+				date: orderDetail.date ?? orderDetail.createdAt ?? orderDetail.created_at,
 				total: orderDetail.total,
 				status: this.mapOrderStatus(orderDetail.status),
-				paymentStatus: this.mapPaymentStatus(orderDetail.payment_status),
-				paymentMethod: orderDetail.payment_method,
+				paymentStatus: orderDetail.paymentStatus ?? orderDetail.payment_status,
+				paymentMethod: orderDetail.paymentMethod ?? orderDetail.payment_method,
+				userId: orderDetail.userId ?? orderDetail.user_id,
 				customer: {
-					id: orderDetail.user_id,
-					name: orderDetail.user_name,
-					email: orderDetail.user_email,
+					id: orderDetail.userId ?? orderDetail.user_id,
+					name: orderDetail.userName ?? orderDetail.user_name,
+					email: orderDetail.userEmail ?? orderDetail.user_email,
 				},
 				items: Array.isArray(orderDetail.items)
 					? orderDetail.items.map((item: any) => ({
 						id: item.id,
-						productId: item.product_id,
-						name: item.product_name,
+						productId: item.productId ?? item.product_id,
+						name: item.productName ?? item.product_name,
 						quantity: item.quantity,
 						price: item.price,
 						subtotal: item.subtotal,
-						image: item.product_image,
-						sku: item.product_sku,
+						image: item.productImage ?? item.product_image,
+						sku: item.productSku ?? item.product_sku,
 					}))
 					: [],
-				shippingAddress: this.formatShippingAddress(orderDetail.shipping_data),
-				notes: orderDetail.shipping_data?.notes,
-				createdAt: orderDetail.created_at,
-				updatedAt: orderDetail.updated_at,
+				shippingAddress: this.formatShippingAddress(orderDetail.shippingData ?? orderDetail.shipping_data),
+				shippingData: orderDetail.shippingData ?? orderDetail.shipping_data,
+				notes: (orderDetail.shippingData ?? orderDetail.shipping_data)?.notes,
+				createdAt: orderDetail.createdAt ?? orderDetail.created_at,
+				updatedAt: orderDetail.updatedAt ?? orderDetail.updated_at,
 			};
 		} catch (error) {
 			console.error("Error en OrderServiceAdapter.getOrderDetails:", error);

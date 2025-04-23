@@ -25,7 +25,8 @@ const OrderDetailPage: React.FC = () => {
 
 		setLoading(true);
 		try {
-			const orderDetail = await orderAdapter.getOrderDetails(id);
+			// Para seller, pasar isUser=false explícitamente
+			const orderDetail = await orderAdapter.getOrderDetails(id, false);
 			setOrder(orderDetail);
 			setError(null);
 		} catch (err) {
