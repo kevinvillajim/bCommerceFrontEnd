@@ -1,3 +1,6 @@
+// src/presentation/pages/OrdersPage.tsx
+// Actualización para utilizar el total con IVA incluido
+
 import React, {useState, useEffect} from "react";
 import {Link} from "react-router-dom";
 import {Search, Filter, RefreshCw, Eye, FileText} from "lucide-react";
@@ -47,19 +50,8 @@ const OrdersPage: React.FC = () => {
 			// Obtener órdenes del adaptador
 			const result = await orderAdapter.getUserOrders(filters);
 
-			// Verificar que las órdenes tengan toda la información necesaria
-			const processedOrders = result.orders.map((order) => {
-				return {
-					...order,
-					// Asegurar que la fecha tenga un formato ISO válido
-					date: order.date ? order.date : new Date().toISOString(),
-					// Convertir paymentStatus string a formato para mostrar
-					paymentStatus:
-						order.paymentStatus === "paid" ? "completed" : order.paymentStatus,
-				};
-			});
-
-			setOrders(processedOrders);
+			// Las órdenes ya vienen con el total calculado correctamente desde el adaptador
+			setOrders(result.orders);
 			setPagination(result.pagination);
 		} catch (error) {
 			console.error("Error al cargar órdenes:", error);
