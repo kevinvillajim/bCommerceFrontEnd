@@ -350,6 +350,61 @@ export class OrderService {
 			return [];
 		}
 	}
+	/**
+	 * Obtiene las órdenes del cliente actual
+	 */
+	async getUserOrders(filters?: {
+		status?: string;
+		page?: number;
+		limit?: number;
+	}): Promise<OrderListResponse> {
+		try {
+			console.log(
+				"OrderService: Obteniendo órdenes del cliente con filtros:",
+				filters
+			);
+
+			const response = await ApiClient.get<any>(
+				API_ENDPOINTS.ORDERS.LIST,
+				filters
+			);
+
+			console.log("OrderService: Respuesta de órdenes de cliente:", response);
+
+			// Verificar la estructura de la respuesta
+			const orders = response?.data || [];
+			const pagination = response?.pagination || {
+				currentPage: 1,
+				totalPages: 1,
+				totalItems: 0,
+				itemsPerPage: 10,
+			};
+
+			return {
+				data: orders,
+				meta: {
+					total: pagination.totalItems,
+					per_page: pagination.itemsPerPage,
+					current_page: pagination.currentPage,
+					last_page: pagination.totalPages,
+				},
+			};
+		} catch (error) {
+			console.error(
+				"OrderService: Error al obtener órdenes del cliente:",
+				error
+			);
+			return {
+				data: [],
+				meta: {
+					total: 0,
+					per_page: 10,
+					current_page: 1,
+					last_page: 1,
+				},
+			};
+		}
+	}
 }
 
 export default OrderService;

@@ -13,35 +13,22 @@ C:.
 |   react-router.config.ts
 |   README.md
 |   roadMap.txt
+|   tailwind-darkmode-plugin.js
+|   tailwind.config.js
 |   taiwindcssconfig.txt
 |   tsconfig.json
 |   tsconfig.node.json
 |   vite.config.ts
-|   
-+---.react-router
-|   \---types
-|       |   +register.ts
-|       |   +virtual.ts
-|       |   
-|       \---app
-|           +---+types
-|           |       root.ts
-|           |       
-|           \---routes
-|               \---+types
-|                       home.ts
-|                       
+|            
 +---public
 |       favicon.ico
+|       SeviceWorker.js
 |       
++---scripts
 \---src
     |   App.tsx
     |   main.tsx
     |   
-    +---assets
-    |   +---icons
-    |   +---images
-    |   \---styles
     +---config
     |       appConfig.ts
     |       environment.ts
@@ -51,6 +38,9 @@ C:.
     |       routes.ts
     |       
     +---core
+    |   +---adapters
+    |   |       OrderServiceAdapter.ts
+    |   |       
     |   +---domain
     |   |   +---entities
     |   |   |       Accounting.ts
@@ -79,10 +69,20 @@ C:.
     |   |           
     |   +---services
     |   |       AuthService.ts
+    |   |       CartService.ts
+    |   |       CategoryService.ts
+    |   |       CheckoutService.ts
+    |   |       OrderService.ts
     |   |       ProductService.ts
     |   |       RecommendationService.ts
     |   |       
     |   \---useCases
+    |       +---order
+    |       |       GetOrderDetailUseCase.ts
+    |       |       GetOrderStatsUseCase.ts
+    |       |       GetSellerOrdersUseCase.ts
+    |       |       UpdateOrderStatusUseCase.ts
+    |       |       
     |       +---product
     |       |       CreateProductUseCase.ts
     |       |       GetProductDetailsUseCase.ts
@@ -104,31 +104,107 @@ C:.
     |   |       HttpUserRepository.ts
     |   |       
     |   \---services
+    |           CacheService.ts
     |           HttpAuthService.ts
     |           LocalStorageService.ts
+    |           PrefetchService.ts
+    |           RoleService.ts
     |           
     +---presentation
     |   +---components
+    |   |   +---checkout
+    |   |   |       CreditCardForm.tsx
+    |   |   |       OrderSummary.tsx
+    |   |   |       PayPalForm.tsx
+    |   |   |       QRPaymentForm.tsx
+    |   |   |       ShippingForm.tsx
+    |   |   |       TestCheckoutButton.tsx
+    |   |   |       
     |   |   +---common
+    |   |   |       ApiChecker.tsx
+    |   |   |       ApiDebugger.tsx
     |   |   |       Button.tsx
+    |   |   |       CartAlert.tsx
     |   |   |       Categories.tsx
     |   |   |       Footer.tsx
     |   |   |       Header.tsx
     |   |   |       ImageSlider.tsx
     |   |   |       Input.tsx
+    |   |   |       PriceRangeInput.tsx
     |   |   |       ProductCards.tsx
+    |   |   |       RatingStars.tsx
     |   |   |       TextSlider.tsx
+    |   |   |       ThemeToggle.tsx
     |   |   |       WhyUs.tsx
     |   |   |       
+    |   |   +---dashboard
+    |   |   |   |   AlertCard.tsx
+    |   |   |   |   AlertCardList.tsx
+    |   |   |   |   BaseDashboardLayout.tsx
+    |   |   |   |   DashboardCard.tsx
+    |   |   |   |   DashboardCardList.tsx
+    |   |   |   |   DashboardContext.tsx
+    |   |   |   |   DashboardFooter.tsx
+    |   |   |   |   DashboardHeader.tsx
+    |   |   |   |   DashboardPagination.tsx
+    |   |   |   |   GroupLinkSideBar.tsx
+    |   |   |   |   index.ts
+    |   |   |   |   LinkSideBar.tsx
+    |   |   |   |   OrdersSimpleTable.tsx
+    |   |   |   |   PendingCard.tsx
+    |   |   |   |   PendingCardList.tsx
+    |   |   |   |   RecentOrdersTable.tsx
+    |   |   |   |   SellersSimpleTable.tsx
+    |   |   |   |   SellerStatCard.tsx
+    |   |   |   |   SellerStatCardList.tsx
+    |   |   |   |   SideBar.tsx
+    |   |   |   |   StatCard.tsx
+    |   |   |   |   StatCardList.tsx
+    |   |   |   |   Table.tsx
+    |   |   |   |   TopProductsTable.tsx
+    |   |   |   |   
+    |   |   |   \---dataTable
+    |   |   |           CompactTable.tsx
+    |   |   |           DataTable.tsx
+    |   |   |           EmptyState.tsx
+    |   |   |           index.ts
+    |   |   |           StandardTable.tsx
+    |   |   |           TableHeader.tsx
+    |   |   |           
+    |   |   +---debug
     |   |   +---FAQ
     |   |   |       FAQBase.tsx
     |   |   |       
+    |   |   +---orders
+    |   |   |       OrderFilters.tsx
+    |   |   |       OrderStatusBadge.tsx
+    |   |   |       
     |   |   +---product
+    |   |   |       ActiveFilters.tsx
+    |   |   |       CategoriesCarousel.tsx
     |   |   |       CategoriesProduct.tsx
+    |   |   |       CategoryFilterSection.tsx
+    |   |   |       DiscountFilterSection.tsx
+    |   |   |       FilterSection.tsx
+    |   |   |       MobileFilterPanel.tsx
+    |   |   |       MobilePagination.tsx
+    |   |   |       Pagination.tsx
+    |   |   |       PriceFilterSection.tsx
     |   |   |       ProductCardCompact.tsx
     |   |   |       ProductCarousel.tsx
     |   |   |       ProductFilters.tsx
+    |   |   |       ProductGrid.tsx
     |   |   |       ProductList.tsx
+    |   |   |       RatingFilterSection.tsx
+    |   |   |       SearchBar.tsx
+    |   |   |       SimplePagination.tsx
+    |   |   |       SortDropdown.tsx
+    |   |   |       
+    |   |   +---profile
+    |   |   |       OrdersTab.tsx
+    |   |   |       PersonalInfoTab.tsx
+    |   |   |       ProfileSidebar.tsx
+    |   |   |       SecurityTab.tsx
     |   |   |       
     |   |   \---user
     |   |           LoginForm.tsx
@@ -137,45 +213,116 @@ C:.
     |   +---contexts
     |   |       AuthContext.tsx
     |   |       CartContext.tsx
+    |   |       FavoriteContext.tsx
+    |   |       NotificationContext.tsx
+    |   |       ThemeContext.tsx
     |   |       
     |   +---hooks
+    |   |       index.ts
     |   |       useAuth.ts
+    |   |       useCart.ts
+    |   |       useCategories.ts
+    |   |       useCategoriesSelect.ts
+    |   |       useFavoriteApi.ts
+    |   |       useFavorites.ts
+    |   |       useFilterState.ts
+    |   |       useNotifications.ts
+    |   |       useProductFilters.ts
     |   |       useProducts.ts
+    |   |       useProductSearch.ts
+    |   |       useSellerProducts.ts
+    |   |       useTheme.ts
     |   |       
     |   +---layouts
-    |   |       DashboardLayout.tsx
-    |   |       MainLayout.tsx
-    |   |       
-    |   \---pages
-    |           AboutUsPage.tsx
-    |           CartPage.tsx
-    |           CategoryPage.tsx
-    |           ContactPage.tsx
-    |           FAQPage.tsx
-    |           FavoritePage.tsx
-    |           HomePage.tsx
-    |           LoginPage.tsx
-    |           NotFoundPage.tsx
-    |           ProductItemPage.tsx
-    |           ProductPage.tsx
-    |           RegisterPage.tsx
-    |           UserProfilePage.tsx
-    |           
+    |   |   |   AdminLayout.tsx
+    |   |   |   DashboardLayout.tsx
+    |   |   |   MainLayout.tsx
+    |   |   |   SellerLayout.tsx
+    |   |   |   
+    |   |   \---groups
+    |   |           adminGroups.tsx
+    |   |           sellerGroups.tsx
+    |   |           
+    |   +---pages
+    |   |   |   AboutUsPage.tsx
+    |   |   |   CartPage.tsx
+    |   |   |   CategoryPage.tsx
+    |   |   |   CheckoutPage.tsx
+    |   |   |   ContactPage.tsx
+    |   |   |   FAQPage.tsx
+    |   |   |   FavoritePage.tsx
+    |   |   |   ForgotPasswordPage.tsx
+    |   |   |   HomePage.tsx
+    |   |   |   LoginPage.tsx
+    |   |   |   NotFoundPage.tsx
+    |   |   |   ProductItemPage.tsx
+    |   |   |   ProductPage.tsx
+    |   |   |   RegisterPage.tsx
+    |   |   |   ResetPasswordPage.tsx
+    |   |   |   UserProfilePage.tsx
+    |   |   |   
+    |   |   +---admin
+    |   |   |       AdminAccountingPage.tsx
+    |   |   |       AdminCategoriesPage.tsx
+    |   |   |       AdminDashboard.tsx
+    |   |   |       AdminDiscountsPage.tsx
+    |   |   |       AdminFeedbackPage.tsx
+    |   |   |       AdminInvoicesPage.tsx
+    |   |   |       AdminLogViewerPage.tsx
+    |   |   |       AdminOrdersPage.tsx
+    |   |   |       AdminProductsPage.tsx
+    |   |   |       AdminRatingsPage.tsx
+    |   |   |       AdminSellersPage.tsx
+    |   |   |       AdminSettingsPage.tsx
+    |   |   |       AdminShippingPage.tsx
+    |   |   |       AdminUsersPage.tsx
+    |   |   |       
+    |   |   \---seller
+    |   |           OrderDetailPage.tsx
+    |   |           SellerDashboard.tsx
+    |   |           SellerEarningsPage.tsx
+    |   |           SellerInvoicesPage.tsx
+    |   |           SellerMessagesPage.tsx
+    |   |           SellerOrdersPage.tsx
+    |   |           SellerProductCreatePage.tsx
+    |   |           SellerProductEditPage.tsx
+    |   |           SellerProductsPage.tsx
+    |   |           SellerProfilePage.tsx
+    |   |           SellerRatingsPage.tsx
+    |   |           SellerShippingPage.tsx
+    |   |           
+    |   \---types
+    |       |   ProductFilterParams.ts
+    |       |   
+    |       \---dashboard
+    |           \---dataTable
+    |                   DataTableTypes.ts
+    |                   
     +---routes
-    |       AppRoutes.tsx
+    |       AdminRoute.tsx
+    |       AppRoute.tsx
+    |       AuthRoute.tsx
     |       PrivateRoute.tsx
     |       PublicRoute.tsx
+    |       SellerRoute.tsx
     |       
     +---styles
+    |       dark-mode.css
     |       main.css
     |       tailwind.css
     |       
     \---utils
+        |   apiHealthCheck.ts
+        |   apiResponseInspector.ts
+        |   categoryUtils.ts
+        |   errorHandler.ts
         |   helpers.ts
+        |   productAdapter.ts
         |   
         +---formatters
         |       currencyFormatter.ts
-        |       dateFormatter.ts
+        |       formatCurrency.ts
+        |       formatDate.ts
         |       
         \---validators
                 formValidation.ts

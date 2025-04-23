@@ -35,8 +35,8 @@ const UserProfilePage = lazy(
 const CartPage = lazy(() => import("../presentation/pages/CartPage"));
 const FavoritePage = lazy(() => import("../presentation/pages/FavoritePage"));
 const CheckoutPage = lazy(() => import('../presentation/pages/CheckoutPage'));
-// const OrdersPage = lazy(() => import('../presentation/pages/OrdersPage'));
-// const OrderDetailsPage = lazy(() => import('../presentation/pages/OrderDetailsPage'));
+const OrdersPage = lazy(() => import('../presentation/pages/OrdersPage'));
+const OrderDetailsPage = lazy(() => import('../presentation/pages/OrderDetailClientPage'));
 
 // Seller Pages
 const SellerDashboard = lazy(
@@ -125,8 +125,8 @@ const AdminShippingPage = lazy(
 //Route Guards
 import PrivateRoute from "./PrivateRoute";
 import PublicRoute from "./PublicRoute";
-import SellerRoute from "./SellerRoute";
-import AdminRoute from "./AdminRoute";
+// import SellerRoute from "./SellerRoute";
+// import AdminRoute from "./AdminRoute";
 import AuthRoute from "./AuthRoute";
 import AboutUs from "@/presentation/pages/AboutUsPage";
 
@@ -241,22 +241,22 @@ const appRoutes: RouteObject[] = [
 					</PrivateRoute>
 				),
 			},
-			// {
-			// 	path: "orders",
-			// 	element: (
-			// 		<PrivateRoute>
-			// 			<OrdersPage />
-			// 		</PrivateRoute>
-			// 	),
-			// },
-			// {
-			// 	path: "orders/:id",
-			// 	element: (
-			// 		<PrivateRoute>
-			// 			<OrderDetailsPage />
-			// 		</PrivateRoute>
-			// 	),
-			// },
+			{
+				path: "orders",
+				element: (
+					<PrivateRoute>
+						<OrdersPage />
+					</PrivateRoute>
+				),
+			},
+			{
+				path: "orders/:id",
+				element: (
+					<PrivateRoute>
+						<OrderDetailsPage />
+					</PrivateRoute>
+				),
+			},
 
 			//Auth Routes
 			{

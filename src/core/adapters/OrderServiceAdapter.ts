@@ -3,7 +3,8 @@ import {GetSellerOrdersUseCase} from "../useCases/order/GetSellerOrdersUseCase";
 import {GetOrderStatsUseCase} from "../useCases/order/GetOrderStatsUseCase";
 import {UpdateOrderStatusUseCase} from "../useCases/order/UpdateOrderStatusUseCase";
 import {GetOrderDetailUseCase} from "../useCases/order/GetOrderDetailUseCase";
-import type {OrderStatus, OrderDetail} from "../domain/entities/Order";
+import type { OrderStatus, OrderDetail } from "../domain/entities/Order";
+import {GetUserOrdersUseCase} from "../useCases/order/GetUserOrdersUseCase";
 
 // Interface para la respuesta adaptada para la UI
 export interface OrderUI {
@@ -301,6 +302,52 @@ export class OrderServiceAdapter {
 				`Error en OrderServiceAdapter.getOrderDetails para orden ${orderId}:`,
 				error
 			);
+			throw error;
+		}
+	}
+	/**
+	 * Obtiene las órdenes del cliente adaptadas al formato de la UI
+	 */
+	async getUserOrders(filters: {
+		status?: string;
+		page?: number;
+		limit?: number;
+	}) {
+		try {
+			const getUserOrdersUseCase = new GetUserOrdersUseCase(this.orderService);
+			const response = await getUserOrdersUseCase.execute(filters);
+
+			// Adaptar el formato de respuesta de la API al formato esperado por la UI
+			const adaptedOrders: OrderUI[] = response.data.map((order) => ({
+				id: String(order.id),
+				orderNumber: order.orderNumber,
+				date: order.createdAt || new Date().toISOString(),
+				total: order.total,
+				items: order.items.map((item) => ({
+					id: item.id || 0,
+					productId: item.productId,
+					name: item.product?.name || "Producto",
+					quantity: item.quantity,
+					price: item.price,
+					subtotal: item.subtotal,
+				})),
+				status: this.mapOrderStatus(order.status),
+				paymentStatus: this.mapPaymentStatus(order.paymentStatus),
+				shippingAddress: this.formatShippingAddress(order.shippingData),
+				notes: order.shippingData?.notes,
+			}));
+
+			return {
+				orders: adaptedOrders,
+				pagination: {
+					currentPage: response.meta.current_page,
+					totalPages: response.meta.last_page,
+					totalItems: response.meta.total,
+					itemsPerPage: response.meta.per_page,
+				},
+			};
+		} catch (error) {
+			console.error("Error en OrderServiceAdapter.getUserOrders:", error);
 			throw error;
 		}
 	}
