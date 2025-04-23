@@ -3,7 +3,7 @@ import {GetSellerOrdersUseCase} from "../useCases/order/GetSellerOrdersUseCase";
 import {GetOrderStatsUseCase} from "../useCases/order/GetOrderStatsUseCase";
 import {UpdateOrderStatusUseCase} from "../useCases/order/UpdateOrderStatusUseCase";
 import {GetOrderDetailUseCase} from "../useCases/order/GetOrderDetailUseCase";
-import type { OrderStatus, OrderDetail } from "../domain/entities/Order";
+import type {OrderStatus, OrderDetail} from "../domain/entities/Order";
 import {GetUserOrdersUseCase} from "../useCases/order/GetUserOrdersUseCase";
 
 // Interface para la respuesta adaptada para la UI
@@ -24,6 +24,7 @@ export interface OrderUI {
 		quantity: number;
 		price: number;
 		subtotal: number;
+		image?: string;
 	}[];
 	status:
 		| "pending"
@@ -55,8 +56,6 @@ export class OrderServiceAdapter {
 	private getSellerOrdersUseCase: GetSellerOrdersUseCase;
 	private getOrderStatsUseCase: GetOrderStatsUseCase;
 	private updateOrderStatusUseCase: UpdateOrderStatusUseCase;
-	private getOrderDetailUseCase: GetOrderDetailUseCase;
-	private getUserOrdersUseCase: GetUserOrdersUseCase;
 
 	constructor() {
 		this.orderService = new OrderService();
@@ -65,8 +64,6 @@ export class OrderServiceAdapter {
 		this.updateOrderStatusUseCase = new UpdateOrderStatusUseCase(
 			this.orderService
 		);
-		this.getOrderDetailUseCase = new GetOrderDetailUseCase(this.orderService);
-		this.getUserOrdersUseCase = new GetUserOrdersUseCase(this.orderService);
 	}
 
 	/**
@@ -281,43 +278,44 @@ export class OrderServiceAdapter {
 	/**
 	 * Obtiene el detalle de una orden específica (adaptado para cliente)
 	 */
-	async getOrderDetails(orderId: string | number, isUser: boolean = false) {
+	async getOrderDetails(orderId: string | number, isUser: boolean = true) {
 		try {
-			const orderService = new (await import("../services/OrderService")).OrderService();
-			const orderDetail = await orderService.getOrderDetails(Number(orderId), isUser);
+			const orderDetail = await this.orderService.getOrderDetails(
+				Number(orderId)
+			);
 
-			// Adaptar campos del backend a la interfaz OrderDetail (camelCase)
+			// Adaptar los datos para asegurar que tienen el formato correcto
 			return {
 				id: orderDetail.id,
-				orderNumber: orderDetail.orderNumber ?? orderDetail.order_number,
-				date: orderDetail.date ?? orderDetail.createdAt ?? orderDetail.created_at,
+				orderNumber: orderDetail.orderNumber,
+				date: orderDetail.createdAt,
 				total: orderDetail.total,
 				status: this.mapOrderStatus(orderDetail.status),
-				paymentStatus: orderDetail.paymentStatus ?? orderDetail.payment_status,
-				paymentMethod: orderDetail.paymentMethod ?? orderDetail.payment_method,
-				userId: orderDetail.userId ?? orderDetail.user_id,
+				paymentStatus: orderDetail.paymentStatus,
+				paymentMethod: orderDetail.paymentMethod,
+				userId: orderDetail.userId,
 				customer: {
-					id: orderDetail.userId ?? orderDetail.user_id,
-					name: orderDetail.userName ?? orderDetail.user_name,
-					email: orderDetail.userEmail ?? orderDetail.user_email,
+					id: orderDetail.userId,
+					name: orderDetail.user_name || "Cliente",
+					email: orderDetail.user_email || "email@example.com",
 				},
 				items: Array.isArray(orderDetail.items)
 					? orderDetail.items.map((item: any) => ({
-						id: item.id,
-						productId: item.productId ?? item.product_id,
-						name: item.productName ?? item.product_name,
-						quantity: item.quantity,
-						price: item.price,
-						subtotal: item.subtotal,
-						image: item.productImage ?? item.product_image,
-						sku: item.productSku ?? item.product_sku,
-					}))
+							id: item.id,
+							productId: item.productId,
+							name: item.product_name || item.product?.name || "Producto",
+							quantity: item.quantity,
+							price: item.price,
+							subtotal: item.subtotal,
+							image: item.product_image || item.product?.image,
+							sku: item.product_sku || item.product?.sku,
+						}))
 					: [],
-				shippingAddress: this.formatShippingAddress(orderDetail.shippingData ?? orderDetail.shipping_data),
-				shippingData: orderDetail.shippingData ?? orderDetail.shipping_data,
-				notes: (orderDetail.shippingData ?? orderDetail.shipping_data)?.notes,
-				createdAt: orderDetail.createdAt ?? orderDetail.created_at,
-				updatedAt: orderDetail.updatedAt ?? orderDetail.updated_at,
+				shippingAddress: this.formatShippingAddress(orderDetail.shippingData),
+				shippingData: orderDetail.shippingData,
+				notes: orderDetail.shippingData?.notes,
+				createdAt: orderDetail.createdAt,
+				updatedAt: orderDetail.updatedAt,
 			};
 		} catch (error) {
 			console.error("Error en OrderServiceAdapter.getOrderDetails:", error);
@@ -337,7 +335,7 @@ export class OrderServiceAdapter {
 			const getUserOrdersUseCase = new GetUserOrdersUseCase(this.orderService);
 			const response = await getUserOrdersUseCase.execute(filters);
 
-			 // Asegura que response.data es un array
+			// Asegura que response.data es un array
 			const ordersArray = Array.isArray(response.data) ? response.data : [];
 
 			const adaptedOrders: OrderUI[] = ordersArray.map((order) => ({
@@ -350,14 +348,17 @@ export class OrderServiceAdapter {
 					email: order.user_email || "email@example.com",
 				},
 				total: order.total,
-				items: Array.isArray(order.items) ? order.items.map((item) => ({
-					id: item.id || 0,
-					productId: item.productId,
-					name: item.product?.name || "Producto",
-					quantity: item.quantity,
-					price: item.price,
-					subtotal: item.subtotal,
-				})) : [],
+				items: Array.isArray(order.items)
+					? order.items.map((item) => ({
+							id: item.id || 0,
+							productId: item.productId,
+							name: item.product?.name || "Producto",
+							quantity: item.quantity,
+							price: item.price,
+							subtotal: item.subtotal,
+							image: item.product?.image,
+						}))
+					: [],
 				status: this.mapOrderStatus(order.status),
 				paymentStatus: this.mapPaymentStatus(order.paymentStatus),
 				shippingAddress: this.formatShippingAddress(order.shippingData),

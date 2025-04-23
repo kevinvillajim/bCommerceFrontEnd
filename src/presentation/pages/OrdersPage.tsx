@@ -1,12 +1,6 @@
 import React, {useState, useEffect} from "react";
 import {Link} from "react-router-dom";
-import {
-	Search,
-	Filter,
-	RefreshCw,
-	Eye,
-	FileText,
-} from "lucide-react";
+import {Search, Filter, RefreshCw, Eye, FileText} from "lucide-react";
 import {formatCurrency} from "../../utils/formatters/formatCurrency";
 import {formatDate} from "../../utils/formatters/formatDate";
 import OrderStatusBadge from "../components/orders/OrderStatusBadge";
@@ -52,7 +46,20 @@ const OrdersPage: React.FC = () => {
 
 			// Obtener órdenes del adaptador
 			const result = await orderAdapter.getUserOrders(filters);
-			setOrders(result.orders);
+
+			// Verificar que las órdenes tengan toda la información necesaria
+			const processedOrders = result.orders.map((order) => {
+				return {
+					...order,
+					// Asegurar que la fecha tenga un formato ISO válido
+					date: order.date ? order.date : new Date().toISOString(),
+					// Convertir paymentStatus string a formato para mostrar
+					paymentStatus:
+						order.paymentStatus === "paid" ? "completed" : order.paymentStatus,
+				};
+			});
+
+			setOrders(processedOrders);
 			setPagination(result.pagination);
 		} catch (error) {
 			console.error("Error al cargar órdenes:", error);
@@ -77,8 +84,10 @@ const OrdersPage: React.FC = () => {
 		if (!searchTerm) return true;
 		const searchLower = searchTerm.toLowerCase();
 		return (
-			order.orderNumber.toLowerCase().includes(searchLower) ||
-			order.shippingAddress.toLowerCase().includes(searchLower)
+			order.orderNumber?.toLowerCase().includes(searchLower) ||
+			false ||
+			order.shippingAddress?.toLowerCase().includes(searchLower) ||
+			false
 		);
 	});
 
@@ -115,7 +124,7 @@ const OrdersPage: React.FC = () => {
 			key: "items",
 			header: "Productos",
 			render: (order: any) => (
-				<span className="text-center">{order.items.length}</span>
+				<span className="text-center">{order.items?.length || 0}</span>
 			),
 		},
 		{
@@ -165,9 +174,7 @@ const OrdersPage: React.FC = () => {
 		<div className="py-8 px-4 md:px-8 max-w-7xl mx-auto">
 			<div className="space-y-6">
 				<div className="flex justify-between items-center">
-					<h1 className="text-2xl font-bold text-gray-800">
-						Mis Pedidos
-					</h1>
+					<h1 className="text-2xl font-bold text-gray-800">Mis Pedidos</h1>
 					<div className="flex space-x-2">
 						<button
 							onClick={refreshData}

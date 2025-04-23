@@ -76,6 +76,8 @@ export class OrderService {
 		try {
 			console.log(`OrderService: Obteniendo detalle de orden ${orderId}`);
 
+			// Usar el endpoint correcto para obtener los detalles de la orden
+			// Si es una orden del cliente, usar la ruta de usuario
 			const response = await ApiClient.get<any>(
 				API_ENDPOINTS.USER.ORDER_DETAILS(orderId)
 			);
@@ -87,7 +89,31 @@ export class OrderService {
 				throw new Error("Respuesta vacía al obtener detalle de orden");
 			}
 
-			return response.data;
+			// Si la respuesta viene con el total de precio incorrecto, corregirlo aquí
+			let orderData = response.data;
+
+			// Verificar si necesitamos procesar o transformar datos
+			if (orderData.items && Array.isArray(orderData.items)) {
+				// Calcular el subtotal
+				const subtotal = orderData.items.reduce(
+					(sum: number, item: any) => sum + item.price * item.quantity,
+					0
+				);
+
+				// Calcular el IVA (15%)
+				const taxRate = 0.15;
+				const taxAmount = subtotal * taxRate;
+
+				// Calcular el total correcto (subtotal + IVA)
+				const correctTotal = subtotal + taxAmount;
+
+				// Si el total en la respuesta es incorrecto, actualizarlo
+				if (Math.abs(orderData.total - correctTotal) > 0.01) {
+					orderData.total = correctTotal;
+				}
+			}
+
+			return orderData;
 		} catch (error) {
 			console.error(
 				`OrderService: Error al obtener detalle de orden ${orderId}:`,
@@ -364,9 +390,9 @@ export class OrderService {
 				filters
 			);
 
-			// CORRECCIÓN: Usar la ruta correcta de las órdenes de usuario
+			// Usar la ruta correcta de las órdenes de usuario
 			const response = await ApiClient.get<any>(
-				API_ENDPOINTS.USER.ORDERS, // Cambiado de ORDERS.LIST a USER.ORDERS
+				API_ENDPOINTS.USER.ORDERS,
 				filters
 			);
 
@@ -381,8 +407,32 @@ export class OrderService {
 				itemsPerPage: 10,
 			};
 
+			// Corregir los cálculos de precio si es necesario
+			const processedOrders = orders.map((order: any) => {
+				// Si tenemos los items, verificar los totales
+				if (order.items && Array.isArray(order.items)) {
+					const subtotal = order.items.reduce(
+						(sum: number, item: any) => sum + item.price * item.quantity,
+						0
+					);
+
+					// IVA del 15%
+					const taxRate = 0.15;
+					const taxAmount = subtotal * taxRate;
+
+					// Total correcto
+					const correctTotal = subtotal + taxAmount;
+
+					// Actualizar el total si es incorrecto
+					if (Math.abs(order.total - correctTotal) > 0.01) {
+						order.total = correctTotal;
+					}
+				}
+				return order;
+			});
+
 			return {
-				data: orders,
+				data: processedOrders,
 				meta: {
 					total: pagination.totalItems,
 					per_page: pagination.itemsPerPage,

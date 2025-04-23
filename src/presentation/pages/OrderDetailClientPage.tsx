@@ -25,7 +25,22 @@ const OrderDetailClientPage: React.FC = () => {
 
 		setLoading(true);
 		try {
-			const orderDetail = await orderAdapter.getOrderDetails(id);
+			const orderDetail = await orderAdapter.getOrderDetails(id, true);
+			// Asegurarse de que los cálculos sean correctos
+			if (orderDetail && orderDetail.items) {
+				const subtotal = orderDetail.items.reduce(
+					(sum, item) => sum + item.price * item.quantity,
+					0
+				);
+				// IVA del 15%
+				const taxRate = 0.15;
+				const taxAmount = subtotal * taxRate;
+				// Comprobar si el total incluye el IVA
+				if (Math.abs(orderDetail.total - (subtotal + taxAmount)) > 0.01) {
+					// Si el total no incluye el IVA, corregirlo
+					orderDetail.total = subtotal + taxAmount;
+				}
+			}
 			setOrder(orderDetail);
 			setError(null);
 		} catch (err) {
@@ -34,6 +49,28 @@ const OrderDetailClientPage: React.FC = () => {
 		} finally {
 			setLoading(false);
 		}
+	};
+
+	// Función auxiliar para calcular subtotales
+	const calculateSubtotal = () => {
+		if (!order || !order.items || order.items.length === 0) return 0;
+		return order.items.reduce(
+			(sum, item) => sum + item.price * item.quantity,
+			0
+		);
+	};
+
+	// Función auxiliar para calcular el IVA (15%)
+	const calculateTax = () => {
+		const subtotal = calculateSubtotal();
+		return subtotal * 0.15; // 15% IVA
+	};
+
+	// Función auxiliar para calcular el total (subtotal + IVA)
+	const calculateTotal = () => {
+		const subtotal = calculateSubtotal();
+		const tax = calculateTax();
+		return subtotal + tax;
 	};
 
 	if (loading) {
@@ -227,7 +264,11 @@ const OrderDetailClientPage: React.FC = () => {
 									<div className="flex items-center justify-between">
 										<div className="flex flex-col items-center">
 											<div
-												className={`w-10 h-10 rounded-full flex items-center justify-center ${order.status !== "pending" ? "bg-green-100 text-green-600" : "bg-gray-100 text-gray-400"}`}
+												className={`w-10 h-10 rounded-full flex items-center justify-center ${
+													order.status !== "pending"
+														? "bg-green-100 text-green-600"
+														: "bg-gray-100 text-gray-400"
+												}`}
 											>
 												<Package size={20} />
 											</div>
@@ -236,7 +277,13 @@ const OrderDetailClientPage: React.FC = () => {
 										<div className="flex-1 h-1 mx-2 bg-gray-200 dark:bg-gray-700"></div>
 										<div className="flex flex-col items-center">
 											<div
-												className={`w-10 h-10 rounded-full flex items-center justify-center ${order.status === "shipped" || order.status === "delivered" || order.status === "completed" ? "bg-green-100 text-green-600" : "bg-gray-100 text-gray-400"}`}
+												className={`w-10 h-10 rounded-full flex items-center justify-center ${
+													order.status === "shipped" ||
+													order.status === "delivered" ||
+													order.status === "completed"
+														? "bg-green-100 text-green-600"
+														: "bg-gray-100 text-gray-400"
+												}`}
 											>
 												<Truck size={20} />
 											</div>
@@ -245,7 +292,12 @@ const OrderDetailClientPage: React.FC = () => {
 										<div className="flex-1 h-1 mx-2 bg-gray-200 dark:bg-gray-700"></div>
 										<div className="flex flex-col items-center">
 											<div
-												className={`w-10 h-10 rounded-full flex items-center justify-center ${order.status === "delivered" || order.status === "completed" ? "bg-green-100 text-green-600" : "bg-gray-100 text-gray-400"}`}
+												className={`w-10 h-10 rounded-full flex items-center justify-center ${
+													order.status === "delivered" ||
+													order.status === "completed"
+														? "bg-green-100 text-green-600"
+														: "bg-gray-100 text-gray-400"
+												}`}
 											>
 												<Package size={20} />
 											</div>
@@ -299,25 +351,23 @@ const OrderDetailClientPage: React.FC = () => {
 											<tr key={item.id}>
 												<td className="px-6 py-4 whitespace-nowrap">
 													<div className="flex items-center">
-														{item.product?.image && (
+														{item.image && (
 															<div className="flex-shrink-0 h-10 w-10 mr-3">
 																<img
 																	className="h-10 w-10 rounded-md object-cover"
-																	src={item.product.image}
-																	alt={item.product?.name || "Producto"}
+																	src={item.image}
+																	alt={item.name || "Producto"}
 																/>
 															</div>
 														)}
 														<div>
 															<div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-																{item.product?.name ||
-																	item.product_name ||
-																	"Producto"}
+																{item.name || "Producto"}
 															</div>
 															{/* Link al producto si es necesario */}
-															{item.product?.slug && (
+															{item.productId && (
 																<Link
-																	to={`/product/${item.product.slug}`}
+																	to={`/products/${item.productId}`}
 																	className="text-xs text-primary-600 dark:text-primary-400 hover:underline"
 																>
 																	Ver producto
@@ -333,7 +383,7 @@ const OrderDetailClientPage: React.FC = () => {
 													{item.quantity}
 												</td>
 												<td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100 text-right">
-													{formatCurrency(item.subtotal)}
+													{formatCurrency(item.price * item.quantity)}
 												</td>
 											</tr>
 										))}
@@ -353,26 +403,16 @@ const OrderDetailClientPage: React.FC = () => {
 										Subtotal:
 									</span>
 									<span className="text-gray-900 dark:text-gray-100">
-										{formatCurrency(
-											order.items.reduce(
-												(sum, item) => sum + item.price * item.quantity,
-												0
-											)
-										)}
+										{formatCurrency(calculateSubtotal())}
 									</span>
 								</div>
-								{/* Mostrar impuestos, si aplica */}
+								{/* Mostrar impuestos */}
 								<div className="flex justify-between items-center pb-2">
 									<span className="text-gray-600 dark:text-gray-400">
-										IVA (16%):
+										IVA (15%):
 									</span>
 									<span className="text-gray-900 dark:text-gray-100">
-										{formatCurrency(
-											order.items.reduce(
-												(sum, item) => sum + item.price * item.quantity * 0.16,
-												0
-											)
-										)}
+										{formatCurrency(calculateTax())}
 									</span>
 								</div>
 								<div className="flex justify-between items-center pt-3 border-t border-gray-200 dark:border-gray-700 font-medium">
@@ -380,7 +420,7 @@ const OrderDetailClientPage: React.FC = () => {
 										Total:
 									</span>
 									<span className="text-lg text-gray-900 dark:text-gray-100">
-										{formatCurrency(order.total)}
+										{formatCurrency(calculateTotal())}
 									</span>
 								</div>
 							</div>

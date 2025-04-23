@@ -66,11 +66,13 @@ const OrderStatusBadge: React.FC<OrderStatusBadgeProps> = ({
 				statusText = "Pendiente";
 				break;
 			case "completed":
+			case "paid":
 				statusClass =
 					"bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
 				statusText = "Completado";
 				break;
 			case "failed":
+			case "rejected":
 				statusClass =
 					"bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
 				statusText = "Fallido";
