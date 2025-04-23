@@ -322,6 +322,11 @@ export class OrderServiceAdapter {
 				id: String(order.id),
 				orderNumber: order.orderNumber,
 				date: order.createdAt || new Date().toISOString(),
+				customer: {
+					id: order.userId || 0,
+					name: order.user_name || "Cliente",
+					email: order.user_email || "email@example.com",
+				},
 				total: order.total,
 				items: order.items.map((item) => ({
 					id: item.id || 0,
