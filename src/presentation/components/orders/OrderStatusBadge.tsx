@@ -1,11 +1,18 @@
 import React from "react";
-import type {
-	OrderStatus,
-	PaymentStatus,
-} from "../../../core/domain/entities/Order";
+import type {OrderStatus} from "../../../core/domain/entities/Order";
+
+// Definir el tipo PaymentStatus con todos los valores posibles
+type PaymentStatus =
+	| "pending"
+	| "completed"
+	| "failed"
+	| "paid"
+	| "rejected"
+	| null
+	| undefined;
 
 interface OrderStatusBadgeProps {
-	status: OrderStatus | string;
+	status: OrderStatus | PaymentStatus | string;
 	type?: "order" | "payment";
 }
 
@@ -56,10 +63,10 @@ const OrderStatusBadge: React.FC<OrderStatusBadgeProps> = ({
 			default:
 				statusClass =
 					"bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200";
-				statusText = status || "Desconocido";
+				statusText = status?.toString() || "Desconocido";
 		}
 	} else if (type === "payment") {
-		switch (status as PaymentStatus) {
+		switch (status) {
 			case "pending":
 				statusClass =
 					"bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
@@ -80,7 +87,7 @@ const OrderStatusBadge: React.FC<OrderStatusBadgeProps> = ({
 			default:
 				statusClass =
 					"bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200";
-				statusText = status || "Desconocido";
+				statusText = status?.toString() || "Desconocido";
 		}
 	}
 

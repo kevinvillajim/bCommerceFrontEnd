@@ -351,18 +351,24 @@ const OrderDetailClientPage: React.FC = () => {
 											<tr key={item.id}>
 												<td className="px-6 py-4 whitespace-nowrap">
 													<div className="flex items-center">
-														{item.image && (
+														{item.product?.image && (
 															<div className="flex-shrink-0 h-10 w-10 mr-3">
 																<img
 																	className="h-10 w-10 rounded-md object-cover"
-																	src={item.image}
-																	alt={item.name || "Producto"}
+																	src={item.product.image}
+																	alt={
+																		item.product?.name ||
+																		item.product_name ||
+																		"Producto"
+																	}
 																/>
 															</div>
 														)}
 														<div>
 															<div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-																{item.name || "Producto"}
+																{item.product?.name ||
+																	item.product_name ||
+																	"Producto"}
 															</div>
 															{/* Link al producto si es necesario */}
 															{item.productId && (
