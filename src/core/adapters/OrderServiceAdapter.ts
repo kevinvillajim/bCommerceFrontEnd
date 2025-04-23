@@ -265,25 +265,54 @@ export class OrderServiceAdapter {
 		}
 	}
 
-	/**
-	 * Obtiene los detalles de una orden específica
-	 * @param orderId ID de la orden a consultar
-	 * @returns Detalles de la orden
-	 */
 	async getOrderDetails(orderId: string | number): Promise<OrderDetail> {
 		try {
 			// Convertir orderId a número si viene como string
 			const id = typeof orderId === "string" ? parseInt(orderId) : orderId;
 
 			// Utilizar el caso de uso para obtener los detalles
-			const orderDetail = await this.getOrderDetailUseCase.execute(id);
+			const response = await this.getOrderDetailUseCase.execute(id);
 
-			// Verificar si los cálculos son correctos
-			if (orderDetail && orderDetail.items) {
-				const subtotal = orderDetail.items.reduce(
-					(sum, item) => sum + item.price * item.quantity,
-					0
-				);
+			// Los datos vienen directamente del backend, asegurémonos de adaptarlos correctamente
+			// a la estructura que espera la interfaz de usuario
+			if (response) {
+				// Crear un objeto con estructura adecuada manteniendo la compatibilidad
+				const orderDetail = {
+					...response,
+
+					// Adaptaciones necesarias:
+					userId: response.user_id,
+					sellerId: response.seller_id,
+					paymentId: response.payment_id,
+					paymentMethod: response.payment_method,
+					paymentStatus: response.payment_status,
+					createdAt: response.created_at,
+					updatedAt: response.updated_at,
+					orderNumber: response.order_number,
+					shippingData: response.shipping_data,
+
+					// Procesar items con el formato esperado
+					items:
+						response.items?.map((item) => ({
+							...item,
+							productId: item.product_id,
+							product: item.product || {
+								id: item.product_id,
+								name: item.product_name,
+								image: item.product_image,
+								sku: item.product_sku,
+							},
+						})) || [],
+				};
+
+				console.log("Orden adaptada para UI:", orderDetail);
+
+				// Verificar si los cálculos son correctos
+				const subtotal =
+					orderDetail.items?.reduce(
+						(sum, item) => sum + item.price * item.quantity,
+						0
+					) || 0;
 
 				// Si el total parece incorrecto, corregirlo (asumiendo IVA del 15%)
 				const taxRate = 0.15;
@@ -293,9 +322,11 @@ export class OrderServiceAdapter {
 				if (Math.abs(orderDetail.total - calculatedTotal) > 0.01) {
 					orderDetail.total = calculatedTotal;
 				}
+
+				return orderDetail;
 			}
 
-			return orderDetail;
+			return response;
 		} catch (error) {
 			console.error(
 				`Error en OrderServiceAdapter.getOrderDetails para orden ${orderId}:`,
