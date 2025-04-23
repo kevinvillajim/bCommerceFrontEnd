@@ -1,9 +1,7 @@
 import React, {useState} from "react";
 import {useNavigate} from "react-router-dom";
 import {useCart} from "../../hooks/useCart";
-import {
-	CheckoutService,
-} from "../../../core/services/CheckoutService";
+import {CheckoutService} from "../../../core/services/CheckoutService";
 import type {PaymentMethod} from "../../../core/services/CheckoutService";
 import {NotificationType} from "../../contexts/CartContext";
 import {extractErrorMessage} from "../../../utils/errorHandler";
@@ -16,6 +14,35 @@ const TestCheckoutButton: React.FC<TestCheckoutButtonProps> = () => {
 	const checkoutService = new CheckoutService();
 	const [isLoading, setIsLoading] = useState(false);
 
+	// Obtener el seller_id del primer producto en el carrito
+	const getSellerId = (): number | undefined => {
+		if (!cart || !cart.items || cart.items.length === 0) {
+			return undefined;
+		}
+
+		// Intentar obtener el seller_id del primer producto
+		const firstItem = cart.items[0];
+
+		// El seller_id puede estar en diferentes propiedades dependiendo de la estructura de datos
+		const sellerId =
+			// Primero en el product directamente
+			firstItem.product?.sellerId ||
+			firstItem.product?.seller_id ||
+			// Luego, si hay un objeto 'seller' dentro de product
+			firstItem.product?.seller?.id ||
+			// Por último, si user_id es en realidad el seller_id en algunos casos
+			firstItem.product?.user_id;
+
+		if (!sellerId) {
+			console.warn(
+				"TestCheckoutButton: No se pudo determinar el seller_id del producto:",
+				firstItem
+			);
+		}
+
+		return sellerId;
+	};
+
 	const handleTestCheckout = async () => {
 		if (!cart || cart.items.length === 0) {
 			showNotification(NotificationType.ERROR, "El carrito está vacío");
@@ -24,6 +51,15 @@ const TestCheckoutButton: React.FC<TestCheckoutButtonProps> = () => {
 
 		setIsLoading(true);
 		try {
+			// Obtener el seller_id
+			const sellerId = getSellerId();
+
+			if (!sellerId) {
+				console.warn(
+					"TestCheckoutButton: No se pudo obtener el seller_id para el checkout de prueba"
+				);
+			}
+
 			// Datos de prueba
 			const testData = {
 				payment: {
@@ -40,8 +76,14 @@ const TestCheckoutButton: React.FC<TestCheckoutButtonProps> = () => {
 					postal_code: "12345",
 					phone: "123456789",
 				},
+				// Incluir el seller_id en la solicitud
+				seller_id: sellerId,
 			};
 
+			console.log(
+				"TestCheckoutButton: Enviando checkout con seller_id:",
+				sellerId
+			);
 			const response = await checkoutService.processCheckout(testData);
 
 			if (response.status === "success") {

@@ -1,9 +1,7 @@
 import ApiClient from "../../infrastructure/api/apiClient";
 import {API_ENDPOINTS} from "../../constants/apiEndpoints";
 import type {
-	ShoppingCart,
 	AddToCartRequest,
-	CartItemUpdateData,
 	ShoppingCartResponse,
 } from "../domain/entities/ShoppingCart";
 
@@ -23,6 +21,20 @@ export class CartService {
 			);
 
 			console.log("CartService: Respuesta del carrito:", response);
+
+			// Asegurarse de que los productos tienen la información del vendedor
+			if (response && response.data && response.data.items) {
+				// Verificar si hay información completa del producto, incluyendo el seller_id
+				response.data.items.forEach((item) => {
+					if (
+						item.product &&
+						!item.product.sellerId &&
+						!item.product.seller_id
+					) {
+						console.warn("CartService: Producto sin seller_id:", item.product);
+					}
+				});
+			}
 
 			return response;
 		} catch (error) {

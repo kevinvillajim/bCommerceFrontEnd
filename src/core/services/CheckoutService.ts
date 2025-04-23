@@ -24,6 +24,7 @@ export interface PaymentInfo {
 export interface CheckoutRequest {
 	payment: PaymentInfo;
 	shipping: ShippingInfo;
+	seller_id?: number; // Añadido el campo seller_id para identificar al vendedor
 }
 
 export interface CheckoutResponse {
@@ -46,6 +47,11 @@ export class CheckoutService {
 	): Promise<CheckoutResponse> {
 		try {
 			console.log("CheckoutService: Procesando checkout", checkoutData);
+
+			// Validar que exista el seller_id
+			if (!checkoutData.seller_id) {
+				console.warn("CheckoutService: No se proporcionó seller_id en la solicitud de checkout");
+			}
 
 			const response = await ApiClient.post<CheckoutResponse>(
 				API_ENDPOINTS.CHECKOUT.PROCESS,

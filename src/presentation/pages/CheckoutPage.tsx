@@ -5,8 +5,8 @@ import {useCart} from "../hooks/useCart";
 import {CheckoutService} from "../../core/services/CheckoutService";
 import type {
 	ShippingInfo,
-    PaymentInfo,
-    PaymentMethod
+	PaymentInfo,
+	PaymentMethod,
 } from "../../core/services/CheckoutService";
 import {NotificationType} from "../contexts/CartContext";
 import CreditCardForm from "../components/checkout/CreditCardForm";
@@ -54,10 +54,10 @@ const CheckoutPage: React.FC = () => {
 	}, [cart, navigate, showNotification]);
 
 	// Manejar el cambio de método de pago
-	  const handlePaymentMethodChange = (method: PaymentMethod) => {
-			setPaymentMethod(method);
-			setPaymentInfo({...paymentInfo, method});
-		};
+	const handlePaymentMethodChange = (method: PaymentMethod) => {
+		setPaymentMethod(method);
+		setPaymentInfo({...paymentInfo, method});
+	};
 
 	// Actualizar información de envío
 	const handleShippingChange = (field: keyof ShippingInfo, value: string) => {
@@ -133,6 +133,37 @@ const CheckoutPage: React.FC = () => {
 		return Object.keys(errors).length === 0;
 	};
 
+	// Obtener el seller_id del primer producto en el carrito
+	// Asumimos que todos los productos en una orden son del mismo vendedor
+	const getSellerId = (): number | undefined => {
+		if (!cart || !cart.items || cart.items.length === 0) {
+			return undefined;
+		}
+
+		// Intentar obtener el seller_id del primer producto
+		const firstItem = cart.items[0];
+
+		// El seller_id puede estar en diferentes propiedades dependiendo de la estructura de datos
+		// Verificamos todas las posibles ubicaciones
+		const sellerId =
+			// Primero en el product directamente
+			firstItem.product?.sellerId ||
+			firstItem.product?.seller_id ||
+			// Luego, si hay un objeto 'seller' dentro de product
+			firstItem.product?.seller?.id ||
+			// Por último, si user_id es en realidad el seller_id en algunos casos
+			firstItem.product?.user_id;
+
+		if (!sellerId) {
+			console.warn(
+				"No se pudo determinar el seller_id del producto:",
+				firstItem
+			);
+		}
+
+		return sellerId;
+	};
+
 	// Procesar el checkout
 	const processCheckout = async () => {
 		if (!validateForm()) {
@@ -146,17 +177,26 @@ const CheckoutPage: React.FC = () => {
 		setIsLoading(true);
 
 		try {
-			   const checkoutData = {
-						payment: {
-							...paymentInfo,
-							method:
-								paymentMethod === "qr"
-									? ("transfer" as PaymentMethod)
-									: paymentMethod, // API espera "transfer" para QR
-						},
-						shipping: shippingInfo,
-					};
+			// Obtener el seller_id
+			const sellerId = getSellerId();
 
+			if (!sellerId) {
+				console.warn("No se pudo obtener el seller_id para el checkout");
+			}
+
+			const checkoutData = {
+				payment: {
+					...paymentInfo,
+					method:
+						paymentMethod === "qr"
+							? ("transfer" as PaymentMethod)
+							: paymentMethod, // API espera "transfer" para QR
+				},
+				shipping: shippingInfo,
+				seller_id: sellerId, // Incluir el seller_id en la solicitud
+			};
+
+			console.log("Enviando checkout con seller_id:", sellerId);
 			const response = await checkoutService.processCheckout(checkoutData);
 
 			if (response.status === "success") {

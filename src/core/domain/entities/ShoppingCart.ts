@@ -27,6 +27,14 @@ export interface CartItem {
 		image?: string;
 		slug?: string;
 		stockAvailable?: number;
+		sellerId?: number; // Añadido para asegurar que el seller_id esté disponible
+		seller_id?: number; // Alternativa en snake_case por si la API lo devuelve así
+		seller?: {
+			// Estructura alternativa por si la API incluye un objeto seller
+			id: number;
+			storeName?: string;
+		};
+		user_id?: number; // Algunos sistemas usan user_id como seller_id
 	};
 }
 
@@ -75,6 +83,14 @@ export interface CartItemResponse {
 		image?: string;
 		slug?: string;
 		stock?: number;
+		sellerId?: number; // Añadido para asegurar que el seller_id esté disponible
+		seller_id?: number; // Alternativa en snake_case por si la API lo devuelve así
+		seller?: {
+			// Estructura alternativa por si la API incluye un objeto seller
+			id: number;
+			storeName?: string;
+		};
+		user_id?: number; // Algunos sistemas usan user_id como seller_id
 	};
 	quantity: number;
 	price: number;
