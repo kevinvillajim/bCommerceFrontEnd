@@ -1,5 +1,3 @@
-// src/presentation/pages/seller/SellerOrdersPage.tsx
-
 import React, {useState, useEffect} from "react";
 import {Link} from "react-router-dom";
 import {
@@ -16,17 +14,19 @@ import {
 import Table from "../../components/dashboard/Table";
 import {formatCurrency} from "../../../utils/formatters/formatCurrency";
 import {SellerStatCardList} from "../../components/dashboard/SellerStatCardList";
-import OrderServiceAdapter from "../../../core/adapters/OrderServiceAdapter";
+// Importar solo el adaptador y usar importaciones de tipo
+import SellerOrderServiceAdapter from "../../../core/adapters/SellerOrderServiceAdapter";
 import type {
-	OrderUI,
-	OrderStatUI,
-} from "../../../core/adapters/OrderServiceAdapter";
+	SellerOrderUI,
+	SellerOrderStatUI,
+} from "../../../core/adapters/SellerOrderServiceAdapter";
 
 const SellerOrdersPage: React.FC = () => {
-	// Instanciar el adaptador de servicio
-	const orderAdapter = new OrderServiceAdapter();
+	// Instanciar el nuevo adaptador de servicio
+	const orderAdapter = new SellerOrderServiceAdapter();
 
-	const [orders, setOrders] = useState<OrderUI[]>([]);
+	// Usar las nuevas interfaces para los estados
+	const [orders, setOrders] = useState<SellerOrderUI[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [statusFilter, setStatusFilter] = useState<string>("all");
 	const [paymentFilter, setPaymentFilter] = useState<string>("all");
@@ -38,7 +38,7 @@ const SellerOrdersPage: React.FC = () => {
 		totalItems: 0,
 		itemsPerPage: 10,
 	});
-	const [statsData, setStatsData] = useState<OrderStatUI[]>([]);
+	const [statsData, setStatsData] = useState<SellerOrderStatUI[]>([]);
 	const [dateRange, setDateRange] = useState({
 		from: "",
 		to: "",
@@ -57,7 +57,7 @@ const SellerOrdersPage: React.FC = () => {
 		dateRange,
 	]);
 
-	// Función para obtener órdenes
+	// Función para obtener órdenes usando el nuevo adaptador
 	const fetchOrders = async () => {
 		setLoading(true);
 		try {
@@ -101,10 +101,10 @@ const SellerOrdersPage: React.FC = () => {
 				filters.dateTo = dateRange.to;
 			}
 
-			// Obtener órdenes del adaptador
+			// Obtener órdenes del adaptador específico de vendedor
 			const result = await orderAdapter.getSellerOrders(filters);
 
-			// Las órdenes ya vienen con el total calculado correctamente desde el adaptador
+			// Establecer órdenes y datos de paginación
 			setOrders(result.orders);
 			setPagination(result.pagination);
 		} catch (error) {
@@ -114,13 +114,13 @@ const SellerOrdersPage: React.FC = () => {
 		}
 	};
 
-	// Función para obtener estadísticas
+	// Función para obtener estadísticas usando el nuevo adaptador
 	const fetchStats = async () => {
 		try {
 			const stats = await orderAdapter.getOrderStats();
 
 			// Añadir los iconos a las estadísticas
-			const statsWithIcons = stats.map((stat: OrderStatUI) => {
+			const statsWithIcons = stats.map((stat: SellerOrderStatUI) => {
 				let icon;
 				switch (stat.label) {
 					case "Total Pedidos":
@@ -209,10 +209,10 @@ const SellerOrdersPage: React.FC = () => {
 		}
 	};
 
-	// Actualizar estado de un pedido
+	// Actualizar estado de un pedido usando el nuevo adaptador
 	const updateOrderStatus = async (
 		orderId: string,
-		newStatus: OrderUI["status"]
+		newStatus: SellerOrderUI["status"]
 	) => {
 		try {
 			setLoading(true);
@@ -257,7 +257,7 @@ const SellerOrdersPage: React.FC = () => {
 			key: "orderNumber",
 			header: "Número de Pedido",
 			sortable: true,
-			render: (order: OrderUI) => (
+			render: (order: SellerOrderUI) => (
 				<Link
 					to={`/seller/orders/${order.id}`}
 					className="font-medium text-primary-600 dark:text-primary-400 hover:underline"
@@ -270,7 +270,7 @@ const SellerOrdersPage: React.FC = () => {
 			key: "date",
 			header: "Fecha",
 			sortable: true,
-			render: (order: OrderUI) => {
+			render: (order: SellerOrderUI) => {
 				const date = new Date(order.date);
 				return (
 					<span>
@@ -287,7 +287,7 @@ const SellerOrdersPage: React.FC = () => {
 			key: "customer",
 			header: "Cliente",
 			sortable: true,
-			render: (order: OrderUI) => (
+			render: (order: SellerOrderUI) => (
 				<div>
 					<div className="font-medium">{order.customer.name}</div>
 					<div className="text-xs text-gray-500 dark:text-gray-400">
@@ -300,14 +300,14 @@ const SellerOrdersPage: React.FC = () => {
 			key: "total",
 			header: "Total",
 			sortable: true,
-			render: (order: OrderUI) => (
+			render: (order: SellerOrderUI) => (
 				<span className="font-medium">{formatCurrency(order.total)}</span>
 			),
 		},
 		{
 			key: "items",
 			header: "Productos",
-			render: (order: OrderUI) => (
+			render: (order: SellerOrderUI) => (
 				<span className="text-center">{order.items.length}</span>
 			),
 		},
@@ -315,7 +315,7 @@ const SellerOrdersPage: React.FC = () => {
 			key: "status",
 			header: "Estado",
 			sortable: true,
-			render: (order: OrderUI) => {
+			render: (order: SellerOrderUI) => {
 				let statusClass = "";
 				let statusText = "";
 
@@ -370,7 +370,7 @@ const SellerOrdersPage: React.FC = () => {
 			key: "payment",
 			header: "Pago",
 			sortable: true,
-			render: (order: OrderUI) => {
+			render: (order: SellerOrderUI) => {
 				let paymentClass = "";
 				let paymentText = "";
 
@@ -405,7 +405,7 @@ const SellerOrdersPage: React.FC = () => {
 		{
 			key: "actions",
 			header: "Acciones",
-			render: (order: OrderUI) => (
+			render: (order: SellerOrderUI) => (
 				<div className="flex justify-end space-x-2">
 					{/* Ver detalles */}
 					<Link
@@ -574,7 +574,10 @@ const SellerOrdersPage: React.FC = () => {
 
 			{/* Estadísticas resumidas */}
 			<div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-				<SellerStatCardList items={statsData} />
+				<SellerStatCardList
+					// Asegurarnos de que el tipo sea compatible con el componente
+					items={statsData}
+				/>
 			</div>
 
 			{/* Tabla de Pedidos */}
