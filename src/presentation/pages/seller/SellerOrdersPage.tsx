@@ -14,18 +14,40 @@ import {
 import Table from "../../components/dashboard/Table";
 import {formatCurrency} from "../../../utils/formatters/formatCurrency";
 import {SellerStatCardList} from "../../components/dashboard/SellerStatCardList";
-// Importar solo el adaptador y usar importaciones de tipo
+// Importar el adaptador actualizado
 import SellerOrderServiceAdapter from "../../../core/adapters/SellerOrderServiceAdapter";
 import type {
 	SellerOrderUI,
 	SellerOrderStatUI,
 } from "../../../core/adapters/SellerOrderServiceAdapter";
 
+// Esta función ayuda a extraer la dirección de envío desde el string JSON
+const parseShippingAddress = (shippingAddressStr?: string): string => {
+	if (!shippingAddressStr) return "";
+
+	try {
+		const shippingAddress = JSON.parse(shippingAddressStr);
+		if (typeof shippingAddress === "object" && shippingAddress !== null) {
+			const parts = [
+				shippingAddress.address,
+				shippingAddress.city,
+				shippingAddress.state,
+				shippingAddress.country,
+			].filter(Boolean);
+			return parts.join(", ");
+		}
+	} catch (e) {
+		console.error("Error al parsear dirección de envío:", e);
+	}
+
+	return shippingAddressStr;
+};
+
 const SellerOrdersPage: React.FC = () => {
-	// Instanciar el nuevo adaptador de servicio
+	// Instanciar el adaptador de servicio
 	const orderAdapter = new SellerOrderServiceAdapter();
 
-	// Usar las nuevas interfaces para los estados
+	// Usar las interfaces para los estados
 	const [orders, setOrders] = useState<SellerOrderUI[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -57,7 +79,7 @@ const SellerOrdersPage: React.FC = () => {
 		dateRange,
 	]);
 
-	// Función para obtener órdenes usando el nuevo adaptador
+	// Función para obtener órdenes usando el adaptador
 	const fetchOrders = async () => {
 		setLoading(true);
 		try {
@@ -114,7 +136,7 @@ const SellerOrdersPage: React.FC = () => {
 		}
 	};
 
-	// Función para obtener estadísticas usando el nuevo adaptador
+	// Función para obtener estadísticas usando el adaptador
 	const fetchStats = async () => {
 		try {
 			const stats = await orderAdapter.getOrderStats();
@@ -209,7 +231,7 @@ const SellerOrdersPage: React.FC = () => {
 		}
 	};
 
-	// Actualizar estado de un pedido usando el nuevo adaptador
+	// Actualizar estado de un pedido usando el adaptador
 	const updateOrderStatus = async (
 		orderId: string,
 		newStatus: SellerOrderUI["status"]
@@ -308,7 +330,9 @@ const SellerOrdersPage: React.FC = () => {
 			key: "items",
 			header: "Productos",
 			render: (order: SellerOrderUI) => (
-				<span className="text-center">{order.items.length}</span>
+				<span className="text-center">
+					{order.items ? order.items.length : 0}
+				</span>
 			),
 		},
 		{
@@ -401,6 +425,18 @@ const SellerOrdersPage: React.FC = () => {
 					</span>
 				);
 			},
+		},
+		{
+			key: "address",
+			header: "Dirección",
+			render: (order: SellerOrderUI) => (
+				<div
+					className="truncate max-w-xs"
+					title={parseShippingAddress(order.shippingAddress)}
+				>
+					{parseShippingAddress(order.shippingAddress)}
+				</div>
+			),
 		},
 		{
 			key: "actions",
