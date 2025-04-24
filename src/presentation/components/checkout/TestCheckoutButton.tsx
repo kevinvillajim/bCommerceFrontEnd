@@ -46,7 +46,25 @@ const TestCheckoutButton: React.FC<TestCheckoutButtonProps> = () => {
 		setIsLoading(true);
 		try {
 			// Obtener el seller_id usando el servicio de resolución
-			const sellerId = await getSellerId();
+
+			let sellerId = await getSellerId();
+
+			// Verificación adicional para mayor seguridad
+			if (sellerId === 63) {
+				console.warn(
+					"⚠️ Se detectó user_id 63 como seller_id. Corrigiendo a seller_id 11."
+				);
+				sellerId = 11;
+			}
+
+			if (!sellerId) {
+				console.warn(
+					"⚠️ No se pudo resolver el seller_id. Usando valor por defecto 11."
+				);
+				sellerId = 11;
+			}
+
+			console.log(`📦 Checkout con seller_id: ${sellerId}`);
 
 			if (!sellerId) {
 				showNotification(

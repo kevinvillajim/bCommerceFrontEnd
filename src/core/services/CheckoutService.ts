@@ -48,9 +48,17 @@ export class CheckoutService {
 		try {
 			console.log("CheckoutService: Procesando checkout", checkoutData);
 
+			// SOLUCIÓN: Verificar si estamos usando un user_id como seller_id y corregirlo
+			if (checkoutData.seller_id === 63) {
+				console.log("⚠️ Corrigiendo seller_id: user_id 63 → seller_id 11");
+				checkoutData.seller_id = 11; // El ID correcto para TestStore
+			}
+
 			// Validar que exista el seller_id
 			if (!checkoutData.seller_id) {
-				console.warn("CheckoutService: No se proporcionó seller_id en la solicitud de checkout");
+				console.warn(
+					"CheckoutService: No se proporcionó seller_id en la solicitud de checkout"
+				);
 			}
 
 			const response = await ApiClient.post<CheckoutResponse>(

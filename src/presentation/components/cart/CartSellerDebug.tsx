@@ -2,7 +2,17 @@
 import React, {useState, useEffect} from "react";
 import {useCart} from "../../hooks/useCart";
 import {SellerIdResolverService} from "../../../infrastructure/services/SellerIdResolverService";
+import ApiClient from "../../../infrastructure/api/apiClient";
+import { API_ENDPOINTS } from "../../../constants/apiEndpoints";
 
+
+interface SellerResponse {
+	status: string;
+	message?: string;
+	data: {
+		seller_id: number;
+	};
+}
 /**
  * Componente para depurar la información del vendedor en el carrito
  * Solo usar en desarrollo, NO incluir en producción
@@ -115,6 +125,40 @@ const CartSellerDebug: React.FC = () => {
 			</div>
 
 			<div className="mb-2 bg-white p-2 rounded border border-gray-300">
+				<div className="mt-3 pt-2 border-t border-gray-200">
+					<button
+						onClick={async () => {
+							try {
+								console.log("Probando resolución user_id 63 → seller_id...");
+
+								// Método 1: Resolver directamente usando la función
+								const sellerId =
+									await SellerIdResolverService.resolveUserIdToSellerId(63);
+								console.log(`Método 1 - ID resuelto: ${sellerId}`);
+
+								// Método 2: Probar el endpoint directamente
+								try {
+									const response = await ApiClient.get<SellerResponse>(
+										API_ENDPOINTS.SELLERS.BY_USER_ID(63)
+									);
+									console.log("Respuesta API:", response);
+								} catch (apiError) {
+									console.error("Error en llamada API:", apiError);
+								}
+
+								alert(`User ID 63 → Seller ID: ${sellerId || "No resuelto"}`);
+							} catch (error) {
+								console.error("Error global:", error);
+								alert(
+									`Error: ${error instanceof Error ? error.message : String(error)}`
+								);
+							}
+						}}
+						className="text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
+					>
+						Probar resolución user_id → seller_id
+					</button>
+				</div>
 				<div className="flex justify-between">
 					<div>
 						<span className="font-medium">Estado del carrito: </span>
