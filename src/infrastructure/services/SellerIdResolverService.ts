@@ -41,7 +41,7 @@ export class SellerIdResolverService {
 	 *
 	 * @param productId ID del producto
 	 * @param useDefault Si debería usar un valor por defecto cuando no se puede resolver
-	 * @returns seller_id o undefined si no se puede resolver
+	 * @returns seller_id o undefined
 	 */
 	public static async resolveSellerIdForProduct(
 		productId: number,
@@ -129,23 +129,25 @@ export class SellerIdResolverService {
 	 * Resuelve seller_id para todo el carrito
 	 *
 	 * @param cartItems Items del carrito
-	 * @returns seller_id único si todos los productos tienen el mismo vendedor, o undefined
+	 * @returns Map de product_id a seller_id para todos los productos en el carrito
 	 */
-	public static async resolveSellerIdForCart(
+	public static async resolveSellerIdsForCart(
 		cartItems: Array<{productId: number; product?: any}>
-	): Promise<number | undefined> {
+	): Promise<Map<number, number>> {
 		if (!cartItems || cartItems.length === 0) {
-			return undefined;
+			return new Map();
 		}
 
-		// Intentar extraer seller_id real de todos los productos
-		const sellerIds: number[] = [];
+		// Mapa para asociar productos con sus vendedores
+		const sellerMap = new Map<number, number>();
+
+		// Iterar a través de los items del carrito para recopilar seller_ids
 		for (const item of cartItems) {
 			const product = item.product;
-			if (product) {
-				let sellerId: number | null = null;
+			let sellerId: number | null = null;
 
-				// Intentar distintas propiedades donde podría estar el seller_id
+			if (product) {
+				// Priorizar seller_id del producto si existe
 				if (product.seller_id !== undefined) {
 					sellerId = Number(product.seller_id);
 				} else if (product.seller && product.seller.id !== undefined) {
@@ -163,62 +165,32 @@ export class SellerIdResolverService {
 					}
 				}
 
-				// Validación adicional: Si el seller_id es igual al user_id, podría ser incorrecto
-				// En ese caso, intentar resolver el seller_id correcto
-				if (
-					sellerId &&
-					product.user_id &&
-					sellerId === Number(product.user_id)
-				) {
-					const resolved = await this.resolveUserIdToSellerId(product.user_id);
-					if (resolved && resolved !== sellerId) {
-						console.log(
-							`Corrigiendo: seller_id ${sellerId} a ${resolved} para user_id ${product.user_id}`
-						);
-						sellerId = resolved;
+				// Si encontramos un seller_id, añadirlo al mapa
+				if (sellerId) {
+					sellerMap.set(item.productId, sellerId);
+				} else {
+					// Si no se encuentra seller_id, intentar resolverlo
+					const resolvedSellerId = await this.resolveSellerIdForProduct(
+						item.productId,
+						true
+					);
+					if (resolvedSellerId) {
+						sellerMap.set(item.productId, resolvedSellerId);
 					}
 				}
-
-				if (sellerId) {
-					sellerIds.push(sellerId);
+			} else {
+				// Si no hay información de producto, intentar resolver por productId
+				const resolvedSellerId = await this.resolveSellerIdForProduct(
+					item.productId,
+					true
+				);
+				if (resolvedSellerId) {
+					sellerMap.set(item.productId, resolvedSellerId);
 				}
 			}
 		}
 
-		// Si encontramos seller_ids en los productos
-		const uniqueSellerIds = [...new Set(sellerIds)];
-		if (uniqueSellerIds.length === 1) {
-			return uniqueSellerIds[0];
-		}
-		if (uniqueSellerIds.length > 1) {
-			console.warn(
-				"Múltiples vendedores detectados en el carrito. Usando el primero."
-			);
-			return uniqueSellerIds[0];
-		}
-
-		// Si no se pudo resolver desde los productos, intentar con resolveSellerIdForProduct
-		const productIds = cartItems.map((item) => item.productId);
-		const vendorIds = await this.resolveSellerIdsForProducts(productIds);
-
-		const uniqueVendorIds = new Set(vendorIds.values());
-		if (uniqueVendorIds.size === 1) {
-			return Array.from(uniqueVendorIds)[0];
-		}
-		if (uniqueVendorIds.size > 1) {
-			console.warn(
-				"Múltiples vendedores detectados en el carrito (por productoId). Usando el primero."
-			);
-			const firstProductId = productIds[0];
-			const firstSellerId = vendorIds.get(firstProductId);
-			return firstSellerId !== undefined ? firstSellerId : this.defaultSellerId;
-		}
-
-		// Si todo lo anterior falla, usar el valor por defecto
-		console.warn(
-			`No se pudo resolver ningún seller_id. Usando valor por defecto: ${this.defaultSellerId}`
-		);
-		return this.defaultSellerId;
+		return sellerMap;
 	}
 
 	/**
@@ -238,14 +210,9 @@ export class SellerIdResolverService {
 			if (response && response.data) {
 				const product = response.data;
 
-				// Si ya tenemos el seller_id, usarlo directamente
+				// Priorizar seller_id correcto si está disponible
 				if (product.seller_id !== undefined) {
 					return Number(product.seller_id);
-				}
-
-				// Si tenemos user_id, resolver a seller_id
-				if (product.user_id !== undefined) {
-					return await this.resolveUserIdToSellerId(product.user_id);
 				}
 
 				// Verificar otras posibles propiedades
@@ -255,6 +222,11 @@ export class SellerIdResolverService {
 
 				if (product.seller && product.seller.id !== undefined) {
 					return Number(product.seller.id);
+				}
+
+				// Si solo tenemos user_id, intentar resolver a seller_id
+				if (product.user_id !== undefined) {
+					return await this.resolveUserIdToSellerId(product.user_id);
 				}
 			}
 
@@ -280,14 +252,13 @@ export class SellerIdResolverService {
 		try {
 			console.log(`Intentando resolver user_id ${userId} a seller_id...`);
 
-			// CASO ESPECIAL: Si el user_id es 63, sabemos que el seller_id es 11
-			if (userId === 63) {
-				console.log("Caso especial: user_id 63 → seller_id 11");
-				return 11;
-			}
+			// // CASO ESPECIAL: Si el user_id es 63, sabemos que el seller_id es 11
+			// if (userId === 63) {
+			// 	console.log("Caso especial: user_id 63 → seller_id 11");
+			// 	return 11;
+			// }
 
 			// Continuar con la resolución normal para otros casos
-			// Añadimos el tipo explícito a la respuesta
 			const response = await ApiClient.get<SellerResponse>(
 				API_ENDPOINTS.SELLERS.BY_USER_ID(userId)
 			);
@@ -314,7 +285,7 @@ export class SellerIdResolverService {
 			);
 
 			// Si el user_id es 63, devolver 11 como fallback incluso en caso de error
-			if (userId === 63) return 11;
+			// if (userId === 63) return 11;
 
 			return undefined;
 		}
