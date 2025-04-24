@@ -1,12 +1,8 @@
 // src/core/adapters/SellerOrderServiceAdapter.ts
 import ApiClient from "../../infrastructure/api/apiClient";
 import {API_ENDPOINTS} from "../../constants/apiEndpoints";
-// Remover imports no utilizados
-import type {ReactNode} from "react";
 
-/**
- * Interfaces específicas para la gestión de órdenes del vendedor
- */
+// Definición de interfaces para los datos de la UI
 export interface SellerOrderUI {
 	id: string;
 	orderNumber: string;
@@ -19,8 +15,7 @@ export interface SellerOrderUI {
 	total: number;
 	items: Array<{
 		id: number;
-		productId: number;
-		name: string;
+		product_id: number;
 		quantity: number;
 		price: number;
 		subtotal: number;
@@ -33,195 +28,107 @@ export interface SellerOrderUI {
 		| "delivered"
 		| "completed"
 		| "cancelled";
-	paymentStatus: "pending" | "completed" | "rejected" | "failed" | "paid";
-	shippingAddress?: string;
+	paymentStatus: "pending" | "completed" | "failed" | "rejected";
 }
 
 export interface SellerOrderStatUI {
 	label: string;
 	value: number | string;
-	icon?: ReactNode;
-	color: string; // Quitamos undefined para compatibilidad con OrderStatUI
 	isCurrency?: boolean;
+	color?: string;
+	icon?: React.ReactNode;
 }
 
-export interface SellerOrderPagination {
-	currentPage: number;
-	totalPages: number;
-	totalItems: number;
-	itemsPerPage: number;
-}
-
-export interface SellerOrdersResponse {
-	orders: SellerOrderUI[];
-	pagination: SellerOrderPagination;
-}
-
-// Interfaces para respuestas de API
-interface ApiOrderResponse {
-	success: boolean;
-	message?: string;
-	data: Array<{
-		id: number;
-		order_number?: string;
-		orderNumber?: string;
-		date?: string;
-		created_at?: string;
-		user_id?: number;
-		userId?: number;
-		customer?: {
-			name: string;
-			email: string;
-		};
-		user_name?: string;
-		user_email?: string;
-		total: number;
-		items?: Array<{
-			id: number;
-			product_id: number;
-			product_name?: string;
-			quantity: number;
-			price: number;
-			subtotal: number;
-		}>;
-		status: string;
-		payment_status?: string;
-		paymentStatus?: string;
-		shipping_data?: any;
-	}>;
-	pagination?: {
-		totalItems?: number;
-		totalPages?: number;
-		currentPage?: number;
-		itemsPerPage?: number;
-	};
-}
-
-interface ApiStatsResponse {
-	success: boolean;
-	message?: string;
-	data: {
-		totalOrders?: number;
-		pendingOrders?: number;
-		processingOrders?: number;
-		shippedOrders?: number;
-		deliveredOrders?: number;
-		completedOrders?: number;
-		cancelledOrders?: number;
-		totalSales?: number;
-	};
-}
-
-interface ApiUpdateResponse {
-	success: boolean;
-	message?: string;
+// Definición de interfaces para filtros de búsqueda
+export interface SellerOrderFilters {
+	page?: number;
+	limit?: number;
+	status?: string;
+	paymentStatus?: string;
+	search?: string;
+	dateFrom?: string;
+	dateTo?: string;
 }
 
 /**
- * Adaptador específico para las órdenes del vendedor
- * Mantiene separada la lógica de obtención y formateo de datos
+ * Adaptador de servicio para gestionar órdenes del vendedor
+ * Convierte los datos de la API a formato amigable para la UI
  */
-export class SellerOrderServiceAdapter {
+export default class SellerOrderServiceAdapter {
 	/**
-	 * Obtiene las órdenes del vendedor con filtros
+	 * Obtiene las órdenes del vendedor con filtros aplicados
+	 * @param filters Filtros para la búsqueda de órdenes
+	 * @returns Órdenes formateadas y datos de paginación
 	 */
-	async getSellerOrders(filters?: {
-		status?: string;
-		paymentStatus?: string;
-		dateFrom?: string;
-		dateTo?: string;
-		search?: string;
-		page?: number;
-		limit?: number;
-	}): Promise<SellerOrdersResponse> {
+	public async getSellerOrders(filters: SellerOrderFilters = {}) {
 		try {
 			console.log(
 				"SellerOrderServiceAdapter: Obteniendo órdenes con filtros:",
 				filters
 			);
 
-			// Preparar parámetros para la API
-			const apiParams: Record<string, any> = {
-				limit: filters?.limit || 10,
-				offset: filters?.page ? (filters.page - 1) * (filters?.limit || 10) : 0,
+			// Formatear los parámetros para la API
+			const apiFilters: any = {
+				limit: filters.limit || 10,
+				page: filters.page || 1,
 			};
 
-			// Añadir filtros si existen
-			if (filters?.status && filters.status !== "all") {
-				apiParams.status = filters.status;
+			// Añadir filtros opcionales si están presentes
+			if (filters.status && filters.status !== "all") {
+				apiFilters.status = filters.status;
 			}
 
-			if (filters?.paymentStatus && filters.paymentStatus !== "all") {
-				apiParams.payment_status = filters.paymentStatus;
+			if (filters.paymentStatus && filters.paymentStatus !== "all") {
+				apiFilters.payment_status = filters.paymentStatus;
 			}
 
-			if (filters?.dateFrom) {
-				apiParams.date_from = filters.dateFrom;
+			if (filters.search) {
+				apiFilters.search = filters.search;
 			}
 
-			if (filters?.dateTo) {
-				apiParams.date_to = filters.dateTo;
+			if (filters.dateFrom) {
+				apiFilters.date_from = filters.dateFrom;
 			}
 
-			if (filters?.search) {
-				apiParams.search = filters.search;
+			if (filters.dateTo) {
+				apiFilters.date_to = filters.dateTo;
 			}
 
-			// Realizar la llamada a la API
-			const response = await ApiClient.get<ApiOrderResponse>(
+			// Llamar a la API usando la nueva ruta específica para vendedores
+			const response = await ApiClient.get<any>(
 				API_ENDPOINTS.ORDERS.SELLER_ORDERS,
-				apiParams
+				apiFilters
 			);
 
-			console.log("SellerOrderServiceAdapter: Respuesta de API:", response);
+			console.log("SellerOrderServiceAdapter: Respuesta de la API:", response);
 
-			// Verificar si la respuesta es válida
-			if (!response || response.success === false) {
-				throw new Error(response?.message || "Error al obtener órdenes");
+			// Verificar la estructura de la respuesta
+			if (!response || !response.status || response.status !== "success") {
+				throw new Error("Respuesta de API inválida");
 			}
 
-			// Convertir la respuesta de la API a nuestro formato de UI
-			const orders: SellerOrderUI[] = (response.data || []).map((order) => ({
-				id: order.id.toString(),
-				orderNumber:
-					order.order_number || order.orderNumber || `ORD-${order.id}`,
+			// Mapear los datos a formato UI
+			const orders: SellerOrderUI[] = response.data.map((order: any) => ({
+				id: String(order.id),
+				orderNumber: order.orderNumber || `#${order.id}`,
 				date: order.date || order.created_at || new Date().toISOString(),
 				customer: {
-					id: order.user_id || order.userId || 0,
-					name: order.customer?.name || order.user_name || "Cliente",
-					email: order.customer?.email || order.user_email || "",
+					id: order.customer?.id || order.user_id || 0,
+					name: order.customer?.name || "Cliente",
+					email: order.customer?.email || "sin@email.com",
 				},
-				total: parseFloat(order.total.toString()),
-				items: Array.isArray(order.items)
-					? order.items.map((item) => ({
-							id: item.id,
-							productId: item.product_id,
-							name: item.product_name || "Producto",
-							quantity: item.quantity,
-							price: item.price,
-							subtotal: item.subtotal,
-						}))
-					: [],
-				status: (order.status || "pending") as SellerOrderUI["status"],
-				paymentStatus: (order.payment_status ||
-					order.paymentStatus ||
-					"pending") as SellerOrderUI["paymentStatus"],
-				shippingAddress: order.shipping_data
-					? JSON.stringify(order.shipping_data)
-					: undefined,
+				total: parseFloat(order.total) || 0,
+				items: Array.isArray(order.items) ? order.items : [],
+				status: order.status || "pending",
+				paymentStatus: order.paymentStatus || order.payment_status || "pending",
 			}));
 
-			// Crear objeto de paginación
-			const pagination: SellerOrderPagination = {
-				currentPage: filters?.page || 1,
-				totalPages:
-					response.pagination?.totalPages ||
-					Math.ceil(
-						(response.pagination?.totalItems || orders.length) /
-							(filters?.limit || 10)
-					),
-				totalItems: response.pagination?.totalItems || orders.length,
-				itemsPerPage: filters?.limit || 10,
+			// Extraer información de paginación
+			const pagination = response.pagination || {
+				currentPage: 1,
+				totalPages: 1,
+				totalItems: orders.length,
+				itemsPerPage: 10,
 			};
 
 			return {
@@ -234,7 +141,7 @@ export class SellerOrderServiceAdapter {
 				error
 			);
 
-			// Devolver una respuesta vacía en caso de error
+			// Devolver un valor predeterminado en caso de error
 			return {
 				orders: [],
 				pagination: {
@@ -248,59 +155,88 @@ export class SellerOrderServiceAdapter {
 	}
 
 	/**
-	 * Obtiene estadísticas de órdenes para el vendedor
+	 * Actualiza el estado de una orden
+	 * @param orderId ID de la orden
+	 * @param status Nuevo estado
+	 * @returns Éxito de la operación
 	 */
-	async getOrderStats(): Promise<SellerOrderStatUI[]> {
+	public async updateOrderStatus(
+		orderId: string,
+		status: SellerOrderUI["status"]
+	): Promise<boolean> {
 		try {
-			console.log("SellerOrderServiceAdapter: Obteniendo estadísticas");
-
-			// Llamar al endpoint de estadísticas
-			const response = await ApiClient.get<ApiStatsResponse>(
-				API_ENDPOINTS.ORDERS.STATS
+			console.log(
+				`SellerOrderServiceAdapter: Actualizando orden ${orderId} a estado ${status}`
 			);
+
+			const response = await ApiClient.put(
+				API_ENDPOINTS.ORDERS.UPDATE_STATUS(Number(orderId)),
+				{
+					status,
+				}
+			);
+
+			return response && response.status === "success";
+		} catch (error) {
+			console.error(
+				`SellerOrderServiceAdapter: Error al actualizar estado de orden ${orderId}:`,
+				error
+			);
+			return false;
+		}
+	}
+
+	/**
+	 * Obtiene estadísticas de pedidos del vendedor
+	 * @returns Estadísticas formateadas para la UI
+	 */
+	public async getOrderStats(): Promise<SellerOrderStatUI[]> {
+		try {
+			console.log(
+				"SellerOrderServiceAdapter: Obteniendo estadísticas de órdenes"
+			);
+
+			// Llamar a la API usando la nueva ruta específica para estadísticas de vendedor
+			const response = await ApiClient.get<any>(API_ENDPOINTS.ORDERS.STATS);
 
 			console.log(
 				"SellerOrderServiceAdapter: Respuesta de estadísticas:",
 				response
 			);
 
-			if (!response || response.success === false) {
-				throw new Error(response?.message || "Error al obtener estadísticas");
+			if (!response || !response.status || response.status !== "success") {
+				throw new Error("Respuesta de API inválida para estadísticas");
 			}
 
-			const statsData = response.data || {};
+			const data = response.data;
 
-			// Transformar los datos a nuestro formato de UI
+			// Mapear los datos a estadísticas para UI
 			const stats: SellerOrderStatUI[] = [
 				{
 					label: "Total Pedidos",
-					value: statsData.totalOrders || 0,
+					value: data.totalOrders || 0,
 					color: "blue",
-					isCurrency: false,
 				},
 				{
 					label: "Pendientes",
-					value: statsData.pendingOrders || 0,
+					value: data.pendingOrders || 0,
 					color: "yellow",
-					isCurrency: false,
 				},
 				{
 					label: "En Proceso",
-					value: statsData.processingOrders || 0,
-					color: "purple",
-					isCurrency: false,
+					value: data.processingOrders || 0,
+					color: "blue",
 				},
 				{
 					label: "Enviados",
-					value: statsData.shippedOrders || 0,
+					value: data.shippedOrders || 0,
 					color: "indigo",
-					isCurrency: false,
 				},
 				{
 					label: "Total Ventas",
-					value: statsData.totalSales || 0,
-					color: "green",
+					value: data.totalSales || 0,
 					isCurrency: true,
+					color: "green",
 				},
 			];
 
@@ -311,73 +247,30 @@ export class SellerOrderServiceAdapter {
 				error
 			);
 
-			// Devolver estadísticas vacías en caso de error
+			// Devolver estadísticas básicas en caso de error
 			return [
 				{
 					label: "Total Pedidos",
 					value: 0,
 					color: "blue",
-					isCurrency: false,
 				},
 				{
 					label: "Pendientes",
 					value: 0,
 					color: "yellow",
-					isCurrency: false,
 				},
 				{
 					label: "En Proceso",
 					value: 0,
-					color: "purple",
-					isCurrency: false,
-				},
-				{
-					label: "Enviados",
-					value: 0,
-					color: "indigo",
-					isCurrency: false,
+					color: "blue",
 				},
 				{
 					label: "Total Ventas",
 					value: 0,
-					color: "green",
 					isCurrency: true,
+					color: "green",
 				},
 			];
 		}
 	}
-
-	/**
-	 * Actualiza el estado de una orden
-	 */
-	async updateOrderStatus(
-		orderId: string,
-		newStatus: SellerOrderUI["status"]
-	): Promise<boolean> {
-		try {
-			console.log(
-				`SellerOrderServiceAdapter: Actualizando estado de orden ${orderId} a ${newStatus}`
-			);
-
-			const response = await ApiClient.put<ApiUpdateResponse>(
-				API_ENDPOINTS.ORDERS.UPDATE_STATUS(parseInt(orderId)),
-				{status: newStatus}
-			);
-
-			console.log(
-				"SellerOrderServiceAdapter: Respuesta de actualización:",
-				response
-			);
-
-			return response && response.success === true;
-		} catch (error) {
-			console.error(
-				`SellerOrderServiceAdapter: Error al actualizar estado de orden ${orderId}:`,
-				error
-			);
-			return false;
-		}
-	}
 }
-
-export default SellerOrderServiceAdapter;

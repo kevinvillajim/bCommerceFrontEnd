@@ -82,8 +82,8 @@ export const API_ENDPOINTS = {
 	ORDERS: {
 		LIST: "/orders",
 		DETAILS: (id: number) => `/orders/${id}`,
-		SELLER_ORDERS: "/orders",
-		STATS: "/orders/stats",
+		SELLER_ORDERS: "/seller/orders",
+		STATS: "/seller/orders/stats",
 		UPDATE_STATUS: (id: number) => `/orders/${id}/status`,
 		UPDATE_SHIPPING: (id: number) => `/orders/${id}/shipping`,
 		CANCEL: (id: number) => `/orders/${id}/cancel`,
