@@ -232,6 +232,11 @@ export const API_ENDPOINTS = {
 		SHIPPING_CYCLE: (trackingNumber: string) =>
 			`/simulator/shipping/simulate-cycle/${trackingNumber}`,
 	},
+
+	SELLERS: {
+		BY_USER_ID: (userId: number) => `/sellers/by-user/${userId}`,
+		ACTIVE: "/sellers/active",
+	},
 };
 
 export default API_ENDPOINTS;

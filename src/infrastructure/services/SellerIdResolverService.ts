@@ -113,31 +113,58 @@ export class SellerIdResolverService {
 			return undefined;
 		}
 
-		// Recolectar todos los IDs de productos
+		// Intentar extraer seller_id real de todos los productos
+		const sellerIds: number[] = [];
+		for (const item of cartItems) {
+			const product = item.product;
+			if (product) {
+				let sellerId = null;
+				if (product.seller_id) {
+					sellerId = Number(product.seller_id);
+				}
+				else if (product.seller && product.seller.id) {
+					sellerId = Number(product.seller.id);
+				}
+				// Si solo hay user_id, resolver seller_id real
+				else if (product.user_id) {
+					sellerId = await this.resolveUserIdToSellerId(product.user_id);
+				}
+
+				// Si el seller_id es igual al user_id, resolver seller_id real
+				if (sellerId && product.user_id && sellerId === Number(product.user_id)) {
+					const resolved = await this.resolveUserIdToSellerId(product.user_id);
+					if (resolved && resolved !== sellerId) {
+						sellerId = resolved;
+					}
+				}
+
+				if (sellerId) {
+					sellerIds.push(sellerId);
+				}
+			}
+		}
+
+		const uniqueSellerIds = [...new Set(sellerIds)];
+		if (uniqueSellerIds.length === 1) {
+			return uniqueSellerIds[0];
+		}
+		if (uniqueSellerIds.length > 1) {
+			console.warn("Múltiples vendedores detectados en el carrito. Usando el primero.");
+			return uniqueSellerIds[0];
+		}
+
+		// Si no se pudo resolver, usar el método anterior (por productoId)
 		const productIds = cartItems.map((item) => item.productId);
-
-		// Resolver seller_ids para todos los productos
-		const sellerIds = await this.resolveSellerIdsForProducts(productIds);
-
-		// Verificar si todos los productos tienen el mismo seller_id
-		const uniqueSellerIds = new Set(sellerIds.values());
-
-		if (uniqueSellerIds.size === 0) {
-			// No se pudo resolver ningún seller_id
-			return this.defaultSellerId;
+		const vendorIds = await this.resolveSellerIdsForProducts(productIds);
+		const uniqueVendorIds = new Set(vendorIds.values());
+		if (uniqueVendorIds.size === 1) {
+			return Array.from(uniqueVendorIds)[0];
 		}
-
-		if (uniqueSellerIds.size === 1) {
-			// Todos los productos tienen el mismo seller_id
-			return Array.from(uniqueSellerIds)[0];
+		if (uniqueVendorIds.size > 1) {
+			console.warn("Múltiples vendedores detectados en el carrito (por productoId). Usando el primero.");
+			return vendorIds.get(productIds[0]) || this.defaultSellerId;
 		}
-
-		// Múltiples vendedores - por ahora usamos el del primer producto
-		// En una implementación real, esto debería manejarse de otra manera
-		console.warn(
-			"SellerIdResolver: Múltiples vendedores detectados en el carrito. Usando el primer seller_id."
-		);
-		return sellerIds.get(productIds[0]) || this.defaultSellerId;
+		return this.defaultSellerId;
 	}
 
 	/**
@@ -150,23 +177,30 @@ export class SellerIdResolverService {
 		productId: number
 	): Promise<number | undefined> {
 		try {
-			// Intentar obtener detalles del producto (esto podría requerir ajustes según tu API)
-			const response = await ApiClient.get(
-				`${API_ENDPOINTS.PRODUCTS.DETAILS}${productId}`
-			) as { data?: any };
+			const response = (await ApiClient.get(
+				API_ENDPOINTS.PRODUCTS.DETAILS(productId)
+			)) as {data?: any};
 
 			if (response.data) {
 				const product = response.data;
 
-				// Intentar extraer el seller_id de varias ubicaciones posibles
-				const sellerId =
-					product.sellerId ||
-					product.seller_id ||
-					(product.seller && product.seller.id) ||
-					product.user_id;
+				// Si ya tenemos el seller_id, usarlo directamente
+				if (product.seller_id) {
+					return Number(product.seller_id);
+				}
 
-				if (sellerId) {
-					return Number(sellerId);
+				// Si tenemos user_id, resolver a seller_id
+				if (product.user_id) {
+					return await this.resolveUserIdToSellerId(product.user_id);
+				}
+
+				// Verificar otras posibles propiedades
+				if (product.sellerId) {
+					return await this.resolveUserIdToSellerId(product.sellerId);
+				}
+
+				if (product.seller && product.seller.id) {
+					return await this.resolveUserIdToSellerId(product.seller.id);
 				}
 			}
 
@@ -176,6 +210,39 @@ export class SellerIdResolverService {
 				`Error al obtener detalles del producto ${productId}:`,
 				error
 			);
+			return undefined;
+		}
+	}
+
+	/**
+	 * Método para convertir un user_id en seller_id utilizando la API
+	 *
+	 * @param userId ID del usuario
+	 * @returns seller_id correspondiente o undefined si no se encuentra
+	 */
+	private static async resolveUserIdToSellerId(
+		userId: number
+	): Promise<number | undefined> {
+		try {
+			// Usamos el endpoint para obtener seller_id por user_id
+			const response = (await ApiClient.get(
+				API_ENDPOINTS.SELLERS.BY_USER_ID(userId)
+			)) as {status?: string; data?: any};
+
+			if (
+				response.status === "success" &&
+				response.data &&
+				response.data.seller_id
+			) {
+				console.log(
+					`SellerIdResolver: user_id ${userId} resuelto a seller_id ${response.data.seller_id}`
+				);
+				return Number(response.data.seller_id);
+			}
+
+			return undefined;
+		} catch (error) {
+			console.error(`Error al resolver user_id ${userId} a seller_id:`, error);
 			return undefined;
 		}
 	}

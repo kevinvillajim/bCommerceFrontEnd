@@ -24,7 +24,7 @@ export interface PaymentInfo {
 export interface CheckoutRequest {
 	payment: PaymentInfo;
 	shipping: ShippingInfo;
-	seller_id?: number; // Añadido el campo seller_id para identificar al vendedor
+	seller_id?: number; // ID del usuario Vendedor
 }
 
 export interface CheckoutResponse {

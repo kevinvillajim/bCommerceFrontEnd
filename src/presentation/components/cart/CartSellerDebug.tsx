@@ -34,18 +34,18 @@ const CartSellerDebug: React.FC = () => {
 			let sellerId = null;
 			let source = "unknown";
 
-			if (product.sellerId) {
-				sellerId = product.sellerId;
-				source = "product.sellerId";
-			} else if (product.seller_id) {
+			if (product.seller_id) {
 				sellerId = product.seller_id;
-				source = "product.seller_id";
-			} else if (product.seller?.id) {
+				source = "product.seller_id (OK)";
+			} else if (product.seller && product.seller.id) {
 				sellerId = product.seller.id;
-				source = "product.seller.id";
+				source = "product.seller.id (OK)";
+			} else if (product.sellerId) {
+				sellerId = product.sellerId;
+				source = "product.sellerId (dudoso)";
 			} else if (product.user_id) {
 				sellerId = product.user_id;
-				source = "product.user_id";
+				source = "product.user_id (NO usar para checkout)";
 			}
 
 			return {
