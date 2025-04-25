@@ -236,6 +236,7 @@ export default class SellerOrderServiceAdapter {
 				`SellerOrderServiceAdapter: Actualizando orden ${orderId} a estado ${status}`
 			);
 
+			// Usar PUT según la documentación de la API
 			const response = await ApiClient.put(
 				API_ENDPOINTS.ORDERS.UPDATE_STATUS(Number(orderId)),
 				{
@@ -243,8 +244,21 @@ export default class SellerOrderServiceAdapter {
 				}
 			);
 
-			// Verificar con campo 'success' en lugar de 'status'
-			return response && response.success === true;
+			// Verificar con campo 'success' en la respuesta
+			if (!response || response.success !== true) {
+				console.error(
+					`Error al actualizar estado: Respuesta inválida`,
+					response
+				);
+				return false;
+			}
+
+			console.log(
+				`Estado de orden actualizado correctamente:`,
+				response.data || response.message
+			);
+
+			return true;
 		} catch (error) {
 			console.error(
 				`SellerOrderServiceAdapter: Error al actualizar estado de orden ${orderId}:`,
@@ -356,7 +370,7 @@ export default class SellerOrderServiceAdapter {
 				`SellerOrderServiceAdapter: Obteniendo detalle de orden ${id} como vendedor`
 			);
 
-			// Importante: Usar el endpoint específico para vendedores
+			// Importante: Usar el endpoint específico para vendedores según la documentación
 			const response = await ApiClient.get<any>(
 				API_ENDPOINTS.ORDERS.SELLER_ORDER_DETAILS(id)
 			);
@@ -433,6 +447,78 @@ export default class SellerOrderServiceAdapter {
 				error
 			);
 			throw error;
+		}
+	}
+
+	/**
+	 * Completa una orden específica
+	 * @param orderId ID de la orden
+	 * @returns true si la operación tuvo éxito, false en caso contrario
+	 */
+	async completeOrder(orderId: string | number): Promise<boolean> {
+		try {
+			// Convertir orderId a número si viene como string
+			const id = typeof orderId === "string" ? parseInt(orderId) : orderId;
+
+			console.log(`SellerOrderServiceAdapter: Completando orden ${id}`);
+
+			// Llamar al endpoint según la documentación
+			const response = await ApiClient.post<any>(
+				API_ENDPOINTS.ORDERS.COMPLETE(id)
+			);
+
+			console.log(`Respuesta al completar orden ${id}:`, response);
+
+			// Verificar respuesta con el campo 'success'
+			return response && response.success === true;
+		} catch (error) {
+			console.error(
+				`SellerOrderServiceAdapter: Error al completar orden ${orderId}:`,
+				error
+			);
+			return false;
+		}
+	}
+
+	/**
+	 * Actualiza la información de envío de una orden
+	 * @param orderId ID de la orden
+	 * @param shippingInfo Información de envío
+	 * @returns true si la operación tuvo éxito, false en caso contrario
+	 */
+	async updateShippingInfo(
+		orderId: string | number,
+		shippingInfo: {
+			tracking_number?: string;
+			shipping_company?: string;
+			estimated_delivery?: string;
+			notes?: string;
+		}
+	): Promise<boolean> {
+		try {
+			// Convertir orderId a número si viene como string
+			const id = typeof orderId === "string" ? parseInt(orderId) : orderId;
+
+			console.log(
+				`SellerOrderServiceAdapter: Actualizando información de envío para orden ${id}`
+			);
+
+			// Llamar al endpoint según la documentación
+			const response = await ApiClient.patch<any>(
+				API_ENDPOINTS.ORDERS.UPDATE_SHIPPING(id),
+				shippingInfo
+			);
+
+			console.log(`Respuesta al actualizar información de envío:`, response);
+
+			// Verificar respuesta con el campo 'success'
+			return response && response.success === true;
+		} catch (error) {
+			console.error(
+				`SellerOrderServiceAdapter: Error al actualizar información de envío para orden ${orderId}:`,
+				error
+			);
+			return false;
 		}
 	}
 }

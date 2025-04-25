@@ -18,6 +18,7 @@ const OrderDetailPage: React.FC = () => {
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 	const [isUpdating, setIsUpdating] = useState(false);
+	const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
 	// Utilizar el adaptador específico para vendedores
 	const sellerOrderAdapter = new SellerOrderServiceAdapter();
@@ -47,6 +48,9 @@ const OrderDetailPage: React.FC = () => {
 		if (!id || !order) return;
 
 		setIsUpdating(true);
+		setSuccessMessage(null);
+		setError(null);
+
 		try {
 			// Usar el método updateOrderStatus del adaptador de vendedores
 			const success = await sellerOrderAdapter.updateOrderStatus(id, newStatus);
@@ -54,6 +58,14 @@ const OrderDetailPage: React.FC = () => {
 			if (success) {
 				// Actualizar el estado de la orden localmente
 				setOrder((prev) => (prev ? {...prev, status: newStatus} : null));
+				setSuccessMessage(
+					`El estado del pedido ha sido actualizado a ${getStatusText(newStatus)}`
+				);
+
+				// Si se completa, esperar 2 segundos y recargar para mostrar datos actualizados
+				if (newStatus === "completed" || newStatus === "cancelled") {
+					setTimeout(() => fetchOrderDetails(), 2000);
+				}
 			} else {
 				throw new Error("No se pudo actualizar el estado");
 			}
@@ -83,6 +95,27 @@ const OrderDetailPage: React.FC = () => {
 				return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
 			default:
 				return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200";
+		}
+	};
+
+	const getStatusText = (status: string) => {
+		switch (status) {
+			case "pending":
+				return "Pendiente";
+			case "processing":
+				return "En proceso";
+			case "paid":
+				return "Pagado";
+			case "shipped":
+				return "Enviado";
+			case "delivered":
+				return "Entregado";
+			case "completed":
+				return "Completado";
+			case "cancelled":
+				return "Cancelado";
+			default:
+				return "Desconocido";
 		}
 	};
 
@@ -269,6 +302,39 @@ const OrderDetailPage: React.FC = () => {
 					</Link>
 				</div>
 			</div>
+
+			{/* Mensajes de éxito/error */}
+			{successMessage && (
+				<div
+					className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative"
+					role="alert"
+				>
+					<span className="block sm:inline">{successMessage}</span>
+				</div>
+			)}
+
+			{error && (
+				<div
+					className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative"
+					role="alert"
+				>
+					<span className="block sm:inline">{error}</span>
+				</div>
+			)}
+
+			{isUpdating && (
+				<div
+					className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded relative"
+					role="alert"
+				>
+					<div className="flex items-center">
+						<div className="animate-spin mr-2 h-4 w-4 border-t-2 border-blue-500"></div>
+						<span className="block sm:inline">
+							Actualizando estado del pedido...
+						</span>
+					</div>
+				</div>
+			)}
 
 			{/* Contenido principal */}
 			<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
