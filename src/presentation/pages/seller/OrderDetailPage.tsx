@@ -1,9 +1,11 @@
+// src/presentation/pages/seller/OrderDetailPage.tsx
 import React, {useState, useEffect} from "react";
 import {useParams, useNavigate, Link} from "react-router-dom";
 import {ArrowLeft, Truck, Package, Check, X, FileText} from "lucide-react";
 import {formatCurrency} from "../../../utils/formatters/formatCurrency";
 import {formatDate} from "../../../utils/formatters/formatDate";
-import OrderServiceAdapter from "../../../core/adapters/OrderServiceAdapter";
+// Importar el adaptador específico para vendedores en lugar del genérico
+import SellerOrderServiceAdapter from "../../../core/adapters/SellerOrderServiceAdapter";
 import type {
 	OrderDetail,
 	OrderStatus,
@@ -17,7 +19,8 @@ const OrderDetailPage: React.FC = () => {
 	const [error, setError] = useState<string | null>(null);
 	const [isUpdating, setIsUpdating] = useState(false);
 
-	const orderAdapter = new OrderServiceAdapter();
+	// Utilizar el adaptador específico para vendedores
+	const sellerOrderAdapter = new SellerOrderServiceAdapter();
 
 	useEffect(() => {
 		fetchOrderDetails();
@@ -28,7 +31,8 @@ const OrderDetailPage: React.FC = () => {
 
 		setLoading(true);
 		try {
-			const orderDetail = await orderAdapter.getOrderDetails(id);
+			// Utilizar el método getOrderDetails del adaptador de vendedores
+			const orderDetail = await sellerOrderAdapter.getOrderDetails(id);
 			setOrder(orderDetail);
 			setError(null);
 		} catch (err) {
@@ -44,7 +48,8 @@ const OrderDetailPage: React.FC = () => {
 
 		setIsUpdating(true);
 		try {
-			const success = await orderAdapter.updateOrderStatus(id, newStatus);
+			// Usar el método updateOrderStatus del adaptador de vendedores
+			const success = await sellerOrderAdapter.updateOrderStatus(id, newStatus);
 
 			if (success) {
 				// Actualizar el estado de la orden localmente
@@ -359,7 +364,7 @@ const OrderDetailPage: React.FC = () => {
 											<p>
 												{order.shippingData.country},{" "}
 												{order.shippingData.postalCode ||
-													order.shippingData.postalCode}
+													order.shippingData.postal_code}
 											</p>
 											{(order.shippingData.phone ||
 												order.shippingData.phone) && (

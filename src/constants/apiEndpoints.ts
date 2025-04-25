@@ -83,6 +83,8 @@ export const API_ENDPOINTS = {
 		LIST: "/orders",
 		DETAILS: (id: number) => `/orders/${id}`,
 		SELLER_ORDERS: "/seller/orders",
+		SELLER_ORDER_DETAILS: (id: number) => `/seller/orders/${id}`,
+		SELLER_ORDER_ITEMS: (id: number) => `/seller/orders/${id}/items`,
 		STATS: "/seller/orders/stats",
 		UPDATE_STATUS: (id: number) => `/orders/${id}/status`,
 		UPDATE_SHIPPING: (id: number) => `/orders/${id}/shipping`,

@@ -342,4 +342,97 @@ export default class SellerOrderServiceAdapter {
 			];
 		}
 	}
+	/**
+	 * Obtiene los detalles de una orden específica como vendedor
+	 * @param orderId ID de la orden
+	 * @returns Detalles de la orden o lanza un error si no se puede obtener
+	 */
+	async getOrderDetails(orderId: string | number): Promise<any> {
+		try {
+			// Convertir orderId a número si viene como string
+			const id = typeof orderId === "string" ? parseInt(orderId) : orderId;
+
+			console.log(
+				`SellerOrderServiceAdapter: Obteniendo detalle de orden ${id} como vendedor`
+			);
+
+			// Importante: Usar el endpoint específico para vendedores
+			const response = await ApiClient.get<any>(
+				API_ENDPOINTS.ORDERS.SELLER_ORDER_DETAILS(id)
+			);
+
+			console.log(
+				`SellerOrderServiceAdapter: Respuesta para orden ${id}:`,
+				response
+			);
+
+			// Verificar si hay datos en la respuesta
+			if (!response || !response.data) {
+				throw new Error("Respuesta vacía al obtener detalle de orden");
+			}
+
+			// Si la respuesta viene con el total de precio incorrecto, corregirlo aquí
+			let orderData = response.data;
+
+			// Verificar si necesitamos procesar o transformar datos
+			if (orderData.items && Array.isArray(orderData.items)) {
+				// Calcular el subtotal
+				const subtotal = orderData.items.reduce(
+					(sum: number, item: any) => sum + item.price * item.quantity,
+					0
+				);
+
+				// Calcular el IVA (15%)
+				const taxRate = 0.15;
+				const taxAmount = subtotal * taxRate;
+
+				// Calcular el total correcto (subtotal + IVA)
+				const correctTotal = subtotal + taxAmount;
+
+				// Si el total en la respuesta es incorrecto, actualizarlo
+				if (Math.abs(orderData.total - correctTotal) > 0.01) {
+					orderData.total = correctTotal;
+				}
+			}
+
+			// Crear un objeto con estructura adecuada manteniendo la compatibilidad
+			const orderDetail = {
+				...orderData,
+
+				// Adaptaciones necesarias:
+				userId: orderData.user_id,
+				sellerId: orderData.seller_id,
+				paymentId: orderData.payment_id,
+				paymentMethod: orderData.payment_method,
+				paymentStatus: orderData.payment_status,
+				createdAt: orderData.created_at,
+				updatedAt: orderData.updated_at,
+				orderNumber: orderData.order_number,
+				shippingData: orderData.shipping_data,
+
+				// Procesar items con el formato esperado
+				items:
+					orderData.items?.map((item: any) => ({
+						...item,
+						productId: item.product_id,
+						product: item.product || {
+							id: item.product_id,
+							name: item.product_name,
+							image: item.product_image,
+							sku: item.product_sku,
+						},
+					})) || [],
+			};
+
+			console.log("Orden adaptada para UI de vendedor:", orderDetail);
+
+			return orderDetail;
+		} catch (error) {
+			console.error(
+				`SellerOrderServiceAdapter: Error al obtener detalle de orden ${orderId}:`,
+				error
+			);
+			throw error;
+		}
+	}
 }
