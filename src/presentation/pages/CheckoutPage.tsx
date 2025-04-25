@@ -16,7 +16,6 @@ import OrderSummary from "../components/checkout/OrderSummary";
 import ShippingForm from "../components/checkout/ShippingForm";
 import TestCheckoutButton from "../components/checkout/TestCheckoutButton";
 import {extractErrorMessage} from "../../utils/errorHandler";
-import {SellerIdResolverService} from "../../infrastructure/services/SellerIdResolverService";
 
 const CheckoutPage: React.FC = () => {
 	const navigate = useNavigate();
@@ -43,7 +42,6 @@ const CheckoutPage: React.FC = () => {
 	const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 	const [orderComplete, setOrderComplete] = useState(false);
 	const [orderDetails, setOrderDetails] = useState<any>(null);
-	const [resolvingSellerId, setResolvingSellerId] = useState(false);
 
 	const checkoutService = new CheckoutService();
 
@@ -135,29 +133,6 @@ const CheckoutPage: React.FC = () => {
 		return Object.keys(errors).length === 0;
 	};
 
-	// Función mejorada para obtener el seller_id del carrito
-	const getSellerId = async (): Promise<number | undefined> => {
-		if (!cart || !cart.items || cart.items.length === 0) {
-			console.warn("No hay productos en el carrito para obtener el seller_id");
-			return undefined;
-		}
-
-		setResolvingSellerId(true);
-		try {
-			// Usar el servicio resolvedor para obtener el seller_id del carrito
-			const sellerId = await SellerIdResolverService.resolveSellerIdForCart(
-				cart.items
-			);
-			console.log(`Checkout usando seller_id: ${sellerId || "no encontrado"}`);
-			return sellerId;
-		} catch (error) {
-			console.error("Error al resolver seller_id:", error);
-			return undefined;
-		} finally {
-			setResolvingSellerId(false);
-		}
-	};
-
 	// Procesar el checkout
 	const processCheckout = async () => {
 		if (!validateForm()) {
@@ -171,20 +146,7 @@ const CheckoutPage: React.FC = () => {
 		setIsLoading(true);
 
 		try {
-			// Obtener el seller_id usando el servicio de resolución
-			const sellerId = await getSellerId();
-
-			if (!sellerId) {
-				showNotification(
-					NotificationType.ERROR,
-					"No se pudo determinar el vendedor del producto. Por favor, contacta con soporte."
-				);
-				setIsLoading(false);
-				return;
-			}
-
-			// Crear objeto con datos de checkout
-			const checkoutRequestData = {
+			const checkoutData = {
 				payment: {
 					...paymentInfo,
 					method:
@@ -193,12 +155,10 @@ const CheckoutPage: React.FC = () => {
 							: paymentMethod, // API espera "transfer" para QR
 				},
 				shipping: shippingInfo,
-				seller_id: sellerId, // Incluir el seller_id en la solicitud
+				// Ya no enviamos seller_id, pues el backend lo obtiene de los productos
 			};
 
-			console.log("Enviando checkout con datos:", checkoutRequestData);
-			const response =
-				await checkoutService.processCheckout(checkoutRequestData);
+			const response = await checkoutService.processCheckout(checkoutData);
 
 			if (response.status === "success") {
 				setOrderComplete(true);
@@ -391,10 +351,10 @@ const CheckoutPage: React.FC = () => {
 
 						<button
 							onClick={processCheckout}
-							disabled={isLoading || resolvingSellerId}
+							disabled={isLoading}
 							className="mt-6 w-full bg-primary-600 hover:bg-primary-700 text-white font-medium py-3 px-4 rounded-md transition-colors disabled:opacity-50 flex items-center justify-center"
 						>
-							{isLoading || resolvingSellerId ? (
+							{isLoading ? (
 								<>
 									<svg
 										className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
@@ -416,7 +376,7 @@ const CheckoutPage: React.FC = () => {
 											d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
 										></path>
 									</svg>
-									{resolvingSellerId ? "Preparando..." : "Procesando..."}
+									Procesando...
 								</>
 							) : (
 								"Finalizar compra"

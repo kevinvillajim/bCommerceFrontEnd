@@ -5,7 +5,6 @@ import {CheckoutService} from "../../../core/services/CheckoutService";
 import type {PaymentMethod} from "../../../core/services/CheckoutService";
 import {NotificationType} from "../../contexts/CartContext";
 import {extractErrorMessage} from "../../../utils/errorHandler";
-import {SellerIdResolverService} from "../../../infrastructure/services/SellerIdResolverService";
 
 interface TestCheckoutButtonProps {}
 
@@ -15,28 +14,6 @@ const TestCheckoutButton: React.FC<TestCheckoutButtonProps> = () => {
 	const checkoutService = new CheckoutService();
 	const [isLoading, setIsLoading] = useState(false);
 
-	// Función mejorada para obtener el seller_id del carrito usando el servicio de resolución
-	const getSellerId = async (): Promise<number | undefined> => {
-		if (!cart || !cart.items || cart.items.length === 0) {
-			console.warn("No hay productos en el carrito para obtener el seller_id");
-			return undefined;
-		}
-
-		try {
-			// Usar el servicio resolvedor para obtener el seller_id del carrito
-			const sellerId = await SellerIdResolverService.resolveSellerIdForCart(
-				cart.items
-			);
-			console.log(
-				`TestCheckoutButton: Usando seller_id: ${sellerId || "no encontrado"}`
-			);
-			return sellerId;
-		} catch (error) {
-			console.error("Error al resolver seller_id:", error);
-			return undefined;
-		}
-	};
-
 	const handleTestCheckout = async () => {
 		if (!cart || cart.items.length === 0) {
 			showNotification(NotificationType.ERROR, "El carrito está vacío");
@@ -45,37 +22,7 @@ const TestCheckoutButton: React.FC<TestCheckoutButtonProps> = () => {
 
 		setIsLoading(true);
 		try {
-			// Obtener el seller_id usando el servicio de resolución
-
-			let sellerId = await getSellerId();
-
-			// Verificación adicional para mayor seguridad
-			if (sellerId === 63) {
-				console.warn(
-					"⚠️ Se detectó user_id 63 como seller_id. Corrigiendo a seller_id 11."
-				);
-				sellerId = 11;
-			}
-
-			if (!sellerId) {
-				console.warn(
-					"⚠️ No se pudo resolver el seller_id. Usando valor por defecto 11."
-				);
-				sellerId = 11;
-			}
-
-			console.log(`📦 Checkout con seller_id: ${sellerId}`);
-
-			if (!sellerId) {
-				showNotification(
-					NotificationType.ERROR,
-					"No se pudo determinar el vendedor del producto. Por favor, contacta con soporte."
-				);
-				setIsLoading(false);
-				return;
-			}
-
-			// Datos de prueba
+			// Datos de prueba - eliminado seller_id
 			const testData = {
 				payment: {
 					method: "credit_card" as PaymentMethod,
@@ -91,11 +38,8 @@ const TestCheckoutButton: React.FC<TestCheckoutButtonProps> = () => {
 					postal_code: "12345",
 					phone: "123456789",
 				},
-				// Incluir el seller_id en la solicitud
-				seller_id: sellerId,
 			};
 
-			console.log("TestCheckoutButton: Enviando checkout con datos:", testData);
 			const response = await checkoutService.processCheckout(testData);
 
 			if (response.status === "success") {
