@@ -882,7 +882,7 @@ const SellerShippingPage: React.FC = () => {
 				searchFields={[
 					"orderNumber",
 					"trackingNumber",
-					"customer.name",
+					"customer",
 					"shippingAddress",
 				]}
 				loading={loading}

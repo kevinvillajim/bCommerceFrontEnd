@@ -1,11 +1,15 @@
-// src/presentation/pages/seller/OrderDetailPage.tsx
+// src/presentation/pages/seller/OrderDetailPage.tsx - versión actualizada
 import React, {useState, useEffect} from "react";
 import {useParams, useNavigate, Link} from "react-router-dom";
 import {ArrowLeft, Truck, Package, Check, X, FileText} from "lucide-react";
 import {formatCurrency} from "../../../utils/formatters/formatCurrency";
 import {formatDate} from "../../../utils/formatters/formatDate";
-// Importar el adaptador específico para vendedores en lugar del genérico
+// Importar el adaptador específico para vendedores
 import SellerOrderServiceAdapter from "../../../core/adapters/SellerOrderServiceAdapter";
+// Importar el adaptador y modal de envío
+import ShippingServiceAdapter from "../../../core/adapters/ShippingServiceAdapter";
+import ShippingFormModal from "../../components/shipping/ShippingFormModal";
+import type {ShippingFormData} from "../../components/shipping/ShippingFormModal";
 import type {
 	OrderDetail,
 	OrderStatus,
@@ -19,9 +23,12 @@ const OrderDetailPage: React.FC = () => {
 	const [error, setError] = useState<string | null>(null);
 	const [isUpdating, setIsUpdating] = useState(false);
 	const [successMessage, setSuccessMessage] = useState<string | null>(null);
+	// Estado para controlar la visibilidad del modal de envío
+	const [isShippingModalOpen, setIsShippingModalOpen] = useState(false);
 
-	// Utilizar el adaptador específico para vendedores
+	// Utilizar los adaptadores
 	const sellerOrderAdapter = new SellerOrderServiceAdapter();
+	const shippingAdapter = new ShippingServiceAdapter();
 
 	useEffect(() => {
 		fetchOrderDetails();
@@ -47,6 +54,12 @@ const OrderDetailPage: React.FC = () => {
 	const handleStatusChange = async (newStatus: OrderStatus) => {
 		if (!id || !order) return;
 
+		// Si el nuevo estado es "shipped", abrir el modal de envío en lugar de procesar directamente
+		if (newStatus === "shipped") {
+			setIsShippingModalOpen(true);
+			return;
+		}
+
 		setIsUpdating(true);
 		setSuccessMessage(null);
 		setError(null);
@@ -62,7 +75,7 @@ const OrderDetailPage: React.FC = () => {
 					`El estado del pedido ha sido actualizado a ${getStatusText(newStatus)}`
 				);
 
-				// Si se completa, esperar 2 segundos y recargar para mostrar datos actualizados
+				// Si se completa o cancela, esperar 2 segundos y recargar para mostrar datos actualizados
 				if (newStatus === "completed" || newStatus === "cancelled") {
 					setTimeout(() => fetchOrderDetails(), 2000);
 				}
@@ -72,6 +85,65 @@ const OrderDetailPage: React.FC = () => {
 		} catch (err) {
 			setError("Error al actualizar el estado del pedido");
 			console.error("Error al actualizar estado:", err);
+		} finally {
+			setIsUpdating(false);
+		}
+	};
+
+	// Nueva función para procesar el envío con datos adicionales
+	const handleShippingSubmit = async (shippingData: ShippingFormData) => {
+		if (!id || !order) return;
+
+		setIsUpdating(true);
+		setSuccessMessage(null);
+		setError(null);
+
+		try {
+			// Usar el adaptador de envío para marcar como enviado y actualizar la información
+			const success = await shippingAdapter.markAsShipped(id, shippingData);
+
+			if (success) {
+				// Cerrar el modal
+				setIsShippingModalOpen(false);
+
+				// Actualizar el estado de la orden localmente
+				setOrder((prev) => {
+					if (!prev) return null;
+
+					// Asegurarse de mantener los campos obligatorios de shippingData
+					const updatedShippingData = {
+						// Conservar valores obligatorios existentes
+						address: prev.shippingData?.address || "",
+						city: prev.shippingData?.city || "",
+						state: prev.shippingData?.state || "",
+						country: prev.shippingData?.country || "",
+						postalCode: prev.shippingData?.postalCode || "",
+						// Agregar nuevos valores del formulario
+						tracking_number: shippingData.tracking_number,
+						shipping_company: shippingData.shipping_company,
+						estimated_delivery: shippingData.estimated_delivery,
+						notes: shippingData.notes,
+					};
+
+					return {
+						...prev,
+						status: "shipped",
+						shippingData: updatedShippingData,
+					};
+				});
+
+				setSuccessMessage(
+					`El pedido ha sido marcado como enviado y se ha registrado la información de envío`
+				);
+
+				// Recargar los detalles después de un breve delay
+				setTimeout(() => fetchOrderDetails(), 2000);
+			} else {
+				throw new Error("No se pudo procesar el envío");
+			}
+		} catch (err) {
+			setError("Error al procesar el envío. Por favor, inténtelo de nuevo.");
+			console.error("Error al procesar envío:", err);
 		} finally {
 			setIsUpdating(false);
 		}
@@ -220,6 +292,15 @@ const OrderDetailPage: React.FC = () => {
 
 	return (
 		<div className="space-y-6">
+			{/* Modal de envío */}
+			<ShippingFormModal
+				orderId={id || ""}
+				isOpen={isShippingModalOpen}
+				onClose={() => setIsShippingModalOpen(false)}
+				onSubmit={handleShippingSubmit}
+				isLoading={isUpdating}
+			/>
+
 			{/* Encabezado y acciones */}
 			<div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
 				<div>
@@ -353,13 +434,7 @@ const OrderDetailPage: React.FC = () => {
 								<span
 									className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusClass(order.status)}`}
 								>
-									{order.status === "pending" && "Pendiente"}
-									{order.status === "processing" && "En proceso"}
-									{order.status === "paid" && "Pagado"}
-									{order.status === "shipped" && "Enviado"}
-									{order.status === "delivered" && "Entregado"}
-									{order.status === "completed" && "Completado"}
-									{order.status === "cancelled" && "Cancelado"}
+									{getStatusText(order.status)}
 								</span>
 							</div>
 							<div className="flex justify-between items-center">
@@ -429,8 +504,7 @@ const OrderDetailPage: React.FC = () => {
 											</p>
 											<p>
 												{order.shippingData.country},{" "}
-												{order.shippingData.postalCode ||
-													order.shippingData.postal_code}
+												{order.shippingData.postalCode}
 											</p>
 											{(order.shippingData.phone ||
 												order.shippingData.phone) && (
