@@ -1,61 +1,317 @@
 // src/core/adapters/ShippingServiceAdapter.ts
 import ApiClient from "../../infrastructure/api/apiClient";
 import {API_ENDPOINTS} from "../../constants/apiEndpoints";
+import type {ShippingFormData} from "../../presentation/components/shipping/ShippingFormModal";
 
-export interface ShippingFormData {
-	tracking_number?: string;
-	shipping_company?: string;
-	estimated_delivery?: string;
-	notes?: string;
+// Definición de interfaces para los datos de envío
+export interface ShippingItem {
+	id: string;
+	orderId: string;
+	orderNumber: string;
+	date: string;
+	customer: {
+		id: number;
+		name: string;
+		email: string;
+		phone?: string;
+	};
+	trackingNumber?: string;
+	status:
+		| "pending"
+		| "ready_to_ship"
+		| "in_transit"
+		| "delivered"
+		| "failed"
+		| "returned";
+	carrier?: string;
+	estimatedDelivery?: string;
+	shippingAddress: string;
+	shippingMethod?: string;
+	weight?: number;
+	shippingCost?: number;
+	lastUpdate?: string;
+	history?: ShippingHistoryItem[];
 }
 
-/**
- * Adaptador para gestionar envíos
- */
-export class ShippingServiceAdapter {
+export interface ShippingHistoryItem {
+	date: string;
+	status: string;
+	location?: string;
+	description: string;
+}
+
+export interface ShippingRouteItem {
+	date: string;
+	location: string;
+	coordinates?: {
+		lat: number;
+		lng: number;
+	};
+	status: string;
+}
+
+// Adaptador de servicio para gestionar operaciones de envío
+export default class ShippingServiceAdapter {
 	/**
-	 * Crea o actualiza la información de envío para una orden
-	 * @param orderId ID de la orden
-	 * @param shippingData Datos del envío
-	 * @returns true si la operación tuvo éxito, false en caso contrario
+	 * Obtiene la lista de envíos del vendedor
+	 * @param filters Filtros opcionales para la búsqueda
+	 * @returns Lista de envíos y metadatos de paginación
 	 */
-	public async updateShippingInfo(
-		orderId: string | number,
-		shippingData: ShippingFormData
-	): Promise<boolean> {
+	async getShippingsList(filters?: {
+		status?: string;
+		carrier?: string;
+		dateFrom?: string;
+		dateTo?: string;
+		search?: string;
+		page?: number;
+		limit?: number;
+	}): Promise<{
+		items: ShippingItem[];
+		pagination: {
+			currentPage: number;
+			totalPages: number;
+			totalItems: number;
+			itemsPerPage: number;
+		};
+	}> {
 		try {
 			console.log(
-				`ShippingServiceAdapter: Actualizando información de envío para orden ${orderId}`,
-				shippingData
+				"ShippingServiceAdapter: Obteniendo lista de envíos con filtros:",
+				filters
 			);
 
-			// Convertir orderId a número si es string
-			const id = typeof orderId === "string" ? parseInt(orderId) : orderId;
+			// Primero, obtenemos las órdenes pendientes de envío
+			const response = await ApiClient.get<any>(
+				API_ENDPOINTS.ORDERS.AWAITING_SHIPMENT,
+				filters
+			);
 
-			// Realizar la petición PATCH para actualizar la información de envío
-			const response = await ApiClient.patch(
-				API_ENDPOINTS.ORDERS.UPDATE_SHIPPING(id),
-				shippingData
+			console.log("ShippingServiceAdapter: Respuesta de API:", response);
+
+			// Verificar la estructura de la respuesta
+			if (!response || !response.data) {
+				throw new Error("Respuesta de API inválida");
+			}
+
+			// Mapear los datos a formato ShippingItem
+			const shippingItems: ShippingItem[] = Array.isArray(response.data)
+				? response.data.map((item: any) => this.mapOrderToShippingItem(item))
+				: [];
+
+			// Extraer metadatos de paginación
+			const pagination = response.pagination || {
+				currentPage: 1,
+				totalPages: 1,
+				totalItems: shippingItems.length,
+				itemsPerPage: 10,
+			};
+
+			return {
+				items: shippingItems,
+				pagination: {
+					currentPage: Number(pagination.currentPage) || 1,
+					totalPages: Number(pagination.totalPages) || 1,
+					totalItems: Number(pagination.totalItems) || shippingItems.length,
+					itemsPerPage: Number(pagination.itemsPerPage) || 10,
+				},
+			};
+		} catch (error) {
+			console.error(
+				"ShippingServiceAdapter: Error al obtener lista de envíos:",
+				error
+			);
+			// En caso de error, devolver una lista vacía
+			return {
+				items: [],
+				pagination: {
+					currentPage: 1,
+					totalPages: 1,
+					totalItems: 0,
+					itemsPerPage: 10,
+				},
+			};
+		}
+	}
+
+	/**
+	 * Obtiene los detalles de un envío específico
+	 * @param id ID del envío o de la orden
+	 * @returns Detalles completos del envío
+	 */
+	async getShippingDetails(id: string): Promise<ShippingItem | null> {
+		try {
+			console.log(
+				`ShippingServiceAdapter: Obteniendo detalles del envío ${id}`
+			);
+
+			// Obtener detalles de la orden, que incluye información de envío
+			const response = await ApiClient.get<any>(
+				API_ENDPOINTS.ORDERS.DETAILS(Number(id))
 			);
 
 			console.log(
-				`ShippingServiceAdapter: Respuesta de actualización de envío:`,
+				`ShippingServiceAdapter: Respuesta para envío ${id}:`,
 				response
 			);
 
-			// Verificar respuesta con el campo 'success'
-			if (!response || response.success !== true) {
-				console.error(
-					"Error en la respuesta al actualizar información de envío:",
-					response
-				);
-				return false;
+			if (!response || !response.data) {
+				throw new Error("Respuesta de API inválida");
 			}
 
-			return true;
+			// Mapear los datos de la orden a un objeto ShippingItem
+			const shippingItem = this.mapOrderToShippingItem(response.data);
+
+			// Si tiene número de seguimiento, obtener también el historial
+			if (shippingItem.trackingNumber) {
+				const history = await this.getShippingHistory(
+					shippingItem.trackingNumber
+				);
+				shippingItem.history = history;
+			}
+
+			return shippingItem;
 		} catch (error) {
 			console.error(
-				`ShippingServiceAdapter: Error al actualizar información de envío para orden ${orderId}:`,
+				`ShippingServiceAdapter: Error al obtener detalles del envío ${id}:`,
+				error
+			);
+			return null;
+		}
+	}
+
+	/**
+	 * Obtiene el historial de un envío por su número de seguimiento
+	 * @param trackingNumber Número de seguimiento
+	 * @returns Lista de eventos en el historial
+	 */
+	async getShippingHistory(
+		trackingNumber: string
+	): Promise<ShippingHistoryItem[]> {
+		try {
+			console.log(
+				`ShippingServiceAdapter: Obteniendo historial para ${trackingNumber}`
+			);
+
+			const response = await ApiClient.get<any>(
+				API_ENDPOINTS.SHIPPING.HISTORY(trackingNumber)
+			);
+
+			console.log(
+				`ShippingServiceAdapter: Historial para ${trackingNumber}:`,
+				response
+			);
+
+			if (!response || !response.data) {
+				return [];
+			}
+
+			// Mapear el historial al formato esperado
+			return Array.isArray(response.data)
+				? response.data.map((item: any) => ({
+						date: item.date || item.timestamp || new Date().toISOString(),
+						status: item.status || "unknown",
+						location: item.location || undefined,
+						description: item.description || item.message || "Sin descripción",
+					}))
+				: [];
+		} catch (error) {
+			console.error(
+				`ShippingServiceAdapter: Error al obtener historial de ${trackingNumber}:`,
+				error
+			);
+			return [];
+		}
+	}
+
+	/**
+	 * Obtiene la ruta de un envío por su número de seguimiento
+	 * @param trackingNumber Número de seguimiento
+	 * @returns Lista de puntos en la ruta con coordenadas
+	 */
+	async getShippingRoute(trackingNumber: string): Promise<ShippingRouteItem[]> {
+		try {
+			console.log(
+				`ShippingServiceAdapter: Obteniendo ruta para ${trackingNumber}`
+			);
+
+			const response = await ApiClient.get<any>(
+				API_ENDPOINTS.SHIPPING.ROUTE(trackingNumber)
+			);
+
+			console.log(
+				`ShippingServiceAdapter: Ruta para ${trackingNumber}:`,
+				response
+			);
+
+			if (!response || !response.data) {
+				return [];
+			}
+
+			// Mapear los datos de ruta al formato esperado
+			return Array.isArray(response.data)
+				? response.data.map((item: any) => ({
+						date: item.date || item.timestamp || new Date().toISOString(),
+						location: item.location || "Desconocido",
+						coordinates: item.coordinates || undefined,
+						status: item.status || "unknown",
+					}))
+				: [];
+		} catch (error) {
+			console.error(
+				`ShippingServiceAdapter: Error al obtener ruta de ${trackingNumber}:`,
+				error
+			);
+			return [];
+		}
+	}
+
+	/**
+	 * Asigna un número de seguimiento a una orden
+	 * @param orderId ID de la orden
+	 * @param trackingData Datos de seguimiento (número, transportista)
+	 * @returns true si se asignó correctamente
+	 */
+	async assignTrackingNumber(
+		orderId: string,
+		trackingData: {
+			tracking_number: string;
+			shipping_company?: string;
+			estimated_delivery?: string;
+		}
+	): Promise<boolean> {
+		try {
+			console.log(
+				`ShippingServiceAdapter: Asignando tracking a orden ${orderId}:`,
+				trackingData
+			);
+
+			// Asignar el número de seguimiento es una actualización de la información de envío
+			// Enviamos la información de tracking dentro del objeto shipping_data
+			const shippingDataUpdate = {
+				shipping_data: {
+					tracking_number: trackingData.tracking_number,
+					shipping_company: trackingData.shipping_company,
+					estimated_delivery: trackingData.estimated_delivery,
+				},
+			};
+
+			const response = await ApiClient.patch<any>(
+				API_ENDPOINTS.ORDERS.UPDATE_SHIPPING(Number(orderId)),
+				shippingDataUpdate
+			);
+
+			console.log(
+				`ShippingServiceAdapter: Respuesta al asignar tracking:`,
+				response
+			);
+
+			// Verificar el éxito de la operación
+			return (
+				response && (response.success === true || response.status === "success")
+			);
+		} catch (error) {
+			console.error(
+				`ShippingServiceAdapter: Error al asignar tracking a orden ${orderId}:`,
 				error
 			);
 			return false;
@@ -63,54 +319,119 @@ export class ShippingServiceAdapter {
 	}
 
 	/**
-	 * Marca una orden como enviada y establece la información de envío
+	 * Actualiza el estado de un envío
 	 * @param orderId ID de la orden
-	 * @param shippingData Datos del envío
-	 * @returns true si la operación tuvo éxito, false en caso contrario
+	 * @param status Nuevo estado
+	 * @returns true si se actualizó correctamente
 	 */
-	public async markAsShipped(
-		orderId: string | number,
+	/**
+	 * Actualiza el estado de un envío
+	 * @param orderId ID de la orden
+	 * @param status Nuevo estado
+	 * @returns true si se actualizó correctamente
+	 */
+	async updateShippingStatus(
+		orderId: string,
+		status: ShippingItem["status"]
+	): Promise<boolean> {
+		try {
+			console.log(
+				`ShippingServiceAdapter: Actualizando estado de envío ${orderId} a ${status}`
+			);
+
+			// Mapear el estado de envío al estado correspondiente de la orden
+			const orderStatus = this.mapShippingStatusToOrderStatus(status);
+
+			// Actualizar el estado de la orden
+			const response = await ApiClient.put<any>(
+				API_ENDPOINTS.ORDERS.UPDATE_STATUS(Number(orderId)),
+				{
+					status: orderStatus,
+				}
+			);
+
+			console.log(
+				`ShippingServiceAdapter: Respuesta de actualización:`,
+				response
+			);
+
+			// Verificar el éxito de la operación
+			return (
+				response && (response.success === true || response.status === "success")
+			);
+		} catch (error) {
+			console.error(
+				`ShippingServiceAdapter: Error al actualizar estado de envío ${orderId}:`,
+				error
+			);
+			return false;
+		}
+	}
+
+	/**
+	 * Marca una orden como enviada y actualiza la información de envío
+	 * @param orderId ID de la orden
+	 * @param shippingData Datos de envío (tracking, transportista, etc.)
+	 * @returns true si se actualizó correctamente
+	 */
+	async markAsShipped(
+		orderId: string,
 		shippingData: ShippingFormData
 	): Promise<boolean> {
 		try {
 			console.log(
-				`ShippingServiceAdapter: Marcando orden ${orderId} como enviada`,
+				`ShippingServiceAdapter: Marcando orden ${orderId} como enviada:`,
 				shippingData
 			);
 
-			// Paso 1: Actualizar los datos de envío
-			const shippingUpdated = await this.updateShippingInfo(
-				orderId,
-				shippingData
+			// Preparar objeto con los datos de envío con la estructura correcta
+			// Ahora enviamos todo dentro del objeto shipping_data
+			const shippingDataUpdate = {
+				shipping_data: {
+					tracking_number: shippingData.tracking_number,
+					shipping_company: shippingData.shipping_company,
+					estimated_delivery: shippingData.estimated_delivery,
+					notes: shippingData.notes,
+				},
+			};
+
+			// Actualizamos la información de envío
+			const shippingResponse = await ApiClient.patch<any>(
+				API_ENDPOINTS.ORDERS.UPDATE_SHIPPING(Number(orderId)),
+				shippingDataUpdate
 			);
 
-			if (!shippingUpdated) {
-				console.error("Error al actualizar información de envío");
-				return false;
+			console.log(
+				`ShippingServiceAdapter: Respuesta al actualizar envío:`,
+				shippingResponse
+			);
+
+			if (
+				!shippingResponse ||
+				(shippingResponse.success !== true &&
+					shippingResponse.status !== "success")
+			) {
+				throw new Error("Error al actualizar información de envío");
 			}
 
-			// Paso 2: Actualizar el estado a "shipped"
-			const id = typeof orderId === "string" ? parseInt(orderId) : orderId;
-			const response = await ApiClient.put(
-				API_ENDPOINTS.ORDERS.UPDATE_STATUS(id),
-				{status: "shipped"}
+			// Después actualizamos el estado de la orden a "shipped"
+			const statusResponse = await ApiClient.put<any>(
+				API_ENDPOINTS.ORDERS.UPDATE_STATUS(Number(orderId)),
+				{
+					status: "shipped",
+				}
 			);
 
 			console.log(
 				`ShippingServiceAdapter: Respuesta al actualizar estado:`,
-				response
+				statusResponse
 			);
 
-			// Verificar respuesta
-			if (!response || response.success !== true) {
-				console.error(
-					"Error en la respuesta al actualizar estado de envío:",
-					response
-				);
-				return false;
-			}
-
-			return true;
+			// Verificar el éxito de la operación
+			return (
+				statusResponse &&
+				(statusResponse.success === true || statusResponse.status === "success")
+			);
 		} catch (error) {
 			console.error(
 				`ShippingServiceAdapter: Error al marcar orden ${orderId} como enviada:`,
@@ -121,33 +442,125 @@ export class ShippingServiceAdapter {
 	}
 
 	/**
-	 * Obtiene la información de envío de una orden
-	 * @param trackingNumber Número de seguimiento
-	 * @returns Información de envío
+	 * Mapea un objeto de orden a un objeto de envío
+	 * @param order Datos de la orden
+	 * @returns Objeto ShippingItem
 	 */
-	public async getShippingInfo(trackingNumber: string): Promise<any> {
-		try {
-			console.log(
-				`ShippingServiceAdapter: Obteniendo información de envío para ${trackingNumber}`
-			);
+	private mapOrderToShippingItem(order: any): ShippingItem {
+		// Extraer la dirección de envío SOLO desde shipping_data
+		let shippingAddress = "";
+		if (order.shipping_data || order.shippingData) {
+			// Acceder al objeto shipping_data (ambas formas para compatibilidad)
+			const shippingData = order.shipping_data || order.shippingData;
 
-			const response = await ApiClient.get(
-				API_ENDPOINTS.SHIPPING.TRACK(trackingNumber)
-			);
+			// Extraer los campos de dirección del objeto
+			const parts = [
+				shippingData.address,
+				shippingData.city,
+				shippingData.state,
+				shippingData.country,
+				shippingData.postal_code || shippingData.postalCode,
+			].filter(Boolean);
 
-			if (!response) {
-				throw new Error("No se pudo obtener información del envío");
-			}
+			shippingAddress = parts.join(", ");
+		} else if (typeof order.shippingAddress === "string") {
+			// Fallback por si viene como string completo
+			shippingAddress = order.shippingAddress;
+		}
 
-			return response.data || response;
-		} catch (error) {
-			console.error(
-				`ShippingServiceAdapter: Error al obtener información de envío ${trackingNumber}:`,
-				error
-			);
-			throw error;
+		// Determinar el estado del envío
+		let shippingStatus: ShippingItem["status"] = "pending";
+		const shippingData = order.shipping_data || order.shippingData;
+
+		if (order.status === "shipped") {
+			shippingStatus = "in_transit";
+		} else if (order.status === "delivered") {
+			shippingStatus = "delivered";
+		} else if (order.status === "cancelled") {
+			shippingStatus = "failed";
+		} else if (order.status === "completed") {
+			shippingStatus = "delivered";
+		} else if (order.status === "pending") {
+			shippingStatus = "pending";
+		} else if (order.status === "processing") {
+			// Si tiene número de seguimiento, está listo para enviar; si no, sigue pendiente
+			shippingStatus = shippingData?.tracking_number
+				? "ready_to_ship"
+				: "pending";
+		}
+
+		// Extraer datos del cliente
+		const customerName =
+			order.user_name || (order.customer ? order.customer.name : "Cliente");
+		const customerEmail =
+			order.user_email ||
+			(order.customer ? order.customer.email : "email@example.com");
+		const customerId =
+			order.userId || order.user_id || (order.customer ? order.customer.id : 0);
+
+		// Datos del transportista y tracking desde shipping_data
+		const trackingNumber =
+			shippingData?.tracking_number || order.trackingNumber;
+		const carrier = shippingData?.shipping_company || order.carrier;
+		const estimatedDelivery =
+			shippingData?.estimated_delivery || order.estimatedDelivery;
+
+		// Número de teléfono desde shipping_data
+		const phone = shippingData?.phone;
+
+		return {
+			id: String(order.id || 0),
+			orderId: String(order.id || 0),
+			orderNumber: order.orderNumber || `ORD-${order.id || 0}`,
+			date: order.createdAt || order.date || new Date().toISOString(),
+			customer: {
+				id: customerId,
+				name: customerName,
+				email: customerEmail,
+				phone: phone, // Añadimos teléfono a los datos del cliente
+			},
+			trackingNumber: trackingNumber,
+			status: shippingStatus,
+			carrier: carrier,
+			estimatedDelivery: estimatedDelivery,
+			shippingAddress: shippingAddress,
+			shippingMethod: order.shippingMethod || "Estándar",
+			lastUpdate: order.updatedAt || order.lastUpdate,
+			// Mapear el historial si existe
+			history: Array.isArray(order.history)
+				? order.history.map((item: any) => ({
+						date: item.date || new Date().toISOString(),
+						status: item.status,
+						location: item.location,
+						description: item.description,
+					}))
+				: undefined,
+		};
+	}
+
+	/**
+	 * Mapea un estado de envío a un estado de orden
+	 * @param shippingStatus Estado del envío
+	 * @returns Estado correspondiente de la orden
+	 */
+	private mapShippingStatusToOrderStatus(
+		shippingStatus: ShippingItem["status"]
+	): string {
+		switch (shippingStatus) {
+			case "pending":
+				return "pending";
+			case "ready_to_ship":
+				return "processing";
+			case "in_transit":
+				return "shipped";
+			case "delivered":
+				return "delivered";
+			case "failed":
+				return "cancelled";
+			case "returned":
+				return "cancelled";
+			default:
+				return "processing";
 		}
 	}
 }
-
-export default ShippingServiceAdapter;

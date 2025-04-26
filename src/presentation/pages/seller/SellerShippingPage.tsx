@@ -1,770 +1,583 @@
-import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import React, {useState, useEffect} from "react";
+import {Link} from "react-router-dom";
 import {
-  Truck,
-  Search,
-  Filter,
-  RefreshCw,
-  ExternalLink,
-  PackageCheck,
-  Printer,
-  AlertTriangle,
-  Package,
-  MapPin,
-  ClipboardList,
-  BarChart2,
+	Truck,
+	Search,
+	Filter,
+	RefreshCw,
+	ExternalLink,
+	PackageCheck,
+	Printer,
+	AlertTriangle,
+	Package,
+	MapPin,
+	ClipboardList,
+	BarChart2,
 } from "lucide-react";
 import Table from "../../components/dashboard/Table";
-import { formatCurrency } from "../../../utils/formatters/formatCurrency";
+import {formatCurrency} from "../../../utils/formatters/formatCurrency";
 import {SellerStatCardList} from "../../components/dashboard/SellerStatCardList";
-
-// Tipos para envíos
-interface ShippingItem {
-  id: string;
-  orderId: string;
-  orderNumber: string;
-  date: string;
-  customer: {
-    id: number;
-    name: string;
-    email: string;
-  };
-  trackingNumber?: string;
-  status: "pending" | "ready_to_ship" | "in_transit" | "delivered" | "failed" | "returned";
-  carrier?: string;
-  estimatedDelivery?: string;
-  shippingAddress: string;
-  shippingMethod: string;
-  weight: number;
-  shippingCost: number;
-  lastUpdate?: string;
-  history?: {
-    date: string;
-    status: string;
-    location?: string;
-    description: string;
-  }[];
-}
-
-// Datos simulados de envíos
-const mockShippingItems: ShippingItem[] = [
-  {
-    id: "1",
-    orderId: "1",
-    orderNumber: "ORD-20231105-001",
-    date: "2023-11-05T14:30:00Z",
-    customer: {
-      id: 101,
-      name: "Juan Pérez",
-      email: "juan.perez@example.com",
-    },
-    trackingNumber: "ESP10045789632",
-    status: "in_transit",
-    carrier: "Correos Express",
-    estimatedDelivery: "2023-11-08",
-    shippingAddress: "Calle Principal 123, Madrid, España",
-    shippingMethod: "Estándar",
-    weight: 1.5,
-    shippingCost: 7.99,
-    lastUpdate: "2023-11-06T09:15:00Z",
-    history: [
-      {
-        date: "2023-11-05T16:45:00Z",
-        status: "ready_to_ship",
-        description: "Paquete preparado y etiquetado"
-      },
-      {
-        date: "2023-11-06T09:15:00Z",
-        status: "in_transit",
-        location: "Centro de distribución Madrid",
-        description: "Paquete recibido en centro de distribución"
-      }
-    ]
-  },
-  {
-    id: "2",
-    orderId: "2",
-    orderNumber: "ORD-20231104-002",
-    date: "2023-11-04T10:15:00Z",
-    customer: {
-      id: 102,
-      name: "María García",
-      email: "maria.garcia@example.com",
-    },
-    status: "pending",
-    shippingAddress: "Avenida Central 45, Barcelona, España",
-    shippingMethod: "Estándar",
-    weight: 2.3,
-    shippingCost: 8.50,
-  },
-  {
-    id: "3",
-    orderId: "3",
-    orderNumber: "ORD-20231103-003",
-    date: "2023-11-03T16:45:00Z",
-    customer: {
-      id: 103,
-      name: "Carlos Rodríguez",
-      email: "carlos.rodriguez@example.com",
-    },
-    trackingNumber: "ESP10045789633",
-    status: "delivered",
-    carrier: "Correos Express",
-    estimatedDelivery: "2023-11-06",
-    shippingAddress: "Plaza Mayor 8, Valencia, España",
-    shippingMethod: "Express",
-    weight: 0.8,
-    shippingCost: 12.99,
-    lastUpdate: "2023-11-06T14:25:00Z",
-    history: [
-      {
-        date: "2023-11-03T18:30:00Z",
-        status: "ready_to_ship",
-        description: "Paquete preparado y etiquetado"
-      },
-      {
-        date: "2023-11-04T09:45:00Z",
-        status: "in_transit",
-        location: "Centro de distribución Valencia",
-        description: "Paquete recibido en centro de distribución"
-      },
-      {
-        date: "2023-11-05T16:20:00Z",
-        status: "in_transit",
-        location: "En ruta para entrega",
-        description: "Paquete en vehículo de reparto"
-      },
-      {
-        date: "2023-11-06T14:25:00Z",
-        status: "delivered",
-        location: "Valencia",
-        description: "Paquete entregado al destinatario"
-      }
-    ]
-  },
-  {
-    id: "4",
-    orderId: "4",
-    orderNumber: "ORD-20231102-004",
-    date: "2023-11-02T09:20:00Z",
-    customer: {
-      id: 104,
-      name: "Ana Martínez",
-      email: "ana.martinez@example.com",
-    },
-    trackingNumber: "ESP10045789634",
-    status: "delivered",
-    carrier: "SEUR",
-    estimatedDelivery: "2023-11-05",
-    shippingAddress: "Calle Secundaria 78, Sevilla, España",
-    shippingMethod: "Prioritario",
-    weight: 3.2,
-    shippingCost: 14.50,
-    lastUpdate: "2023-11-05T11:30:00Z",
-    history: [
-      {
-        date: "2023-11-02T14:15:00Z",
-        status: "ready_to_ship",
-        description: "Paquete preparado y etiquetado"
-      },
-      {
-        date: "2023-11-03T10:20:00Z",
-        status: "in_transit",
-        location: "Centro de distribución Madrid",
-        description: "Paquete recibido en centro de distribución"
-      },
-      {
-        date: "2023-11-04T16:45:00Z",
-        status: "in_transit",
-        location: "Centro de distribución Sevilla",
-        description: "Paquete en centro local de distribución"
-      },
-      {
-        date: "2023-11-05T09:30:00Z",
-        status: "in_transit",
-        location: "En ruta para entrega",
-        description: "Paquete en vehículo de reparto"
-      },
-      {
-        date: "2023-11-05T11:30:00Z",
-        status: "delivered",
-        location: "Sevilla",
-        description: "Paquete entregado al destinatario"
-      }
-    ]
-  },
-  {
-    id: "5",
-    orderId: "7",
-    orderNumber: "ORD-20231030-007",
-    date: "2023-10-30T11:45:00Z",
-    customer: {
-      id: 107,
-      name: "Roberto Fernández",
-      email: "roberto.fernandez@example.com",
-    },
-    trackingNumber: "ESP10045789635",
-    status: "ready_to_ship",
-    carrier: "MRW",
-    estimatedDelivery: "2023-11-08",
-    shippingAddress: "Avenida Central 23, Bilbao, España",
-    shippingMethod: "Estándar",
-    weight: 1.1,
-    shippingCost: 6.99,
-    lastUpdate: "2023-11-06T15:40:00Z",
-    history: [
-      {
-        date: "2023-11-06T15:40:00Z",
-        status: "ready_to_ship",
-        description: "Paquete preparado y etiquetado"
-      }
-    ]
-  },
-  {
-    id: "6",
-    orderId: "8",
-    orderNumber: "ORD-20231029-008",
-    date: "2023-10-29T13:20:00Z",
-    customer: {
-      id: 108,
-      name: "Lucía Díaz",
-      email: "lucia.diaz@example.com",
-    },
-    trackingNumber: "ESP10045789636",
-    status: "failed",
-    carrier: "SEUR",
-    estimatedDelivery: "2023-11-02",
-    shippingAddress: "Calle Norte 56, Barcelona, España",
-    shippingMethod: "Express",
-    weight: 0.5,
-    shippingCost: 9.99,
-    lastUpdate: "2023-11-02T14:10:00Z",
-    history: [
-      {
-        date: "2023-10-29T16:45:00Z",
-        status: "ready_to_ship",
-        description: "Paquete preparado y etiquetado"
-      },
-      {
-        date: "2023-10-30T09:30:00Z",
-        status: "in_transit",
-        location: "Centro de distribución Barcelona",
-        description: "Paquete recibido en centro de distribución"
-      },
-      {
-        date: "2023-11-01T11:20:00Z",
-        status: "in_transit",
-        location: "En ruta para entrega",
-        description: "Paquete en vehículo de reparto"
-      },
-      {
-        date: "2023-11-01T14:45:00Z",
-        status: "in_transit",
-        location: "Barcelona",
-        description: "Intento de entrega fallido - Destinatario ausente"
-      },
-      {
-        date: "2023-11-02T12:30:00Z",
-        status: "in_transit",
-        location: "En ruta para entrega",
-        description: "Segundo intento de entrega"
-      },
-      {
-        date: "2023-11-02T14:10:00Z",
-        status: "failed",
-        location: "Barcelona",
-        description: "Entrega fallida - Paquete retornando al remitente"
-      }
-    ]
-  },
-  {
-    id: "7",
-    orderId: "9",
-    orderNumber: "ORD-20231028-009",
-    date: "2023-10-28T10:05:00Z",
-    customer: {
-      id: 109,
-      name: "Miguel Torres",
-      email: "miguel.torres@example.com",
-    },
-    trackingNumber: "ESP10045789637",
-    status: "returned",
-    carrier: "Correos Express",
-    estimatedDelivery: "2023-11-01",
-    shippingAddress: "Avenida Sur 34, Madrid, España",
-    shippingMethod: "Estándar",
-    weight: 1.8,
-    shippingCost: 7.50,
-    lastUpdate: "2023-11-03T11:25:00Z",
-    history: [
-      {
-        date: "2023-10-28T13:45:00Z",
-        status: "ready_to_ship",
-        description: "Paquete preparado y etiquetado"
-      },
-      {
-        date: "2023-10-29T09:30:00Z",
-        status: "in_transit",
-        location: "Centro de distribución Madrid",
-        description: "Paquete recibido en centro de distribución"
-      },
-      {
-        date: "2023-10-31T11:20:00Z",
-        status: "in_transit",
-        location: "En ruta para entrega",
-        description: "Paquete en vehículo de reparto"
-      },
-      {
-        date: "2023-10-31T14:45:00Z",
-        status: "in_transit",
-        location: "Madrid",
-        description: "Intento de entrega fallido - Dirección incorrecta"
-      },
-      {
-        date: "2023-11-01T12:30:00Z",
-        status: "in_transit",
-        location: "En ruta para entrega",
-        description: "Segundo intento de entrega"
-      },
-      {
-        date: "2023-11-01T15:10:00Z",
-        status: "failed",
-        location: "Madrid",
-        description: "Entrega fallida - Dirección incorrecta"
-      },
-      {
-        date: "2023-11-03T11:25:00Z",
-        status: "returned",
-        location: "Centro de distribución Madrid",
-        description: "Paquete devuelto al remitente"
-      }
-    ]
-  }
-];
+import ShippingServiceAdapter from "../../../core/adapters/ShippingServiceAdapter";
+import type {
+	ShippingItem,
+} from "../../../core/adapters/ShippingServiceAdapter";
+import ShippingFormModal from "../../components/shipping/ShippingFormModal";
+import type {
+	ShippingFormData,
+} from "../../components/shipping/ShippingFormModal";
 
 const SellerShippingPage: React.FC = () => {
-  const [shippingItems, setShippingItems] = useState<ShippingItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [carrierFilter, setCarrierFilter] = useState<string>("all");
-  const [dateFilter, setDateFilter] = useState<string>("all");
-  const [searchTerm, setSearchTerm] = useState<string>("");
-  const [pagination, setPagination] = useState({
-    currentPage: 1,
-    totalPages: 1,
-    totalItems: 0,
-    itemsPerPage: 10,
-  });
+	// Instanciar el adaptador de servicio
+	const shippingAdapter = new ShippingServiceAdapter();
 
-  // Cargar datos de envíos
-  useEffect(() => {
-    const fetchShippingItems = () => {
-      setLoading(true);
-      // Simulación de llamada a API
-      setTimeout(() => {
-        setShippingItems(mockShippingItems);
-        setPagination({
-          currentPage: 1,
-          totalPages: Math.ceil(mockShippingItems.length / 10),
-          totalItems: mockShippingItems.length,
-          itemsPerPage: 10,
-        });
-        setLoading(false);
-      }, 600);
-    };
+	// Estados
+	const [shippingItems, setShippingItems] = useState<ShippingItem[]>([]);
+	const [loading, setLoading] = useState(true);
+	const [error, setError] = useState<string | null>(null);
+	const [statusFilter, setStatusFilter] = useState<string>("all");
+	const [carrierFilter, setCarrierFilter] = useState<string>("all");
+	const [dateFilter, setDateFilter] = useState<string>("all");
+	const [searchTerm, setSearchTerm] = useState<string>("");
+	const [pagination, setPagination] = useState({
+		currentPage: 1,
+		totalPages: 1,
+		totalItems: 0,
+		itemsPerPage: 10,
+	});
+	const [dateRange, setDateRange] = useState({
+		from: "",
+		to: "",
+	});
+	const [isUpdateSuccess, setIsUpdateSuccess] = useState<boolean | null>(null);
+	const [updateMessage, setUpdateMessage] = useState<string>("");
+	const [isUpdating, setIsUpdating] = useState(false);
 
-    fetchShippingItems();
-  }, []);
+	// Estado para controlar el modal de asignación de tracking
+	const [isShippingModalOpen, setIsShippingModalOpen] = useState(false);
+	const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
 
-  // Filtramos los envíos
-  const filteredShippingItems = shippingItems.filter((item) => {
-    // Filtrar por estado
-    const matchesStatus = statusFilter === "all" || item.status === statusFilter;
+	// Cargar datos de envíos
+	useEffect(() => {
+		fetchShippingItems();
+	}, [
+		statusFilter,
+		carrierFilter,
+		searchTerm,
+		pagination.currentPage,
+		dateFilter,
+		dateRange,
+	]);
 
-    // Filtrar por transportista
-    const matchesCarrier = 
-      carrierFilter === "all" || 
-      (item.carrier && item.carrier.toLowerCase().includes(carrierFilter.toLowerCase()));
+	// Función para obtener envíos usando el adaptador
+	const fetchShippingItems = async () => {
+		setLoading(true);
+		setError(null);
+		try {
+			// Preparar filtros para la API
+			const filters: any = {
+				page: pagination.currentPage,
+				limit: pagination.itemsPerPage,
+			};
 
-    // Filtrar por fecha (simplificado)
-    const matchesDate = dateFilter === "all"; // Por ahora ignoramos el filtro de fecha
+			if (statusFilter !== "all") {
+				filters.status = statusFilter;
+			}
 
-    // Filtrar por término de búsqueda
-    const matchesSearch =
-      searchTerm === "" ||
-      item.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (item.trackingNumber && item.trackingNumber.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      item.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.customer.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.shippingAddress.toLowerCase().includes(searchTerm.toLowerCase());
+			if (carrierFilter !== "all") {
+				filters.carrier = carrierFilter;
+			}
 
-    return matchesStatus && matchesCarrier && matchesDate && matchesSearch;
-  });
+			if (searchTerm) {
+				filters.search = searchTerm;
+			}
 
-  // Manejar cambio de estado de envío
-  const updateShippingStatus = (shippingId: string, newStatus: ShippingItem["status"]) => {
-    setShippingItems((prevItems) =>
-      prevItems.map((item) => {
-        if (item.id === shippingId) {
-          const now = new Date().toISOString();
-          const newHistory = item.history ? [...item.history] : [];
-          newHistory.push({
-            date: now,
-            status: newStatus,
-            description: `Estado actualizado a ${newStatus}`
-          });
-          
-          return { 
-            ...item, 
-            status: newStatus,
-            lastUpdate: now,
-            history: newHistory
-          };
-        }
-        return item;
-      })
-    );
-  };
+			// Añadir filtros de fecha según la selección
+			if (dateFilter === "today") {
+				const today = new Date().toISOString().split("T")[0];
+				filters.dateFrom = today;
+				filters.dateTo = today;
+			} else if (dateFilter === "week") {
+				const today = new Date();
+				const firstDay = new Date(
+					today.setDate(today.getDate() - today.getDay())
+				);
+				filters.dateFrom = firstDay.toISOString().split("T")[0];
+				filters.dateTo = new Date().toISOString().split("T")[0];
+			} else if (dateFilter === "month") {
+				const today = new Date();
+				const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+				filters.dateFrom = firstDay.toISOString().split("T")[0];
+				filters.dateTo = new Date().toISOString().split("T")[0];
+			} else if (dateFilter === "custom" && dateRange.from && dateRange.to) {
+				filters.dateFrom = dateRange.from;
+				filters.dateTo = dateRange.to;
+			}
 
-  // Asignar número de seguimiento
-  const assignTrackingNumber = (shippingId: string) => {
-    // En una app real, esto sería una llamada a la API
-    const generateTrackingNumber = () => {
-      return `ESP${Math.floor(10000000000 + Math.random() * 90000000000)}`;
-    };
+			// Obtener envíos del adaptador
+			const result = await shippingAdapter.getShippingsList(filters);
 
-    setShippingItems((prevItems) =>
-      prevItems.map((item) => {
-        if (item.id === shippingId) {
-          const trackingNumber = generateTrackingNumber();
-          const now = new Date().toISOString();
-          const newHistory = item.history ? [...item.history] : [];
-          
-          // Solo añadimos un evento de "listo para enviar" si estaba pendiente
-          if (item.status === "pending") {
-            newHistory.push({
-              date: now,
-              status: "ready_to_ship",
-              description: "Paquete preparado y etiquetado"
-            });
-          }
-          
-          return { 
-            ...item, 
-            trackingNumber,
-            status: item.status === "pending" ? "ready_to_ship" : item.status,
-            lastUpdate: now,
-            history: newHistory
-          };
-        }
-        return item;
-      })
-    );
-  };
+			// Establecer envíos y datos de paginación
+			setShippingItems(result.items);
+			setPagination(result.pagination);
+		} catch (error) {
+			console.error("Error al cargar envíos:", error);
+			setError(
+				"No se pudieron cargar los datos de envíos. Intenta de nuevo más tarde."
+			);
+		} finally {
+			setLoading(false);
+		}
+	};
 
-  // Manejar cambio de página
-  const handlePageChange = (page: number) => {
-    setPagination((prev) => ({ ...prev, currentPage: page }));
-    // En una app real, aquí obtendríamos los datos para la nueva página
-  };
+	// Manejar asignación de número de seguimiento
+	const openShippingModal = (orderId: string) => {
+		setSelectedOrderId(orderId);
+		setIsShippingModalOpen(true);
+	};
 
-  // Refrescar datos
-  const refreshData = () => {
-    setLoading(true);
-    // Simular recarga de datos
-    setTimeout(() => {
-      setLoading(false);
-    }, 500);
-  };
+	// Procesar envío con datos del formulario
+	const handleShippingSubmit = async (shippingData: ShippingFormData) => {
+		if (!selectedOrderId) return;
 
-  // Etiqueta de estado para mostrar
-  const getStatusLabel = (status: ShippingItem["status"]): { text: string; className: string } => {
-    switch (status) {
-      case "pending":
-        return {
-          text: "Pendiente",
-          className: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
-        };
-      case "ready_to_ship":
-        return {
-          text: "Listo para enviar",
-          className: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-        };
-      case "in_transit":
-        return {
-          text: "En tránsito",
-          className: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200",
-        };
-      case "delivered":
-        return {
-          text: "Entregado",
-          className: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-        };
-      case "failed":
-        return {
-          text: "Fallido",
-          className: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-        };
-      case "returned":
-        return {
-          text: "Devuelto",
-          className: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
-        };
-      default:
-        return {
-          text: "Desconocido",
-          className: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200",
-        };
-    }
-  };
+		setIsUpdating(true);
+		setIsUpdateSuccess(null);
+		setUpdateMessage("");
 
-  // Definir las columnas de la tabla
-  const columns = [
-    {
-      key: "orderNumber",
-      header: "Nº Pedido",
-      sortable: true,
-      render: (item: ShippingItem) => (
-        <Link
-          to={`/seller/orders/${item.orderId}`}
-          className="font-medium text-primary-600 dark:text-primary-400 hover:underline"
-        >
-          {item.orderNumber}
-        </Link>
-      ),
-    },
-    {
-      key: "trackingNumber",
-      header: "Nº Seguimiento",
-      sortable: true,
-      render: (item: ShippingItem) => (
-        <div>
-          {item.trackingNumber ? (
-            <div className="flex items-center">
-              <span className="font-mono text-sm">{item.trackingNumber}</span>
-              {item.carrier && (
-                <a
-                  href="#"
-                  className="ml-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-                  title={`Rastrear con ${item.carrier}`}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    alert(`Redirigiendo al sitio de ${item.carrier} para rastrear ${item.trackingNumber}`);
-                  }}
-                >
-                  <ExternalLink size={14} />
-                </a>
-              )}
-            </div>
-          ) : (
-            <span className="text-gray-500 dark:text-gray-400 text-sm">No asignado</span>
-          )}
-        </div>
-      ),
-    },
-    {
-      key: "date",
-      header: "Fecha de Pedido",
-      sortable: true,
-      render: (item: ShippingItem) => {
-        const date = new Date(item.date);
-        return (
-          <span className="text-sm">
-            {date.toLocaleDateString("es-ES")}
-          </span>
-        );
-      },
-    },
-    {
-      key: "customer",
-      header: "Cliente",
-      sortable: true,
-      render: (item: ShippingItem) => (
-        <div>
-          <div className="font-medium text-sm">{item.customer.name}</div>
-          <div className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[150px]">
-            {item.shippingAddress}
-          </div>
-        </div>
-      ),
-    },
-    {
-      key: "status",
-      header: "Estado",
-      sortable: true,
-      render: (item: ShippingItem) => {
-        const status = getStatusLabel(item.status);
-        return (
-          <span
-            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${status.className}`}
-          >
-            {status.text}
-          </span>
-        );
-      },
-    },
-    {
-      key: "carrier",
-      header: "Transportista",
-      sortable: true,
-      render: (item: ShippingItem) => (
-        <span>
-          {item.carrier || "No asignado"}
-        </span>
-      ),
-    },
-    {
-      key: "estimatedDelivery",
-      header: "Entrega Estimada",
-      sortable: true,
-      render: (item: ShippingItem) => (
-        <span>
-          {item.estimatedDelivery 
-            ? new Date(item.estimatedDelivery).toLocaleDateString("es-ES") 
-            : "No disponible"
-          }
-        </span>
-      ),
-    },
-    {
-      key: "actions",
-      header: "Acciones",
-      render: (item: ShippingItem) => (
-        <div className="flex justify-end space-x-2">
-          {/* Ver detalles del envío */}
-          <Link
-            to={`/seller/shipping/${item.id}`}
-            className="p-1 text-blue-600 hover:bg-blue-100 rounded-md dark:text-blue-400 dark:hover:bg-blue-900"
-            title="Ver detalles"
-          >
-            <ClipboardList size={18} />
-          </Link>
+		try {
+			const success = await shippingAdapter.markAsShipped(
+				selectedOrderId,
+				shippingData
+			);
 
-          {/* Asignar número de seguimiento - solo para pendientes */}
-          {item.status === "pending" && (
-            <button
-              onClick={() => assignTrackingNumber(item.id)}
-              className="p-1 text-green-600 hover:bg-green-100 rounded-md dark:text-green-400 dark:hover:bg-green-900"
-              title="Asignar número de seguimiento"
-            >
-              <Package size={18} />
-            </button>
-          )}
+			if (success) {
+				setIsUpdateSuccess(true);
+				setUpdateMessage("Envío procesado correctamente");
 
-          {/* Marcar como enviado - solo para listos para enviar */}
-          {item.status === "ready_to_ship" && item.trackingNumber && (
-            <button
-              onClick={() => updateShippingStatus(item.id, "in_transit")}
-              className="p-1 text-indigo-600 hover:bg-indigo-100 rounded-md dark:text-indigo-400 dark:hover:bg-indigo-900"
-              title="Marcar como enviado"
-            >
-              <Truck size={18} />
-            </button>
-          )}
+				// Actualizar el estado del envío en la lista local
+				setShippingItems((prevItems) =>
+					prevItems.map((item) => {
+						if (item.id === selectedOrderId) {
+							return {
+								...item,
+								status: "in_transit",
+								trackingNumber: shippingData.tracking_number,
+								carrier: shippingData.shipping_company,
+								estimatedDelivery: shippingData.estimated_delivery,
+								lastUpdate: new Date().toISOString(),
+							};
+						}
+						return item;
+					})
+				);
 
-          {/* Imprimir etiqueta - solo para pedidos con número de seguimiento */}
-          {item.trackingNumber && item.status !== "delivered" && item.status !== "returned" && (
-            <button
-              onClick={() => alert(`Imprimiendo etiqueta para ${item.trackingNumber}`)}
-              className="p-1 text-gray-600 hover:bg-gray-100 rounded-md dark:text-gray-400 dark:hover:bg-gray-800"
-              title="Imprimir etiqueta"
-            >
-              <Printer size={18} />
-            </button>
-          )}
+				// Cerrar el modal
+				setIsShippingModalOpen(false);
 
-          {/* Marcar como entregado - solo para envíos en tránsito */}
-          {item.status === "in_transit" && (
-            <button
-              onClick={() => updateShippingStatus(item.id, "delivered")}
-              className="p-1 text-green-600 hover:bg-green-100 rounded-md dark:text-green-400 dark:hover:bg-green-900"
-              title="Marcar como entregado"
-            >
-              <PackageCheck size={18} />
-            </button>
-          )}
+				// Recargar los datos después de un breve retraso
+				setTimeout(() => {
+					fetchShippingItems();
+					setIsUpdateSuccess(null);
+				}, 3000);
+			} else {
+				throw new Error("No se pudo procesar el envío");
+			}
+		} catch (error) {
+			console.error("Error al procesar envío:", error);
+			setIsUpdateSuccess(false);
+			setUpdateMessage("Error al procesar el envío. Intenta de nuevo.");
+		} finally {
+			setIsUpdating(false);
+		}
+	};
 
-          {/* Marcar como fallido - para envíos pendientes, listos o en tránsito */}
-          {(item.status === "ready_to_ship" || item.status === "in_transit") && (
-            <button
-              onClick={() => updateShippingStatus(item.id, "failed")}
-              className="p-1 text-red-600 hover:bg-red-100 rounded-md dark:text-red-400 dark:hover:bg-red-900"
-              title="Marcar como fallido"
-            >
-              <AlertTriangle size={18} />
-            </button>
-          )}
-        </div>
-      ),
-    },
-  ];
+	// Función para actualizar estado de envío
+	const updateShippingStatus = async (
+		shippingId: string,
+		newStatus: ShippingItem["status"]
+	) => {
+		setIsUpdating(true);
+		setIsUpdateSuccess(null);
+		setUpdateMessage("");
 
-  // Estadísticas de envíos
-  const shippingStats = {
-    pending: shippingItems.filter(item => item.status === "pending").length,
-    readyToShip: shippingItems.filter(item => item.status === "ready_to_ship").length,
-    inTransit: shippingItems.filter(item => item.status === "in_transit").length,
-    delivered: shippingItems.filter(item => item.status === "delivered").length,
-    failed: shippingItems.filter(item => item.status === "failed").length,
-    returned: shippingItems.filter(item => item.status === "returned").length,
-    totalShippingCost: shippingItems.reduce((sum, item) => sum + item.shippingCost, 0),
-  };
+		try {
+			const success = await shippingAdapter.updateShippingStatus(
+				shippingId,
+				newStatus
+			);
 
-  const statsData = [
+			if (success) {
+				setIsUpdateSuccess(true);
+				setUpdateMessage(`Estado actualizado a ${getStatusText(newStatus)}`);
+
+				// Actualizar el estado en la lista local
+				setShippingItems((prevItems) =>
+					prevItems.map((item) => {
+						if (item.id === shippingId) {
+							return {
+								...item,
+								status: newStatus,
+								lastUpdate: new Date().toISOString(),
+							};
+						}
+						return item;
+					})
+				);
+
+				// Recargar los datos después de un breve retraso
+				setTimeout(() => {
+					fetchShippingItems();
+					setIsUpdateSuccess(null);
+				}, 3000);
+			} else {
+				throw new Error("No se pudo actualizar el estado");
+			}
+		} catch (error) {
+			console.error(`Error al actualizar estado a ${newStatus}:`, error);
+			setIsUpdateSuccess(false);
+			setUpdateMessage("Error al actualizar estado. Intenta de nuevo.");
+		} finally {
+			setIsUpdating(false);
+		}
+	};
+
+	// Función para asignar número de seguimiento
+	const assignTrackingNumber = async (orderId: string) => {
+		// Abrir el modal para capturar los datos de seguimiento
+		openShippingModal(orderId);
+	};
+
+	// Manejar cambio de página
+	const handlePageChange = (page: number) => {
+		setPagination((prev) => ({...prev, currentPage: page}));
+	};
+
+	// Refrescar datos
+	const refreshData = () => {
+		setLoading(true);
+		fetchShippingItems();
+	};
+
+	// Obtener texto según el estado
+	const getStatusText = (status: ShippingItem["status"]): string => {
+		switch (status) {
+			case "pending":
+				return "Pendiente";
+			case "ready_to_ship":
+				return "Listo para enviar";
+			case "in_transit":
+				return "En tránsito";
+			case "delivered":
+				return "Entregado";
+			case "failed":
+				return "Fallido";
+			case "returned":
+				return "Devuelto";
+			default:
+				return "Desconocido";
+		}
+	};
+
+	// Obtener clase CSS según el estado
+	const getStatusClass = (status: ShippingItem["status"]): string => {
+		switch (status) {
+			case "pending":
+				return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
+			case "ready_to_ship":
+				return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
+			case "in_transit":
+				return "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200";
+			case "delivered":
+				return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
+			case "failed":
+				return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
+			case "returned":
+				return "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200";
+			default:
+				return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200";
+		}
+	};
+
+	// Definir las columnas de la tabla
+	const columns = [
 		{
-			label: "Pendientes",
-			value: shippingStats.pending,
-			icon: (
-				<Package className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+			key: "orderNumber",
+			header: "Nº Pedido",
+			sortable: true,
+			render: (item: ShippingItem) => (
+				<Link
+					to={`/seller/orders/${item.orderId}`}
+					className="font-medium text-primary-600 dark:text-primary-400 hover:underline"
+				>
+					{item.orderNumber}
+				</Link>
 			),
-			color: "yellow",
 		},
 		{
-			label: "Listos",
-			value: shippingStats.readyToShip,
-			icon: <Package className="h-5 w-5 text-blue-600 dark:text-blue-400" />,
-			color: "blue",
-		},
-		{
-			label: "En Tránsito",
-			value: shippingStats.inTransit,
-			icon: <Truck className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />,
-			color: "indigo",
-		},
-		{
-			label: "Entregados",
-			value: shippingStats.delivered,
-			icon: (
-				<PackageCheck className="h-5 w-5 text-green-600 dark:text-green-400" />
+			key: "trackingNumber",
+			header: "Nº Seguimiento",
+			sortable: true,
+			render: (item: ShippingItem) => (
+				<div>
+					{item.trackingNumber ? (
+						<div className="flex items-center">
+							<span className="font-mono text-sm">{item.trackingNumber}</span>
+							{item.carrier && (
+								<a
+									href="#"
+									className="ml-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+									title={`Rastrear con ${item.carrier}`}
+									onClick={(e) => {
+										e.preventDefault();
+										// Aquí se podría abrir una ventana de rastreo del transportista
+										// Por ahora, solo mostramos un mensaje
+										alert(
+											`Redirigiendo al sitio de ${item.carrier} para rastrear ${item.trackingNumber}`
+										);
+									}}
+								>
+									<ExternalLink size={14} />
+								</a>
+							)}
+						</div>
+					) : (
+						<span className="text-gray-500 dark:text-gray-400 text-sm">
+							No asignado
+						</span>
+					)}
+				</div>
 			),
-			color: "green",
 		},
 		{
-			label: "Fallidos",
-			value: shippingStats.failed,
-			icon: (
-				<AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
+			key: "date",
+			header: "Fecha de Pedido",
+			sortable: true,
+			render: (item: ShippingItem) => {
+				const date = new Date(item.date);
+				return (
+					<span className="text-sm">{date.toLocaleDateString("es-ES")}</span>
+				);
+			},
+		},
+		{
+			key: "customer",
+			header: "Cliente",
+			sortable: true,
+			render: (item: ShippingItem) => (
+				<div>
+					<div className="font-medium text-sm">{item.customer.name}</div>
+					<div className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[150px]">
+						{item.shippingAddress}
+					</div>
+				</div>
 			),
-			color: "red",
 		},
 		{
-			label: "Devueltos",
-			value: shippingStats.returned,
-			icon: <MapPin className="h-5 w-5 text-orange-600 dark:text-orange-400" />,
-			color: "orange",
+			key: "status",
+			header: "Estado",
+			sortable: true,
+			render: (item: ShippingItem) => {
+				return (
+					<span
+						className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusClass(item.status)}`}
+					>
+						{getStatusText(item.status)}
+					</span>
+				);
+			},
 		},
 		{
-			label: "Coste Envíos",
-			value: formatCurrency(shippingStats.totalShippingCost),
-			icon: (
-				<BarChart2 className="h-5 w-5 text-primary-600 dark:text-primary-400" />
+			key: "carrier",
+			header: "Transportista",
+			sortable: true,
+			render: (item: ShippingItem) => (
+				<span>{item.carrier || "No asignado"}</span>
 			),
-			color: "primary",
+		},
+		{
+			key: "estimatedDelivery",
+			header: "Entrega Estimada",
+			sortable: true,
+			render: (item: ShippingItem) => (
+				<span>
+					{item.estimatedDelivery
+						? new Date(item.estimatedDelivery).toLocaleDateString("es-ES")
+						: "No disponible"}
+				</span>
+			),
+		},
+		{
+			key: "actions",
+			header: "Acciones",
+			render: (item: ShippingItem) => (
+				<div className="flex justify-end space-x-2">
+					{/* Ver detalles del envío */}
+					<Link
+						to={`/seller/shipping/${item.id}`}
+						className="p-1 text-blue-600 hover:bg-blue-100 rounded-md dark:text-blue-400 dark:hover:bg-blue-900"
+						title="Ver detalles"
+					>
+						<ClipboardList size={18} />
+					</Link>
+
+					{/* Asignar número de seguimiento - solo para pendientes */}
+					{item.status === "pending" && (
+						<button
+							onClick={() => assignTrackingNumber(item.id)}
+							className="p-1 text-green-600 hover:bg-green-100 rounded-md dark:text-green-400 dark:hover:bg-green-900"
+							title="Asignar número de seguimiento"
+							disabled={isUpdating}
+						>
+							<Package size={18} />
+						</button>
+					)}
+
+					{/* Marcar como enviado - solo para listos para enviar */}
+					{item.status === "ready_to_ship" && item.trackingNumber && (
+						<button
+							onClick={() => updateShippingStatus(item.id, "in_transit")}
+							className="p-1 text-indigo-600 hover:bg-indigo-100 rounded-md dark:text-indigo-400 dark:hover:bg-indigo-900"
+							title="Marcar como enviado"
+							disabled={isUpdating}
+						>
+							<Truck size={18} />
+						</button>
+					)}
+
+					{/* Imprimir etiqueta - solo para pedidos con número de seguimiento */}
+					{item.trackingNumber &&
+						item.status !== "delivered" &&
+						item.status !== "returned" && (
+							<button
+								onClick={() =>
+									alert(`Imprimiendo etiqueta para ${item.trackingNumber}`)
+								}
+								className="p-1 text-gray-600 hover:bg-gray-100 rounded-md dark:text-gray-400 dark:hover:bg-gray-800"
+								title="Imprimir etiqueta"
+								disabled={isUpdating}
+							>
+								<Printer size={18} />
+							</button>
+						)}
+
+					{/* Marcar como entregado - solo para envíos en tránsito */}
+					{item.status === "in_transit" && (
+						<button
+							onClick={() => updateShippingStatus(item.id, "delivered")}
+							className="p-1 text-green-600 hover:bg-green-100 rounded-md dark:text-green-400 dark:hover:bg-green-900"
+							title="Marcar como entregado"
+							disabled={isUpdating}
+						>
+							<PackageCheck size={18} />
+						</button>
+					)}
+
+					{/* Marcar como fallido - para envíos pendientes, listos o en tránsito */}
+					{(item.status === "ready_to_ship" ||
+						item.status === "in_transit") && (
+						<button
+							onClick={() => updateShippingStatus(item.id, "failed")}
+							className="p-1 text-red-600 hover:bg-red-100 rounded-md dark:text-red-400 dark:hover:bg-red-900"
+							title="Marcar como fallido"
+							disabled={isUpdating}
+						>
+							<AlertTriangle size={18} />
+						</button>
+					)}
+				</div>
+			),
 		},
 	];
 
-  return (
+	// Calcular estadísticas de envíos
+	const calculateShippingStats = () => {
+		const stats = {
+			pending: shippingItems.filter((item) => item.status === "pending").length,
+			readyToShip: shippingItems.filter(
+				(item) => item.status === "ready_to_ship"
+			).length,
+			inTransit: shippingItems.filter((item) => item.status === "in_transit")
+				.length,
+			delivered: shippingItems.filter((item) => item.status === "delivered")
+				.length,
+			failed: shippingItems.filter((item) => item.status === "failed").length,
+			returned: shippingItems.filter((item) => item.status === "returned")
+				.length,
+			// Calcular costo de envío total (si está disponible)
+			totalShippingCost: shippingItems.reduce(
+				(sum, item) => sum + (item.shippingCost || 0),
+				0
+			),
+		};
+
+		return [
+			{
+				label: "Pendientes",
+				value: stats.pending,
+				icon: (
+					<Package className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+				),
+				color: "yellow",
+			},
+			{
+				label: "Listos",
+				value: stats.readyToShip,
+				icon: <Package className="h-5 w-5 text-blue-600 dark:text-blue-400" />,
+				color: "blue",
+			},
+			{
+				label: "En Tránsito",
+				value: stats.inTransit,
+				icon: (
+					<Truck className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+				),
+				color: "indigo",
+			},
+			{
+				label: "Entregados",
+				value: stats.delivered,
+				icon: (
+					<PackageCheck className="h-5 w-5 text-green-600 dark:text-green-400" />
+				),
+				color: "green",
+			},
+			{
+				label: "Fallidos",
+				value: stats.failed,
+				icon: (
+					<AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
+				),
+				color: "red",
+			},
+			{
+				label: "Devueltos",
+				value: stats.returned,
+				icon: (
+					<MapPin className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+				),
+				color: "orange",
+			},
+			{
+				label: "Coste Envíos",
+				value: formatCurrency(stats.totalShippingCost),
+				icon: (
+					<BarChart2 className="h-5 w-5 text-primary-600 dark:text-primary-400" />
+				),
+				color: "primary",
+			},
+		];
+	};
+
+	return (
 		<div className="space-y-6">
+			{/* Modal para asignación de número de seguimiento */}
+			<ShippingFormModal
+				orderId={selectedOrderId || ""}
+				isOpen={isShippingModalOpen}
+				onClose={() => setIsShippingModalOpen(false)}
+				onSubmit={handleShippingSubmit}
+				isLoading={isUpdating}
+			/>
+
 			<div className="flex justify-between items-center">
 				<h1 className="text-2xl font-bold text-gray-900 dark:text-white">
 					Gestión de Envíos
@@ -773,12 +586,41 @@ const SellerShippingPage: React.FC = () => {
 					<button
 						onClick={refreshData}
 						className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+						disabled={isUpdating}
 					>
 						<RefreshCw size={18} className="inline mr-2" />
 						Actualizar
 					</button>
 				</div>
 			</div>
+
+			{/* Mensajes de éxito/error */}
+			{isUpdateSuccess === true && (
+				<div
+					className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative"
+					role="alert"
+				>
+					<span className="block sm:inline">{updateMessage}</span>
+				</div>
+			)}
+
+			{isUpdateSuccess === false && (
+				<div
+					className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative"
+					role="alert"
+				>
+					<span className="block sm:inline">{updateMessage}</span>
+				</div>
+			)}
+
+			{error && (
+				<div
+					className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative"
+					role="alert"
+				>
+					<span className="block sm:inline">{error}</span>
+				</div>
+			)}
 
 			{/* Panel de filtros */}
 			<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
@@ -821,9 +663,12 @@ const SellerShippingPage: React.FC = () => {
 							onChange={(e) => setCarrierFilter(e.target.value)}
 						>
 							<option value="all">Todos los transportistas</option>
-							<option value="correos">Correos Express</option>
-							<option value="seur">SEUR</option>
-							<option value="mrw">MRW</option>
+							<option value="Correos Express">Correos Express</option>
+							<option value="SEUR">SEUR</option>
+							<option value="MRW">MRW</option>
+							<option value="DHL">DHL</option>
+							<option value="FedEx">FedEx</option>
+							<option value="UPS">UPS</option>
 						</select>
 					</div>
 
@@ -845,11 +690,19 @@ const SellerShippingPage: React.FC = () => {
 								<input
 									type="date"
 									className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+									value={dateRange.from}
+									onChange={(e) =>
+										setDateRange({...dateRange, from: e.target.value})
+									}
 								/>
 								<span className="text-gray-500 dark:text-gray-400">a</span>
 								<input
 									type="date"
 									className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+									value={dateRange.to}
+									onChange={(e) =>
+										setDateRange({...dateRange, to: e.target.value})
+									}
 								/>
 							</div>
 						)}
@@ -862,6 +715,7 @@ const SellerShippingPage: React.FC = () => {
 							setCarrierFilter("all");
 							setDateFilter("all");
 							setSearchTerm("");
+							setDateRange({from: "", to: ""});
 						}}
 						className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
 					>
@@ -872,12 +726,12 @@ const SellerShippingPage: React.FC = () => {
 
 			{/* Estadísticas resumidas */}
 			<div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-7 gap-4">
-				<SellerStatCardList items={statsData} />
+				<SellerStatCardList items={calculateShippingStats()} />
 			</div>
 
 			{/* Tabla de Envíos */}
 			<Table
-				data={filteredShippingItems}
+				data={shippingItems}
 				columns={columns}
 				searchFields={[
 					"orderNumber",
