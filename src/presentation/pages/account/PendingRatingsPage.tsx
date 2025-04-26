@@ -4,7 +4,6 @@ import {
 	Star,
 	Package,
 	Store,
-	AlertTriangle,
 	ShoppingBag,
 	Clock,
 	Search,
