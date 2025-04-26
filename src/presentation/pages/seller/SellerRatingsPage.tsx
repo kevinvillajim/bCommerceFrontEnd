@@ -16,12 +16,14 @@ import {
 } from "lucide-react";
 import Table from "../../components/dashboard/Table";
 import RatingStars from "../../components/common/RatingStars";
-import RatingService, {
+import RatingService from "../../../core/services/RatingService";
+import type {
 	Rating,
 	RatingReplyRequest,
 	RatingReportRequest,
 } from "../../../core/services/RatingService";
 import RatingCard from "../../components/rating/RatingCard";
+import type {ExtendedRating} from "../../types/ratingTypes";
 import RatingsSummary from "../../components/rating/RatingsSummary";
 import {formatDate} from "../../../utils/formatters/formatDate";
 import {extractErrorMessage} from "../../../utils/errorHandler";
@@ -31,7 +33,7 @@ const SellerRatingsPage: React.FC = () => {
 	const ratingService = new RatingService();
 
 	// Estados
-	const [ratings, setRatings] = useState<Rating[]>([]);
+const [ratings, setRatings] = useState<ExtendedRating[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 
@@ -787,7 +789,7 @@ const SellerRatingsPage: React.FC = () => {
 			<Table
 				data={filteredRatings}
 				columns={columns}
-				searchFields={["product.name", "user.name", "title", "comment"]}
+				searchFields={["title", "comment"]}
 				loading={loading}
 				emptyMessage="No se encontraron valoraciones"
 				pagination={{

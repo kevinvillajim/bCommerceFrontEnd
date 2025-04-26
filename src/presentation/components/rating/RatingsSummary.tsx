@@ -50,7 +50,7 @@ const RatingsSummary: React.FC<RatingsSummaryProps> = ({
 				{/* Distribución de estrellas */}
 				<div className="flex-grow w-full md:w-auto">
 					{[5, 4, 3, 2, 1].map((stars) => {
-						const count = distribution[stars as keyof typeof distribution] || 0;
+						const count = distribution[stars.toString() as keyof typeof distribution] || 0;
 						const percentage = calculatePercentage(count);
 
 						return (

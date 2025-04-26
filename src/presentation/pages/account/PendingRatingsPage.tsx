@@ -17,6 +17,8 @@ import type {
 import {formatDate} from "../../../utils/formatters/formatDate";
 import RatingModal from "../../components/rating/RatingModal";
 import StarRating from "../../components/rating/StarRating";
+import {useRatings} from "../../hooks/useRatings";
+import PendingRatingsList from "../../components/rating/PendingRatingsList";
 
 interface OrderGroup {
 	orderId: number;
