@@ -61,22 +61,43 @@ const SellerShippingDetailsPage: React.FC = () => {
 
 			// Si hay número de seguimiento, obtener también el historial y la ruta
 			if (shipment.trackingNumber) {
-				// Obtener historial
-				const history = await shippingAdapter.getShippingHistory(
-					shipment.trackingNumber
-				);
-				setShippingHistory(history);
-
-				// Obtener ruta (si está disponible)
 				try {
-					const route = await shippingAdapter.getShippingRoute(
+					// Obtener historial
+					const history = await shippingAdapter.getShippingHistory(
 						shipment.trackingNumber
 					);
-					setShippingRoute(route);
-				} catch (routeError) {
-					console.warn("No se pudo obtener la ruta del envío:", routeError);
-					// No establecemos error para no interrumpir la visualización de los detalles
+					setShippingHistory(history);
+
+					// Obtener ruta (si está disponible)
+					try {
+						const route = await shippingAdapter.getShippingRoute(
+							shipment.trackingNumber
+						);
+						setShippingRoute(route);
+					} catch (routeError) {
+						console.warn("No se pudo obtener la ruta del envío:", routeError);
+						// No establecemos error para no interrumpir la visualización de los detalles
+					}
+				} catch (historyError) {
+					console.warn("No se pudo obtener historial de envío:", historyError);
+					// También añadimos un historial básico para mostrar al menos el estado actual
+					setShippingHistory([
+						{
+							date: new Date().toISOString(),
+							status: shipment.status,
+							description: `Estado actual: ${getStatusText(shipment.status)}`,
+						},
+					]);
 				}
+			} else {
+				// Si no hay número de seguimiento, añadir un elemento al historial con el estado actual
+				setShippingHistory([
+					{
+						date: new Date().toISOString(),
+						status: shipment.status,
+						description: `Estado actual: ${getStatusText(shipment.status)}`,
+					},
+				]);
 			}
 		} catch (err) {
 			console.error("Error al cargar detalles del envío:", err);
@@ -112,6 +133,15 @@ const SellerShippingDetailsPage: React.FC = () => {
 					return {...prev, status: newStatus};
 				});
 
+				// Agregar nueva entrada al historial local
+				const newHistoryEntry: ShippingHistoryItem = {
+					date: new Date().toISOString(),
+					status: newStatus,
+					description: `Actualización de estado a: ${getStatusText(newStatus)}`,
+				};
+
+				setShippingHistory((prevHistory) => [newHistoryEntry, ...prevHistory]);
+
 				// Recargar detalles después de un breve retraso
 				setTimeout(() => {
 					fetchShippingDetails();
@@ -146,6 +176,7 @@ const SellerShippingDetailsPage: React.FC = () => {
 			case "ready_to_ship":
 				return "Listo para enviar";
 			case "in_transit":
+			case "shipped": // Añadido para compatibilidad
 				return "En tránsito";
 			case "delivered":
 				return "Entregado";
@@ -166,6 +197,7 @@ const SellerShippingDetailsPage: React.FC = () => {
 			case "ready_to_ship":
 				return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
 			case "in_transit":
+			case "shipped": // Añadido para compatibilidad
 				return "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200";
 			case "delivered":
 				return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
@@ -188,6 +220,7 @@ const SellerShippingDetailsPage: React.FC = () => {
 			case "ready_to_ship":
 				return <Package className="h-5 w-5 text-blue-600 dark:text-blue-400" />;
 			case "in_transit":
+			case "shipped": // Añadido para compatibilidad
 				return (
 					<Truck className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
 				);
@@ -280,9 +313,7 @@ const SellerShippingDetailsPage: React.FC = () => {
 					{/* Botones de acción según el estado actual */}
 					{shipping.status === "pending" && (
 						<button
-							onClick={() =>
-								navigate(`/seller/shipping/${shipping.id}/prepare`)
-							}
+							onClick={() => updateShippingStatus("ready_to_ship")}
 							disabled={isUpdating}
 							className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 disabled:opacity-50"
 						>
@@ -291,9 +322,9 @@ const SellerShippingDetailsPage: React.FC = () => {
 						</button>
 					)}
 
-					{shipping.status === "ready_to_ship" && (
+					{shipping.status === "ready_to_ship" && shipping.trackingNumber && (
 						<button
-							onClick={() => updateShippingStatus("in_transit")}
+							onClick={() => updateShippingStatus("shipped")}
 							disabled={isUpdating}
 							className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 flex items-center gap-2 disabled:opacity-50"
 						>
@@ -302,7 +333,8 @@ const SellerShippingDetailsPage: React.FC = () => {
 						</button>
 					)}
 
-					{shipping.status === "in_transit" && (
+					{(shipping.status === "in_transit" ||
+						shipping.status === "shipped") && (
 						<button
 							onClick={() => updateShippingStatus("delivered")}
 							disabled={isUpdating}
@@ -314,7 +346,8 @@ const SellerShippingDetailsPage: React.FC = () => {
 					)}
 
 					{(shipping.status === "ready_to_ship" ||
-						shipping.status === "in_transit") && (
+						shipping.status === "in_transit" ||
+						shipping.status === "shipped") && (
 						<button
 							onClick={() => updateShippingStatus("failed")}
 							disabled={isUpdating}

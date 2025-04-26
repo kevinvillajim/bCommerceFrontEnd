@@ -18,13 +18,9 @@ import Table from "../../components/dashboard/Table";
 import {formatCurrency} from "../../../utils/formatters/formatCurrency";
 import {SellerStatCardList} from "../../components/dashboard/SellerStatCardList";
 import ShippingServiceAdapter from "../../../core/adapters/ShippingServiceAdapter";
-import type {
-	ShippingItem,
-} from "../../../core/adapters/ShippingServiceAdapter";
+import type {ShippingItem} from "../../../core/adapters/ShippingServiceAdapter";
 import ShippingFormModal from "../../components/shipping/ShippingFormModal";
-import type {
-	ShippingFormData,
-} from "../../components/shipping/ShippingFormModal";
+import type {ShippingFormData} from "../../components/shipping/ShippingFormModal";
 
 const SellerShippingPage: React.FC = () => {
 	// Instanciar el adaptador de servicio
@@ -116,6 +112,8 @@ const SellerShippingPage: React.FC = () => {
 			// Obtener envíos del adaptador
 			const result = await shippingAdapter.getShippingsList(filters);
 
+			console.log("Datos de envío obtenidos:", result);
+
 			// Establecer envíos y datos de paginación
 			setShippingItems(result.items);
 			setPagination(result.pagination);
@@ -159,7 +157,7 @@ const SellerShippingPage: React.FC = () => {
 						if (item.id === selectedOrderId) {
 							return {
 								...item,
-								status: "in_transit",
+								status: "shipped", // Ajustado según el nuevo estado
 								trackingNumber: shippingData.tracking_number,
 								carrier: shippingData.shipping_company,
 								estimatedDelivery: shippingData.estimated_delivery,
@@ -265,6 +263,7 @@ const SellerShippingPage: React.FC = () => {
 			case "ready_to_ship":
 				return "Listo para enviar";
 			case "in_transit":
+			case "shipped": // Añadido para manejar el nuevo estado
 				return "En tránsito";
 			case "delivered":
 				return "Entregado";
@@ -285,6 +284,7 @@ const SellerShippingPage: React.FC = () => {
 			case "ready_to_ship":
 				return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
 			case "in_transit":
+			case "shipped": // Añadido para manejar el nuevo estado
 				return "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200";
 			case "delivered":
 				return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
@@ -329,7 +329,6 @@ const SellerShippingPage: React.FC = () => {
 									onClick={(e) => {
 										e.preventDefault();
 										// Aquí se podría abrir una ventana de rastreo del transportista
-										// Por ahora, solo mostramos un mensaje
 										alert(
 											`Redirigiendo al sitio de ${item.carrier} para rastrear ${item.trackingNumber}`
 										);
@@ -420,33 +419,34 @@ const SellerShippingPage: React.FC = () => {
 					</Link>
 
 					{/* Asignar número de seguimiento - solo para pendientes */}
-					{item.status === "pending" && (
-						<button
-							onClick={() => assignTrackingNumber(item.id)}
-							className="p-1 text-green-600 hover:bg-green-100 rounded-md dark:text-green-400 dark:hover:bg-green-900"
-							title="Asignar número de seguimiento"
-							disabled={isUpdating}
-						>
-							<Package size={18} />
-						</button>
-					)}
+					{(item.status === "pending" || item.status === "ready_to_ship") &&
+						!item.trackingNumber && (
+							<button
+								onClick={() => assignTrackingNumber(item.id)}
+								className="p-1 text-green-600 hover:bg-green-100 rounded-md dark:text-green-400 dark:hover:bg-green-900"
+								title="Asignar número de seguimiento"
+								disabled={isUpdating}
+							>
+								<Package size={18} />
+							</button>
+						)}
 
-					{/* Marcar como enviado - solo para listos para enviar */}
-					{item.status === "ready_to_ship" && item.trackingNumber && (
-						<button
-							onClick={() => updateShippingStatus(item.id, "in_transit")}
-							className="p-1 text-indigo-600 hover:bg-indigo-100 rounded-md dark:text-indigo-400 dark:hover:bg-indigo-900"
-							title="Marcar como enviado"
-							disabled={isUpdating}
-						>
-							<Truck size={18} />
-						</button>
-					)}
+					{/* Marcar como enviado - solo para listos para enviar con tracking */}
+					{(item.status === "ready_to_ship" || item.status === "pending") &&
+						item.trackingNumber && (
+							<button
+								onClick={() => updateShippingStatus(item.id, "shipped")}
+								className="p-1 text-indigo-600 hover:bg-indigo-100 rounded-md dark:text-indigo-400 dark:hover:bg-indigo-900"
+								title="Marcar como enviado"
+								disabled={isUpdating}
+							>
+								<Truck size={18} />
+							</button>
+						)}
 
 					{/* Imprimir etiqueta - solo para pedidos con número de seguimiento */}
 					{item.trackingNumber &&
-						item.status !== "delivered" &&
-						item.status !== "returned" && (
+						(item.status === "shipped" || item.status === "in_transit") && (
 							<button
 								onClick={() =>
 									alert(`Imprimiendo etiqueta para ${item.trackingNumber}`)
@@ -460,7 +460,7 @@ const SellerShippingPage: React.FC = () => {
 						)}
 
 					{/* Marcar como entregado - solo para envíos en tránsito */}
-					{item.status === "in_transit" && (
+					{(item.status === "in_transit" || item.status === "shipped") && (
 						<button
 							onClick={() => updateShippingStatus(item.id, "delivered")}
 							className="p-1 text-green-600 hover:bg-green-100 rounded-md dark:text-green-400 dark:hover:bg-green-900"
@@ -473,7 +473,9 @@ const SellerShippingPage: React.FC = () => {
 
 					{/* Marcar como fallido - para envíos pendientes, listos o en tránsito */}
 					{(item.status === "ready_to_ship" ||
-						item.status === "in_transit") && (
+						item.status === "in_transit" ||
+						item.status === "shipped" ||
+						item.status === "pending") && (
 						<button
 							onClick={() => updateShippingStatus(item.id, "failed")}
 							className="p-1 text-red-600 hover:bg-red-100 rounded-md dark:text-red-400 dark:hover:bg-red-900"
@@ -495,8 +497,9 @@ const SellerShippingPage: React.FC = () => {
 			readyToShip: shippingItems.filter(
 				(item) => item.status === "ready_to_ship"
 			).length,
-			inTransit: shippingItems.filter((item) => item.status === "in_transit")
-				.length,
+			inTransit: shippingItems.filter(
+				(item) => item.status === "in_transit" || item.status === "shipped"
+			).length,
 			delivered: shippingItems.filter((item) => item.status === "delivered")
 				.length,
 			failed: shippingItems.filter((item) => item.status === "failed").length,
@@ -648,7 +651,7 @@ const SellerShippingPage: React.FC = () => {
 							<option value="all">Todos los estados</option>
 							<option value="pending">Pendientes</option>
 							<option value="ready_to_ship">Listos para enviar</option>
-							<option value="in_transit">En tránsito</option>
+							<option value="shipped">En tránsito</option>
 							<option value="delivered">Entregados</option>
 							<option value="failed">Fallidos</option>
 							<option value="returned">Devueltos</option>

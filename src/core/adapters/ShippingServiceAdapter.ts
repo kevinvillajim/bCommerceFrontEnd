@@ -20,6 +20,7 @@ export interface ShippingItem {
 		| "pending"
 		| "ready_to_ship"
 		| "in_transit"
+		| "shipped" // Añadido para coincidir con la DB
 		| "delivered"
 		| "failed"
 		| "returned";
@@ -80,9 +81,9 @@ export default class ShippingServiceAdapter {
 				filters
 			);
 
-			// Primero, obtenemos las órdenes pendientes de envío
+			// *** CAMBIO PRINCIPAL: Usamos el endpoint de órdenes general en lugar del específico de awaiting-shipment
 			const response = await ApiClient.get<any>(
-				API_ENDPOINTS.ORDERS.AWAITING_SHIPMENT,
+				API_ENDPOINTS.ORDERS.SELLER_ORDERS,
 				filters
 			);
 
@@ -163,10 +164,15 @@ export default class ShippingServiceAdapter {
 
 			// Si tiene número de seguimiento, obtener también el historial
 			if (shippingItem.trackingNumber) {
-				const history = await this.getShippingHistory(
-					shippingItem.trackingNumber
-				);
-				shippingItem.history = history;
+				try {
+					const history = await this.getShippingHistory(
+						shippingItem.trackingNumber
+					);
+					shippingItem.history = history;
+				} catch (historyError) {
+					console.warn("No se pudo obtener historial de envío:", historyError);
+					// No establecemos error para no interrumpir la visualización de los detalles
+				}
 			}
 
 			return shippingItem;
@@ -324,12 +330,6 @@ export default class ShippingServiceAdapter {
 	 * @param status Nuevo estado
 	 * @returns true si se actualizó correctamente
 	 */
-	/**
-	 * Actualiza el estado de un envío
-	 * @param orderId ID de la orden
-	 * @param status Nuevo estado
-	 * @returns true si se actualizó correctamente
-	 */
 	async updateShippingStatus(
 		orderId: string,
 		status: ShippingItem["status"]
@@ -447,7 +447,7 @@ export default class ShippingServiceAdapter {
 	 * @returns Objeto ShippingItem
 	 */
 	private mapOrderToShippingItem(order: any): ShippingItem {
-		// Extraer la dirección de envío SOLO desde shipping_data
+		// Extraer la dirección de envío solo desde shipping_data
 		let shippingAddress = "";
 		if (order.shipping_data || order.shippingData) {
 			// Acceder al objeto shipping_data (ambas formas para compatibilidad)
@@ -472,8 +472,13 @@ export default class ShippingServiceAdapter {
 		let shippingStatus: ShippingItem["status"] = "pending";
 		const shippingData = order.shipping_data || order.shippingData;
 
-		if (order.status === "shipped") {
-			shippingStatus = "in_transit";
+		// Buscar primero en shipping.status si existe
+		if (order.shipping && order.shipping.status) {
+			shippingStatus = order.shipping.status;
+		}
+		// De lo contrario, inferir por el estado de la orden
+		else if (order.status === "shipped" || order.status === "in_transit") {
+			shippingStatus = "shipped"; // Ajustado para coincidir con la DB
 		} else if (order.status === "delivered") {
 			shippingStatus = "delivered";
 		} else if (order.status === "cancelled") {
@@ -498,21 +503,42 @@ export default class ShippingServiceAdapter {
 		const customerId =
 			order.userId || order.user_id || (order.customer ? order.customer.id : 0);
 
-		// Datos del transportista y tracking desde shipping_data
+		// Datos del transportista y tracking desde shipping_data o shipping
 		const trackingNumber =
-			shippingData?.tracking_number || order.trackingNumber;
-		const carrier = shippingData?.shipping_company || order.carrier;
+			shippingData?.tracking_number ||
+			order.trackingNumber ||
+			(order.shipping ? order.shipping.tracking_number : undefined);
+
+		const carrier =
+			shippingData?.shipping_company ||
+			order.carrier ||
+			(order.shipping ? order.shipping.carrier_name : undefined);
+
 		const estimatedDelivery =
-			shippingData?.estimated_delivery || order.estimatedDelivery;
+			shippingData?.estimated_delivery ||
+			order.estimatedDelivery ||
+			(order.shipping ? order.shipping.estimated_delivery : undefined);
 
 		// Número de teléfono desde shipping_data
 		const phone = shippingData?.phone;
 
+		// Información de ubicación actual, extraída de shipping si existe
+		const currentLocation = order.shipping?.current_location
+			? typeof order.shipping.current_location === "string"
+				? order.shipping.current_location
+				: JSON.stringify(order.shipping.current_location)
+			: undefined;
+
 		return {
 			id: String(order.id || 0),
 			orderId: String(order.id || 0),
-			orderNumber: order.orderNumber || `ORD-${order.id || 0}`,
-			date: order.createdAt || order.date || new Date().toISOString(),
+			orderNumber:
+				order.orderNumber || order.order_number || `ORD-${order.id || 0}`,
+			date:
+				order.createdAt ||
+				order.created_at ||
+				order.date ||
+				new Date().toISOString(),
 			customer: {
 				id: customerId,
 				name: customerName,
@@ -525,13 +551,13 @@ export default class ShippingServiceAdapter {
 			estimatedDelivery: estimatedDelivery,
 			shippingAddress: shippingAddress,
 			shippingMethod: order.shippingMethod || "Estándar",
-			lastUpdate: order.updatedAt || order.lastUpdate,
+			lastUpdate: order.updatedAt || order.updated_at || order.lastUpdate,
 			// Mapear el historial si existe
 			history: Array.isArray(order.history)
 				? order.history.map((item: any) => ({
 						date: item.date || new Date().toISOString(),
 						status: item.status,
-						location: item.location,
+						location: item.location || currentLocation,
 						description: item.description,
 					}))
 				: undefined,
@@ -552,6 +578,7 @@ export default class ShippingServiceAdapter {
 			case "ready_to_ship":
 				return "processing";
 			case "in_transit":
+			case "shipped": // Añadido para coincidir con la DB
 				return "shipped";
 			case "delivered":
 				return "delivered";

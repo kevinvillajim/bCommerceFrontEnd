@@ -77,6 +77,9 @@ const SellerEarningsPage = lazy(
 const SellerShippingPage = lazy(
 	() => import("../presentation/pages/seller/SellerShippingPage")
 );
+const SellerShippingDetailsPage = lazy(
+	() => import("../presentation/pages/seller/SellerShippingDetailsPage")
+);
 
 //Admin Pages
 const AdminDashboard = lazy(
@@ -348,7 +351,7 @@ const appRoutes: RouteObject[] = [
 			},
 			{
 				path: "shipping/:orderId",
-				element: <SellerShippingPage />,
+				element: <SellerShippingDetailsPage />,
 			},
 			// Shipping
 			{
