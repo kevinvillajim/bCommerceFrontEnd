@@ -128,6 +128,10 @@ export const API_ENDPOINTS = {
 		RATE_USER: "/ratings/user",
 		MY_GIVEN: "/ratings/my/given",
 		MY_RECEIVED: "/ratings/my/received",
+		PENDING: "/ratings/pending",
+		REPLY: "/ratings/reply",
+		REPORT: "/ratings/report",
+		REPORT_PROBLEM: "/ratings/report-problem",
 	},
 
 	// Shipping
