@@ -327,18 +327,93 @@ export class RatingService {
 				per_page: perPage,
 			};
 
-			if (status) {
+			if (status && status !== "all") {
 				params.status = status;
 			}
 
-			const response = await ApiClient.get<SellerRatingsResponse>(
+			console.log("Solicitando valoraciones recibidas con parámetros:", params);
+			const response = await ApiClient.get<any>(
 				API_ENDPOINTS.RATINGS.MY_RECEIVED,
 				params
 			);
-			return response;
+			console.log("Respuesta original de valoraciones recibidas:", response);
+
+			// Crear respuesta predeterminada
+			const defaultResponse: SellerRatingsResponse = {
+				status: "success",
+				data: [],
+				meta: {
+					total: 0,
+					per_page: perPage,
+					current_page: page,
+					last_page: 1,
+					average_rating: 0,
+					rating_counts: {
+						"1": 0,
+						"2": 0,
+						"3": 0,
+						"4": 0,
+						"5": 0,
+					},
+				},
+			};
+
+			// Manejar diferentes estructuras de respuesta posibles
+			if (!response) {
+				return defaultResponse;
+			}
+
+			// Caso 1: Estructura response.data.data (anidada)
+			if (response.data && response.data.data) {
+				return {
+					status: "success",
+					data: response.data.data,
+					meta: response.data.meta || defaultResponse.meta,
+				};
+			}
+
+			// Caso 2: Estructura response.data (array)
+			if (response.data && Array.isArray(response.data)) {
+				return {
+					status: "success",
+					data: response.data,
+					meta: response.meta || defaultResponse.meta,
+				};
+			}
+
+			// Caso 3: Estructura response (object con properties data y meta)
+			if (response.data && !Array.isArray(response.data)) {
+				return {
+					status: "success",
+					data: response.data,
+					meta: response.meta || defaultResponse.meta,
+				};
+			}
+
+			// Si ninguno de los casos anteriores coincide, devolver la respuesta predeterminada
+			return defaultResponse;
 		} catch (error) {
 			console.error("Error al obtener valoraciones recibidas:", error);
-			throw error;
+			// Devolver una respuesta con estructura válida en caso de error
+			return {
+				status: "error",
+				message: error instanceof Error ? error.message : "Error desconocido",
+				data: [],
+				meta: {
+					total: 0,
+					per_page: perPage,
+					current_page: page,
+					last_page: 1,
+					average_rating: 0,
+					rating_counts: {
+						"1": 0,
+						"2": 0,
+						"3": 0,
+						"4": 0,
+						"5": 0,
+					},
+				},
+			};
 		}
 	}
 

@@ -1,7 +1,8 @@
-import React, {useState, useEffect} from "react";
+import React, {useState} from "react";
 import {Link} from "react-router-dom";
 import {
 	Star,
+	Clock,
 	Search,
 	Filter,
 	RefreshCw,
@@ -12,38 +13,17 @@ import {
 	Eye,
 	CheckCircle,
 	XCircle,
-	Clock,
 } from "lucide-react";
+
 import Table from "../../components/dashboard/Table";
 import RatingStars from "../../components/common/RatingStars";
-import RatingService from "../../../core/services/RatingService";
-import type {
-	Rating,
-	RatingReplyRequest,
-	RatingReportRequest,
-} from "../../../core/services/RatingService";
-import RatingCard from "../../components/rating/RatingCard";
-import type {ExtendedRating} from "../../types/ratingTypes";
-import RatingsSummary from "../../components/rating/RatingsSummary";
 import {formatDate} from "../../../utils/formatters/formatDate";
-import {extractErrorMessage} from "../../../utils/errorHandler";
+import RatingCard from "../../components/rating/RatingCard";
+import RatingsSummary from "../../components/rating/RatingsSummary";
+import {useSellerRatings} from "../../hooks/useSellerRatings";
+import type {ExtendedRating} from "../../types/ratingTypes";
 
 const SellerRatingsPage: React.FC = () => {
-	// Servicio de valoraciones
-	const ratingService = new RatingService();
-
-	// Estados
-const [ratings, setRatings] = useState<ExtendedRating[]>([]);
-	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState<string | null>(null);
-
-	// Estados de filtros
-	const [ratingFilter, setRatingFilter] = useState<string>("all");
-	const [statusFilter, setStatusFilter] = useState<string>("all");
-	const [productFilter, setProductFilter] = useState<string>("all");
-	const [verifiedFilter, setVerifiedFilter] = useState<string>("all");
-	const [searchTerm, setSearchTerm] = useState<string>("");
-
 	// Estados para respuesta y reporte
 	const [replyRatingId, setReplyRatingId] = useState<number | null>(null);
 	const [replyText, setReplyText] = useState<string>("");
@@ -51,142 +31,33 @@ const [ratings, setRatings] = useState<ExtendedRating[]>([]);
 	const [reportReason, setReportReason] = useState<string>("");
 	const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-	// Estado de paginación
-	const [pagination, setPagination] = useState({
-		currentPage: 1,
-		totalPages: 1,
-		totalItems: 0,
-		itemsPerPage: 10,
-	});
-
-	// Cargar datos de valoraciones
-	useEffect(() => {
-		fetchRatings();
-	}, [pagination.currentPage, statusFilter]);
-
-	// Función para obtener valoraciones
-	const fetchRatings = async () => {
-		try {
-			setLoading(true);
-			setError(null);
-
-			// Preparar filtros para la API
-			const params: {
-				page: number;
-				per_page: number;
-				status?: string;
-			} = {
-				page: pagination.currentPage,
-				per_page: pagination.itemsPerPage,
-			};
-
-			// Añadir filtro de estado si no es "all"
-			if (statusFilter !== "all") {
-				params.status = statusFilter;
-			}
-
-			// Llamar a la API
-			const response = await ratingService.getMyReceivedRatings(
-				params.page,
-				params.per_page,
-				params.status
-			);
-
-			// Verificar respuesta
-			if (response.status !== "success") {
-				throw new Error("Error al obtener las valoraciones");
-			}
-
-			// Actualizar datos
-			setRatings(response.data);
-
-			// Actualizar paginación
-			setPagination({
-				currentPage: response.meta.current_page,
-				totalPages: response.meta.last_page,
-				totalItems: response.meta.total,
-				itemsPerPage: response.meta.per_page,
-			});
-		} catch (error) {
-			console.error("Error al cargar valoraciones:", error);
-			setError(
-				extractErrorMessage(error, "No se pudieron cargar las valoraciones")
-			);
-		} finally {
-			setLoading(false);
-		}
-	};
-
-	// Filtrar valoraciones según los criterios de la UI
-	const filteredRatings = ratings.filter((rating) => {
-		// Filtrar por puntuación
-		const matchesRating =
-			ratingFilter === "all" || Number(ratingFilter) === rating.rating;
-
-		// Filtrar por producto si hay un filtro seleccionado
-		const matchesProduct =
-			productFilter === "all" ||
-			(rating.product_id && String(rating.product_id) === productFilter);
-
-		// Filtrar por compra verificada
-		const matchesVerified =
-			verifiedFilter === "all" ||
-			(verifiedFilter === "verified" && rating.is_verified_purchase) ||
-			(verifiedFilter === "unverified" && !rating.is_verified_purchase);
-
-		// Filtrar por término de búsqueda
-		const matchesSearch =
-			searchTerm === "" ||
-			(rating.product?.name &&
-				rating.product.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-			(rating.user?.name &&
-				rating.user.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-			(rating.title &&
-				rating.title.toLowerCase().includes(searchTerm.toLowerCase())) ||
-			(rating.comment &&
-				rating.comment.toLowerCase().includes(searchTerm.toLowerCase()));
-
-		return matchesRating && matchesProduct && matchesVerified && matchesSearch;
-	});
+	// Usar nuestro hook personalizado para gestionar las valoraciones
+	const {
+		filteredRatings,
+		loading,
+		error,
+		stats,
+		statusFilter,
+		setStatusFilter,
+		ratingFilter,
+		setRatingFilter,
+		verifiedFilter,
+		setVerifiedFilter,
+		productFilter,
+		setProductFilter,
+		searchTerm,
+		setSearchTerm,
+		clearFilters,
+		pagination,
+		handlePageChange,
+		fetchRatings,
+		replyToRating,
+		reportRating,
+		getUniqueProducts,
+	} = useSellerRatings();
 
 	// Obtener lista única de productos
-	const uniqueProducts = Array.from(
-		new Set(ratings.filter((r) => r.product_id).map((r) => r.product_id))
-	).map((productId) => {
-		const product = ratings.find((r) => r.product_id === productId);
-		return {
-			id: productId,
-			name: product?.product?.name || `Producto ${productId}`,
-		};
-	});
-
-	// Calcular estadísticas de valoraciones
-	const ratingStats = {
-		totalCount: ratings.length,
-		averageRating:
-			ratings.length > 0
-				? Number(
-						(
-							ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length
-						).toFixed(1)
-					)
-				: 0,
-		distribution: {
-			"5": ratings.filter((r) => r.rating === 5).length,
-			"4": ratings.filter((r) => r.rating === 4).length,
-			"3": ratings.filter((r) => r.rating === 3).length,
-			"2": ratings.filter((r) => r.rating === 2).length,
-			"1": ratings.filter((r) => r.rating === 1).length,
-		},
-		statusCounts: {
-			pending: ratings.filter((r) => r.status === "pending").length,
-			approved: ratings.filter((r) => r.status === "approved").length,
-			rejected: ratings.filter((r) => r.status === "rejected").length,
-		},
-		reportedCount: ratings.filter((r) => r.seller_response).length,
-		verifiedPurchaseCount: ratings.filter((r) => r.is_verified_purchase).length,
-		respondedCount: ratings.filter((r) => r.seller_response).length,
-	};
+	const uniqueProducts = getUniqueProducts();
 
 	// Manejar respuesta a valoración
 	const handleReplySubmit = async (e: React.FormEvent) => {
@@ -197,22 +68,8 @@ const [ratings, setRatings] = useState<ExtendedRating[]>([]);
 		try {
 			setIsSubmitting(true);
 
-			// Preparar datos para la API
-			const replyData: RatingReplyRequest = {
-				rating_id: replyRatingId,
-				reply_text: replyText.trim(),
-			};
-
-			// Enviar respuesta
-			const response = await ratingService.replyToRating(replyData);
-
-			// Verificar respuesta
-			if (response.status !== "success") {
-				throw new Error("Error al enviar respuesta");
-			}
-
-			// Actualizar la lista de valoraciones
-			await fetchRatings();
+			// Usar la función del hook
+			await replyToRating(replyRatingId, replyText.trim());
 
 			// Mostrar mensaje de éxito
 			alert("Respuesta enviada con éxito");
@@ -222,7 +79,7 @@ const [ratings, setRatings] = useState<ExtendedRating[]>([]);
 			setReplyText("");
 		} catch (error) {
 			console.error("Error al responder valoración:", error);
-			alert(extractErrorMessage(error, "Error al enviar la respuesta"));
+			alert("Error al enviar la respuesta");
 		} finally {
 			setIsSubmitting(false);
 		}
@@ -237,22 +94,8 @@ const [ratings, setRatings] = useState<ExtendedRating[]>([]);
 		try {
 			setIsSubmitting(true);
 
-			// Preparar datos para la API
-			const reportData: RatingReportRequest = {
-				rating_id: reportRatingId,
-				reason: reportReason.trim(),
-			};
-
-			// Enviar reporte
-			const response = await ratingService.reportRating(reportData);
-
-			// Verificar respuesta
-			if (response.status !== "success") {
-				throw new Error("Error al enviar reporte");
-			}
-
-			// Actualizar la lista de valoraciones
-			await fetchRatings();
+			// Usar la función del hook
+			await reportRating(reportRatingId, reportReason.trim());
 
 			// Mostrar mensaje de éxito
 			alert("Reporte enviado con éxito");
@@ -262,7 +105,7 @@ const [ratings, setRatings] = useState<ExtendedRating[]>([]);
 			setReportReason("");
 		} catch (error) {
 			console.error("Error al reportar valoración:", error);
-			alert(extractErrorMessage(error, "Error al enviar el reporte"));
+			alert("Error al enviar el reporte");
 		} finally {
 			setIsSubmitting(false);
 		}
@@ -276,23 +119,13 @@ const [ratings, setRatings] = useState<ExtendedRating[]>([]);
 		setReportReason("");
 	};
 
-	// Manejar cambio de página
-	const handlePageChange = (page: number) => {
-		setPagination((prev) => ({...prev, currentPage: page}));
-	};
-
-	// Refrescar datos
-	const refreshData = () => {
-		fetchRatings();
-	};
-
 	// Definir columnas de la tabla
 	const columns = [
 		{
 			key: "product",
 			header: "Producto",
 			sortable: true,
-			render: (rating: Rating) => (
+			render: (rating: ExtendedRating) => (
 				<div className="flex items-center space-x-3">
 					{rating.product?.image ? (
 						<img
@@ -327,7 +160,7 @@ const [ratings, setRatings] = useState<ExtendedRating[]>([]);
 			key: "rating",
 			header: "Valoración",
 			sortable: true,
-			render: (rating: Rating) => (
+			render: (rating: ExtendedRating) => (
 				<div className="flex flex-col items-start space-y-1">
 					<RatingStars rating={rating.rating} size={18} />
 					<div className="text-sm font-medium">{rating.rating}/5</div>
@@ -338,7 +171,7 @@ const [ratings, setRatings] = useState<ExtendedRating[]>([]);
 			key: "user",
 			header: "Cliente",
 			sortable: true,
-			render: (rating: Rating) => (
+			render: (rating: ExtendedRating) => (
 				<div className="flex items-center space-x-2">
 					{rating.user?.avatar ? (
 						<img
@@ -378,7 +211,7 @@ const [ratings, setRatings] = useState<ExtendedRating[]>([]);
 		{
 			key: "comment",
 			header: "Comentario",
-			render: (rating: Rating) => (
+			render: (rating: ExtendedRating) => (
 				<div>
 					{rating.title && (
 						<div className="font-medium text-gray-900 dark:text-white">
@@ -400,7 +233,7 @@ const [ratings, setRatings] = useState<ExtendedRating[]>([]);
 			key: "status",
 			header: "Estado",
 			sortable: true,
-			render: (rating: Rating) => {
+			render: (rating: ExtendedRating) => {
 				let statusData = {
 					icon: Clock,
 					colorClass:
@@ -439,7 +272,7 @@ const [ratings, setRatings] = useState<ExtendedRating[]>([]);
 		{
 			key: "response",
 			header: "Respuesta",
-			render: (rating: Rating) => (
+			render: (rating: ExtendedRating) => (
 				<div>
 					{rating.seller_response ? (
 						<div className="text-sm text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 p-2 rounded border border-gray-200 dark:border-gray-700">
@@ -459,7 +292,7 @@ const [ratings, setRatings] = useState<ExtendedRating[]>([]);
 		{
 			key: "actions",
 			header: "Acciones",
-			render: (rating: Rating) => (
+			render: (rating: ExtendedRating) => (
 				<div className="flex justify-end space-x-2">
 					{/* Ver detalles */}
 					<Link
@@ -518,7 +351,7 @@ const [ratings, setRatings] = useState<ExtendedRating[]>([]);
 				</h1>
 				<div className="flex space-x-2">
 					<button
-						onClick={refreshData}
+						onClick={() => fetchRatings()}
 						className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
 						disabled={loading}
 					>
@@ -618,13 +451,7 @@ const [ratings, setRatings] = useState<ExtendedRating[]>([]);
 
 					{/* Botón para limpiar filtros */}
 					<button
-						onClick={() => {
-							setRatingFilter("all");
-							setStatusFilter("all");
-							setProductFilter("all");
-							setVerifiedFilter("all");
-							setSearchTerm("");
-						}}
+						onClick={clearFilters}
 						className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
 					>
 						Limpiar filtros
@@ -634,9 +461,9 @@ const [ratings, setRatings] = useState<ExtendedRating[]>([]);
 
 			{/* Estadísticas resumidas */}
 			<RatingsSummary
-				averageRating={ratingStats.averageRating}
-				totalRatings={ratingStats.totalCount}
-				distribution={ratingStats.distribution}
+				averageRating={stats.averageRating}
+				totalRatings={stats.totalCount}
+				distribution={stats.distribution}
 			/>
 
 			<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -647,7 +474,7 @@ const [ratings, setRatings] = useState<ExtendedRating[]>([]);
 								Pendientes
 							</h3>
 							<p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
-								{ratingStats.statusCounts.pending}
+								{stats.statusCounts.pending}
 							</p>
 						</div>
 						<div className="p-2 bg-yellow-50 dark:bg-yellow-900 rounded-lg">
@@ -663,7 +490,7 @@ const [ratings, setRatings] = useState<ExtendedRating[]>([]);
 								Aprobadas
 							</h3>
 							<p className="text-2xl font-bold text-green-600 dark:text-green-400">
-								{ratingStats.statusCounts.approved}
+								{stats.statusCounts.approved}
 							</p>
 						</div>
 						<div className="p-2 bg-green-50 dark:bg-green-900 rounded-lg">
@@ -679,7 +506,7 @@ const [ratings, setRatings] = useState<ExtendedRating[]>([]);
 								Respondidas
 							</h3>
 							<p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-								{ratingStats.respondedCount}
+								{stats.respondedCount}
 							</p>
 						</div>
 						<div className="p-2 bg-blue-50 dark:bg-blue-900 rounded-lg">

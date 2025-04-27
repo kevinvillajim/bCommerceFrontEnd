@@ -1,23 +1,15 @@
+// src/presentation/pages/account/PendingRatingsPage.tsx
 import React, {useEffect, useState} from "react";
 import {Link} from "react-router-dom";
-import {
-	Star,
-	Package,
-	Store,
-	ShoppingBag,
-	Clock,
-	Search,
-} from "lucide-react";
+import {Star, Package, Store, ShoppingBag, Clock, Search} from "lucide-react";
 
 import RatingService from "../../../core/services/RatingService";
-import type {
-	PendingRatingItem,
-} from "../../../core/services/RatingService";
+import type {PendingRatingItem} from "../../../core/services/RatingService";
 import {formatDate} from "../../../utils/formatters/formatDate";
 import RatingModal from "../../components/rating/RatingModal";
-import StarRating from "../../components/rating/StarRating";
 import {useRatings} from "../../hooks/useRatings";
 import PendingRatingsList from "../../components/rating/PendingRatingsList";
+import {extractErrorMessage} from "../../../utils/errorHandler";
 
 interface OrderGroup {
 	orderId: number;
@@ -28,10 +20,7 @@ interface OrderGroup {
 }
 
 const PendingRatingsPage: React.FC = () => {
-	// Estados para almacenar datos
-	const [loading, setLoading] = useState<boolean>(true);
-	const [error, setError] = useState<string | null>(null);
-	const [orderGroups, setOrderGroups] = useState<OrderGroup[]>([]);
+	// Estados para filtros y búsqueda
 	const [searchTerm, setSearchTerm] = useState<string>("");
 	const [showRated, setShowRated] = useState<boolean>(false);
 
@@ -41,21 +30,29 @@ const PendingRatingsPage: React.FC = () => {
 	const [selectedEntity, setSelectedEntity] =
 		useState<PendingRatingItem | null>(null);
 
-	// Instancia del servicio
-	const ratingService = new RatingService();
+	// Usar nuestro hook de valoraciones
+	const {
+		loading,
+		error,
+		getPendingRatings,
+		rateProduct,
+		rateSeller,
+		reportProblem,
+	} = useRatings();
+
+	// Estado para almacenar los grupos de órdenes
+	const [orderGroups, setOrderGroups] = useState<OrderGroup[]>([]);
 
 	// Cargar datos al montar el componente
 	useEffect(() => {
 		fetchPendingRatings();
 	}, []);
 
-	// Función para obtener las valoraciones pendientes
+	// Función para obtener valoraciones pendientes
 	const fetchPendingRatings = async () => {
 		try {
-			setLoading(true);
-			setError(null);
-
-			const response = await ratingService.getPendingRatings();
+			// Usar el hook para obtener los datos
+			const response = await getPendingRatings();
 
 			if (response.status !== "success") {
 				throw new Error("Error al obtener las valoraciones pendientes");
@@ -107,11 +104,8 @@ const PendingRatingsPage: React.FC = () => {
 			});
 
 			setOrderGroups(groups);
-		} catch (error) {
-			console.error("Error al cargar valoraciones pendientes:", error);
-			setError("No se pudieron cargar las valoraciones pendientes");
-		} finally {
-			setLoading(false);
+		} catch (err) {
+			console.error("Error al cargar valoraciones pendientes:", err);
 		}
 	};
 
@@ -141,7 +135,7 @@ const PendingRatingsPage: React.FC = () => {
 	}) => {
 		try {
 			if (modalType === "product") {
-				await ratingService.rateProduct({
+				await rateProduct({
 					product_id: data.entityId,
 					order_id: data.orderId,
 					rating: data.rating,
@@ -149,7 +143,7 @@ const PendingRatingsPage: React.FC = () => {
 					comment: data.comment,
 				});
 			} else {
-				await ratingService.rateSeller({
+				await rateSeller({
 					seller_id: data.entityId,
 					order_id: data.orderId,
 					rating: data.rating,
@@ -161,11 +155,14 @@ const PendingRatingsPage: React.FC = () => {
 			// Actualizar datos
 			await fetchPendingRatings();
 
-			// Mostrar mensaje de éxito (aquí se podría usar un sistema de notificaciones)
+			// Mostrar mensaje de éxito
 			alert("Valoración enviada con éxito");
+
+			// Cerrar el modal
+			closeModal();
 		} catch (error) {
 			console.error("Error al enviar valoración:", error);
-			alert("Error al enviar la valoración");
+			alert(extractErrorMessage(error, "Error al enviar la valoración"));
 		}
 	};
 
@@ -178,7 +175,7 @@ const PendingRatingsPage: React.FC = () => {
 		description: string;
 	}) => {
 		try {
-			await ratingService.reportProblem({
+			await reportProblem({
 				type: data.type,
 				entity_id: data.entityId,
 				order_id: data.orderId,
@@ -191,14 +188,19 @@ const PendingRatingsPage: React.FC = () => {
 
 			// Mostrar mensaje de éxito
 			alert("Problema reportado con éxito");
+
+			// Cerrar el modal
+			closeModal();
 		} catch (error) {
 			console.error("Error al reportar problema:", error);
-			alert("Error al reportar el problema");
+			alert(extractErrorMessage(error, "Error al reportar el problema"));
 		}
 	};
 
 	// Filtrar órdenes por término de búsqueda
 	const filteredGroups = orderGroups.filter((group) => {
+		if (searchTerm === "") return true;
+
 		const searchLower = searchTerm.toLowerCase();
 
 		// Buscar en número de orden
@@ -303,154 +305,11 @@ const PendingRatingsPage: React.FC = () => {
 
 			{/* Lista de órdenes con valoraciones pendientes */}
 			{!loading && !error && filteredGroups.length > 0 && (
-				<div className="space-y-6">
-					{filteredGroups.map((group) => (
-						<div
-							key={group.orderId}
-							className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden"
-						>
-							{/* Cabecera de la orden */}
-							<div className="bg-gray-50 dark:bg-gray-700 px-6 py-4 border-b border-gray-200 dark:border-gray-600">
-								<div className="flex flex-col md:flex-row md:justify-between md:items-center">
-									<div>
-										<h3 className="text-lg font-medium text-gray-900 dark:text-white">
-											Pedido #{group.orderNumber}
-										</h3>
-										<p className="text-sm text-gray-500 dark:text-gray-400">
-											Fecha: {formatDate(group.orderDate)}
-										</p>
-									</div>
-									<Link
-										to={`/orders/${group.orderId}`}
-										className="text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300 flex items-center mt-2 md:mt-0"
-									>
-										<Clock className="w-4 h-4 mr-1" />
-										Ver detalles del pedido
-									</Link>
-								</div>
-							</div>
-
-							{/* Lista de productos pendientes */}
-							{group.products.length > 0 && (
-								<div className="px-6 py-4">
-									<h4 className="text-md font-medium text-gray-900 dark:text-white mb-3 flex items-center">
-										<Package className="w-5 h-5 mr-2 text-primary-600" />
-										Productos
-									</h4>
-									<div className="space-y-4">
-										{group.products.map((product) => (
-											<div
-												key={product.id}
-												className="flex flex-col sm:flex-row sm:items-center p-3 border border-gray-200 dark:border-gray-700 rounded-lg"
-											>
-												{/* Imagen y detalles del producto */}
-												<div className="flex items-center flex-grow mb-3 sm:mb-0">
-													{product.image ? (
-														<img
-															src={product.image}
-															alt={product.name}
-															className="w-16 h-16 object-cover rounded-md mr-4"
-															onError={(e) => {
-																const target = e.target as HTMLImageElement;
-																target.onerror = null;
-																target.src =
-																	"https://via.placeholder.com/64?text=Producto";
-															}}
-														/>
-													) : (
-														<div className="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-md flex items-center justify-center mr-4">
-															<Package className="h-8 w-8 text-gray-400" />
-														</div>
-													)}
-													<div>
-														<h5 className="font-medium text-gray-900 dark:text-white">
-															{product.name}
-														</h5>
-														<Link
-															to={`/products/${product.id}`}
-															className="text-sm text-primary-600 hover:text-primary-800 dark:text-primary-400"
-														>
-															Ver producto
-														</Link>
-													</div>
-												</div>
-
-												{/* Botón de valorar */}
-												<div>
-													<button
-														onClick={() => openRatingModal("product", product)}
-														className="w-full sm:w-auto px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center justify-center"
-													>
-														<Star className="h-4 w-4 mr-2" />
-														Valorar producto
-													</button>
-												</div>
-											</div>
-										))}
-									</div>
-								</div>
-							)}
-
-							{/* Lista de vendedores pendientes */}
-							{group.sellers.length > 0 && (
-								<div className="px-6 py-4 border-t border-gray-200 dark:border-gray-600">
-									<h4 className="text-md font-medium text-gray-900 dark:text-white mb-3 flex items-center">
-										<Store className="w-5 h-5 mr-2 text-green-600" />
-										Vendedores
-									</h4>
-									<div className="space-y-4">
-										{group.sellers.map((seller) => (
-											<div
-												key={seller.id}
-												className="flex flex-col sm:flex-row sm:items-center p-3 border border-gray-200 dark:border-gray-700 rounded-lg"
-											>
-												{/* Imagen y detalles del vendedor */}
-												<div className="flex items-center flex-grow mb-3 sm:mb-0">
-													{seller.image ? (
-														<img
-															src={seller.image}
-															alt={seller.name}
-															className="w-16 h-16 object-cover rounded-md mr-4"
-															onError={(e) => {
-																const target = e.target as HTMLImageElement;
-																target.onerror = null;
-																target.src =
-																	"https://via.placeholder.com/64?text=Tienda";
-															}}
-														/>
-													) : (
-														<div className="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-md flex items-center justify-center mr-4">
-															<Store className="h-8 w-8 text-gray-400" />
-														</div>
-													)}
-													<div>
-														<h5 className="font-medium text-gray-900 dark:text-white">
-															{seller.name}
-														</h5>
-														<span className="text-sm text-gray-500 dark:text-gray-400">
-															Tienda
-														</span>
-													</div>
-												</div>
-
-												{/* Botón de valorar */}
-												<div>
-													<button
-														onClick={() => openRatingModal("seller", seller)}
-														className="w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center justify-center"
-													>
-														<Star className="h-4 w-4 mr-2" />
-														Valorar vendedor
-													</button>
-												</div>
-											</div>
-										))}
-									</div>
-								</div>
-							)}
-						</div>
-					))}
-				</div>
+				<PendingRatingsList
+					orderGroups={filteredGroups}
+					onRateProduct={(product) => openRatingModal("product", product)}
+					onRateSeller={(seller) => openRatingModal("seller", seller)}
+				/>
 			)}
 
 			{/* Modal de valoración */}
