@@ -1,353 +1,349 @@
-import {useState, useEffect, useCallback} from "react";
+// src/presentation/hooks/useSellerRatings.ts
+import {useState, useEffect, useCallback, useMemo, useRef} from "react";
 import RatingService from "../../core/services/RatingService";
-import {RatingAdapter} from "../../core/adapters/RatingAdapter";
-import {extractErrorMessage} from "../../utils/errorHandler";
 import type {ExtendedRating} from "../types/ratingTypes";
+import {extractErrorMessage} from "../../utils/errorHandler";
 
-interface UsePaginationProps {
-	initialPage?: number;
-	initialLimit?: number;
+// Estructura para las estadísticas de valoraciones
+interface RatingStats {
+	averageRating: number;
+	totalCount: number;
+	distribution: {
+		"1": number;
+		"2": number;
+		"3": number;
+		"4": number;
+		"5": number;
+	};
+	statusCounts: {
+		pending: number;
+		approved: number;
+		rejected: number;
+	};
+	verifiedCount: number;
+	respondedCount: number;
 }
 
-interface UseFilterProps {
-	initialStatus?: string;
-	initialRating?: string;
-	initialVerified?: string;
-	initialProduct?: string;
-}
+/**
+ * Hook personalizado para gestionar las valoraciones del vendedor
+ */
+export const useSellerRatings = () => {
+	// Usamos useRef para mantener la misma instancia del servicio entre renderizados
+	const ratingServiceRef = useRef<RatingService>(new RatingService());
+	const ratingService = ratingServiceRef.current;
 
-export const useSellerRatings = (
-	{initialPage = 1, initialLimit = 10}: UsePaginationProps = {},
-	{
-		initialStatus = "all",
-		initialRating = "all",
-		initialVerified = "all",
-		initialProduct = "all",
-	}: UseFilterProps = {}
-) => {
-	// Estados para datos
+	// Estados
 	const [ratings, setRatings] = useState<ExtendedRating[]>([]);
 	const [loading, setLoading] = useState<boolean>(true);
 	const [error, setError] = useState<string | null>(null);
 
-	// Estados para filtros
-	const [statusFilter, setStatusFilter] = useState<string>(initialStatus);
-	const [ratingFilter, setRatingFilter] = useState<string>(initialRating);
-	const [verifiedFilter, setVerifiedFilter] = useState<string>(initialVerified);
-	const [productFilter, setProductFilter] = useState<string>(initialProduct);
+	// Filtros
 	const [searchTerm, setSearchTerm] = useState<string>("");
+	const [statusFilter, setStatusFilter] = useState<string>("all");
+	const [ratingFilter, setRatingFilter] = useState<string>("all");
+	const [verifiedFilter, setVerifiedFilter] = useState<string>("all");
+	const [productFilter, setProductFilter] = useState<string>("all");
 
-	// Estado para paginación
+	// Paginación
 	const [pagination, setPagination] = useState({
-		currentPage: initialPage,
+		currentPage: 1,
 		totalPages: 1,
 		totalItems: 0,
-		itemsPerPage: initialLimit,
+		itemsPerPage: 10,
 	});
 
-	// Estados para estadísticas
-	const [stats, setStats] = useState({
-		averageRating: 0,
-		totalCount: 0,
-		distribution: {
-			"1": 0,
-			"2": 0,
-			"3": 0,
-			"4": 0,
-			"5": 0,
-		},
-		statusCounts: {
-			pending: 0,
-			approved: 0,
-			rejected: 0,
-		},
-		verifiedCount: 0,
-		respondedCount: 0,
-	});
-
-	// Instancia del servicio
-	const ratingService = new RatingService();
-
-	// Función para cargar valoraciones
+	// Cargar valoraciones
 	const fetchRatings = useCallback(async () => {
+		setLoading(true);
+		setError(null);
+
 		try {
-			setLoading(true);
-			setError(null);
-
-			// Preparar filtros
-			const params: Record<string, any> = {
-				page: pagination.currentPage,
-				per_page: pagination.itemsPerPage,
-			};
-
-			// Añadir filtro de estado si no es "all"
-			if (statusFilter !== "all") {
-				params.status = statusFilter;
-			}
-
-			console.log("Solicitando valoraciones con parámetros:", params);
-
-			// Llamar a la API a través del servicio
 			const response = await ratingService.getMyReceivedRatings(
-				params.page,
-				params.per_page,
-				params.status
+				pagination.currentPage,
+				pagination.itemsPerPage,
+				statusFilter !== "all" ? statusFilter : undefined
 			);
 
-			console.log("Respuesta de API de valoraciones:", response);
+			if (response) {
+				setRatings(response.data);
 
-			// Adaptar la respuesta usando el adaptador
-			const adaptedResponse = RatingAdapter.adaptRatingResponse(response);
-
-			console.log("Respuesta adaptada:", adaptedResponse);
-
-			// Actualizar datos
-			setRatings(adaptedResponse.data);
-
-			// Actualizar paginación
-			setPagination({
-				currentPage: Number(adaptedResponse.meta.current_page) || 1,
-				totalPages: Number(adaptedResponse.meta.last_page) || 1,
-				totalItems: Number(adaptedResponse.meta.total) || 0,
-				itemsPerPage:
-					Number(adaptedResponse.meta.per_page) || pagination.itemsPerPage,
-			});
-
-			// Actualizar estadísticas
-			updateStats(adaptedResponse.data, adaptedResponse.meta);
-		} catch (error) {
-			console.error("Error al cargar valoraciones:", error);
-			setError(
-				extractErrorMessage(error, "No se pudieron cargar las valoraciones")
+				// Actualizar paginación
+				setPagination((prev) => ({
+					...prev,
+					totalPages: response.meta.last_page,
+					totalItems: response.meta.total,
+				}));
+			}
+		} catch (err) {
+			console.error("Error al obtener valoraciones:", err);
+			const errorMessage = extractErrorMessage(
+				err,
+				"Error al cargar valoraciones"
 			);
-			// En caso de error, establecer valoraciones vacías
-			setRatings([]);
+			setError(errorMessage);
 		} finally {
 			setLoading(false);
 		}
-	}, [
-		pagination.currentPage,
-		pagination.itemsPerPage,
-		statusFilter,
-		ratingService,
-	]);
+	}, [pagination.currentPage, pagination.itemsPerPage, statusFilter]);
 
-	// Función para actualizar estadísticas
-	const updateStats = (ratingsData: ExtendedRating[], meta: any) => {
-		// Usar metadatos de la API si están disponibles
-		if (meta && meta.average_rating && meta.rating_counts) {
-			setStats((prevStats) => ({
-				...prevStats,
-				averageRating: meta.average_rating,
-				totalCount: meta.total || ratingsData.length,
-				distribution: meta.rating_counts,
-			}));
-		} else {
-			// Calcular estadísticas manualmente si no están disponibles
-			const totalCount = ratingsData.length;
-			const averageRating =
-				totalCount > 0
-					? Number(
-							(
-								ratingsData.reduce((sum, r) => sum + r.rating, 0) / totalCount
-							).toFixed(1)
-						)
-					: 0;
+	// Cargar datos al montar el componente
+	useEffect(() => {
+		fetchRatings();
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []);
 
-			// Distribución de valoraciones
-			const distribution = {
-				"1": ratingsData.filter((r) => r.rating === 1).length,
-				"2": ratingsData.filter((r) => r.rating === 2).length,
-				"3": ratingsData.filter((r) => r.rating === 3).length,
-				"4": ratingsData.filter((r) => r.rating === 4).length,
-				"5": ratingsData.filter((r) => r.rating === 5).length,
-			};
-
-			setStats((prevStats) => ({
-				...prevStats,
-				averageRating,
-				totalCount,
-				distribution,
-			}));
-		}
-
-		// Estas estadísticas siempre se calculan manualmente
-		const statusCounts = {
-			pending: ratingsData.filter((r) => r.status === "pending").length,
-			approved: ratingsData.filter((r) => r.status === "approved").length,
-			rejected: ratingsData.filter((r) => r.status === "rejected").length,
-		};
-
-		const verifiedCount = ratingsData.filter(
-			(r) => r.is_verified_purchase
-		).length;
-		const respondedCount = ratingsData.filter((r) => r.seller_response).length;
-
-		setStats((prevStats) => ({
-			...prevStats,
-			statusCounts,
-			verifiedCount,
-			respondedCount,
+	// Función para cambiar de página
+	const handlePageChange = (page: number) => {
+		setPagination((prev) => ({
+			...prev,
+			currentPage: page,
 		}));
+		// Llamar directamente a fetchRatings después de actualizar la página
+		setTimeout(() => fetchRatings(), 0);
+	};
+
+	// Función para cambiar filtro de estado
+	const handleStatusFilterChange = (value: string) => {
+		setStatusFilter(value);
+		setPagination((prev) => ({
+			...prev,
+			currentPage: 1,
+		}));
+		// Llamar directamente a fetchRatings después de actualizar el filtro
+		setTimeout(() => fetchRatings(), 0);
+	};
+
+	// Función para limpiar filtros
+	const clearFilters = () => {
+		setSearchTerm("");
+		setStatusFilter("all");
+		setRatingFilter("all");
+		setVerifiedFilter("all");
+		setProductFilter("all");
+		setPagination((prev) => ({
+			...prev,
+			currentPage: 1,
+		}));
+		// Llamar directamente a fetchRatings después de limpiar filtros
+		setTimeout(() => fetchRatings(), 0);
 	};
 
 	// Función para responder a una valoración
 	const replyToRating = async (ratingId: number, replyText: string) => {
 		try {
-			setLoading(true);
-
 			const response = await ratingService.replyToRating({
 				rating_id: ratingId,
 				reply_text: replyText,
 			});
 
-			// Recargar datos después de responder
-			await fetchRatings();
+			// Recargar valoraciones tras responder
+			fetchRatings();
 
 			return response;
 		} catch (error) {
 			console.error("Error al responder valoración:", error);
 			throw error;
-		} finally {
-			setLoading(false);
 		}
 	};
 
 	// Función para reportar una valoración
 	const reportRating = async (ratingId: number, reason: string) => {
 		try {
-			setLoading(true);
-
 			const response = await ratingService.reportRating({
 				rating_id: ratingId,
 				reason,
 			});
 
-			// Recargar datos después de reportar
-			await fetchRatings();
+			// Recargar valoraciones tras reportar
+			fetchRatings();
 
 			return response;
 		} catch (error) {
 			console.error("Error al reportar valoración:", error);
 			throw error;
-		} finally {
-			setLoading(false);
 		}
 	};
 
-	// Función para obtener productos únicos de las valoraciones
-	const getUniqueProducts = useCallback(() => {
-		const productMap = new Map();
+	// Calcular estadísticas
+	const stats = useMemo(() => {
+		const defaultStats: RatingStats = {
+			averageRating: 0,
+			totalCount: 0,
+			distribution: {
+				"1": 0,
+				"2": 0,
+				"3": 0,
+				"4": 0,
+				"5": 0,
+			},
+			statusCounts: {
+				pending: 0,
+				approved: 0,
+				rejected: 0,
+			},
+			verifiedCount: 0,
+			respondedCount: 0,
+		};
+
+		if (!ratings.length) return defaultStats;
+
+		// Calcular contadores
+		let totalRating = 0;
+		const distribution = {"1": 0, "2": 0, "3": 0, "4": 0, "5": 0};
+		const statusCounts = {pending: 0, approved: 0, rejected: 0};
+		let verifiedCount = 0;
+		let respondedCount = 0;
 
 		ratings.forEach((rating) => {
-			if (rating.product_id) {
-				const productName =
-					rating.product?.name || `Producto ${rating.product_id}`;
-				productMap.set(rating.product_id, {
-					id: rating.product_id,
-					name: productName,
+			// Suma para el promedio
+			totalRating += rating.rating;
+
+			// Distribución de estrellas
+			const ratingKey = String(rating.rating) as keyof typeof distribution;
+			distribution[ratingKey]++;
+
+			// Estado
+			statusCounts[rating.status as keyof typeof statusCounts]++;
+
+			// Compras verificadas
+			if (rating.is_verified_purchase) {
+				verifiedCount++;
+			}
+
+			// Valoraciones con respuesta
+			if (rating.seller_response) {
+				respondedCount++;
+			}
+		});
+
+		return {
+			averageRating: ratings.length ? totalRating / ratings.length : 0,
+			totalCount: ratings.length,
+			distribution,
+			statusCounts,
+			verifiedCount,
+			respondedCount,
+		};
+	}, [ratings]);
+
+	// Aplicar filtros a las valoraciones
+	const filteredRatings = useMemo(() => {
+		return ratings.filter((rating) => {
+			// Filtro por término de búsqueda
+			if (searchTerm && !matchesSearchTerm(rating, searchTerm)) {
+				return false;
+			}
+
+			// Filtro por puntuación
+			if (ratingFilter !== "all" && String(rating.rating) !== ratingFilter) {
+				return false;
+			}
+
+			// Filtro por estado
+			if (statusFilter !== "all" && rating.status !== statusFilter) {
+				return false;
+			}
+
+			// Filtro por compra verificada
+			if (verifiedFilter === "verified" && !rating.is_verified_purchase) {
+				return false;
+			}
+			if (verifiedFilter === "unverified" && rating.is_verified_purchase) {
+				return false;
+			}
+
+			// Filtro por producto
+			if (
+				productFilter !== "all" &&
+				String(rating.product_id) !== productFilter
+			) {
+				return false;
+			}
+
+			return true;
+		});
+	}, [
+		ratings,
+		searchTerm,
+		ratingFilter,
+		statusFilter,
+		verifiedFilter,
+		productFilter,
+	]);
+
+	// Función auxiliar para buscar términos en diferentes campos
+	const matchesSearchTerm = (rating: ExtendedRating, term: string): boolean => {
+		const searchLower = term.toLowerCase();
+
+		// Buscar en título y comentario
+		if (
+			(rating.title && rating.title.toLowerCase().includes(searchLower)) ||
+			(rating.comment && rating.comment.toLowerCase().includes(searchLower))
+		) {
+			return true;
+		}
+
+		// Buscar en datos de usuario
+		if (
+			rating.user &&
+			rating.user.name &&
+			rating.user.name.toLowerCase().includes(searchLower)
+		) {
+			return true;
+		}
+
+		// Buscar en datos de producto
+		if (
+			rating.product &&
+			rating.product.name &&
+			rating.product.name.toLowerCase().includes(searchLower)
+		) {
+			return true;
+		}
+
+		return false;
+	};
+
+	// Obtener lista única de productos para los filtros
+	const getUniqueProducts = useCallback(() => {
+		const uniqueProducts = new Map();
+
+		ratings.forEach((rating) => {
+			if (rating.product_id && rating.product?.name) {
+				uniqueProducts.set(String(rating.product_id), {
+					id: String(rating.product_id),
+					name: rating.product.name,
 				});
 			}
 		});
 
-		return Array.from(productMap.values());
+		return Array.from(uniqueProducts.values());
 	}, [ratings]);
 
-	// Filtrar valoraciones en el cliente
-	const filteredRatings = useMemo(() => {
-		return ratings.filter((rating) => {
-			// Filtrar por puntuación
-			const matchesRating =
-				ratingFilter === "all" || Number(ratingFilter) === rating.rating;
-
-			// Filtrar por producto
-			const matchesProduct =
-				productFilter === "all" ||
-				(rating.product_id && String(rating.product_id) === productFilter);
-
-			// Filtrar por compra verificada
-			const matchesVerified =
-				verifiedFilter === "all" ||
-				(verifiedFilter === "verified" && rating.is_verified_purchase) ||
-				(verifiedFilter === "unverified" && !rating.is_verified_purchase);
-
-			// Filtrar por término de búsqueda
-			const matchesSearch =
-				searchTerm === "" ||
-				(rating.product?.name &&
-					rating.product.name
-						.toLowerCase()
-						.includes(searchTerm.toLowerCase())) ||
-				(rating.user?.name &&
-					rating.user.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-				(rating.title &&
-					rating.title.toLowerCase().includes(searchTerm.toLowerCase())) ||
-				(rating.comment &&
-					rating.comment.toLowerCase().includes(searchTerm.toLowerCase()));
-
-			return (
-				matchesRating && matchesProduct && matchesVerified && matchesSearch
-			);
-		});
-	}, [ratings, ratingFilter, productFilter, verifiedFilter, searchTerm]);
-
-	// Cargar datos al montar el componente y cuando cambien los filtros o paginación
-	useEffect(() => {
-		fetchRatings();
-	}, [fetchRatings]);
-
-	// Resetear página cuando cambian los filtros
-	useEffect(() => {
-		if (pagination.currentPage !== 1) {
-			setPagination((prev) => ({...prev, currentPage: 1}));
-		}
-	}, [statusFilter]);
-
-	// Función para cambiar la página
-	const handlePageChange = (page: number) => {
-		setPagination((prev) => ({...prev, currentPage: page}));
-	};
-
-	// Función para limpiar filtros
-	const clearFilters = () => {
-		setStatusFilter("all");
-		setRatingFilter("all");
-		setVerifiedFilter("all");
-		setProductFilter("all");
-		setSearchTerm("");
-	};
-
 	return {
-		// Datos
 		ratings,
 		filteredRatings,
 		loading,
 		error,
 		stats,
-
-		// Filtros
+		pagination,
+		handlePageChange,
+		searchTerm,
+		setSearchTerm,
 		statusFilter,
-		setStatusFilter,
+		setStatusFilter: handleStatusFilterChange, // Reemplazamos setStatusFilter con la nueva función
 		ratingFilter,
 		setRatingFilter,
 		verifiedFilter,
 		setVerifiedFilter,
 		productFilter,
 		setProductFilter,
-		searchTerm,
-		setSearchTerm,
 		clearFilters,
-
-		// Paginación
-		pagination,
-		handlePageChange,
-
-		// Acciones
 		fetchRatings,
 		replyToRating,
 		reportRating,
-
-		// Utilidades
 		getUniqueProducts,
 	};
 };
+
+export default useSellerRatings;

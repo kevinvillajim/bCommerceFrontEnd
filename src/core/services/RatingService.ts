@@ -1,4 +1,3 @@
-// src/core/services/RatingService.ts
 import ApiClient from "../../infrastructure/api/apiClient";
 import {API_ENDPOINTS} from "../../constants/apiEndpoints";
 
@@ -39,6 +38,7 @@ export interface PendingRatingItem {
 
 export interface SellerRatingsResponse {
 	status: string;
+	message?: string; // Añadimos la propiedad message como opcional
 	data: Rating[];
 	meta: {
 		total: number;
@@ -76,7 +76,7 @@ export interface ProductRatingsResponse {
 }
 
 export interface Rating {
-	id: number;
+	id?: number; // Hacemos el id opcional para que coincida con ExtendedRating
 	rating: number;
 	title?: string;
 	comment?: string;

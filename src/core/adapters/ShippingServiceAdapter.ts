@@ -283,6 +283,7 @@ export default class ShippingServiceAdapter {
 			tracking_number: string;
 			shipping_company?: string;
 			estimated_delivery?: string;
+			notes?: string;
 		}
 	): Promise<boolean> {
 		try {
@@ -294,11 +295,10 @@ export default class ShippingServiceAdapter {
 			// Asignar el número de seguimiento es una actualización de la información de envío
 			// Enviamos la información de tracking dentro del objeto shipping_data
 			const shippingDataUpdate = {
-				shipping_data: {
-					tracking_number: trackingData.tracking_number,
-					shipping_company: trackingData.shipping_company,
-					estimated_delivery: trackingData.estimated_delivery,
-				},
+				tracking_number: trackingData.tracking_number,
+				shipping_company: trackingData.shipping_company,
+				estimated_delivery: trackingData.estimated_delivery,
+				notes: trackingData.notes,
 			};
 
 			const response = await ApiClient.patch<any>(
@@ -384,15 +384,12 @@ export default class ShippingServiceAdapter {
 				shippingData
 			);
 
-			// Preparar objeto con los datos de envío con la estructura correcta
-			// Ahora enviamos todo dentro del objeto shipping_data
+			// Enviar los datos directamente sin encapsularlos en shipping_data
 			const shippingDataUpdate = {
-				shipping_data: {
-					tracking_number: shippingData.tracking_number,
-					shipping_company: shippingData.shipping_company,
-					estimated_delivery: shippingData.estimated_delivery,
-					notes: shippingData.notes,
-				},
+				tracking_number: shippingData.tracking_number,
+				shipping_company: shippingData.shipping_company,
+				estimated_delivery: shippingData.estimated_delivery,
+				notes: shippingData.notes,
 			};
 
 			// Actualizamos la información de envío

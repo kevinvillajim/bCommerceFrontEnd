@@ -1,4 +1,3 @@
-// src/presentation/types/ratingTypes.ts
 import type {Rating as BaseRating} from "../../core/services/RatingService";
 
 // Extender el tipo Rating para incluir información adicional
@@ -9,19 +8,8 @@ export interface ExtendedRating extends BaseRating {
 		image?: string;
 		slug?: string;
 	};
-	// Añadir campos potenciales que pueden faltar en la respuesta de la API
-	id?: number;
-	user_id: number;
-	rating: number;
-	title?: string;
-	comment?: string;
-	product_id?: number;
-	seller_id?: number;
-	order_id: number;
-	status: "pending" | "approved" | "rejected";
-	created_at: string;
-	updated_at: string;
-	is_verified_purchase: boolean;
+	// Ya no necesitamos redefinir el campo id como opcional porque lo hemos hecho en BaseRating
+	// Sólo mantenemos los campos adicionales que no están en BaseRating
 }
 
 // Respuesta adaptada de valoraciones para la UI
