@@ -60,6 +60,9 @@ const OrderDetailPage = lazy(
 const SellerRatingsPage = lazy(
 	() => import("../presentation/pages/seller/SellerRatingsPage")
 );
+const PendingRatingsPage = lazy(
+	() => import("../presentation/pages/account/PendingRatingsPage")
+);
 const SellerProfilePage = lazy(
 	() => import("../presentation/pages/seller/SellerProfilePage")
 );
@@ -257,6 +260,17 @@ const appRoutes: RouteObject[] = [
 				element: (
 					<PrivateRoute>
 						<OrderDetailsPage />
+					</PrivateRoute>
+				),
+			},
+
+			//Test
+
+			{
+				path: "pending-ratings",
+				element: (
+					<PrivateRoute>
+						<PendingRatingsPage />
 					</PrivateRoute>
 				),
 			},

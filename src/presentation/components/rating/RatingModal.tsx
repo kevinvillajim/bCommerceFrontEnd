@@ -76,6 +76,12 @@ const RatingModal: React.FC<RatingModalProps> = ({
 
 	// Manejar envío de valoración
 	const handleSubmit = async () => {
+		// Validación: Asegurarse de que haya una calificación seleccionada
+		if (rating === 0) {
+			alert("Por favor selecciona una calificación de 1 a 5 estrellas");
+			return;
+		}
+
 		// Si la valoración es baja (1-2 estrellas) y no estamos en modo confirmación
 		if (rating <= 2 && !showConfirmation) {
 			setShowConfirmation(true);
@@ -106,6 +112,17 @@ const RatingModal: React.FC<RatingModalProps> = ({
 	const handleReportSubmit = async () => {
 		if (!onReport) return;
 
+		// Validación: Asegurarse de que haya un tipo de problema y descripción
+		if (!problemType) {
+			alert("Por favor selecciona el tipo de problema");
+			return;
+		}
+
+		if (!problemDescription.trim()) {
+			alert("Por favor describe el problema");
+			return;
+		}
+
 		try {
 			setIsSubmitting(true);
 
@@ -131,6 +148,9 @@ const RatingModal: React.FC<RatingModalProps> = ({
 		setIsReportMode(!isReportMode);
 		setShowConfirmation(false);
 	};
+
+	// Log para depuración
+	console.log("Estado actual de rating:", rating);
 
 	return (
 		<div className="fixed inset-0 z-50 overflow-y-auto">
@@ -215,7 +235,10 @@ const RatingModal: React.FC<RatingModalProps> = ({
 									</label>
 									<StarRating
 										value={rating}
-										onChange={setRating}
+										onChange={(value) => {
+											console.log("Valor de StarRating seleccionado:", value);
+											setRating(value);
+										}}
 										size="large"
 										required
 									/>

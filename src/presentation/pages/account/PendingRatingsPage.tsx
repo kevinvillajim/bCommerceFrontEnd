@@ -4,20 +4,13 @@ import {Link} from "react-router-dom";
 import {Star, Package, Store, ShoppingBag, Clock, Search} from "lucide-react";
 
 import RatingService from "../../../core/services/RatingService";
+import PendingRatingsAdapter from "../../../core/adapters/PendingRatingsAdapter";
 import type {PendingRatingItem} from "../../../core/services/RatingService";
-import {formatDate} from "../../../utils/formatters/formatDate";
+import type {OrderGroup} from "../../../core/adapters/PendingRatingsAdapter";
 import RatingModal from "../../components/rating/RatingModal";
 import {useRatings} from "../../hooks/useRatings";
 import PendingRatingsList from "../../components/rating/PendingRatingsList";
 import {extractErrorMessage} from "../../../utils/errorHandler";
-
-interface OrderGroup {
-	orderId: number;
-	orderNumber: string;
-	orderDate: string;
-	products: PendingRatingItem[];
-	sellers: PendingRatingItem[];
-}
 
 const PendingRatingsPage: React.FC = () => {
 	// Estados para filtros y búsqueda
@@ -58,51 +51,8 @@ const PendingRatingsPage: React.FC = () => {
 				throw new Error("Error al obtener las valoraciones pendientes");
 			}
 
-			// Agrupar por orden
-			const groups: OrderGroup[] = [];
-			const orderMap = new Map<number, OrderGroup>();
-
-			// Procesar productos
-			response.data.products.forEach((product) => {
-				if (!orderMap.has(product.order_id)) {
-					const group: OrderGroup = {
-						orderId: product.order_id,
-						orderNumber: product.order_number,
-						orderDate: product.order_date,
-						products: [],
-						sellers: [],
-					};
-					orderMap.set(product.order_id, group);
-					groups.push(group);
-				}
-
-				orderMap.get(product.order_id)?.products.push(product);
-			});
-
-			// Procesar vendedores
-			response.data.sellers.forEach((seller) => {
-				if (!orderMap.has(seller.order_id)) {
-					const group: OrderGroup = {
-						orderId: seller.order_id,
-						orderNumber: seller.order_number,
-						orderDate: seller.order_date,
-						products: [],
-						sellers: [],
-					};
-					orderMap.set(seller.order_id, group);
-					groups.push(group);
-				}
-
-				orderMap.get(seller.order_id)?.sellers.push(seller);
-			});
-
-			// Ordenar por fecha de orden (más reciente primero)
-			groups.sort((a, b) => {
-				return (
-					new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime()
-				);
-			});
-
+			// Usar el adaptador para transformar los datos al formato esperado
+			const groups = PendingRatingsAdapter.adaptPendingRatings(response);
 			setOrderGroups(groups);
 		} catch (err) {
 			console.error("Error al cargar valoraciones pendientes:", err);
@@ -220,7 +170,7 @@ const PendingRatingsPage: React.FC = () => {
 		// Buscar en vendedores
 		if (
 			group.sellers.some((seller) =>
-				seller.name.toLowerCase().includes(searchLower)
+				(seller.name || "").toLowerCase().includes(searchLower)
 			)
 		) {
 			return true;
@@ -316,8 +266,11 @@ const PendingRatingsPage: React.FC = () => {
 			{selectedEntity && (
 				<RatingModal
 					type={modalType}
-					entityId={selectedEntity.id}
-					entityName={selectedEntity.name}
+					entityId={selectedEntity.id || selectedEntity.seller_id}
+					entityName={
+						selectedEntity.name ||
+						`Vendedor #${selectedEntity.seller_id || selectedEntity.id}`
+					}
 					entityImage={selectedEntity.image}
 					orderId={selectedEntity.order_id}
 					isOpen={isModalOpen}

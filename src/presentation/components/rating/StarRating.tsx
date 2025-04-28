@@ -37,8 +37,13 @@ const StarRating: React.FC<StarRatingProps> = ({
 	const starSize = starSizes[size];
 
 	// Clases para los diferentes estados de las estrellas
-	const getStarClass = (index: number) => {
-		const shouldBeFilled = isHovering ? index < hoverValue : index < value;
+	const getStarClass = (starPosition: number) => {
+		// Determinar si la estrella debe estar rellena
+		// Comparamos con starPosition <= hoverValue o value para asegurarnos de que
+		// la estrella en la posición 5 (última) se puede seleccionar correctamente
+		const shouldBeFilled = isHovering
+			? starPosition <= hoverValue
+			: starPosition <= value;
 
 		if (shouldBeFilled) {
 			return "fill-yellow-400 text-yellow-400";
@@ -49,14 +54,17 @@ const StarRating: React.FC<StarRatingProps> = ({
 	// Evento al hacer clic en una estrella
 	const handleClick = (newValue: number) => {
 		if (readOnly || !onChange) return;
+
+		// Si hacemos clic en la estrella ya seleccionada, la deseleccionamos (valor 0)
+		// Si no, seleccionamos el nuevo valor
 		onChange(newValue === value ? 0 : newValue);
 	};
 
 	// Eventos de ratón
-	const handleMouseEnter = (index: number) => {
+	const handleMouseEnter = (position: number) => {
 		if (readOnly) return;
 		setIsHovering(true);
-		setHoverValue(index);
+		setHoverValue(position);
 	};
 
 	const handleMouseLeave = () => {
@@ -70,16 +78,22 @@ const StarRating: React.FC<StarRatingProps> = ({
 			className={`flex items-center space-x-1 ${className}`}
 			onMouseLeave={handleMouseLeave}
 		>
-			{Array.from({length: maxStars}).map((_, index) => (
-				<Star
-					key={index}
-					size={starSize}
-					className={`transition-colors cursor-${readOnly ? "default" : "pointer"} ${getStarClass(index + 1)}`}
-					onClick={() => handleClick(index + 1)}
-					onMouseEnter={() => handleMouseEnter(index + 1)}
-					aria-label={`${index + 1} de ${maxStars} estrellas`}
-				/>
-			))}
+			{/* Generamos un array de longitud maxStars y lo iteramos */}
+			{Array.from({length: maxStars}).map((_, index) => {
+				// La posición de la estrella va de 1 a maxStars, no de 0 a maxStars-1
+				const starPosition = index + 1;
+
+				return (
+					<Star
+						key={index}
+						size={starSize}
+						className={`transition-colors cursor-${readOnly ? "default" : "pointer"} ${getStarClass(starPosition)}`}
+						onClick={() => handleClick(starPosition)}
+						onMouseEnter={() => handleMouseEnter(starPosition)}
+						aria-label={`${starPosition} de ${maxStars} estrellas`}
+					/>
+				);
+			})}
 
 			{required && value === 0 && (
 				<span className="text-red-500 text-xs ml-2">* Requerido</span>

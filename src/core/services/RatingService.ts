@@ -23,7 +23,7 @@ export interface PendingRatingsResponse {
 	status: string;
 	data: {
 		products: PendingRatingItem[];
-		sellers: PendingRatingItem[];
+		sellers: PendingSellerItem[];
 	};
 }
 
@@ -34,6 +34,18 @@ export interface PendingRatingItem {
 	order_id: number;
 	order_number: string;
 	order_date: string;
+}
+
+export interface PendingSellerItem {
+	id?: number;
+	seller_id: number;
+	order_id: number;
+	seller_order_id?: number;
+	order_number: string;
+	date: string;
+	name?: string;
+	image?: string;
+	is_rated: boolean;
 }
 
 export interface SellerRatingsResponse {
@@ -325,6 +337,7 @@ export class RatingService {
 			const params: Record<string, any> = {
 				page,
 				per_page: perPage,
+				type: "user_to_seller",
 			};
 
 			if (status && status !== "all") {
