@@ -228,6 +228,9 @@ export const API_ENDPOINTS = {
 		// Feedback
 		PENDING_FEEDBACK: "/admin/feedback/pending",
 		REVIEW_FEEDBACK: (id: string | number) => `/admin/feedback/${id}/review`,
+		CONFIGURATIONS: {
+			RATINGS: "/admin/configurations/ratings",
+		},
 	},
 
 	// Development & Testing
