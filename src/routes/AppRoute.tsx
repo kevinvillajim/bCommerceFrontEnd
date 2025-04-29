@@ -219,6 +219,14 @@ const appRoutes: RouteObject[] = [
 				),
 			},
 			{
+				path: "chats/:chatId",
+				element: (
+					<PrivateRoute>
+						<UserChatPage />
+					</PrivateRoute>
+				),
+			},
+			{
 				path: "favorites",
 				element: (
 					<PublicRoute>

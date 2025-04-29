@@ -2,7 +2,7 @@ import React, {useState} from "react";
 import {useNavigate} from "react-router-dom";
 import {MessageCircle} from "lucide-react";
 import {useChat} from "../../hooks/useChat";
-import {useAuth} from "../../hooks/useAuth"; // Asumiendo que existe este hook
+import {useAuth} from "../../hooks/useAuth";
 
 interface ChatButtonProps {
 	productId: number;
@@ -20,14 +20,23 @@ const ChatButton: React.FC<ChatButtonProps> = ({
 	className = "",
 }) => {
 	const navigate = useNavigate();
-	const {isAuthenticated, openLoginModal} = useAuth(); // Asumiendo estas funciones
+	const {isAuthenticated} = useAuth();
 	const {createChat} = useChat();
 	const [loading, setLoading] = useState(false);
 
 	const handleChatClick = async () => {
-		// Si el usuario no está autenticado, mostrar modal de login
+		// Si el usuario no está autenticado, redirigir a la página de login
 		if (!isAuthenticated) {
-			openLoginModal();
+			// Guardar en sessionStorage la información para regresar después del login
+			sessionStorage.setItem(
+				"chatRedirect",
+				JSON.stringify({
+					productId,
+					sellerId,
+					returnTo: window.location.pathname,
+				})
+			);
+			navigate("/login");
 			return;
 		}
 

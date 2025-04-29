@@ -91,8 +91,8 @@ export const useChat = () => {
 	 * Envía un mensaje al chat seleccionado
 	 */
 	const sendMessage = useCallback(
-		async (content: string) => {
-			if (!selectedChat || !content.trim()) return;
+		async (content: string): Promise<boolean> => {
+			if (!selectedChat || !content.trim()) return false;
 
 			setLoading(true);
 			setError(null);

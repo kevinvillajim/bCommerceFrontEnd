@@ -120,8 +120,9 @@ const SellerMessagesPage: React.FC = () => {
 	};
 
 	// Enviar un mensaje
-	const handleSendMessage = async (content: string) => {
-		return await sendMessage(content);
+	const handleSendMessage = async (content: string): Promise<boolean> => {
+		const result = await sendMessage(content);
+		return result === true; // Aseguramos que siempre retorna boolean
 	};
 
 	// Actualizar estado del chat

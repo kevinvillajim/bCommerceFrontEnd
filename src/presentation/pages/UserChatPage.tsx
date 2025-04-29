@@ -1,5 +1,5 @@
 import React, {useState, useEffect} from "react";
-import {useParams, useNavigate, useLocation} from "react-router-dom";
+import {useParams, useNavigate} from "react-router-dom";
 import {MessageSquare, ArrowLeft} from "lucide-react";
 import {useChat} from "../hooks/useChat";
 import ChatList from "../components/chat/ChatList";
@@ -9,9 +9,8 @@ import MessageForm from "../components/chat/MessageForm";
 
 const UserChatPage: React.FC = () => {
 	const navigate = useNavigate();
-	const location = useLocation();
-	const {chatId: chatIdParam} = useParams<{chatId?: string}>();
-
+    const { chatId: chatIdParam } = useParams<{ chatId?: string }>();
+    
 	// Estados para filtros y búsqueda
 	const [searchTerm, setSearchTerm] = useState<string>("");
 	const [statusFilter, setStatusFilter] = useState<string>("active");
@@ -28,7 +27,6 @@ const UserChatPage: React.FC = () => {
 		messages,
 		loading,
 		error,
-		fetchChats,
 		fetchChatMessages,
 		sendMessage,
 		updateChatStatus,
@@ -113,8 +111,9 @@ const UserChatPage: React.FC = () => {
 	};
 
 	// Enviar un mensaje
-	const handleSendMessage = async (content: string) => {
-		return await sendMessage(content);
+	const handleSendMessage = async (content: string): Promise<boolean> => {
+		const result = await sendMessage(content);
+		return result === true; // Aseguramos que siempre retorna boolean
 	};
 
 	// Actualizar estado del chat
@@ -204,7 +203,7 @@ const UserChatPage: React.FC = () => {
 								{/* Formulario de mensajes */}
 								<MessageForm
 									onSendMessage={handleSendMessage}
-									isDisabled={selectedChat.status !== "active"}
+									isDisabled={selectedChat?.status !== "active"}
 									disabledText={
 										selectedChat.status === "closed"
 											? "Esta conversación está cerrada"
