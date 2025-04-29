@@ -1,12 +1,8 @@
 import {useState, useEffect} from "react";
 import {Star, Save, AlertTriangle, Info, RefreshCw} from "lucide-react";
-import ApiClient from "../../../infrastructure/api/apiClient";
-import {API_ENDPOINTS} from "../../../constants/apiEndpoints";
+import ConfigurationService from "../../../core/services/ConfigurationService";
 import type {
-	ApiResponse,
-	RatingConfigs,
 	RatingStats,
-	ApproveAllResponse,
 } from "../../../presentation/types/admin/ratingConfigTypes";
 
 const RatingConfigPage = () => {
@@ -21,11 +17,14 @@ const RatingConfigPage = () => {
 
 	// Estadísticas
 	const [stats, setStats] = useState<RatingStats>({
-		pendingCount: 0,
-		approvedCount: 0,
-		rejectedCount: 0,
 		totalCount: 0,
+		approvedCount: 0,
+		pendingCount: 0,
+		rejectedCount: 0,
 	});
+
+	// Inicializar el servicio de configuración
+	const configService = new ConfigurationService();
 
 	// Cargar configuraciones al montar
 	useEffect(() => {
@@ -39,20 +38,7 @@ const RatingConfigPage = () => {
 		setError(null);
 
 		try {
-			if (!API_ENDPOINTS.ADMIN.CONFIGURATIONS.RATINGS) {
-				console.error(
-					"El endpoint de configuraciones de ratings no está definido"
-				);
-				setError(
-					"Error en la configuración de la aplicación. Contacte al administrador."
-				);
-				setLoading(false);
-				return;
-			}
-
-			const response = await ApiClient.get<ApiResponse<RatingConfigs>>(
-				API_ENDPOINTS.ADMIN.CONFIGURATIONS.RATINGS
-			);
+			const response = await configService.getRatingConfigs();
 
 			if (response?.status === "success" && response.data) {
 				// Extraer configuraciones
@@ -65,6 +51,12 @@ const RatingConfigPage = () => {
 				setAutoApproveThreshold(
 					(configs["ratings.auto_approve_threshold"]?.value as number) || 2
 				);
+			} else {
+				// Si no hay datos o hay un error en la respuesta
+				setError(
+					response?.message || "No se pudieron cargar las configuraciones"
+				);
+				console.warn("Respuesta de configuraciones inválida:", response);
 			}
 		} catch (err) {
 			console.error("Error al cargar configuraciones:", err);
@@ -78,20 +70,13 @@ const RatingConfigPage = () => {
 
 	// Cargar estadísticas de valoraciones
 	const loadRatingStats = async () => {
-        try {
-            if (!API_ENDPOINTS.ADMIN.RATINGS?.STATS) {
-				console.error(
-					"El endpoint de estadísticas de ratings no está definido"
-				);
-                return;
-            }
-            
-			const response = await ApiClient.get<ApiResponse<RatingStats>>(
-				API_ENDPOINTS.ADMIN.RATINGS.STATS
-			);
+		try {
+			const response = await configService.getRatingStats();
 
 			if (response?.status === "success" && response.data) {
 				setStats(response.data);
+			} else {
+				console.warn("Error al cargar estadísticas:", response?.message);
 			}
 		} catch (err) {
 			console.error("Error al cargar estadísticas de valoraciones:", err);
@@ -105,13 +90,10 @@ const RatingConfigPage = () => {
 		setSuccess(null);
 
 		try {
-			const response = await ApiClient.post<ApiResponse>(
-				API_ENDPOINTS.ADMIN.CONFIGURATIONS.RATINGS,
-				{
-					auto_approve_all: autoApproveAll,
-					auto_approve_threshold: autoApproveThreshold,
-				}
-			);
+			const response = await configService.updateRatingConfigs({
+				auto_approve_all: autoApproveAll,
+				auto_approve_threshold: autoApproveThreshold,
+			});
 
 			if (response?.status === "success") {
 				setSuccess("Configuraciones guardadas correctamente");
@@ -144,21 +126,8 @@ const RatingConfigPage = () => {
 		setError(null);
 		setSuccess(null);
 
-        try {
-            if (!API_ENDPOINTS.ADMIN.RATINGS?.APPROVE_ALL) {
-			    console.error(
-			    	"El endpoint de aprobación masiva no está definido"
-			    );
-			    setError(
-			    	"Error en la configuración de la aplicación. Contacte al administrador."
-			    );
-			    setLoading(false);
-			    return;
-            }
-            
-			const response = await ApiClient.post<ApiResponse<ApproveAllResponse>>(
-				API_ENDPOINTS.ADMIN.RATINGS.APPROVE_ALL
-			);
+		try {
+			const response = await configService.approveAllPendingRatings();
 
 			if (response?.status === "success") {
 				setSuccess(
