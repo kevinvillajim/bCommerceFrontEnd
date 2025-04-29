@@ -1,15 +1,15 @@
-// src/presentation/pages/seller/SellerMessagesPage.tsx
 import React, {useState, useEffect} from "react";
-import {useParams, useNavigate} from "react-router-dom";
-import {MessageSquare, RefreshCw, ArrowLeft} from "lucide-react";
-import {useChat} from "../../hooks/useChat";
-import ChatList from "../../components/chat/ChatList";
-import ChatMessages from "../../components/chat/ChatMessages";
-import ChatHeader from "../../components/chat/ChatHeader";
-import MessageForm from "../../components/chat/MessageForm";
+import {useParams, useNavigate, useLocation} from "react-router-dom";
+import {MessageSquare, ArrowLeft} from "lucide-react";
+import {useChat} from "../hooks/useChat";
+import ChatList from "../components/chat/ChatList";
+import ChatMessages from "../components/chat/ChatMessages";
+import ChatHeader from "../components/chat/ChatHeader";
+import MessageForm from "../components/chat/MessageForm";
 
-const SellerMessagesPage: React.FC = () => {
+const UserChatPage: React.FC = () => {
 	const navigate = useNavigate();
+	const location = useLocation();
 	const {chatId: chatIdParam} = useParams<{chatId?: string}>();
 
 	// Estados para filtros y búsqueda
@@ -61,7 +61,7 @@ const SellerMessagesPage: React.FC = () => {
 				// Intentar cargar los mensajes directamente si el chat no está en la lista
 				fetchChatMessages(chatId).catch(() => {
 					// Si falla, redirigir a la lista de chats
-					navigate("/seller/messages");
+					navigate("/chats");
 				});
 			}
 		}
@@ -77,7 +77,7 @@ const SellerMessagesPage: React.FC = () => {
 	// Actualizar la URL cuando se selecciona un chat
 	useEffect(() => {
 		if (selectedChat?.id) {
-			navigate(`/seller/messages/${selectedChat.id}`, {replace: true});
+			navigate(`/chats/${selectedChat.id}`, {replace: true});
 		}
 	}, [selectedChat, navigate]);
 
@@ -92,20 +92,13 @@ const SellerMessagesPage: React.FC = () => {
 			? chat.unreadCount && chat.unreadCount > 0
 			: true;
 
-		// Búsqueda por nombre de usuario o producto
+		// Búsqueda por nombre de vendedor o producto
 		const matchesSearch =
 			searchTerm === "" ||
-			chat.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
 			chat.product?.name?.toLowerCase().includes(searchTerm.toLowerCase());
 
 		return matchesStatus && matchesUnread && matchesSearch;
 	});
-
-	// Calcular total de mensajes no leídos
-	const totalUnreadMessages = chats.reduce(
-		(total, chat) => total + (chat.unreadCount || 0),
-		0
-	);
 
 	// Seleccionar un chat
 	const handleSelectChat = (chat: typeof selectedChat) => {
@@ -135,50 +128,25 @@ const SellerMessagesPage: React.FC = () => {
 	// Volver a la lista en móvil
 	const handleBackToList = () => {
 		setShowChatList(true);
-		navigate("/seller/messages");
-	};
-
-	// Refrescar lista de chats
-	const refreshChats = () => {
-		fetchChats();
+		navigate("/chats");
 	};
 
 	return (
-		<div className="h-full flex flex-col">
+		<div className="container mx-auto p-4">
 			<div className="mb-4 flex justify-between items-center">
 				<h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
 					<MessageSquare className="w-6 h-6 mr-2" />
-					Mensajes
-					{totalUnreadMessages > 0 && (
-						<span className="ml-2 bg-red-500 text-white text-xs font-bold rounded-full px-2 py-1">
-							{totalUnreadMessages}
-						</span>
-					)}
+					Mis Conversaciones
 				</h1>
-
-				<div className="flex space-x-2">
-					{isMobileView && selectedChat && !showChatList && (
-						<button
-							onClick={handleBackToList}
-							className="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center"
-						>
-							<ArrowLeft size={16} className="mr-1" />
-							Volver
-						</button>
-					)}
-
+				{isMobileView && selectedChat && !showChatList && (
 					<button
-						onClick={refreshChats}
-						className="px-3 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center"
-						disabled={loading}
+						onClick={handleBackToList}
+						className="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center"
 					>
-						<RefreshCw
-							size={16}
-							className={`mr-1 ${loading ? "animate-spin" : ""}`}
-						/>
-						Actualizar
+						<ArrowLeft size={16} className="mr-1" />
+						Volver
 					</button>
-				</div>
+				)}
 			</div>
 
 			{error && (
@@ -188,7 +156,10 @@ const SellerMessagesPage: React.FC = () => {
 				</div>
 			)}
 
-			<div className="flex-1 bg-white dark:bg-gray-800 rounded-lg shadow-sm flex flex-col md:flex-row overflow-hidden">
+			<div
+				className="bg-white dark:bg-gray-800 rounded-lg shadow-sm flex flex-col md:flex-row overflow-hidden"
+				style={{minHeight: "70vh"}}
+			>
 				{/* Lista de chats (visible en escritorio o cuando está activa en móvil) */}
 				{(!isMobileView || showChatList) && (
 					<div className="w-full md:w-1/3 border-r border-gray-200 dark:border-gray-700 flex flex-col">
@@ -203,7 +174,7 @@ const SellerMessagesPage: React.FC = () => {
 							onStatusFilterChange={setStatusFilter}
 							unreadFilter={unreadFilter}
 							onUnreadFilterChange={setUnreadFilter}
-							isSeller={true}
+							isSeller={false}
 						/>
 					</div>
 				)}
@@ -216,7 +187,7 @@ const SellerMessagesPage: React.FC = () => {
 								{/* Encabezado del chat */}
 								<ChatHeader
 									chat={selectedChat}
-									isSeller={true}
+									isSeller={false}
 									onUpdateStatus={handleUpdateStatus}
 									loading={loading}
 								/>
@@ -252,7 +223,7 @@ const SellerMessagesPage: React.FC = () => {
 								</h3>
 								<p className="text-gray-500 dark:text-gray-400 mt-2 max-w-md">
 									Elige una conversación de la lista para ver los mensajes y
-									responder a tus clientes
+									responder
 								</p>
 							</div>
 						)}
@@ -263,4 +234,4 @@ const SellerMessagesPage: React.FC = () => {
 	);
 };
 
-export default SellerMessagesPage;
+export default UserChatPage;

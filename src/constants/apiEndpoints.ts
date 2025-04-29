@@ -148,6 +148,11 @@ export const API_ENDPOINTS = {
 		DETAILS: (id: string | number) => `/chats/${id}`,
 		CREATE: "/chats",
 		SEND_MESSAGE: (id: string | number) => `/chats/${id}/messages`,
+		UPDATE_STATUS: (id: string | number) => `/chats/${id}`,
+		GET_PRODUCT_CHATS: (productId: string | number) =>
+			`/chats/product/${productId}`,
+		GET_SELLER_CHATS: (sellerId: string | number) =>
+			`/chats/seller/${sellerId}`,
 	},
 
 	// Recommendations

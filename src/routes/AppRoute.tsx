@@ -127,6 +127,9 @@ const AdminLogViewerPage = lazy(
 const AdminShippingPage = lazy(
 	() => import("../presentation/pages/admin/AdminShippingPage")
 );
+const UserChatPage = lazy(
+	() => import("../presentation/pages/UserChatPage")
+);
 
 //Route Guards
 import PrivateRoute from "./PrivateRoute";
@@ -208,6 +211,14 @@ const appRoutes: RouteObject[] = [
 				),
 			},
 			{
+				path: "chats",
+				element: (
+					<PrivateRoute>
+						<UserChatPage />
+					</PrivateRoute>
+				),
+			},
+			{
 				path: "favorites",
 				element: (
 					<PublicRoute>
@@ -267,7 +278,7 @@ const appRoutes: RouteObject[] = [
 			//Test
 
 			{
-				path: "pending-ratings",
+				path: "pending-rating",
 				element: (
 					<PrivateRoute>
 						<PendingRatingsPage />
@@ -380,6 +391,10 @@ const appRoutes: RouteObject[] = [
 			// Messages
 			{
 				path: "messages",
+				element: <SellerMessagesPage />,
+			},
+			{
+				path: "messages/:chatId",
 				element: <SellerMessagesPage />,
 			},
 			// Finances
