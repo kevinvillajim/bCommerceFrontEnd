@@ -1,20 +1,26 @@
-import React, {useState, useEffect} from "react";
+import {useState, useEffect} from "react";
 import {Star, Save, AlertTriangle, Info, RefreshCw} from "lucide-react";
 import ApiClient from "../../../infrastructure/api/apiClient";
 import {API_ENDPOINTS} from "../../../constants/apiEndpoints";
+import type {
+	ApiResponse,
+	RatingConfigs,
+	RatingStats,
+	ApproveAllResponse,
+} from "../../../presentation/types/admin/ratingConfigTypes";
 
 const RatingConfigPage = () => {
 	const [loading, setLoading] = useState(true);
 	const [saving, setSaving] = useState(false);
-	const [error, setError] = useState(null);
-	const [success, setSuccess] = useState(null);
+	const [error, setError] = useState<string | null>(null);
+	const [success, setSuccess] = useState<string | null>(null);
 
 	// Configuraciones
 	const [autoApproveAll, setAutoApproveAll] = useState(false);
 	const [autoApproveThreshold, setAutoApproveThreshold] = useState(2);
 
 	// Estadísticas
-	const [stats, setStats] = useState({
+	const [stats, setStats] = useState<RatingStats>({
 		pendingCount: 0,
 		approvedCount: 0,
 		rejectedCount: 0,
@@ -33,7 +39,18 @@ const RatingConfigPage = () => {
 		setError(null);
 
 		try {
-			const response = await ApiClient.get(
+			if (!API_ENDPOINTS.ADMIN.CONFIGURATIONS.RATINGS) {
+				console.error(
+					"El endpoint de configuraciones de ratings no está definido"
+				);
+				setError(
+					"Error en la configuración de la aplicación. Contacte al administrador."
+				);
+				setLoading(false);
+				return;
+			}
+
+			const response = await ApiClient.get<ApiResponse<RatingConfigs>>(
 				API_ENDPOINTS.ADMIN.CONFIGURATIONS.RATINGS
 			);
 
@@ -41,10 +58,12 @@ const RatingConfigPage = () => {
 				// Extraer configuraciones
 				const configs = response.data;
 
-				setAutoApproveAll(configs["ratings.auto_approve_all"]?.value || false);
+				setAutoApproveAll(
+					(configs["ratings.auto_approve_all"]?.value as boolean) || false
+				);
 
 				setAutoApproveThreshold(
-					configs["ratings.auto_approve_threshold"]?.value || 2
+					(configs["ratings.auto_approve_threshold"]?.value as number) || 2
 				);
 			}
 		} catch (err) {
@@ -59,8 +78,17 @@ const RatingConfigPage = () => {
 
 	// Cargar estadísticas de valoraciones
 	const loadRatingStats = async () => {
-		try {
-			const response = await ApiClient.get(API_ENDPOINTS.ADMIN.RATINGS.STATS);
+        try {
+            if (!API_ENDPOINTS.ADMIN.RATINGS?.STATS) {
+				console.error(
+					"El endpoint de estadísticas de ratings no está definido"
+				);
+                return;
+            }
+            
+			const response = await ApiClient.get<ApiResponse<RatingStats>>(
+				API_ENDPOINTS.ADMIN.RATINGS.STATS
+			);
 
 			if (response?.status === "success" && response.data) {
 				setStats(response.data);
@@ -77,7 +105,7 @@ const RatingConfigPage = () => {
 		setSuccess(null);
 
 		try {
-			const response = await ApiClient.post(
+			const response = await ApiClient.post<ApiResponse>(
 				API_ENDPOINTS.ADMIN.CONFIGURATIONS.RATINGS,
 				{
 					auto_approve_all: autoApproveAll,
@@ -116,14 +144,25 @@ const RatingConfigPage = () => {
 		setError(null);
 		setSuccess(null);
 
-		try {
-			const response = await ApiClient.post(
+        try {
+            if (!API_ENDPOINTS.ADMIN.RATINGS?.APPROVE_ALL) {
+			    console.error(
+			    	"El endpoint de aprobación masiva no está definido"
+			    );
+			    setError(
+			    	"Error en la configuración de la aplicación. Contacte al administrador."
+			    );
+			    setLoading(false);
+			    return;
+            }
+            
+			const response = await ApiClient.post<ApiResponse<ApproveAllResponse>>(
 				API_ENDPOINTS.ADMIN.RATINGS.APPROVE_ALL
 			);
 
 			if (response?.status === "success") {
 				setSuccess(
-					`Se han aprobado ${response.data.count || 0} valoraciones pendientes`
+					`Se han aprobado ${response.data?.count || 0} valoraciones pendientes`
 				);
 				// Actualizar estadísticas
 				loadRatingStats();
@@ -280,8 +319,8 @@ const RatingConfigPage = () => {
 										size={16}
 										className={`${
 											star <= autoApproveThreshold
-												? "text-gray-400 dark:text-gray-600"
-												: "text-yellow-400 fill-current"
+												? "text-yellow-400 fill-current"
+												: "text-gray-400 dark:text-gray-600"
 										}`}
 									/>
 								))}

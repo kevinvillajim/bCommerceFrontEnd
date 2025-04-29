@@ -16,6 +16,7 @@ import {
   Upload,
   FileCheck,
 } from "lucide-react";
+import RatingConfiguration from "../../components/admin/RatingConfiguration";
 
 // Componente Modal reutilizable
 interface ModalProps {
@@ -510,7 +511,8 @@ const AdminSettingsPage: React.FC = () => {
 	};
 
 	return (
-		<div>
+		
+		<div><RatingConfiguration/>
 			<h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
 				Configuración del Sistema
 			</h1>

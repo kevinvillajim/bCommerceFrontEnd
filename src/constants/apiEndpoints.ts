@@ -228,7 +228,17 @@ export const API_ENDPOINTS = {
 		// Feedback
 		PENDING_FEEDBACK: "/admin/feedback/pending",
 		REVIEW_FEEDBACK: (id: string | number) => `/admin/feedback/${id}/review`,
+		RATINGS: {
+			STATS: "/admin/ratings/stats",
+			PENDING: "/admin/ratings/pending",
+			MODERATE: (id: string | number) => `/admin/ratings/${id}/moderate`,
+			APPROVE_ALL: "/admin/ratings/approve-all",
+			DELETE: (id: string | number) => `/admin/ratings/${id}`,
+		},
 		CONFIGURATIONS: {
+			INDEX: "/admin/configurations",
+			SHOW: (key: string) => `/admin/configurations/${key}`,
+			UPDATE: "/admin/configurations/update",
 			RATINGS: "/admin/configurations/ratings",
 		},
 	},
