@@ -32,8 +32,10 @@ const SellerMessagesPage: React.FC = () => {
 	const chatIdRef = useRef<string | undefined>(chatIdParam);
 	const loadAttempts = useRef<number>(0);
 	const isInitialNavRef = useRef<boolean>(true);
+	const messagesReadRef = useRef<Record<number, boolean>>({});
 
 	// Obtener datos del chat usando el hook personalizado
+	// CORRECCIÓN 1: Pasar true para indicar que es un vendedor
 	const {
 		chats,
 		selectedChat,
@@ -48,7 +50,7 @@ const SellerMessagesPage: React.FC = () => {
 		startMessagesPolling,
 		stopMessagesPolling,
 		markAllAsRead,
-	} = useChat();
+	} = useChat(true); // Indicamos que es un vendedor
 
 	// Función para detectar cambios en el tamaño de la ventana
 	useEffect(() => {
@@ -101,6 +103,7 @@ const SellerMessagesPage: React.FC = () => {
 	}, [fetchChats, chatIdParam, setSelectedChat, user?.id]);
 
 	// Función para cargar un chat específico
+	// CORRECCIÓN 2: Memoizar correctamente la función y controlar llamadas a markAllAsRead
 	const loadSpecificChat = useCallback(
 		async (chatId: number) => {
 			if (!user?.id) return;
@@ -125,8 +128,15 @@ const SellerMessagesPage: React.FC = () => {
 					// Iniciar polling de mensajes
 					startMessagesPolling(chatId);
 
-					// Marcar mensajes como leídos automáticamente
-					markAllAsRead(chatId);
+					// CORRECCIÓN: Solo marcar como leído si no lo hemos hecho antes y hay mensajes sin leer
+					if (
+						chat.unreadCount &&
+						chat.unreadCount > 0 &&
+						!messagesReadRef.current[chatId]
+					) {
+						messagesReadRef.current[chatId] = true;
+						await markAllAsRead(chatId);
+					}
 				} else {
 					console.log(
 						`Chat ${chatId} no encontrado en la lista, cargando desde API...`
@@ -142,8 +152,11 @@ const SellerMessagesPage: React.FC = () => {
 							// Iniciar polling de mensajes
 							startMessagesPolling(chatId);
 
-							// Marcar mensajes como leídos automáticamente
-							markAllAsRead(chatId);
+							// CORRECCIÓN: Solo marcar como leído si no lo hemos hecho antes
+							if (!messagesReadRef.current[chatId]) {
+								messagesReadRef.current[chatId] = true;
+								await markAllAsRead(chatId);
+							}
 						} else {
 							console.warn(
 								`Chat ${chatId} no encontrado en API, mostrando lista de chats`
@@ -151,7 +164,8 @@ const SellerMessagesPage: React.FC = () => {
 
 							// Si hay demasiados intentos, mostrar página principal de chats
 							if (loadAttempts.current >= 3) {
-								navigate("/seller/chats", {replace: true});
+								// CORRECCIÓN 3: Verificar la ruta correcta
+								navigate("/seller/messages", {replace: true});
 							} else {
 								// Intentar recargar los chats y volver a intentar
 								const updatedChats = await fetchChats();
@@ -161,20 +175,19 @@ const SellerMessagesPage: React.FC = () => {
 								if (updatedChat) {
 									setSelectedChat(updatedChat);
 									setShowChatList(false);
-									markAllAsRead(chatId);
 								} else {
-									navigate("/seller/chats", {replace: true});
+									navigate("/seller/messages", {replace: true});
 								}
 							}
 						}
 					} catch (error) {
 						console.error(`Error al cargar chat ${chatId} desde API:`, error);
-						navigate("/seller/chats", {replace: true});
+						navigate("/seller/messages", {replace: true});
 					}
 				}
 			} catch (error) {
 				console.error(`Error al cargar chat ${chatId}:`, error);
-				navigate("/seller/chats", {replace: true});
+				navigate("/seller/messages", {replace: true});
 			} finally {
 				setIsLoadingChat(false);
 			}
@@ -222,7 +235,8 @@ const SellerMessagesPage: React.FC = () => {
 
 			// Si no es un número válido, redirigir a chats
 			if (isNaN(chatId)) {
-				navigate("/seller/chats", {replace: true});
+				// CORRECCIÓN: Usar la ruta correcta
+				navigate("/seller/messages", {replace: true});
 				return;
 			}
 
@@ -274,7 +288,8 @@ const SellerMessagesPage: React.FC = () => {
 			stopMessagesPolling();
 
 			// Actualizar la URL
-			navigate(`/seller/chats/${chat.id}`, {replace: true});
+			// CORRECCIÓN: Usar la ruta correcta
+			navigate(`/seller/messages/${chat.id}`, {replace: true});
 			chatIdRef.current = String(chat.id);
 
 			// Seleccionar chat y cargar mensajes
@@ -285,8 +300,15 @@ const SellerMessagesPage: React.FC = () => {
 				setShowChatList(false);
 			}
 
-			// Marcar mensajes como leídos automáticamente
-			markAllAsRead(chat.id);
+			// CORRECCIÓN: Solo marcar como leído si no lo hemos hecho antes y hay mensajes sin leer
+			if (
+				chat.unreadCount &&
+				chat.unreadCount > 0 &&
+				!messagesReadRef.current[chat.id]
+			) {
+				messagesReadRef.current[chat.id] = true;
+				markAllAsRead(chat.id);
+			}
 		}
 	};
 
@@ -321,7 +343,8 @@ const SellerMessagesPage: React.FC = () => {
 		stopMessagesPolling();
 
 		setShowChatList(true);
-		navigate("/seller/chats", {replace: true});
+		// CORRECCIÓN: Usar la ruta correcta
+		navigate("/seller/messages", {replace: true});
 		chatIdRef.current = undefined;
 	};
 
