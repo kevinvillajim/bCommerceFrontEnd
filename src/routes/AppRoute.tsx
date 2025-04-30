@@ -155,7 +155,7 @@ const appRoutes: RouteObject[] = [
 				),
 			},
 			{
-				path: "products/:slug",
+				path: "products/:id",
 				element: (
 					<PublicRoute>
 						<ProductItemPage />

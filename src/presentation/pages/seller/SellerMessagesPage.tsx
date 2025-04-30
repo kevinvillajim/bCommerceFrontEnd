@@ -1,5 +1,5 @@
 // src/presentation/pages/seller/SellerMessagesPage.tsx
-import React, {useState, useEffect} from "react";
+import React, {useState, useEffect, useRef} from "react";
 import {useParams, useNavigate} from "react-router-dom";
 import {MessageSquare, RefreshCw, ArrowLeft} from "lucide-react";
 import {useChat} from "../../hooks/useChat";
@@ -14,12 +14,16 @@ const SellerMessagesPage: React.FC = () => {
 
 	// Estados para filtros y búsqueda
 	const [searchTerm, setSearchTerm] = useState<string>("");
-	const [statusFilter, setStatusFilter] = useState<string>("active");
+	const [statusFilter, setStatusFilter] = useState<string>("all");
 	const [unreadFilter, setUnreadFilter] = useState<boolean>(false);
 	const [isMobileView, setIsMobileView] = useState<boolean>(
 		window.innerWidth < 768
 	);
 	const [showChatList, setShowChatList] = useState<boolean>(!chatIdParam);
+
+	// Referencias para evitar bucles infinitos
+	const initialLoadComplete = useRef<boolean>(false);
+	const chatIdRef = useRef<string | undefined>(chatIdParam);
 
 	// Obtener datos del chat usando el hook personalizado
 	const {
@@ -45,25 +49,60 @@ const SellerMessagesPage: React.FC = () => {
 		return () => window.removeEventListener("resize", handleResize);
 	}, []);
 
+	// Cargar chats al montar el componente
+	useEffect(() => {
+		if (!initialLoadComplete.current) {
+			fetchChats().then(() => {
+				initialLoadComplete.current = true;
+			});
+		}
+	}, [fetchChats]);
+
 	// Cargar chat específico si se proporciona chatId en la URL
 	useEffect(() => {
+		// Si no ha completado la carga inicial de chats, esperar
+		if (!initialLoadComplete.current) return;
+
+		// Evitar procesar el mismo chatId múltiples veces
+		if (chatIdParam === chatIdRef.current && selectedChat) return;
+
+		chatIdRef.current = chatIdParam;
+
 		if (chatIdParam) {
 			const chatId = parseInt(chatIdParam, 10);
+
+			// Si no es un número válido, redirigir a mensajes
+			if (isNaN(chatId)) {
+				navigate("/seller/messages", {replace: true});
+				return;
+			}
 
 			// Buscar el chat en la lista de chats
 			const chat = chats.find((c) => c.id === chatId);
 
 			if (chat) {
+				// Si encontramos el chat en la lista, seleccionarlo y cargar mensajes
 				setSelectedChat(chat);
 				fetchChatMessages(chatId);
 				setShowChatList(false);
 			} else if (!loading) {
 				// Intentar cargar los mensajes directamente si el chat no está en la lista
-				fetchChatMessages(chatId).catch(() => {
-					// Si falla, redirigir a la lista de chats
-					navigate("/seller/messages");
+				console.log(
+					`Chat ${chatId} no encontrado en la lista, intentando cargar directamente`
+				);
+				fetchChatMessages(chatId).then((result) => {
+					if (!result) {
+						// Si no se encuentra el chat, redirigir a la lista de chats
+						console.warn(`Chat ${chatId} no encontrado, redirigiendo`);
+						navigate("/seller/messages", {replace: true});
+					} else {
+						setShowChatList(false);
+					}
 				});
 			}
+		} else {
+			// Si no hay chatId, limpiar selección
+			setSelectedChat(null);
 		}
 	}, [
 		chatIdParam,
@@ -72,14 +111,8 @@ const SellerMessagesPage: React.FC = () => {
 		loading,
 		navigate,
 		setSelectedChat,
+		selectedChat,
 	]);
-
-	// Actualizar la URL cuando se selecciona un chat
-	useEffect(() => {
-		if (selectedChat?.id) {
-			navigate(`/seller/messages/${selectedChat.id}`, {replace: true});
-		}
-	}, [selectedChat, navigate]);
 
 	// Filtrar chats según los criterios
 	const filteredChats = chats.filter((chat) => {
@@ -110,8 +143,13 @@ const SellerMessagesPage: React.FC = () => {
 	// Seleccionar un chat
 	const handleSelectChat = (chat: typeof selectedChat) => {
 		if (chat?.id) {
-			setSelectedChat(chat);
-			fetchChatMessages(chat.id);
+			// Actualizar la URL sin causar un bucle
+			if (selectedChat?.id !== chat.id) {
+				navigate(`/seller/messages/${chat.id}`, {replace: true});
+				chatIdRef.current = String(chat.id);
+				setSelectedChat(chat);
+				fetchChatMessages(chat.id);
+			}
 
 			if (isMobileView) {
 				setShowChatList(false);
@@ -136,7 +174,8 @@ const SellerMessagesPage: React.FC = () => {
 	// Volver a la lista en móvil
 	const handleBackToList = () => {
 		setShowChatList(true);
-		navigate("/seller/messages");
+		navigate("/seller/messages", {replace: true});
+		chatIdRef.current = undefined;
 	};
 
 	// Refrescar lista de chats
@@ -252,8 +291,9 @@ const SellerMessagesPage: React.FC = () => {
 									Selecciona una conversación
 								</h3>
 								<p className="text-gray-500 dark:text-gray-400 mt-2 max-w-md">
-									Elige una conversación de la lista para ver los mensajes y
-									responder a tus clientes
+									{chats.length > 0
+										? "Elige una conversación de la lista para ver los mensajes y responder a tus clientes"
+										: "No tienes conversaciones activas. Los clientes pueden iniciar conversaciones desde las páginas de tus productos."}
 								</p>
 							</div>
 						)}

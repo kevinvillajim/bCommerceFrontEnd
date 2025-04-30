@@ -69,7 +69,38 @@ class ChatService {
 			const response = await ApiClient.get<ChatListResponse>(
 				API_ENDPOINTS.CHAT.LIST
 			);
-			return response;
+
+			// Validar la estructura de la respuesta
+			if (response && Array.isArray(response.data)) {
+				// Ya es un array, devolverlo directamente
+				return {
+					status: "success",
+					data: response.data,
+				};
+			} else if (
+				response &&
+				response.data &&
+				Array.isArray(response.data.data)
+			) {
+				// Formato anidado data.data
+				return {
+					status: "success",
+					data: response.data.data,
+				};
+			} else if (response && response.status === "success" && !response.data) {
+				// Respuesta vacía
+				return {
+					status: "success",
+					data: [],
+				};
+			}
+
+			// Si llegamos aquí, la respuesta no tiene el formato esperado
+			console.warn("Formato de respuesta inesperado en getChats:", response);
+			return {
+				status: "error",
+				data: [],
+			};
 		} catch (error) {
 			console.error("Error al obtener chats:", error);
 			// En caso de error, devolver una respuesta vacía pero válida
@@ -85,10 +116,33 @@ class ChatService {
 	 */
 	async getChatDetails(chatId: number): Promise<ChatDetailResponse> {
 		try {
-			const response = await ApiClient.get<ChatDetailResponse>(
+			const response = await ApiClient.get<any>(
 				API_ENDPOINTS.CHAT.DETAILS(chatId)
 			);
-			return response;
+
+			// Validar y adaptar la respuesta
+			if (response && response.status === "success") {
+				// Asegurarse de que chat y messages existan, incluso vacíos
+				const chatData = response.data?.chat || {};
+				const messages = response.data?.messages || [];
+
+				// Validar que el chat tenga al menos un ID para considerarlo válido
+				if (!chatData.id) {
+					chatData.id = chatId; // Asignar ID si no existe
+				}
+
+				return {
+					status: "success",
+					data: {
+						chat: chatData,
+						messages: messages,
+					},
+				};
+			} else {
+				throw new Error(
+					`La respuesta no tiene el formato esperado: ${JSON.stringify(response)}`
+				);
+			}
 		} catch (error) {
 			console.error(`Error al obtener detalles del chat ${chatId}:`, error);
 			throw error;
@@ -139,7 +193,7 @@ class ChatService {
 	): Promise<UpdateChatStatusResponse> {
 		try {
 			const response = await ApiClient.put<UpdateChatStatusResponse>(
-				API_ENDPOINTS.CHAT.DETAILS(chatId),
+				API_ENDPOINTS.CHAT.UPDATE_STATUS(chatId),
 				data
 			);
 			return response;

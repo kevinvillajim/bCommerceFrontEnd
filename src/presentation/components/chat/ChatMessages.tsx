@@ -16,13 +16,21 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({
 	noMessagesText = "No hay mensajes",
 }) => {
 	const messagesEndRef = useRef<HTMLDivElement>(null);
+	const messagesContainerRef = useRef<HTMLDivElement>(null);
+	const [prevMessagesLength, setPrevMessagesLength] = React.useState(0);
 
 	// Hacer scroll al último mensaje cuando hay nuevos mensajes
 	useEffect(() => {
-		if (messagesEndRef.current) {
-			messagesEndRef.current.scrollIntoView({behavior: "smooth"});
+		// Solo hacer scroll automático si se agregaron mensajes nuevos
+		if (messages.length > prevMessagesLength) {
+			if (messagesEndRef.current) {
+				messagesEndRef.current.scrollIntoView({behavior: "smooth"});
+			}
 		}
-	}, [messages]);
+
+		// Actualizar el contador de mensajes previos
+		setPrevMessagesLength(messages.length);
+	}, [messages.length, prevMessagesLength]);
 
 	// Formatear fecha relativa
 	const formatDate = (dateString: string) => {
@@ -36,7 +44,7 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({
 		}
 	};
 
-	if (loading) {
+	if (loading && messages.length === 0) {
 		return (
 			<div className="flex justify-center items-center h-full">
 				<div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
@@ -61,10 +69,14 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({
 	}
 
 	return (
-		<div className="space-y-4 p-4">
-			{messages.map((message) => (
+		<div
+			className="space-y-4 p-4 overflow-y-auto"
+			style={{maxHeight: "calc(70vh - 180px)"}}
+			ref={messagesContainerRef}
+		>
+			{messages.map((message, index) => (
 				<div
-					key={message.id}
+					key={message.id || `temp-${index}`}
 					className={`flex ${message.isMine ? "justify-end" : "justify-start"}`}
 				>
 					<div className="flex max-w-xs lg:max-w-md">
@@ -116,6 +128,13 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({
 				</div>
 			))}
 			<div ref={messagesEndRef} />
+
+			{/* Indicador de carga para nuevos mensajes */}
+			{loading && messages.length > 0 && (
+				<div className="flex justify-center py-2">
+					<div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-primary-600"></div>
+				</div>
+			)}
 		</div>
 	);
 };

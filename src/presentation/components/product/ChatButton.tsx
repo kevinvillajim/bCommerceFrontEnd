@@ -20,23 +20,22 @@ const ChatButton: React.FC<ChatButtonProps> = ({
 	className = "",
 }) => {
 	const navigate = useNavigate();
-	const {isAuthenticated} = useAuth();
+	const {isAuthenticated, user} = useAuth();
 	const {createChat} = useChat();
 	const [loading, setLoading] = useState(false);
 
 	const handleChatClick = async () => {
-		// Si el usuario no está autenticado, redirigir a la página de login
-		if (!isAuthenticated) {
-			// Guardar en sessionStorage la información para regresar después del login
-			sessionStorage.setItem(
-				"chatRedirect",
-				JSON.stringify({
-					productId,
-					sellerId,
-					returnTo: window.location.pathname,
-				})
+		// Si el usuario no está autenticado, redirigir al login
+		if (!isAuthenticated || !user) {
+			navigate(
+				"/login?redirect=" + encodeURIComponent(window.location.pathname)
 			);
-			navigate("/login");
+			return;
+		}
+
+		// Evitar que un vendedor inicie chat con sí mismo
+		if (user.id === sellerId) {
+			alert("No puedes iniciar un chat contigo mismo como vendedor");
 			return;
 		}
 
@@ -51,9 +50,13 @@ const ChatButton: React.FC<ChatButtonProps> = ({
 				navigate(`/chats/${chatId}`);
 			} else {
 				console.error("No se pudo crear el chat");
+				alert(
+					"Hubo un problema al iniciar la conversación. Por favor, inténtalo de nuevo."
+				);
 			}
 		} catch (error) {
 			console.error("Error al iniciar el chat:", error);
+			alert("Error al iniciar el chat. Por favor, inténtalo más tarde.");
 		} finally {
 			setLoading(false);
 		}

@@ -1,6 +1,6 @@
-import React, {useState, useEffect} from "react";
+import React, {useState, useEffect, useRef} from "react";
 import {useParams, useNavigate} from "react-router-dom";
-import {MessageSquare, ArrowLeft} from "lucide-react";
+import {MessageSquare, ArrowLeft, RefreshCw} from "lucide-react";
 import {useChat} from "../hooks/useChat";
 import ChatList from "../components/chat/ChatList";
 import ChatMessages from "../components/chat/ChatMessages";
@@ -9,16 +9,20 @@ import MessageForm from "../components/chat/MessageForm";
 
 const UserChatPage: React.FC = () => {
 	const navigate = useNavigate();
-    const { chatId: chatIdParam } = useParams<{ chatId?: string }>();
-    
+	const {chatId: chatIdParam} = useParams<{chatId?: string}>();
+
 	// Estados para filtros y búsqueda
 	const [searchTerm, setSearchTerm] = useState<string>("");
-	const [statusFilter, setStatusFilter] = useState<string>("active");
+	const [statusFilter, setStatusFilter] = useState<string>("all"); // Cambiado a "all" para mostrar todos
 	const [unreadFilter, setUnreadFilter] = useState<boolean>(false);
 	const [isMobileView, setIsMobileView] = useState<boolean>(
 		window.innerWidth < 768
 	);
 	const [showChatList, setShowChatList] = useState<boolean>(!chatIdParam);
+
+	// Referencias para evitar bucles infinitos
+	const initialLoadComplete = useRef<boolean>(false);
+	const chatIdRef = useRef<string | undefined>(chatIdParam);
 
 	// Obtener datos del chat usando el hook personalizado
 	const {
@@ -27,6 +31,7 @@ const UserChatPage: React.FC = () => {
 		messages,
 		loading,
 		error,
+		fetchChats,
 		fetchChatMessages,
 		sendMessage,
 		updateChatStatus,
@@ -43,25 +48,60 @@ const UserChatPage: React.FC = () => {
 		return () => window.removeEventListener("resize", handleResize);
 	}, []);
 
+	// Cargar chats al iniciar
+	useEffect(() => {
+		if (!initialLoadComplete.current) {
+			fetchChats().then(() => {
+				initialLoadComplete.current = true;
+			});
+		}
+	}, [fetchChats]);
+
 	// Cargar chat específico si se proporciona chatId en la URL
 	useEffect(() => {
+		// Si no ha completado la carga inicial de chats, esperar
+		if (!initialLoadComplete.current) return;
+
+		// Evitar procesar el mismo chatId múltiples veces
+		if (chatIdParam === chatIdRef.current && selectedChat) return;
+
+		chatIdRef.current = chatIdParam;
+
 		if (chatIdParam) {
 			const chatId = parseInt(chatIdParam, 10);
+
+			// Si no es un número válido, redirigir a chats
+			if (isNaN(chatId)) {
+				navigate("/chats", {replace: true});
+				return;
+			}
 
 			// Buscar el chat en la lista de chats
 			const chat = chats.find((c) => c.id === chatId);
 
 			if (chat) {
+				// Si encontramos el chat en la lista, seleccionarlo y cargar mensajes
 				setSelectedChat(chat);
 				fetchChatMessages(chatId);
 				setShowChatList(false);
 			} else if (!loading) {
 				// Intentar cargar los mensajes directamente si el chat no está en la lista
-				fetchChatMessages(chatId).catch(() => {
-					// Si falla, redirigir a la lista de chats
-					navigate("/chats");
+				console.log(
+					`Chat ${chatId} no encontrado en la lista, intentando cargar directamente`
+				);
+				fetchChatMessages(chatId).then((result) => {
+					if (!result) {
+						// Si no se encuentra el chat, redirigir a la lista de chats
+						console.warn(`Chat ${chatId} no encontrado, redirigiendo`);
+						navigate("/chats", {replace: true});
+					} else {
+						setShowChatList(false);
+					}
 				});
 			}
+		} else {
+			// Si no hay chatId, limpiar selección
+			setSelectedChat(null);
 		}
 	}, [
 		chatIdParam,
@@ -70,14 +110,8 @@ const UserChatPage: React.FC = () => {
 		loading,
 		navigate,
 		setSelectedChat,
+		selectedChat,
 	]);
-
-	// Actualizar la URL cuando se selecciona un chat
-	useEffect(() => {
-		if (selectedChat?.id) {
-			navigate(`/chats/${selectedChat.id}`, {replace: true});
-		}
-	}, [selectedChat, navigate]);
 
 	// Filtrar chats según los criterios
 	const filteredChats = chats.filter((chat) => {
@@ -93,7 +127,8 @@ const UserChatPage: React.FC = () => {
 		// Búsqueda por nombre de vendedor o producto
 		const matchesSearch =
 			searchTerm === "" ||
-			chat.product?.name?.toLowerCase().includes(searchTerm.toLowerCase());
+			chat.product?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+			chat.user?.name?.toLowerCase().includes(searchTerm.toLowerCase());
 
 		return matchesStatus && matchesUnread && matchesSearch;
 	});
@@ -101,8 +136,13 @@ const UserChatPage: React.FC = () => {
 	// Seleccionar un chat
 	const handleSelectChat = (chat: typeof selectedChat) => {
 		if (chat?.id) {
-			setSelectedChat(chat);
-			fetchChatMessages(chat.id);
+			// Actualizar la URL sin causar un bucle
+			if (selectedChat?.id !== chat.id) {
+				navigate(`/chats/${chat.id}`, {replace: true});
+				chatIdRef.current = String(chat.id);
+				setSelectedChat(chat);
+				fetchChatMessages(chat.id);
+			}
 
 			if (isMobileView) {
 				setShowChatList(false);
@@ -127,7 +167,13 @@ const UserChatPage: React.FC = () => {
 	// Volver a la lista en móvil
 	const handleBackToList = () => {
 		setShowChatList(true);
-		navigate("/chats");
+		navigate("/chats", {replace: true});
+		chatIdRef.current = undefined;
+	};
+
+	// Refrescar lista de chats
+	const refreshChats = () => {
+		fetchChats();
 	};
 
 	return (
@@ -137,15 +183,28 @@ const UserChatPage: React.FC = () => {
 					<MessageSquare className="w-6 h-6 mr-2" />
 					Mis Conversaciones
 				</h1>
-				{isMobileView && selectedChat && !showChatList && (
+				<div className="flex space-x-2">
+					{isMobileView && selectedChat && !showChatList && (
+						<button
+							onClick={handleBackToList}
+							className="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center"
+						>
+							<ArrowLeft size={16} className="mr-1" />
+							Volver
+						</button>
+					)}
 					<button
-						onClick={handleBackToList}
-						className="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center"
+						onClick={refreshChats}
+						className="px-3 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center"
+						disabled={loading}
 					>
-						<ArrowLeft size={16} className="mr-1" />
-						Volver
+						<RefreshCw
+							size={16}
+							className={`mr-1 ${loading ? "animate-spin" : ""}`}
+						/>
+						Actualizar
 					</button>
-				)}
+				</div>
 			</div>
 
 			{error && (
@@ -221,8 +280,9 @@ const UserChatPage: React.FC = () => {
 									Selecciona una conversación
 								</h3>
 								<p className="text-gray-500 dark:text-gray-400 mt-2 max-w-md">
-									Elige una conversación de la lista para ver los mensajes y
-									responder
+									{chats.length > 0
+										? "Elige una conversación de la lista para ver los mensajes y responder"
+										: "No tienes conversaciones activas. Puedes iniciar una desde la página de un producto."}
 								</p>
 							</div>
 						)}
