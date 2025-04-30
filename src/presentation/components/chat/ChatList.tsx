@@ -57,8 +57,8 @@ const ChatList: React.FC<ChatListProps> = ({
 		} else {
 			// En este caso, el usuario está viendo sus propios chats con vendedores
 			return {
-				name: `Vendedor #${chat.sellerId}`, // Idealmente, tendríamos el nombre del vendedor
-				avatar: undefined, // Y su avatar
+				name: chat.seller?.storeName || `Vendedor #${chat.sellerId}`,
+				avatar: chat.seller?.avatar,
 				id: chat.sellerId,
 				icon: <Store className="h-6 w-6 text-gray-500 dark:text-gray-400" />,
 			};
@@ -141,11 +141,14 @@ const ChatList: React.FC<ChatListProps> = ({
 					<ul>
 						{chats.map((chat) => {
 							const participant = getChatParticipant(chat);
+							// Asegurar que cada chat tiene un id válido
+							const chatId = chat.id || 0;
+
 							return (
 								<li
-									key={chat.id}
+									key={`chat-${chatId}`}
 									className={`border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer ${
-										selectedChatId === chat.id
+										selectedChatId === chatId
 											? "bg-primary-50 dark:bg-primary-900/30"
 											: ""
 									}`}

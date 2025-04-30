@@ -11,11 +11,11 @@ export const useChat = () => {
 	const [loading, setLoading] = useState<boolean>(false);
 	const [error, setError] = useState<string | null>(null);
 
-	// Añadimos una referencia para controlar peticiones repetidas
+	// Referencias para control de estado
 	const isLoadingRef = useRef(false);
+	const chatPollingRef = useRef<NodeJS.Timeout | null>(null);
 	const chatFetchAttempts = useRef<Record<number, number>>({});
-	// Referencia para autoactualización
-	const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
+	const selectedChatIdRef = useRef<number | null>(null);
 
 	// Obtener el usuario actual del hook de autenticación
 	const {user} = useAuth();
@@ -39,6 +39,12 @@ export const useChat = () => {
 				console.log("Chats obtenidos correctamente:", response.data.length);
 
 				const processedChats = response.data.map((chat) => {
+					// Asegurarse de que el chat tiene un ID válido
+					if (!chat.id) {
+						console.warn("Chat sin ID detectado, asignando un ID temporal");
+						chat.id = Date.now() + Math.floor(Math.random() * 1000);
+					}
+
 					// Determinar si el usuario actual es el comprador o el vendedor
 					const isSeller = user?.id === chat.sellerId;
 
@@ -77,7 +83,7 @@ export const useChat = () => {
 		async (chatId: number) => {
 			// Verificar si el chat existe y si ya se ha intentado cargar demasiadas veces
 			const attempts = chatFetchAttempts.current[chatId] || 0;
-			if (attempts > 2) {
+			if (attempts > 3) {
 				console.warn(
 					`Demasiados intentos para cargar el chat ${chatId}, abortando`
 				);
@@ -106,50 +112,84 @@ export const useChat = () => {
 
 				if (response.status === "success") {
 					// Procesar chat y mensajes - verificando que no sean vacíos
-					const chat = response.data?.chat;
+					const chat = response.data?.chat || null;
 					const responseMessages = response.data?.messages || [];
 
-					// Validar que el chat tenga al menos un ID
-					if (chat && chat.id) {
-						console.log(
-							`Chat ${chatId} cargado correctamente con ${responseMessages.length} mensajes`
-						);
+					// Manejo especial para chatId específico que no existe en la API
+					if (!chat || Object.keys(chat).length === 0) {
+						console.warn(`Chat ${chatId} devuelto vacío por la API`);
 
-						// Reiniciar contador de intentos al tener éxito
-						chatFetchAttempts.current[chatId] = 0;
+						// Intentamos buscar en la lista local primero
+						const existingChat = chats.find((c) => c.id === chatId);
+						if (existingChat) {
+							console.log(`Chat ${chatId} encontrado en caché local`);
+							setSelectedChat(existingChat);
+							setMessages(existingChat.messages || []);
+							chatFetchAttempts.current[chatId] = 0; // Reiniciar contador
+							selectedChatIdRef.current = chatId;
 
-						// Asegurarse de que el chat tenga un ID válido
-						if (!chat.id) {
-							chat.id = chatId;
+							// Iniciar polling para este chat
+							startChatPolling(chatId);
+
+							return existingChat;
 						}
 
-						// Marcar los mensajes como propios o no
-						const chatMessages = responseMessages.map((message) => ({
-							...message,
-							isMine: message.senderId === user?.id,
-						}));
+						// Si tampoco está en caché local, creamos un objeto básico
+						const basicChat: Chat = {
+							id: chatId,
+							userId: user?.id || 0,
+							sellerId: 0, // No tenemos esta información
+							productId: 0, // No tenemos esta información
+							status: "active",
+							messages: [],
+						};
 
-						// Actualizar estados
-						setSelectedChat(chat);
-						setMessages(chatMessages);
+						setSelectedChat(basicChat);
+						setMessages([]);
+						selectedChatIdRef.current = chatId;
 
-						// Añadir este chat a la lista si no existe
-						setChats((prevChats) => {
-							const exists = prevChats.some((c) => c.id === chat.id);
-							if (!exists) {
-								return [...prevChats, chat];
-							}
-							return prevChats.map((c) =>
-								c.id === chat.id ? {...c, ...chat} : c
-							);
-						});
+						// Iniciar polling para este chat
+						startChatPolling(chatId);
 
-						return chat;
-					} else {
-						console.error(`Chat ${chatId} no tiene un formato válido:`, chat);
-						setError("Chat no encontrado o sin acceso");
-						return null;
+						return basicChat;
 					}
+
+					console.log(
+						`Chat ${chatId} cargado correctamente con ${responseMessages.length} mensajes`
+					);
+
+					// Reiniciar contador de intentos al tener éxito
+					chatFetchAttempts.current[chatId] = 0;
+
+					// Asegurarse de que el chat tenga un ID válido
+					if (!chat.id) {
+						chat.id = chatId;
+					}
+
+					// Marcar los mensajes como propios o no
+					const chatMessages = responseMessages.map((message) => ({
+						...message,
+						isMine: message.senderId === user?.id,
+					}));
+
+					// Actualizar estados
+					setSelectedChat(chat);
+					setMessages(chatMessages);
+					selectedChatIdRef.current = chatId;
+
+					// Añadir este chat a la lista si no existe
+					setChats((prevChats) => {
+						const exists = prevChats.some((c) => c.id === chat.id);
+						if (!exists) {
+							return [...prevChats, chat];
+						}
+						return prevChats;
+					});
+
+					// Iniciar polling para este chat
+					startChatPolling(chatId);
+
+					return chat;
 				} else {
 					console.error(`Error en respuesta para chat ${chatId}:`, response);
 					setError("Error al cargar los mensajes");
@@ -164,57 +204,44 @@ export const useChat = () => {
 				setLoading(false);
 			}
 		},
-		[user?.id]
+		[user?.id, chats]
 	);
 
 	/**
-	 * NUEVA FUNCIÓN: Enviar mensaje a un chat recién creado (sin requerir selectedChat)
+	 * Inicia el polling para actualizar mensajes automáticamente
 	 */
-	const sendMessageForNewChat = useCallback(
-		async (chatId: number, content: string): Promise<boolean> => {
-			if (!chatId || !content.trim()) {
-				console.error("No se puede enviar mensaje: Chat ID o contenido vacío");
-				return false;
+	const startChatPolling = useCallback(
+		(chatId: number) => {
+			// Detener polling existente si hay uno
+			if (chatPollingRef.current) {
+				clearInterval(chatPollingRef.current);
+				chatPollingRef.current = null;
 			}
 
-			if (isLoadingRef.current) {
-				console.log("Envío bloqueado, hay una operación en curso");
-				return false;
-			}
-
-			try {
-				console.log(`Enviando mensaje al nuevo chat ${chatId}...`);
-				isLoadingRef.current = true;
-				setLoading(true);
-				setError(null);
-
-				const response = await chatService.sendMessage(chatId, {
-					content: content.trim(),
-				});
-
-				if (response.status === "success") {
-					console.log(
-						"Mensaje para nuevo chat enviado correctamente:",
-						response.data
-					);
-					// Refrescar lista de chats para incluir el nuevo
-					await fetchChats();
-					return true;
-				} else {
-					console.error("Error en respuesta al enviar mensaje:", response);
-					setError(response.message || "Error al enviar el mensaje");
-					return false;
+			// Configurar intervalo para polling
+			chatPollingRef.current = setInterval(async () => {
+				// Solo hacer polling si es el chat seleccionado actualmente
+				if (selectedChatIdRef.current !== chatId) {
+					clearInterval(chatPollingRef.current!);
+					chatPollingRef.current = null;
+					return;
 				}
-			} catch (err) {
-				console.error("Error al enviar mensaje a nuevo chat:", err);
-				setError(extractErrorMessage(err, "Error al enviar el mensaje"));
-				return false;
-			} finally {
-				isLoadingRef.current = false;
-				setLoading(false);
-			}
+
+				// Evitar solicitudes si hay una en curso
+				if (isLoadingRef.current) return;
+
+				console.log(`Actualizando mensajes del chat ${chatId} (polling)...`);
+				await fetchChatMessages(chatId);
+			}, 10000); // 10 segundos
+
+			return () => {
+				if (chatPollingRef.current) {
+					clearInterval(chatPollingRef.current);
+					chatPollingRef.current = null;
+				}
+			};
 		},
-		[fetchChats, user?.id]
+		[fetchChatMessages]
 	);
 
 	/**
@@ -315,7 +342,19 @@ export const useChat = () => {
 
 				if (response.status === "success") {
 					console.log("Chat creado correctamente:", response.data);
-					return response.data.chat_id;
+
+					// Extraer el ID del chat de la respuesta
+					const chatId = response.data?.chat_id || response.data?.id;
+
+					if (!chatId) {
+						throw new Error("No se pudo obtener el ID del chat creado");
+					}
+
+					// Actualizar la lista de chats
+					await fetchChats();
+
+					// Devolver el ID del chat para redirección
+					return chatId;
 				} else {
 					console.error("Error en respuesta al crear chat:", response);
 					setError(response.message || "Error al crear el chat");
@@ -330,7 +369,7 @@ export const useChat = () => {
 				setLoading(false);
 			}
 		},
-		[]
+		[fetchChats]
 	);
 
 	/**
@@ -395,42 +434,6 @@ export const useChat = () => {
 		[selectedChat]
 	);
 
-	// NUEVA FUNCIÓN: Iniciar actualización periódica de mensajes
-	const startMessagesPolling = useCallback(
-		(chatId: number, intervalMs = 10000) => {
-			// Limpiar cualquier intervalo existente
-			if (refreshIntervalRef.current) {
-				clearInterval(refreshIntervalRef.current);
-			}
-
-			// Crear un nuevo intervalo
-			refreshIntervalRef.current = setInterval(() => {
-				// Solo actualizar si no hay otra petición en curso
-				if (!isLoadingRef.current && chatId) {
-					console.log(`Actualizando mensajes del chat ${chatId} (polling)...`);
-					fetchChatMessages(chatId);
-				}
-			}, intervalMs);
-
-			return () => {
-				if (refreshIntervalRef.current) {
-					clearInterval(refreshIntervalRef.current);
-					refreshIntervalRef.current = null;
-				}
-			};
-		},
-		[fetchChatMessages]
-	);
-
-	// Detener el polling al desmontar
-	const stopMessagesPolling = useCallback(() => {
-		if (refreshIntervalRef.current) {
-			clearInterval(refreshIntervalRef.current);
-			refreshIntervalRef.current = null;
-			console.log("Polling de mensajes detenido");
-		}
-	}, []);
-
 	// Cargar chats al montar el componente, solo una vez
 	useEffect(() => {
 		const controller = new AbortController();
@@ -444,27 +447,29 @@ export const useChat = () => {
 			// Asegurarse de que no quedan referencias de carga activas
 			isLoadingRef.current = false;
 			// Detener cualquier polling activo
-			stopMessagesPolling();
+			if (chatPollingRef.current) {
+				clearInterval(chatPollingRef.current);
+				chatPollingRef.current = null;
+			}
 			// Limpiar estados al desmontar
 			setChats([]);
 			setSelectedChat(null);
 			setMessages([]);
 		};
-	}, [user?.id, fetchChats, stopMessagesPolling]);
+	}, [user?.id, fetchChats]);
 
 	// Exponer un método para actualizar selectedChat directamente
 	const selectChat = useCallback(
 		(chat: Chat) => {
 			console.log("Seleccionando chat:", chat);
 			setSelectedChat(chat);
+			selectedChatIdRef.current = chat?.id || null;
 
 			if (chat && chat.id) {
 				fetchChatMessages(chat.id);
-				// Iniciar polling de mensajes
-				startMessagesPolling(chat.id);
 			}
 		},
-		[fetchChatMessages, startMessagesPolling]
+		[fetchChatMessages]
 	);
 
 	return {
@@ -476,12 +481,9 @@ export const useChat = () => {
 		fetchChats,
 		fetchChatMessages,
 		sendMessage,
-		sendMessageForNewChat,
 		createChat,
 		updateChatStatus,
 		setSelectedChat: selectChat,
-		startMessagesPolling,
-		stopMessagesPolling,
 	};
 };
 

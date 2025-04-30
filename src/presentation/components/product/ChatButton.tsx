@@ -21,7 +21,7 @@ const ChatButton: React.FC<ChatButtonProps> = ({
 }) => {
 	const navigate = useNavigate();
 	const {isAuthenticated, user} = useAuth();
-	const {createChat, fetchChatMessages, sendMessageForNewChat} = useChat();
+	const {createChat} = useChat();
 
 	const [loading, setLoading] = useState(false);
 	const [message, setMessage] = useState("");
@@ -59,22 +59,15 @@ const ChatButton: React.FC<ChatButtonProps> = ({
 		setError(null);
 
 		try {
-			// 1. Crear chat o obtener ID si ya existe
+			// Intentar crear el chat con mensaje inicial
 			const chatId = await createChat(sellerId, productId);
 
 			if (!chatId) {
 				throw new Error("No se pudo crear la conversación");
 			}
 
-			// 2. Enviar el mensaje inicial con el ID del chat
-			const success = await sendMessageForNewChat(chatId, message.trim());
-
-			if (!success) {
-				throw new Error("No se pudo enviar el mensaje");
-			}
-
-			// 3. Redirigir al chat
-			console.log(`Redirigiendo a chat ${chatId}...`);
+			// Redirigir al chat con el ID obtenido
+			console.log(`Redirigiendo a chat ID: ${chatId}`);
 			navigate(`/chats/${chatId}`);
 		} catch (err) {
 			console.error("Error al iniciar conversación:", err);
@@ -87,7 +80,7 @@ const ChatButton: React.FC<ChatButtonProps> = ({
 	};
 
 	return (
-		<div>
+		<div className="relative">
 			{!showMessageInput ? (
 				<button
 					onClick={handleChatClick}
@@ -108,7 +101,11 @@ const ChatButton: React.FC<ChatButtonProps> = ({
 						Envía un mensaje a {sellerName} sobre {productName}:
 					</div>
 
-					{error && <div className="text-sm text-red-600 mb-2">{error}</div>}
+					{error && (
+						<div className="text-sm text-red-600 mb-2 p-2 bg-red-50 dark:bg-red-900 dark:text-red-200 rounded">
+							{error}
+						</div>
+					)}
 
 					<form onSubmit={handleSendMessage} className="flex">
 						<input
