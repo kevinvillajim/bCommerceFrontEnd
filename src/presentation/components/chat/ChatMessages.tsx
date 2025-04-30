@@ -1,4 +1,4 @@
-import React, {useRef, useEffect} from "react";
+import React, {useRef, useEffect, useState} from "react";
 import {User, Clock} from "lucide-react";
 import type {Message} from "../../../core/domain/entities/Chat";
 import {formatDistanceToNow} from "date-fns";
@@ -17,11 +17,15 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({
 }) => {
 	const messagesEndRef = useRef<HTMLDivElement>(null);
 	const messagesContainerRef = useRef<HTMLDivElement>(null);
-	const [prevMessagesLength, setPrevMessagesLength] = React.useState(0);
+	const [prevMessagesLength, setPrevMessagesLength] = useState(0);
 
-	// Hacer scroll al último mensaje cuando hay nuevos mensajes
+	// Scroll automático cuando hay nuevos mensajes
 	useEffect(() => {
-		// Solo hacer scroll automático si se agregaron mensajes nuevos
+		if (messages.length > 0) {
+			console.log(`Mostrando ${messages.length} mensajes en el chat`);
+		}
+
+		// Scroll automático si hay nuevos mensajes
 		if (messages.length > prevMessagesLength) {
 			if (messagesEndRef.current) {
 				messagesEndRef.current.scrollIntoView({behavior: "smooth"});
@@ -31,6 +35,13 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({
 		// Actualizar el contador de mensajes previos
 		setPrevMessagesLength(messages.length);
 	}, [messages.length, prevMessagesLength]);
+
+	// También hacer scroll al montar el componente
+	useEffect(() => {
+		if (messagesEndRef.current && messages.length > 0) {
+			messagesEndRef.current.scrollIntoView({behavior: "auto"});
+		}
+	}, []);
 
 	// Formatear fecha relativa
 	const formatDate = (dateString: string) => {
@@ -44,9 +55,10 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({
 		}
 	};
 
+	// Mostrar mensajes de estado
 	if (loading && messages.length === 0) {
 		return (
-			<div className="flex justify-center items-center h-full">
+			<div className="flex justify-center items-center h-full p-8">
 				<div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
 			</div>
 		);
@@ -54,7 +66,7 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({
 
 	if (!messages.length) {
 		return (
-			<div className="flex flex-col items-center justify-center h-full text-center p-4">
+			<div className="flex flex-col items-center justify-center h-full text-center p-8">
 				<div className="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
 					<User className="h-8 w-8 text-gray-500 dark:text-gray-400" />
 				</div>
@@ -71,7 +83,7 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({
 	return (
 		<div
 			className="space-y-4 p-4 overflow-y-auto"
-			style={{maxHeight: "calc(70vh - 180px)"}}
+			style={{height: "calc(70vh - 180px)"}}
 			ref={messagesContainerRef}
 		>
 			{messages.map((message, index) => (

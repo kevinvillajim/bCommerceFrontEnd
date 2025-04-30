@@ -1,4 +1,4 @@
-import React, {useState} from "react";
+import React, {useState, useRef, useEffect} from "react";
 import {Link} from "react-router-dom";
 import {
 	User,
@@ -27,6 +27,8 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
 	loading,
 }) => {
 	const [isMenuOpen, setIsMenuOpen] = useState(false);
+	const [isUpdating, setIsUpdating] = useState(false);
+	const menuRef = useRef<HTMLDivElement>(null);
 
 	// Determinar el participante según el rol
 	const participant = isSeller
@@ -35,11 +37,11 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
 				avatar: chat.user?.avatar,
 				id: chat.userId,
 				icon: <User className="h-6 w-6 text-gray-500 dark:text-gray-400" />,
-				route: `/admin/users/${chat.userId}`, // Enlace al perfil del cliente (si existe)
+				route: `/admin/users/${chat.userId}`, // Enlace al perfil del cliente
 			}
 		: {
-				name: `Vendedor #${chat.sellerId}`, // Idealmente, tendríamos el nombre del vendedor
-				avatar: undefined, // Y su avatar
+				name: chat.seller?.storeName || `Vendedor #${chat.sellerId}`,
+				avatar: chat.seller?.avatar,
 				id: chat.sellerId,
 				icon: <Store className="h-6 w-6 text-gray-500 dark:text-gray-400" />,
 				route: `/sellers/${chat.sellerId}`, // Enlace al perfil del vendedor
@@ -51,6 +53,20 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
 		: `/products/${chat.productId}`;
 
 	// Cerrar menú al hacer clic fuera
+	useEffect(() => {
+		const handleClickOutside = (event: MouseEvent) => {
+			if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+				setIsMenuOpen(false);
+			}
+		};
+
+		document.addEventListener("mousedown", handleClickOutside);
+		return () => {
+			document.removeEventListener("mousedown", handleClickOutside);
+		};
+	}, []);
+
+	// Cerrar menú al hacer clic en cualquier parte
 	const closeMenu = () => {
 		setIsMenuOpen(false);
 	};
@@ -59,10 +75,23 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
 	const handleStatusChange = async (
 		status: "active" | "closed" | "archived"
 	) => {
-		if (loading) return;
+		if (loading || isUpdating || !chat.id) return;
 
+		setIsUpdating(true);
 		closeMenu();
-		await onUpdateStatus(chat.id!, status);
+
+		try {
+			console.log(`Cambiando estado de chat ${chat.id} a ${status}`);
+			const success = await onUpdateStatus(chat.id, status);
+
+			if (!success) {
+				console.error(`Error al cambiar estado a ${status}`);
+			}
+		} catch (error) {
+			console.error(`Error al actualizar estado a ${status}:`, error);
+		} finally {
+			setIsUpdating(false);
+		}
 	};
 
 	return (
@@ -128,60 +157,58 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
 				</span>
 
 				{/* Menú desplegable para acciones */}
-				<div className="relative">
+				<div className="relative" ref={menuRef}>
 					<button
 						onClick={() => setIsMenuOpen(!isMenuOpen)}
 						className="p-1 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none"
+						disabled={loading || isUpdating}
 					>
 						<MoreVertical className="h-5 w-5 text-gray-600 dark:text-gray-400" />
 					</button>
 
 					{/* Menú desplegable */}
 					{isMenuOpen && (
-						<>
-							<div className="fixed inset-0 z-10" onClick={closeMenu}></div>
-							<div className="absolute right-0 z-20 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 ring-1 ring-black ring-opacity-5">
-								{chat.status === "active" && (
-									<button
-										onClick={() => handleStatusChange("closed")}
-										className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-										disabled={loading}
-									>
-										Cerrar conversación
-									</button>
-								)}
+						<div className="absolute right-0 z-20 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 ring-1 ring-black ring-opacity-5">
+							{chat.status === "active" && (
+								<button
+									onClick={() => handleStatusChange("closed")}
+									className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+									disabled={loading || isUpdating}
+								>
+									Cerrar conversación
+								</button>
+							)}
 
-								{chat.status === "closed" && (
-									<button
-										onClick={() => handleStatusChange("active")}
-										className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-										disabled={loading}
-									>
-										Reabrir conversación
-									</button>
-								)}
+							{chat.status === "closed" && (
+								<button
+									onClick={() => handleStatusChange("active")}
+									className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+									disabled={loading || isUpdating}
+								>
+									Reabrir conversación
+								</button>
+							)}
 
-								{chat.status !== "archived" && (
-									<button
-										onClick={() => handleStatusChange("archived")}
-										className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-										disabled={loading}
-									>
-										Archivar conversación
-									</button>
-								)}
+							{chat.status !== "archived" && (
+								<button
+									onClick={() => handleStatusChange("archived")}
+									className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+									disabled={loading || isUpdating}
+								>
+									Archivar conversación
+								</button>
+							)}
 
-								{chat.status === "archived" && (
-									<button
-										onClick={() => handleStatusChange("active")}
-										className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-										disabled={loading}
-									>
-										Desarchivar conversación
-									</button>
-								)}
-							</div>
-						</>
+							{chat.status === "archived" && (
+								<button
+									onClick={() => handleStatusChange("active")}
+									className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+									disabled={loading || isUpdating}
+								>
+									Desarchivar conversación
+								</button>
+							)}
+						</div>
 					)}
 				</div>
 			</div>

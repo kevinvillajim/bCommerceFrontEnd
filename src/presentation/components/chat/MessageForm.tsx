@@ -1,4 +1,4 @@
-import React, {useState, useRef} from "react";
+import React, {useState, useRef, useEffect} from "react";
 import type {FormEvent, KeyboardEvent} from "react";
 import {Send} from "lucide-react";
 
@@ -21,25 +21,67 @@ const MessageForm: React.FC<MessageFormProps> = ({
 	const [localLoading, setLocalLoading] = useState(false);
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+	// Mantener registro de montaje para evitar actualizar estados en componentes desmontados
+	const isMounted = useRef(true);
+
+	useEffect(() => {
+		// Marcar cuando el componente se desmonta
+		return () => {
+			isMounted.current = false;
+		};
+	}, []);
+
+	// Al montar el componente, enfocar el textarea
+	useEffect(() => {
+		if (textareaRef.current && !isDisabled) {
+			textareaRef.current.focus();
+		}
+	}, [isDisabled]);
+
 	const handleSubmit = async (e: FormEvent) => {
 		e.preventDefault();
 
+		// Validaciones de seguridad
 		if (isDisabled || isLoading || localLoading || !message.trim()) {
+			console.log("Envío bloqueado:", {
+				isDisabled,
+				isLoading,
+				localLoading,
+				messageEmpty: !message.trim(),
+			});
 			return;
 		}
 
+		const messageToSend = message.trim();
 		setLocalLoading(true);
+
 		try {
-			const success = await onSendMessage(message);
-			if (success) {
-				setMessage("");
-				// Enfocar el textarea después de enviar
-				if (textareaRef.current) {
-					textareaRef.current.focus();
+			console.log("Enviando mensaje:", messageToSend);
+			const success = await onSendMessage(messageToSend);
+
+			// Solo actualizar estado si el componente sigue montado
+			if (isMounted.current) {
+				if (success) {
+					console.log("Mensaje enviado correctamente");
+					setMessage("");
+					// Enfocar el textarea después de enviar
+					if (textareaRef.current) {
+						textareaRef.current.focus();
+					}
+				} else {
+					console.error("Error al enviar mensaje");
+					// No limpiamos el mensaje para permitir reintentar
 				}
 			}
+		} catch (error) {
+			console.error("Error al enviar mensaje:", error);
+			if (isMounted.current) {
+				// También podríamos mostrar un toast o alerta aquí
+			}
 		} finally {
-			setLocalLoading(false);
+			if (isMounted.current) {
+				setLocalLoading(false);
+			}
 		}
 	};
 
@@ -51,6 +93,7 @@ const MessageForm: React.FC<MessageFormProps> = ({
 		}
 	};
 
+	// Si el chat está deshabilitado, mostrar mensaje informativo
 	if (isDisabled) {
 		return (
 			<div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700">
