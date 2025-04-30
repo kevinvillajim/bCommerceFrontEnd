@@ -155,14 +155,15 @@ export const API_ENDPOINTS = {
 		MARK_MESSAGE_READ: (id: number, messageId: number) =>
 			`/chats/${id}/messages/${messageId}/read`,
 		SELLER: {
-    	  LIST: "/seller/chats",
-    	  DETAILS: (id: number) => `/seller/chats/${id}`,
-    	  SEND_MESSAGE: (id: number) => `/seller/chats/${id}/messages`,
-    	  UPDATE_STATUS: (id: number) => `/seller/chats/${id}`,
-    	  GET_MESSAGES: (id: number) => `/seller/chats/${id}/messages`,
-    	  MARK_ALL_READ: (id: number) => `/seller/chats/${id}/mark-read`,
-    	},
-  	},
+			LIST: "/seller/chats",
+			DETAILS: (id: number) => `/seller/chats/${id}`,
+			LIST_BY_SELLER: (id: number) => `/seller/chats/by-seller/${id}`,
+			SEND_MESSAGE: (id: number) => `/seller/chats/${id}/messages`,
+			UPDATE_STATUS: (id: number) => `/seller/chats/${id}`,
+			GET_MESSAGES: (id: number) => `/seller/chats/${id}/messages`,
+			MARK_ALL_READ: (id: number) => `/seller/chats/${id}/mark-read`,
+		},
+	},
 
 	// Recommendations
 	RECOMMENDATIONS: {

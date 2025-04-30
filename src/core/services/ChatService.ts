@@ -736,16 +736,16 @@ class ChatService {
 	 * Obtiene la lista de chats para un vendedor específico usando ID explícito
 	 * Este método es un fallback para cuando la ruta principal no funciona
 	 */
-	async getChatsBySellerIdExplicit(
-		sellerId: number
-	): Promise<ChatListResponse> {
+	async getChatsBySellerIdExplicit(id: number): Promise<ChatListResponse> {
 		try {
 			console.log(
-				`ChatService (${this.serviceId}): Obteniendo lista de chats para vendedor ${sellerId} (búsqueda explícita)`
+				`ChatService (${this.serviceId}): Obteniendo lista de chats para vendedor con ID ${id} (búsqueda explícita)`
 			);
 
-			// Utiliza la ruta explícita usando el ID del vendedor
-			const endpoint = `/seller/chats/by-seller/${sellerId}`;
+			// Utiliza la ruta explícita usando el ID proporcionado
+			// Nota: Este ID puede ser tanto un user_id como un seller_id
+			// El backend se encargará de manejar ambos casos
+			const endpoint = API_ENDPOINTS.CHAT.SELLER.LIST_BY_SELLER(id);
 			console.log(`Usando endpoint explícito: ${endpoint}`);
 
 			const response = await ApiClient.get<any>(endpoint);
@@ -819,7 +819,7 @@ class ChatService {
 			};
 		} catch (error) {
 			console.error(
-				`ChatService (${this.serviceId}): Error al obtener chats para vendedor ${sellerId} (método explícito):`,
+				`ChatService (${this.serviceId}): Error al obtener chats para ID ${id} (método explícito):`,
 				error
 			);
 			// Relanzamos el error para que el hook pueda manejarlo y probar el siguiente método

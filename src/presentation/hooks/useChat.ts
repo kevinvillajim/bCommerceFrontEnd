@@ -4,6 +4,8 @@ import {useAuth} from "./useAuth";
 import ChatService from "../../core/services/ChatService";
 import type {Chat, Message} from "../../core/domain/entities/Chat";
 import {extractErrorMessage} from "../../utils/errorHandler";
+import {API_ENDPOINTS} from "../../constants/apiEndpoints";
+import ApiClient from "../../infrastructure/api/apiClient";
 
 export const useChat = (isSeller = false) => {
 	const [chats, setChats] = useState<Chat[]>([]);
@@ -42,7 +44,6 @@ export const useChat = (isSeller = false) => {
 	 * Carga la lista de chats del usuario
 	 */
 	const fetchChats = useCallback(async () => {
-		// Evitar múltiples peticiones simultáneas
 		if (isLoadingRef.current) return [];
 
 		try {
@@ -56,44 +57,67 @@ export const useChat = (isSeller = false) => {
 			const chatService = getChatService();
 			let response;
 
-			// Si es vendedor y tenemos el ID del usuario, intentar con la ruta específica por ID
+			// Si es vendedor y tenemos el ID del usuario, intentar obtener primero el ID del vendedor
 			if (isSellerRef.current && user?.id) {
-				console.log(
-					`Intentando obtener chats para vendedor con ID: ${user.id}`
-				);
-				try {
-					// Intentar primero con la ruta explícita por ID de vendedor
-					response = await chatService.getChatsBySellerIdExplicit(user.id);
-					console.log(`Respuesta de búsqueda explícita por ID: `, response);
-				} catch (explicitError) {
-					console.warn(
-						`Error en búsqueda explícita, intentando ruta general: `,
-						explicitError
+				// Obtener el ID del vendedor asociado al usuario
+				const sellerId = await getSellerIdFromUser(user.id);
+
+				if (sellerId) {
+					console.log(
+						`Intentando obtener chats para vendedor con ID de vendedor: ${sellerId}`
 					);
-					// Si falla, intentar con la ruta general
-					response = await chatService.getChats();
+					try {
+						// Intentar primero con la ruta explícita usando el ID de vendedor
+						response = await chatService.getChatsBySellerIdExplicit(sellerId);
+						console.log(
+							`Respuesta de búsqueda explícita por ID de vendedor: `,
+							response
+						);
+					} catch (explicitError) {
+						console.warn(
+							`Error en búsqueda explícita por ID de vendedor, intentando con ID de usuario: `,
+							explicitError
+						);
+						// Si falla, intentar con el ID de usuario directamente
+						try {
+							response = await chatService.getChatsBySellerIdExplicit(user.id);
+							console.log(
+								`Respuesta de búsqueda explícita por ID de usuario: `,
+								response
+							);
+						} catch (userIdError) {
+							console.warn(
+								`Error en búsqueda explícita por ID de usuario, intentando ruta general: `,
+								userIdError
+							);
+							// Si ambos fallan, intentar con la ruta general
+							response = await chatService.getChats();
+						}
+					}
+				} else {
+					console.log(
+						`No se encontró ID de vendedor para usuario ${user.id}, intentando con ID de usuario directamente`
+					);
+					try {
+						// Intentar con el ID de usuario directamente
+						response = await chatService.getChatsBySellerIdExplicit(user.id);
+						console.log(
+							`Respuesta de búsqueda explícita por ID de usuario: `,
+							response
+						);
+					} catch (error) {
+						console.warn(
+							`Error en búsqueda explícita por ID de usuario, intentando ruta general: `,
+							error
+						);
+						// Si falla, intentar con la ruta general
+						response = await chatService.getChats();
+					}
 				}
 			} else {
 				// Para usuarios normales, usar la ruta estándar
 				response = await chatService.getChats();
 			}
-
-			if (!response || !response.data) {
-				console.warn("Respuesta vacía o inválida");
-				setError(
-					"Error al cargar los chats. La respuesta del servidor es inválida."
-				);
-				setChats([]);
-				return [];
-			}
-
-			// Normalizar el formato de los chats
-			const chatsData = Array.isArray(response.data) ? response.data : [];
-			console.log(`✅ Se encontraron ${chatsData.length} chats`);
-
-			setChats(chatsData);
-			localChatsRef.current = chatsData;
-			return chatsData;
 		} catch (err) {
 			console.error("Error al obtener chats:", err);
 			setError(extractErrorMessage(err, "Error al cargar los chats"));
@@ -103,6 +127,42 @@ export const useChat = (isSeller = false) => {
 			isLoadingRef.current = false;
 		}
 	}, [getChatService, user?.id]);
+
+	const getSellerIdFromUser = async (
+		userId: number
+	): Promise<number | null> => {
+		try {
+			console.log(
+				`Intentando obtener información del vendedor para usuario ${userId}`
+			);
+			const response = await ApiClient.get(
+				API_ENDPOINTS.SELLERS.BY_USER_ID(userId)
+			);
+
+			if (response && response.data && response.data.id) {
+				console.log(
+					`Usuario ${userId} tiene ID de vendedor ${response.data.id}`
+				);
+				return response.data.id;
+			} else if (response && response.data && response.data.seller_id) {
+				console.log(
+					`Usuario ${userId} tiene ID de vendedor ${response.data.seller_id}`
+				);
+				return response.data.seller_id;
+			}
+
+			console.warn(
+				`No se encontró información de vendedor para usuario ${userId}`
+			);
+			return null;
+		} catch (error) {
+			console.error(
+				`Error al obtener información del vendedor para usuario ${userId}:`,
+				error
+			);
+			return null;
+		}
+	};
 
 	/**
 	 * Carga los mensajes de un chat específico
