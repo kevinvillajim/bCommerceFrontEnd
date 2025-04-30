@@ -2,7 +2,7 @@ import {useState, useEffect, useCallback, useRef} from "react";
 import {useAuth} from "./useAuth";
 import ChatService from "../../core/services/ChatService";
 import type {Chat, Message} from "../../core/domain/entities/Chat";
-import {extractErrorMessage} from "../../utils/errorHandler";
+import { extractErrorMessage } from "../../utils/errorHandler";
 
 export const useChat = () => {
 	const [chats, setChats] = useState<Chat[]>([]);
@@ -36,6 +36,9 @@ export const useChat = () => {
 	 */
 	const resolveRealId = useCallback((id: number): number => {
 		const realId = temporaryToRealIdMap.current.get(id);
+		if (realId) {
+			console.log(`Resolviendo ID temporal ${id} a ID real ${realId}`);
+		}
 		return realId || id;
 	}, []);
 
@@ -97,15 +100,14 @@ export const useChat = () => {
 						// Normalizar los nombres de las propiedades (según interfaz Chat)
 						const normalizedChat: Chat = {
 							id: chat.id,
-							userId: chat.user_id || chat.userId,
-							sellerId: chat.seller_id || chat.sellerId,
-							productId: chat.product_id || chat.productId,
+							userId: chat.user_id || chat.userId || 0,
+							sellerId: chat.seller_id || chat.sellerId || 0,
+							productId: chat.product_id || chat.productId || 0,
 							status: chat.status || "active",
 							messages: chat.messages || [],
 							createdAt: chat.created_at || chat.createdAt,
 							updatedAt: chat.updated_at || chat.updatedAt,
 							user: chat.user,
-							seller: chat.seller,
 							product: chat.product,
 							unreadCount: chat.unread_count || chat.unreadCount || 0,
 							lastMessage: chat.last_message || chat.lastMessage,
@@ -166,6 +168,16 @@ export const useChat = () => {
 					`Demasiados intentos para cargar el chat ${resolvedChatId}, abortando`
 				);
 				setError(`No se pudo cargar el chat. Intente más tarde.`);
+
+				// Detener el polling si está activo para este chat
+				if (refreshIntervalRef.current) {
+					console.log(
+						`Deteniendo polling para chat ${resolvedChatId} por demasiados intentos fallidos`
+					);
+					clearInterval(refreshIntervalRef.current);
+					refreshIntervalRef.current = null;
+				}
+
 				return null;
 			}
 
@@ -248,15 +260,14 @@ export const useChat = () => {
 								// Normalizar propiedades
 								const normalizedChat: Chat = {
 									id: chat.id,
-									userId: chat.user_id || chat.userId,
-									sellerId: chat.seller_id || chat.sellerId,
-									productId: chat.product_id || chat.productId,
+									userId: chat.user_id || chat.userId || 0,
+									sellerId: chat.seller_id || chat.sellerId || 0,
+									productId: chat.product_id || chat.productId || 0,
 									status: chat.status || "active",
 									messages: chat.messages || [],
 									createdAt: chat.created_at || chat.createdAt,
 									updatedAt: chat.updated_at || chat.updatedAt,
 									user: chat.user,
-									seller: chat.seller,
 									product: chat.product,
 									unreadCount: chat.unread_count || chat.unreadCount || 0,
 									lastMessage: chat.last_message || chat.lastMessage,
@@ -326,6 +337,15 @@ export const useChat = () => {
 								`Chat ${resolvedChatId} no encontrado en el servidor`
 							);
 							setError(null);
+
+							// Detener el polling si está activo para este chat
+							if (refreshIntervalRef.current) {
+								console.log(
+									`Deteniendo polling para chat ${resolvedChatId} por error 404`
+								);
+								clearInterval(refreshIntervalRef.current);
+								refreshIntervalRef.current = null;
+							}
 
 							// Eliminar de la lista si existe
 							setChats((prevChats) => {
@@ -404,12 +424,15 @@ export const useChat = () => {
 					product_id: productId,
 				});
 
-				if (response.status === "success") {
+				if (response.status === "success" && response.data?.chat_id) {
 					console.log("Chat creado correctamente:", response.data);
 					const realChatId = response.data.chat_id;
 
 					// Mapear ID temporal al ID real
 					temporaryToRealIdMap.current.set(tempChatId, realChatId);
+					console.log(
+						`Chat creado con éxito. ID temporal: ${tempChatId}, ID real: ${realChatId}`
+					);
 
 					// Actualizar el chat en la lista con el ID real
 					setChats((prevChats) => {
@@ -452,7 +475,7 @@ export const useChat = () => {
 				setLoading(false);
 			}
 		},
-		[user, generateTemporaryId]
+		[user, generateTemporaryId, selectedChat]
 	);
 
 	/**
@@ -507,45 +530,83 @@ export const useChat = () => {
 					})
 				);
 
-				const response = await chatService.sendMessage(resolvedChatId, {
-					content: content.trim(),
-				});
+				try {
+					const response = await chatService.sendMessage(resolvedChatId, {
+						content: content.trim(),
+					});
 
-				if (response.status === "success") {
-					console.log(
-						"Mensaje para nuevo chat enviado correctamente:",
-						response.data
-					);
-
-					// Reemplazar el mensaje temporal con el real
-					if (response.data && response.data.id) {
-						setMessages((prev) =>
-							prev.map((msg) =>
-								msg.id === tempMessage.id
-									? {...response.data, isMine: true}
-									: msg
-							)
+					if (response.status === "success") {
+						console.log(
+							"Mensaje para nuevo chat enviado correctamente:",
+							response.data
 						);
+
+						// Reemplazar el mensaje temporal con el real
+						if (response.data && response.data.message) {
+							setMessages((prev) =>
+								prev.map((msg) =>
+									msg.id === tempMessage.id
+										? {...response.data.message, isMine: true}
+										: msg
+								)
+							);
+						}
+
+						// Refrescar chat para sincronizar
+						await fetchChatMessages(resolvedChatId);
+						return true;
+					} else {
+						console.error("Error en respuesta al enviar mensaje:", response);
+
+						// Eliminar el mensaje temporal en caso de error
+						setMessages((prev) =>
+							prev.filter((msg) => msg.id !== tempMessage.id)
+						);
+
+						setError(response.message || "Error al enviar el mensaje");
+						return false;
+					}
+				} catch (err) {
+					// Verificar si el error es un 404 - Chat no encontrado
+					const isNotFound =
+						err &&
+						typeof err === "object" &&
+						"response" in err &&
+						(err as any).response?.status === 404;
+
+					if (isNotFound) {
+						console.warn(
+							`El chat ${resolvedChatId} no existe en el servidor, no se pudo enviar el mensaje`
+						);
+
+						// Limpiar el mensaje temporal
+						setMessages((prev) =>
+							prev.filter((msg) => msg.id !== tempMessage.id)
+						);
+
+						setError(
+							"El chat no existe en el servidor. Intente crear un nuevo chat."
+						);
+
+						// Limpiar el mapeo si era un ID temporal
+						if (resolvedChatId !== chatId) {
+							temporaryToRealIdMap.current.delete(chatId);
+						}
+
+						return false;
 					}
 
-					// Refrescar chat para sincronizar
-					await fetchChatMessages(resolvedChatId);
-					return true;
-				} else {
-					console.error("Error en respuesta al enviar mensaje:", response);
+					// Para otros errores
+					console.error("Error al enviar mensaje a nuevo chat:", err);
 
-					// Eliminar el mensaje temporal en caso de error
+					// Limpiar el mensaje temporal
 					setMessages((prev) =>
 						prev.filter((msg) => msg.id !== tempMessage.id)
 					);
 
-					setError(response.message || "Error al enviar el mensaje");
+					setError(extractErrorMessage(err, "Error al enviar el mensaje"));
 					return false;
 				}
-			} catch (err) {
-				console.error("Error al enviar mensaje a nuevo chat:", err);
-				setError(extractErrorMessage(err, "Error al enviar el mensaje"));
-				return false;
 			} finally {
 				isLoadingRef.current = false;
 				setLoading(false);
@@ -594,60 +655,95 @@ export const useChat = () => {
 				// Añadir mensaje temporal a la lista
 				setMessages((prev) => [...prev, tempMessage]);
 
-				const response = await chatService.sendMessage(resolvedChatId, {
-					content: content.trim(),
-				});
+				try {
+					const response = await chatService.sendMessage(resolvedChatId, {
+						content: content.trim(),
+					});
 
-				if (response.status === "success") {
-					console.log("Mensaje enviado correctamente:", response.data);
+					if (response.status === "success") {
+						console.log("Mensaje enviado correctamente:", response.data);
 
-					// Reemplazar el mensaje temporal con el real
-					if (response.data && response.data.id) {
-						setMessages((prev) =>
-							prev.map((msg) =>
-								msg.id === tempMessage.id
-									? {...response.data, isMine: true}
-									: msg
-							)
+						// Reemplazar el mensaje temporal con el real
+						if (response.data && response.data.message) {
+							setMessages((prev) =>
+								prev.map((msg) =>
+									msg.id === tempMessage.id
+										? {...response.data.message, isMine: true}
+										: msg
+								)
+							);
+						}
+
+						// Actualizar el último mensaje en la lista de chats
+						setChats((prev) =>
+							prev.map((chat) => {
+								if (chat.id === selectedChat.id || chat.id === resolvedChatId) {
+									return {
+										...chat,
+										lastMessage: response.data.message || tempMessage,
+										updatedAt: new Date().toISOString(),
+									};
+								}
+								return chat;
+							})
 						);
+
+						return true;
+					} else {
+						console.error("Error en respuesta al enviar mensaje:", response);
+
+						// Eliminar el mensaje temporal en caso de error
+						setMessages((prev) =>
+							prev.filter((msg) => msg.id !== tempMessage.id)
+						);
+
+						setError(response.message || "Error al enviar el mensaje");
+						return false;
+					}
+				} catch (err) {
+					// Verificar si el error es un 404 - Chat no encontrado
+					const isNotFound =
+						err &&
+						typeof err === "object" &&
+						"response" in err &&
+						(err as any).response?.status === 404;
+
+					if (isNotFound) {
+						console.warn(
+							`El chat ${resolvedChatId} no existe en el servidor, no se pudo enviar el mensaje`
+						);
+
+						// Eliminar el mensaje temporal
+						setMessages((prev) =>
+							prev.filter((msg) => msg.id !== tempMessage.id)
+						);
+
+						setError(
+							"El chat no existe en el servidor. Intente crear un nuevo chat."
+						);
+
+						// Detener polling si existe
+						if (refreshIntervalRef.current) {
+							console.log(
+								`Deteniendo polling para chat inexistente ${resolvedChatId}`
+							);
+							clearInterval(refreshIntervalRef.current);
+							refreshIntervalRef.current = null;
+						}
+
+						return false;
 					}
 
-					// Actualizar el último mensaje en la lista de chats
-					setChats((prev) =>
-						prev.map((chat) => {
-							if (chat.id === selectedChat.id || chat.id === resolvedChatId) {
-								return {
-									...chat,
-									lastMessage: response.data,
-									updatedAt: new Date().toISOString(),
-								};
-							}
-							return chat;
-						})
-					);
+					console.error("Error al enviar mensaje:", err);
 
-					return true;
-				} else {
-					console.error("Error en respuesta al enviar mensaje:", response);
-
-					// Eliminar el mensaje temporal en caso de error
+					// Eliminar mensaje temporal en caso de error
 					setMessages((prev) =>
 						prev.filter((msg) => msg.id !== tempMessage.id)
 					);
 
-					setError(response.message || "Error al enviar el mensaje");
+					setError(extractErrorMessage(err, "Error al enviar el mensaje"));
 					return false;
 				}
-			} catch (err) {
-				console.error("Error al enviar mensaje:", err);
-
-				// Eliminar mensaje temporal en caso de error
-				setMessages((prev) =>
-					prev.filter((msg) => msg.id !== generateTemporaryId())
-				);
-
-				setError(extractErrorMessage(err, "Error al enviar el mensaje"));
-				return false;
 			} finally {
 				isLoadingRef.current = false;
 				setLoading(false);
@@ -694,41 +790,72 @@ export const useChat = () => {
 					setSelectedChat((prev) => (prev ? {...prev, status} : null));
 				}
 
-				const response = await chatService.updateChatStatus(resolvedChatId, {
-					status,
-				});
+				try {
+					const response = await chatService.updateChatStatus(resolvedChatId, {
+						status,
+					});
 
-				if (response.status === "success") {
-					console.log("Estado actualizado correctamente:", response.data);
-					return true;
-				} else {
-					console.error("Error en respuesta al actualizar estado:", response);
+					if (response.status === "success") {
+						console.log("Estado actualizado correctamente:", response.data);
+						return true;
+					} else {
+						console.error("Error en respuesta al actualizar estado:", response);
+
+						// Revertir cambios en la UI
+						await fetchChats();
+
+						setError(
+							response.message ||
+								`Error al ${status === "active" ? "reabrir" : status === "closed" ? "cerrar" : "archivar"} el chat`
+						);
+						return false;
+					}
+				} catch (err) {
+					// Verificar si el error es un 404 - Chat no encontrado
+					const isNotFound =
+						err &&
+						typeof err === "object" &&
+						"response" in err &&
+						(err as any).response?.status === 404;
+
+					if (isNotFound) {
+						console.warn(
+							`El chat ${resolvedChatId} no existe en el servidor, no se pudo actualizar el estado`
+						);
+
+						setError("El chat no existe en el servidor");
+
+						// Revertir cambios locales mediante recarga de chats
+						await fetchChats();
+
+						// Detener polling si existe
+						if (refreshIntervalRef.current) {
+							console.log(
+								`Deteniendo polling para chat inexistente ${resolvedChatId}`
+							);
+							clearInterval(refreshIntervalRef.current);
+							refreshIntervalRef.current = null;
+						}
+
+						return false;
+					}
+
+					console.error(
+						`Error al actualizar estado del chat ${resolvedChatId}:`,
+						err
+					);
 
 					// Revertir cambios en la UI
 					await fetchChats();
 
 					setError(
-						response.message ||
+						extractErrorMessage(
+							err,
 							`Error al ${status === "active" ? "reabrir" : status === "closed" ? "cerrar" : "archivar"} el chat`
+						)
 					);
 					return false;
 				}
-			} catch (err) {
-				console.error(
-					`Error al actualizar estado del chat ${resolvedChatId}:`,
-					err
-				);
-
-				// Revertir cambios en la UI
-				await fetchChats();
-
-				setError(
-					extractErrorMessage(
-						err,
-						`Error al ${status === "active" ? "reabrir" : status === "closed" ? "cerrar" : "archivar"} el chat`
-					)
-				);
-				return false;
 			} finally {
 				isLoadingRef.current = false;
 				setLoading(false);
@@ -746,7 +873,13 @@ export const useChat = () => {
 			// Limpiar cualquier intervalo existente
 			if (refreshIntervalRef.current) {
 				clearInterval(refreshIntervalRef.current);
+				refreshIntervalRef.current = null;
 			}
+
+			// Reiniciar contador de intentos al iniciar nuevo polling
+			chatFetchAttempts.current[resolvedChatId] = 0;
+
+			console.log(`Iniciando polling para chat ${resolvedChatId}...`);
 
 			// Crear un nuevo intervalo para el chat específico
 			refreshIntervalRef.current = setInterval(() => {
@@ -801,7 +934,7 @@ export const useChat = () => {
 
 	// Exponer un método para actualizar selectedChat directamente
 	const selectChat = useCallback(
-		(chat: Chat) => {
+		(chat: Chat | null) => {
 			if (!chat) {
 				console.log("Seleccionando chat: null");
 				setSelectedChat(null);
@@ -829,6 +962,285 @@ export const useChat = () => {
 		]
 	);
 
+	/**
+	 * Marca todos los mensajes de un chat como leídos
+	 */
+	const markAllAsRead = useCallback(
+		async (chatId: number): Promise<boolean> => {
+			if (!chatId) {
+				console.error(
+					"No se puede marcar mensajes como leídos: ID de chat no válido"
+				);
+				return false;
+			}
+
+			// Resolver el ID real si es temporal
+			const resolvedChatId = resolveRealId(chatId);
+
+			try {
+				console.log(
+					`Marcando todos los mensajes del chat ${resolvedChatId} como leídos...`
+				);
+				setError(null);
+
+				// Marcar mensajes como leídos localmente de forma optimista
+				setMessages((prev) =>
+					prev.map((msg) => ({
+						...msg,
+						isRead: msg.senderId !== user?.id ? true : msg.isRead,
+					}))
+				);
+
+				// Actualizar el conteo de no leídos en la lista de chats
+				setChats((prev) =>
+					prev.map((chat) => {
+						if (chat.id === chatId || chat.id === resolvedChatId) {
+							return {
+								...chat,
+								unreadCount: 0,
+							};
+						}
+						return chat;
+					})
+				);
+
+				// Enviar la solicitud al servidor
+				const response =
+					await chatService.markAllMessagesAsRead(resolvedChatId);
+
+				return response.status === "success";
+			} catch (err) {
+				console.error(
+					`Error al marcar mensajes como leídos en chat ${resolvedChatId}:`,
+					err
+				);
+				setError(
+					extractErrorMessage(err, "Error al marcar mensajes como leídos")
+				);
+				return false;
+			}
+		},
+		[resolveRealId, user?.id, setMessages, setChats, chatService]
+	);
+
+	/**
+	 * Marca un mensaje específico como leído
+	 */
+	const markMessageAsRead = useCallback(
+		async (chatId: number, messageId: number): Promise<boolean> => {
+			if (!chatId || !messageId) {
+				console.error("No se puede marcar mensaje como leído: IDs no válidos");
+				return false;
+			}
+
+			// Resolver el ID real si es temporal
+			const resolvedChatId = resolveRealId(chatId);
+
+			try {
+				console.log(
+					`Marcando mensaje ${messageId} del chat ${resolvedChatId} como leído...`
+				);
+				setError(null);
+
+				// Marcar mensaje como leído localmente de forma optimista
+				setMessages((prev) =>
+					prev.map((msg) => {
+						if (msg.id === messageId) {
+							return {
+								...msg,
+								isRead: true,
+							};
+						}
+						return msg;
+					})
+				);
+
+				// Enviar la solicitud al servidor
+				const response = await chatService.markMessageAsRead(
+					resolvedChatId,
+					messageId
+				);
+
+				// Actualizar el conteo de no leídos en la lista de chats
+				if (response.status === "success") {
+					// Recalcular el conteo de no leídos
+					const unreadCount = messages.filter(
+						(msg) => !msg.isRead && msg.senderId !== user?.id
+					).length;
+
+					setChats((prev) =>
+						prev.map((chat) => {
+							if (chat.id === chatId || chat.id === resolvedChatId) {
+								return {
+									...chat,
+									unreadCount,
+								};
+							}
+							return chat;
+						})
+					);
+				}
+
+				return response.status === "success";
+			} catch (err) {
+				console.error(
+					`Error al marcar mensaje ${messageId} como leído en chat ${resolvedChatId}:`,
+					err
+				);
+				setError(
+					extractErrorMessage(err, "Error al marcar mensaje como leído")
+				);
+				return false;
+			}
+		},
+		[resolveRealId, user?.id, messages, setMessages, setChats, chatService]
+	);
+
+	/**
+	 * Carga más mensajes con paginación
+	 */
+	const loadMoreMessages = useCallback(
+		async (
+			chatId: number,
+			page: number,
+			limit: number = 20
+		): Promise<boolean> => {
+			if (!chatId) {
+				console.error("No se pueden cargar más mensajes: ID de chat no válido");
+				return false;
+			}
+
+			if (isLoadingRef.current) {
+				console.log("Carga bloqueada, hay una operación en curso");
+				return false;
+			}
+
+			// Resolver el ID real si es temporal
+			const resolvedChatId = resolveRealId(chatId);
+
+			try {
+				console.log(
+					`Cargando más mensajes para el chat ${resolvedChatId} (página ${page})...`
+				);
+				isLoadingRef.current = true;
+				setLoading(true);
+				setError(null);
+
+				// Obtener mensajes paginados
+				const response = await chatService.getMessages(
+					resolvedChatId,
+					page,
+					limit
+				);
+
+				if (response.status === "success" && response.data.messages) {
+					const newMessages = response.data.messages;
+
+					// Marcar mensajes como propios o no
+					const processedMessages = newMessages.map((message) => ({
+						...message,
+						isMine: message.senderId === user?.id,
+					}));
+
+					// Agregar mensajes manteniendo el orden y evitando duplicados
+					setMessages((prev) => {
+						// Crear un mapa de IDs para evitar duplicados
+						const messageMap = new Map();
+						prev.forEach((msg) => messageMap.set(msg.id, msg));
+						processedMessages.forEach((msg) => {
+							if (!messageMap.has(msg.id)) {
+								messageMap.set(msg.id, msg);
+							}
+						});
+
+						// Convertir el mapa a array y ordenar por fecha
+						const combinedMessages = Array.from(messageMap.values());
+						return combinedMessages.sort((a, b) => {
+							const dateA = new Date(a.createdAt || 0);
+							const dateB = new Date(b.createdAt || 0);
+							return dateA.getTime() - dateB.getTime();
+						});
+					});
+
+					return true;
+				}
+
+				return false;
+			} catch (err) {
+				console.error(
+					`Error al cargar más mensajes para el chat ${resolvedChatId}:`,
+					err
+				);
+				setError(extractErrorMessage(err, "Error al cargar más mensajes"));
+				return false;
+			} finally {
+				isLoadingRef.current = false;
+				setLoading(false);
+			}
+		},
+		[resolveRealId, user?.id, setMessages, chatService]
+	);
+
+	/**
+	 * Elimina/archiva un chat
+	 */
+	const deleteChat = useCallback(
+		async (chatId: number): Promise<boolean> => {
+			if (!chatId) {
+				console.error("No se puede eliminar chat: ID no válido");
+				return false;
+			}
+
+			// Resolver el ID real si es temporal
+			const resolvedChatId = resolveRealId(chatId);
+
+			try {
+				console.log(`Eliminando chat ${resolvedChatId}...`);
+				setLoading(true);
+				setError(null);
+
+				// Actualizar localmente de forma optimista
+				setChats((prev) =>
+					prev.filter(
+						(chat) => chat.id !== chatId && chat.id !== resolvedChatId
+					)
+				);
+
+				// Si el chat eliminado es el seleccionado, limpiar selección
+				if (
+					selectedChat &&
+					(selectedChat.id === chatId || selectedChat.id === resolvedChatId)
+				) {
+					setSelectedChat(null);
+					setMessages([]);
+					stopMessagesPolling();
+				}
+
+				// Enviar la solicitud al servidor
+				const response = await chatService.deleteChat(resolvedChatId);
+
+				return response.status === "success";
+			} catch (err) {
+				console.error(`Error al eliminar chat ${resolvedChatId}:`, err);
+				setError(extractErrorMessage(err, "Error al eliminar chat"));
+
+				// Revertir cambios si hay error
+				await fetchChats();
+				return false;
+			} finally {
+				setLoading(false);
+			}
+		},
+		[
+			resolveRealId,
+			selectedChat,
+			setSelectedChat,
+			stopMessagesPolling,
+			fetchChats,
+			chatService,
+		]
+	);
+
 	return {
 		chats,
 		selectedChat,
@@ -844,6 +1256,10 @@ export const useChat = () => {
 		setSelectedChat: selectChat,
 		startMessagesPolling,
 		stopMessagesPolling,
+		markAllAsRead,
+		markMessageAsRead,
+		loadMoreMessages,
+		deleteChat,
 	};
 };
 

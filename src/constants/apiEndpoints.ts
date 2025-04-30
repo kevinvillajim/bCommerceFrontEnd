@@ -145,14 +145,15 @@ export const API_ENDPOINTS = {
 	// Chat
 	CHAT: {
 		LIST: "/chats",
-		DETAILS: (id: string | number) => `/chats/${id}`,
+		DETAILS: (id: number) => `/chats/${id}`,
 		CREATE: "/chats",
-		SEND_MESSAGE: (id: string | number) => `/chats/${id}/messages`,
-		UPDATE_STATUS: (id: string | number) => `/chats/${id}`,
-		GET_PRODUCT_CHATS: (productId: string | number) =>
-			`/chats/product/${productId}`,
-		GET_SELLER_CHATS: (sellerId: string | number) =>
-			`/chats/seller/${sellerId}`,
+		SEND_MESSAGE: (id: number) => `/chats/${id}/messages`,
+		UPDATE_STATUS: (id: number) => `/chats/${id}`,
+		DELETE: (id: number) => `/chats/${id}`,
+		GET_MESSAGES: (id: number) => `/chats/${id}/messages`,
+		MARK_ALL_READ: (id: number) => `/chats/${id}/mark-read`,
+		MARK_MESSAGE_READ: (id: number, messageId: number) =>
+			`/chats/${id}/messages/${messageId}/read`,
 	},
 
 	// Recommendations

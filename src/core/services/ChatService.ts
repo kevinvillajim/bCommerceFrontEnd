@@ -15,6 +15,23 @@ export interface ChatDetailResponse {
 	data: {
 		chat: Chat;
 		messages: Message[];
+		pagination?: {
+			currentPage: number;
+			limit: number;
+			total: number;
+		};
+	};
+}
+
+export interface MessagesResponse {
+	status: string;
+	data: {
+		messages: Message[];
+		pagination: {
+			currentPage: number;
+			limit: number;
+			total: number;
+		};
 	};
 }
 
@@ -41,6 +58,11 @@ export interface UpdateChatStatusResponse {
 		chat_id: number;
 		status: string;
 	};
+}
+
+export interface MarkAsReadResponse {
+	status: string;
+	message: string;
 }
 
 /**
@@ -151,11 +173,17 @@ class ChatService {
 	/**
 	 * Obtiene los detalles de un chat específico con sus mensajes
 	 */
-	async getChatDetails(chatId: number): Promise<ChatDetailResponse> {
+	async getChatDetails(
+		chatId: number,
+		page: number = 1,
+		limit: number = 50
+	): Promise<ChatDetailResponse> {
 		try {
-			console.log(`ChatService: Obteniendo detalles del chat ${chatId}`);
+			console.log(
+				`ChatService: Obteniendo detalles del chat ${chatId} (página ${page}, límite ${limit})`
+			);
 			const response = await ApiClient.get<any>(
-				API_ENDPOINTS.CHAT.DETAILS(chatId)
+				`${API_ENDPOINTS.CHAT.DETAILS(chatId)}?page=${page}&limit=${limit}`
 			);
 
 			// Validación mejorada
@@ -163,28 +191,36 @@ class ChatService {
 				// Asegurar que response.data existe
 				const responseData = response.data || {};
 
-				// Extraer chat y mensajes con manejo de diferentes estructuras
+				// Extraer chat, mensajes y paginación
 				let chat: Chat;
 				let messages: Message[] = [];
+				let pagination = {
+					currentPage: page,
+					limit: limit,
+					total: 0,
+				};
 
-				// Caso 1: Respuesta directa con chat y messages
-				if (responseData.chat) {
+				// Caso 1: Respuesta con estructura esperada
+				if (responseData.chat && Array.isArray(responseData.messages)) {
 					chat = responseData.chat;
-					messages = responseData.messages || [];
+					messages = responseData.messages;
+					pagination = responseData.pagination || pagination;
 				}
 				// Caso 2: Respuesta con data anidada
-				else if (responseData.data && responseData.data.chat) {
-					chat = responseData.data.chat;
-					messages = responseData.data.messages || [];
-				}
-				// Caso 3: La respuesta completa es el chat (sin estructura anidada)
-				else if (
-					responseData.id ||
-					(responseData.data && responseData.data.id)
-				) {
-					chat = responseData.id ? responseData : responseData.data;
-					// En este caso, los mensajes podrían estar en .messages o ser un array separado
-					messages = chat.messages || [];
+				else if (responseData.data) {
+					if (
+						responseData.data.chat &&
+						Array.isArray(responseData.data.messages)
+					) {
+						chat = responseData.data.chat;
+						messages = responseData.data.messages;
+						pagination = responseData.data.pagination || pagination;
+					}
+					// Caso 3: La respuesta tiene estructura diferente
+					else if (responseData.data.id) {
+						chat = responseData.data;
+						messages = chat.messages || [];
+					}
 				}
 				// Fallback: Si no podemos identificar un chat, creamos uno básico con el ID proporcionado
 				else {
@@ -214,6 +250,7 @@ class ChatService {
 					data: {
 						chat,
 						messages,
+						pagination,
 					},
 				};
 			}
@@ -222,6 +259,65 @@ class ChatService {
 		} catch (error) {
 			console.error(
 				`ChatService: Error al obtener detalles del chat ${chatId}:`,
+				error
+			);
+			throw error;
+		}
+	}
+
+	/**
+	 * Obtiene mensajes de un chat con paginación
+	 */
+	async getMessages(
+		chatId: number,
+		page: number = 1,
+		limit: number = 20
+	): Promise<MessagesResponse> {
+		try {
+			console.log(
+				`ChatService: Obteniendo mensajes del chat ${chatId} (página ${page}, límite ${limit})`
+			);
+			const response = await ApiClient.get<any>(
+				`${API_ENDPOINTS.CHAT.GET_MESSAGES(chatId)}?page=${page}&limit=${limit}`
+			);
+
+			if (!response) {
+				throw new Error(
+					`No se pudieron obtener los mensajes del chat ${chatId}`
+				);
+			}
+
+			// Extraer mensajes y paginación
+			let messages: Message[] = [];
+			let pagination = {
+				currentPage: page,
+				limit: limit,
+				total: 0,
+			};
+
+			if (response.status === "success" && response.data) {
+				if (Array.isArray(response.data.messages)) {
+					messages = response.data.messages;
+					pagination = response.data.pagination || pagination;
+				} else if (
+					response.data.data &&
+					Array.isArray(response.data.data.messages)
+				) {
+					messages = response.data.data.messages;
+					pagination = response.data.data.pagination || pagination;
+				}
+			}
+
+			return {
+				status: "success",
+				data: {
+					messages,
+					pagination,
+				},
+			};
+		} catch (error) {
+			console.error(
+				`ChatService: Error al obtener mensajes del chat ${chatId}:`,
 				error
 			);
 			throw error;
@@ -422,6 +518,98 @@ class ChatService {
 				`ChatService: Error al actualizar estado del chat ${chatId}:`,
 				error
 			);
+			throw error;
+		}
+	}
+
+	/**
+	 * Marca todos los mensajes de un chat como leídos
+	 */
+	async markAllMessagesAsRead(chatId: number): Promise<MarkAsReadResponse> {
+		try {
+			console.log(
+				`ChatService: Marcando todos los mensajes del chat ${chatId} como leídos`
+			);
+
+			const response = await ApiClient.post<any>(
+				API_ENDPOINTS.CHAT.MARK_ALL_READ(chatId),
+				{}
+			);
+
+			if (!response) {
+				throw new Error(
+					"No se recibió respuesta al marcar mensajes como leídos"
+				);
+			}
+
+			return {
+				status: response.status || "success",
+				message: response.message || "Mensajes marcados como leídos",
+			};
+		} catch (error) {
+			console.error(
+				`ChatService: Error al marcar mensajes como leídos en chat ${chatId}:`,
+				error
+			);
+			throw error;
+		}
+	}
+
+	/**
+	 * Marca un mensaje específico como leído
+	 */
+	async markMessageAsRead(
+		chatId: number,
+		messageId: number
+	): Promise<MarkAsReadResponse> {
+		try {
+			console.log(
+				`ChatService: Marcando mensaje ${messageId} del chat ${chatId} como leído`
+			);
+
+			const response = await ApiClient.patch<any>(
+				API_ENDPOINTS.CHAT.MARK_MESSAGE_READ(chatId, messageId),
+				{}
+			);
+
+			if (!response) {
+				throw new Error("No se recibió respuesta al marcar mensaje como leído");
+			}
+
+			return {
+				status: response.status || "success",
+				message: response.message || "Mensaje marcado como leído",
+			};
+		} catch (error) {
+			console.error(
+				`ChatService: Error al marcar mensaje ${messageId} como leído en chat ${chatId}:`,
+				error
+			);
+			throw error;
+		}
+	}
+
+	/**
+	 * Elimina (archiva) un chat
+	 */
+	async deleteChat(chatId: number): Promise<MarkAsReadResponse> {
+		try {
+			console.log(`ChatService: Eliminando chat ${chatId}`);
+
+			const response = await ApiClient.delete<any>(
+				API_ENDPOINTS.CHAT.DELETE(chatId)
+			);
+
+			if (!response) {
+				throw new Error("No se recibió respuesta al eliminar chat");
+			}
+
+			return {
+				status: response.status || "success",
+				message: response.message || "Chat eliminado correctamente",
+			};
+		} catch (error) {
+			console.error(`ChatService: Error al eliminar chat ${chatId}:`, error);
 			throw error;
 		}
 	}
