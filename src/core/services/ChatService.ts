@@ -21,7 +21,9 @@ export interface ChatDetailResponse {
 export interface MessageResponse {
 	status: string;
 	message: string;
-	data: Message;
+	data: {
+		message: Message;
+	};
 }
 
 export interface CreateChatResponse {
@@ -261,15 +263,6 @@ class ChatService {
 				return {
 					status: response.status,
 					message: response.message || "Mensaje enviado",
-					data: response.data.message,
-				};
-			}
-
-			// Si la respuesta tiene otra estructura pero contiene datos del mensaje
-			if (response.data && (response.data.id || response.data.content)) {
-				return {
-					status: "success",
-					message: "Mensaje enviado",
 					data: response.data,
 				};
 			}
@@ -279,12 +272,15 @@ class ChatService {
 				status: response.status || "success",
 				message: response.message || "Mensaje enviado",
 				data: {
-					id: Math.floor(Math.random() * 10000), // ID temporal si no viene en la respuesta
-					chatId: chatId,
-					senderId: 0, // Se sobreescribirá en el hook
-					content: message.content,
-					isRead: false,
-					createdAt: new Date().toISOString(),
+					message: response.message ||
+						response.data || {
+							id: Date.now(),
+							chatId: chatId,
+							senderId: 0, // Se sobreescribirá en el hook
+							content: message.content,
+							isRead: false,
+							createdAt: new Date().toISOString(),
+						},
 				},
 			};
 		} catch (error) {
@@ -329,7 +325,7 @@ class ChatService {
 				}
 
 				// Si la respuesta tiene otra estructura pero contiene el ID del chat
-				if (response.data && typeof response.data.id === "number") {
+				if (response.data && response.data.id) {
 					return {
 						status: "success",
 						message: "Chat creado correctamente",

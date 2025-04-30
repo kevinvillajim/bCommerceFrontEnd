@@ -1,6 +1,6 @@
 import React, {useState, useRef, useEffect} from "react";
 import type {FormEvent, KeyboardEvent} from "react";
-import {Send} from "lucide-react";
+import {Send, Loader2} from "lucide-react";
 
 interface MessageFormProps {
 	onSendMessage: (message: string) => Promise<boolean>;
@@ -19,6 +19,7 @@ const MessageForm: React.FC<MessageFormProps> = ({
 }) => {
 	const [message, setMessage] = useState("");
 	const [localLoading, setLocalLoading] = useState(false);
+	const [error, setError] = useState<string | null>(null);
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
 
 	// Mantener registro de montaje para evitar actualizar estados en componentes desmontados
@@ -40,6 +41,9 @@ const MessageForm: React.FC<MessageFormProps> = ({
 
 	const handleSubmit = async (e: FormEvent) => {
 		e.preventDefault();
+
+		// Limpia cualquier error previo
+		setError(null);
 
 		// Validaciones de seguridad
 		if (isDisabled || isLoading || localLoading || !message.trim()) {
@@ -70,13 +74,14 @@ const MessageForm: React.FC<MessageFormProps> = ({
 					}
 				} else {
 					console.error("Error al enviar mensaje");
+					setError("No se pudo enviar el mensaje. Inténtalo de nuevo.");
 					// No limpiamos el mensaje para permitir reintentar
 				}
 			}
 		} catch (error) {
 			console.error("Error al enviar mensaje:", error);
 			if (isMounted.current) {
-				// También podríamos mostrar un toast o alerta aquí
+				setError("Error al enviar mensaje. Por favor, inténtalo de nuevo.");
 			}
 		} finally {
 			if (isMounted.current) {
@@ -86,11 +91,31 @@ const MessageForm: React.FC<MessageFormProps> = ({
 	};
 
 	const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+		// Limpiar error al escribir
+		if (error) {
+			setError(null);
+		}
+
 		// Enviar con Ctrl+Enter o Cmd+Enter (Mac)
 		if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
 			e.preventDefault();
 			handleSubmit(e);
 		}
+	};
+
+	// Ajustar altura automáticamente
+	const autoAdjustHeight = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+		const textarea = e.target;
+
+		// Establecer altura a un valor mínimo para que scrollHeight calcule correctamente
+		textarea.style.height = "auto";
+
+		// Establecer la altura al scrollHeight (ajusta según contenido)
+		const newHeight = Math.min(Math.max(textarea.scrollHeight, 40), 150);
+		textarea.style.height = `${newHeight}px`;
+
+		// Actualizar el mensaje
+		setMessage(textarea.value);
 	};
 
 	// Si el chat está deshabilitado, mostrar mensaje informativo
@@ -106,16 +131,23 @@ const MessageForm: React.FC<MessageFormProps> = ({
 
 	return (
 		<div className="p-4 border-t border-gray-200 dark:border-gray-700">
+			{error && (
+				<div className="mb-2 p-2 bg-red-50 text-red-600 text-sm rounded-md dark:bg-red-900/20 dark:text-red-400">
+					{error}
+				</div>
+			)}
+
 			<form onSubmit={handleSubmit} className="flex items-end">
 				<div className="flex-1 mr-2">
 					<textarea
 						ref={textareaRef}
 						value={message}
-						onChange={(e) => setMessage(e.target.value)}
+						onChange={autoAdjustHeight}
 						onKeyDown={handleKeyDown}
 						placeholder={placeholder}
 						className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white resize-none"
-						rows={2}
+						rows={1}
+						style={{minHeight: "40px", maxHeight: "150px"}}
 						disabled={isLoading || localLoading}
 					/>
 					<p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -132,7 +164,7 @@ const MessageForm: React.FC<MessageFormProps> = ({
 					disabled={!message.trim() || isLoading || localLoading}
 				>
 					{isLoading || localLoading ? (
-						<div className="h-5 w-5 border-2 border-t-transparent border-white rounded-full animate-spin"></div>
+						<Loader2 className="h-5 w-5 animate-spin" />
 					) : (
 						<Send size={18} />
 					)}

@@ -44,25 +44,26 @@ export const useChat = () => {
 	 */
 	const fetchChats = useCallback(async () => {
 		// Evitar múltiples peticiones simultáneas
-		if (isLoadingRef.current) return [];
+		if (isLoadingRef.current) return chats;
 
 		try {
 			isLoadingRef.current = true;
 			setLoading(true);
 			setError(null);
 
+			console.log("🔄 Obteniendo lista de chats...");
 			const response = await chatService.getChats();
 
 			if (response.status === "success" && Array.isArray(response.data)) {
-				console.log("Chats obtenidos correctamente:", response.data.length);
+				console.log("✅ Chats obtenidos correctamente:", response.data.length);
 
 				const processedChats = response.data.map((chat) => {
 					// Asegurar que el chat tiene un ID
 					if (!chat.id) {
 						console.warn(
-							"Chat recibido sin ID del servidor, esto no debería ocurrir"
+							"⚠️ Chat recibido sin ID del servidor, esto no debería ocurrir"
 						);
-						return chat;
+						chat.id = generateTemporaryId();
 					}
 
 					// Determinar si el usuario actual es el comprador o el vendedor
@@ -84,19 +85,19 @@ export const useChat = () => {
 				localChatsRef.current = processedChats;
 				return processedChats;
 			} else {
-				console.warn("Formato de respuesta inesperado:", response);
+				console.warn("⚠️ Formato de respuesta inesperado:", response);
 				setError("Error al cargar los chats. Formato de respuesta inesperado.");
-				return [];
+				return chats;
 			}
 		} catch (err) {
-			console.error("Error al obtener chats:", err);
+			console.error("❌ Error al obtener chats:", err);
 			setError(extractErrorMessage(err, "Error al cargar los chats"));
-			return [];
+			return chats;
 		} finally {
 			setLoading(false);
 			isLoadingRef.current = false;
 		}
-	}, [user?.id]);
+	}, [user?.id, chats, generateTemporaryId]);
 
 	/**
 	 * Carga los mensajes de un chat específico
@@ -110,7 +111,7 @@ export const useChat = () => {
 			const attempts = chatFetchAttempts.current[resolvedChatId] || 0;
 			if (attempts > 2) {
 				console.warn(
-					`Demasiados intentos para cargar el chat ${resolvedChatId}, abortando`
+					`⚠️ Demasiados intentos para cargar el chat ${resolvedChatId}, abortando`
 				);
 				setError(`No se pudo cargar el chat. Intente más tarde.`);
 				return null;
@@ -120,12 +121,12 @@ export const useChat = () => {
 				// Evitar múltiples peticiones simultáneas
 				if (isLoadingRef.current) {
 					console.log(
-						`Petición bloqueada para chat ${resolvedChatId}, ya hay una en curso`
+						`🚫 Petición bloqueada para chat ${resolvedChatId}, ya hay una en curso`
 					);
 					return null;
 				}
 
-				console.log(`Cargando mensajes para chat ${resolvedChatId}...`);
+				console.log(`🔄 Cargando mensajes para chat ${resolvedChatId}...`);
 				isLoadingRef.current = true;
 				setLoading(true);
 				setError(null);
@@ -167,7 +168,7 @@ export const useChat = () => {
 							// Validar que el chat tenga al menos un ID
 							if (chat && chat.id) {
 								console.log(
-									`Chat ${resolvedChatId} cargado correctamente con ${responseMessages.length} mensajes`
+									`✅ Chat ${resolvedChatId} cargado correctamente con ${responseMessages.length} mensajes`
 								);
 
 								// Reiniciar contador de intentos al tener éxito
@@ -207,7 +208,7 @@ export const useChat = () => {
 								return chat;
 							} else {
 								console.error(
-									`Chat ${resolvedChatId} no tiene un formato válido:`,
+									`❌ Chat ${resolvedChatId} no tiene un formato válido:`,
 									chat
 								);
 								setError("Chat no encontrado o sin acceso");
@@ -215,7 +216,7 @@ export const useChat = () => {
 							}
 						} else {
 							console.error(
-								`Error en respuesta para chat ${resolvedChatId}:`,
+								`❌ Error en respuesta para chat ${resolvedChatId}:`,
 								response
 							);
 							setError("Error al cargar los mensajes");
@@ -223,7 +224,7 @@ export const useChat = () => {
 						}
 					} catch (err) {
 						console.error(
-							`Error al obtener mensajes del chat ${resolvedChatId}:`,
+							`❌ Error al obtener mensajes del chat ${resolvedChatId}:`,
 							err
 						);
 						// Si el error es 404, es posible que el chat no exista en el servidor
@@ -234,10 +235,8 @@ export const useChat = () => {
 							(err as any).response?.status === 404;
 
 						if (isNotFound) {
-							// Puede ser un chat temporal o que se eliminó en el servidor
-							// Manejarlo de forma elegante sin mostrar error al usuario
 							console.warn(
-								`Chat ${resolvedChatId} no encontrado en el servidor`
+								`⚠️ Chat ${resolvedChatId} no encontrado en el servidor`
 							);
 							setError(null);
 
@@ -260,7 +259,9 @@ export const useChat = () => {
 					}
 				} else {
 					// Si es un ID temporal y no tenemos datos en caché, no podemos hacer mucho
-					console.warn(`No se pudo cargar el chat con ID temporal ${chatId}`);
+					console.warn(
+						`⚠️ No se pudo cargar el chat con ID temporal ${chatId}`
+					);
 					setError("El chat aún no ha sido sincronizado con el servidor");
 					return null;
 				}
@@ -278,17 +279,32 @@ export const useChat = () => {
 	const createChat = useCallback(
 		async (sellerId: number, productId: number) => {
 			if (isLoadingRef.current) {
-				console.log("Creación bloqueada, hay una operación en curso");
+				console.log("🚫 Creación bloqueada, hay una operación en curso");
 				return null;
 			}
 
 			try {
 				console.log(
-					`Creando chat con vendedor ${sellerId} para producto ${productId}...`
+					`🔄 Creando chat con vendedor ${sellerId} para producto ${productId}...`
 				);
 				isLoadingRef.current = true;
 				setLoading(true);
 				setError(null);
+
+				// Verificar si ya existe un chat para este vendedor y producto
+				const existingChat = chats.find(
+					(chat) =>
+						chat.sellerId === sellerId &&
+						chat.productId === productId &&
+						chat.userId === user?.id
+				);
+
+				if (existingChat && existingChat.id) {
+					console.log(
+						`✅ Ya existe un chat para este producto: ${existingChat.id}`
+					);
+					return existingChat.id;
+				}
 
 				// Generar un ID temporal para el nuevo chat
 				const tempChatId = generateTemporaryId();
@@ -319,7 +335,7 @@ export const useChat = () => {
 				});
 
 				if (response.status === "success") {
-					console.log("Chat creado correctamente:", response.data);
+					console.log("✅ Chat creado correctamente:", response.data);
 					const realChatId = response.data.chat_id;
 
 					// Mapear ID temporal al ID real
@@ -343,7 +359,7 @@ export const useChat = () => {
 
 					return realChatId;
 				} else {
-					console.error("Error en respuesta al crear chat:", response);
+					console.error("❌ Error en respuesta al crear chat:", response);
 
 					// Eliminar el chat temporal en caso de error
 					setChats((prevChats) => {
@@ -358,7 +374,7 @@ export const useChat = () => {
 					return null;
 				}
 			} catch (err) {
-				console.error("Error al crear chat:", err);
+				console.error("❌ Error al crear chat:", err);
 				setError(extractErrorMessage(err, "Error al crear el chat"));
 				return null;
 			} finally {
@@ -366,11 +382,11 @@ export const useChat = () => {
 				setLoading(false);
 			}
 		},
-		[user, generateTemporaryId]
+		[user, generateTemporaryId, chats]
 	);
 
 	/**
-	 * NUEVA FUNCIÓN: Enviar mensaje a un chat recién creado (sin requerir selectedChat)
+	 * Enviar mensaje a un chat recién creado (sin requerir selectedChat)
 	 */
 	const sendMessageForNewChat = useCallback(
 		async (chatId: number, content: string): Promise<boolean> => {
@@ -378,17 +394,19 @@ export const useChat = () => {
 			const resolvedChatId = resolveRealId(chatId);
 
 			if (!resolvedChatId || !content.trim()) {
-				console.error("No se puede enviar mensaje: Chat ID o contenido vacío");
+				console.error(
+					"❌ No se puede enviar mensaje: Chat ID o contenido vacío"
+				);
 				return false;
 			}
 
 			if (isLoadingRef.current) {
-				console.log("Envío bloqueado, hay una operación en curso");
+				console.log("🚫 Envío bloqueado, hay una operación en curso");
 				return false;
 			}
 
 			try {
-				console.log(`Enviando mensaje al nuevo chat ${resolvedChatId}...`);
+				console.log(`🔄 Enviando mensaje al nuevo chat ${resolvedChatId}...`);
 				isLoadingRef.current = true;
 				setLoading(true);
 				setError(null);
@@ -427,7 +445,7 @@ export const useChat = () => {
 
 				if (response.status === "success") {
 					console.log(
-						"Mensaje para nuevo chat enviado correctamente:",
+						"✅ Mensaje para nuevo chat enviado correctamente:",
 						response.data
 					);
 
@@ -446,7 +464,7 @@ export const useChat = () => {
 					await fetchChatMessages(resolvedChatId);
 					return true;
 				} else {
-					console.error("Error en respuesta al enviar mensaje:", response);
+					console.error("❌ Error en respuesta al enviar mensaje:", response);
 
 					// Eliminar el mensaje temporal en caso de error
 					setMessages((prev) =>
@@ -457,7 +475,7 @@ export const useChat = () => {
 					return false;
 				}
 			} catch (err) {
-				console.error("Error al enviar mensaje a nuevo chat:", err);
+				console.error("❌ Error al enviar mensaje a nuevo chat:", err);
 				setError(extractErrorMessage(err, "Error al enviar el mensaje"));
 				return false;
 			} finally {
@@ -475,7 +493,7 @@ export const useChat = () => {
 		async (content: string): Promise<boolean> => {
 			if (!selectedChat || !selectedChat.id || !content.trim()) {
 				console.error(
-					"No se puede enviar mensaje: Chat no seleccionado o contenido vacío"
+					"❌ No se puede enviar mensaje: Chat no seleccionado o contenido vacío"
 				);
 				return false;
 			}
@@ -484,12 +502,12 @@ export const useChat = () => {
 			const resolvedChatId = resolveRealId(selectedChat.id);
 
 			if (isLoadingRef.current) {
-				console.log("Envío bloqueado, hay una operación en curso");
+				console.log("🚫 Envío bloqueado, hay una operación en curso");
 				return false;
 			}
 
 			try {
-				console.log(`Enviando mensaje a chat ${resolvedChatId}...`);
+				console.log(`🔄 Enviando mensaje a chat ${resolvedChatId}...`);
 				isLoadingRef.current = true;
 				setLoading(true);
 				setError(null);
@@ -513,7 +531,7 @@ export const useChat = () => {
 				});
 
 				if (response.status === "success") {
-					console.log("Mensaje enviado correctamente:", response.data);
+					console.log("✅ Mensaje enviado correctamente:", response.data);
 
 					// Reemplazar el mensaje temporal con el real
 					if (response.data && response.data.id) {
@@ -542,7 +560,7 @@ export const useChat = () => {
 
 					return true;
 				} else {
-					console.error("Error en respuesta al enviar mensaje:", response);
+					console.error("❌ Error en respuesta al enviar mensaje:", response);
 
 					// Eliminar el mensaje temporal en caso de error
 					setMessages((prev) =>
@@ -553,7 +571,7 @@ export const useChat = () => {
 					return false;
 				}
 			} catch (err) {
-				console.error("Error al enviar mensaje:", err);
+				console.error("❌ Error al enviar mensaje:", err);
 
 				// Eliminar mensaje temporal en caso de error
 				setMessages((prev) =>
@@ -579,13 +597,13 @@ export const useChat = () => {
 			const resolvedChatId = resolveRealId(chatId);
 
 			if (isLoadingRef.current) {
-				console.log("Actualización bloqueada, hay una operación en curso");
+				console.log("🚫 Actualización bloqueada, hay una operación en curso");
 				return false;
 			}
 
 			try {
 				console.log(
-					`Actualizando estado de chat ${resolvedChatId} a ${status}...`
+					`🔄 Actualizando estado de chat ${resolvedChatId} a ${status}...`
 				);
 				isLoadingRef.current = true;
 				setLoading(true);
@@ -613,10 +631,13 @@ export const useChat = () => {
 				});
 
 				if (response.status === "success") {
-					console.log("Estado actualizado correctamente:", response.data);
+					console.log("✅ Estado actualizado correctamente:", response.data);
 					return true;
 				} else {
-					console.error("Error en respuesta al actualizar estado:", response);
+					console.error(
+						"❌ Error en respuesta al actualizar estado:",
+						response
+					);
 
 					// Revertir cambios en la UI
 					await fetchChats();
@@ -629,7 +650,7 @@ export const useChat = () => {
 				}
 			} catch (err) {
 				console.error(
-					`Error al actualizar estado del chat ${resolvedChatId}:`,
+					`❌ Error al actualizar estado del chat ${resolvedChatId}:`,
 					err
 				);
 
@@ -651,7 +672,7 @@ export const useChat = () => {
 		[selectedChat, fetchChats, resolveRealId]
 	);
 
-	// NUEVA FUNCIÓN: Iniciar actualización periódica de mensajes
+	// Actualización periódica de mensajes
 	const startMessagesPolling = useCallback(
 		(chatId: number, intervalMs = 15000) => {
 			// Resolver el ID real si es temporal
@@ -667,7 +688,7 @@ export const useChat = () => {
 				// Solo actualizar si no hay otra petición en curso
 				if (!isLoadingRef.current && resolvedChatId) {
 					console.log(
-						`Actualizando mensajes del chat ${resolvedChatId} (polling)...`
+						`🔄 Actualizando mensajes del chat ${resolvedChatId} (polling)...`
 					);
 					fetchChatMessages(resolvedChatId);
 				}
@@ -688,7 +709,7 @@ export const useChat = () => {
 		if (refreshIntervalRef.current) {
 			clearInterval(refreshIntervalRef.current);
 			refreshIntervalRef.current = null;
-			console.log("Polling de mensajes detenido");
+			console.log("🛑 Polling de mensajes detenido");
 		}
 	}, []);
 
@@ -706,10 +727,6 @@ export const useChat = () => {
 			isLoadingRef.current = false;
 			// Detener cualquier polling activo
 			stopMessagesPolling();
-			// Limpiar estados al desmontar
-			setChats([]);
-			setSelectedChat(null);
-			setMessages([]);
 		};
 	}, [user?.id, fetchChats, stopMessagesPolling]);
 

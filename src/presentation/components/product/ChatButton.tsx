@@ -1,6 +1,6 @@
-import React, {useState} from "react";
+import React, {useState, useEffect} from "react";
 import {useNavigate} from "react-router-dom";
-import {MessageCircle, Send} from "lucide-react";
+import {MessageCircle, Send, Loader2} from "lucide-react";
 import {useChat} from "../../hooks/useChat";
 import {useAuth} from "../../hooks/useAuth";
 
@@ -21,12 +21,26 @@ const ChatButton: React.FC<ChatButtonProps> = ({
 }) => {
 	const navigate = useNavigate();
 	const {isAuthenticated, user} = useAuth();
-	const {createChat, sendMessageForNewChat} = useChat();
+	const {createChat, sendMessageForNewChat, chats} = useChat();
 
 	const [loading, setLoading] = useState(false);
 	const [message, setMessage] = useState("");
 	const [showMessageInput, setShowMessageInput] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+	const [existingChatId, setExistingChatId] = useState<number | null>(null);
+
+	// Verificar si ya existe un chat con este vendedor para este producto
+	useEffect(() => {
+		if (isAuthenticated && user && chats.length > 0) {
+			const existingChat = chats.find(
+				(chat) => chat.sellerId === sellerId && chat.productId === productId
+			);
+
+			if (existingChat && existingChat.id) {
+				setExistingChatId(existingChat.id);
+			}
+		}
+	}, [chats, sellerId, productId, isAuthenticated, user]);
 
 	const handleChatClick = () => {
 		// Si el usuario no está autenticado, redirigir al login
@@ -40,6 +54,12 @@ const ChatButton: React.FC<ChatButtonProps> = ({
 		// Evitar que un vendedor inicie chat con sí mismo
 		if (user.id === sellerId) {
 			setError("No puedes iniciar un chat contigo mismo como vendedor");
+			return;
+		}
+
+		// Si ya existe un chat, ir directamente a él
+		if (existingChatId) {
+			navigate(`/chats/${existingChatId}`);
 			return;
 		}
 
@@ -100,11 +120,15 @@ const ChatButton: React.FC<ChatButtonProps> = ({
 					title={`Chatear con ${sellerName} sobre ${productName}`}
 				>
 					{loading ? (
-						<div className="w-4 h-4 border-2 border-t-transparent border-gray-600 dark:border-gray-300 rounded-full animate-spin mr-2"></div>
+						<Loader2 className="w-4 h-4 mr-2 animate-spin" />
 					) : (
 						<MessageCircle className="w-4 h-4 mr-2" />
 					)}
-					<span>Preguntar al vendedor</span>
+					<span>
+						{existingChatId
+							? "Continuar conversación"
+							: "Preguntar al vendedor"}
+					</span>
 				</button>
 			) : (
 				<div className="border border-gray-300 rounded-md p-3 dark:border-gray-600">
@@ -112,7 +136,11 @@ const ChatButton: React.FC<ChatButtonProps> = ({
 						Envía un mensaje a {sellerName} sobre {productName}:
 					</div>
 
-					{error && <div className="text-sm text-red-600 mb-2">{error}</div>}
+					{error && (
+						<div className="text-sm text-red-600 mb-2 p-2 bg-red-50 dark:bg-red-900/20 rounded">
+							{error}
+						</div>
+					)}
 
 					<form onSubmit={handleSendMessage} className="flex">
 						<input
@@ -134,7 +162,7 @@ const ChatButton: React.FC<ChatButtonProps> = ({
 							}`}
 						>
 							{loading ? (
-								<div className="w-4 h-4 border-2 border-t-transparent border-white rounded-full animate-spin"></div>
+								<Loader2 className="w-4 h-4 animate-spin" />
 							) : (
 								<Send className="w-4 h-4" />
 							)}
