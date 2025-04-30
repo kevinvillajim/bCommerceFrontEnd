@@ -1,3 +1,4 @@
+// src/core/services/ChatService.ts - VERSIÓN CORREGIDA
 import ApiClient from "../../infrastructure/api/apiClient";
 import {API_ENDPOINTS} from "../../constants/apiEndpoints";
 import type {Chat, Message} from "../domain/entities/Chat";
@@ -84,10 +85,12 @@ export interface UpdateChatStatusRequest {
 /**
  * Servicio para gestionar chats y mensajes
  *
- * CORRECCIÓN: Añadir soporte para diferentes rutas según el rol del usuario
+ * CORRECCIÓN: Optimizar la inicialización para evitar creaciones múltiples
  */
 class ChatService {
-	private isSeller: boolean = false;
+	private readonly isSeller: boolean;
+	// CORRECCIÓN: Añadir un ID único para cada instancia para depuración
+	private readonly serviceId: string;
 
 	/**
 	 * Construye una instancia del servicio
@@ -95,8 +98,9 @@ class ChatService {
 	 */
 	constructor(isSeller = false) {
 		this.isSeller = isSeller;
+		this.serviceId = `chat-service-${Date.now()}-${Math.round(Math.random() * 1000)}`;
 		console.log(
-			`ChatService inicializado ${isSeller ? "como vendedor" : "como usuario"}`
+			`ChatService inicializado como ${isSeller ? "vendedor" : "usuario"} (ID: ${this.serviceId})`
 		);
 	}
 
@@ -175,7 +179,7 @@ class ChatService {
 	async getChats(): Promise<ChatListResponse> {
 		try {
 			console.log(
-				`ChatService: Obteniendo lista de chats ${this.isSeller ? "como vendedor" : "como usuario"}`
+				`ChatService (${this.serviceId}): Obteniendo lista de chats ${this.isSeller ? "como vendedor" : "como usuario"}`
 			);
 			const endpoint = this.getEndpoint("LIST");
 			console.log(`Usando endpoint: ${endpoint}`);
@@ -189,7 +193,7 @@ class ChatService {
 					// Si data es un array directamente
 					if (Array.isArray(response.data)) {
 						console.log(
-							`ChatService: Se encontraron ${response.data.length} chats`
+							`ChatService (${this.serviceId}): Se encontraron ${response.data.length} chats`
 						);
 						return {
 							status: "success",
@@ -199,7 +203,7 @@ class ChatService {
 					// Si data.data es un array (formato anidado)
 					else if (response.data.data && Array.isArray(response.data.data)) {
 						console.log(
-							`ChatService: Se encontraron ${response.data.data.length} chats (formato anidado)`
+							`ChatService (${this.serviceId}): Se encontraron ${response.data.data.length} chats (formato anidado)`
 						);
 						return {
 							status: "success",
@@ -209,7 +213,7 @@ class ChatService {
 					// Si respuesta tiene otra estructura pero con datos
 					else {
 						console.warn(
-							"ChatService: Formato de respuesta no estándar:",
+							`ChatService (${this.serviceId}): Formato de respuesta no estándar:`,
 							response
 						);
 						return {
@@ -221,7 +225,7 @@ class ChatService {
 				// Caso 2: respuesta es directamente un array
 				else if (Array.isArray(response)) {
 					console.log(
-						`ChatService: Se encontraron ${response.length} chats (array directo)`
+						`ChatService (${this.serviceId}): Se encontraron ${response.length} chats (array directo)`
 					);
 					return {
 						status: "success",
@@ -231,7 +235,7 @@ class ChatService {
 				// Caso 3: Otros formatos pero con status de éxito
 				else if (typeof response === "object") {
 					console.warn(
-						"ChatService: Formato de respuesta inesperado pero válido",
+						`ChatService (${this.serviceId}): Formato de respuesta inesperado pero válido`,
 						response
 					);
 					return {
@@ -243,7 +247,7 @@ class ChatService {
 
 			// Si llegamos aquí, la respuesta es válida pero sin chats
 			console.log(
-				"ChatService: No se encontraron chats o formato no reconocido"
+				`ChatService (${this.serviceId}): No se encontraron chats o formato no reconocido`
 			);
 			return {
 				status: "success",
@@ -251,7 +255,7 @@ class ChatService {
 			};
 		} catch (error) {
 			console.error(
-				`ChatService: Error al obtener chats ${this.isSeller ? "de vendedor" : "de usuario"}:`,
+				`ChatService (${this.serviceId}): Error al obtener chats ${this.isSeller ? "de vendedor" : "de usuario"}:`,
 				error
 			);
 			// En caso de error, devolver una respuesta vacía pero válida
@@ -272,7 +276,7 @@ class ChatService {
 	): Promise<ChatDetailResponse> {
 		try {
 			console.log(
-				`ChatService: Obteniendo detalles del chat ${chatId} (página ${page}, límite ${limit}) ${this.isSeller ? "como vendedor" : "como usuario"}`
+				`ChatService (${this.serviceId}): Obteniendo detalles del chat ${chatId} (página ${page}, límite ${limit}) ${this.isSeller ? "como vendedor" : "como usuario"}`
 			);
 
 			const endpoint = this.getEndpoint("DETAILS", chatId);
@@ -321,7 +325,7 @@ class ChatService {
 				// Fallback: Si no podemos identificar un chat, creamos uno básico con el ID proporcionado
 				else {
 					console.warn(
-						`ChatService: Respuesta no estándar para chat ${chatId}, construyendo objeto básico`
+						`ChatService (${this.serviceId}): Respuesta no estándar para chat ${chatId}, construyendo objeto básico`
 					);
 					chat = {
 						id: chatId,
@@ -336,7 +340,7 @@ class ChatService {
 				// Asegurar que el chat tiene ID
 				if (!chat.id) {
 					console.warn(
-						`ChatService: Chat sin ID en la respuesta, asignando ${chatId}`
+						`ChatService (${this.serviceId}): Chat sin ID en la respuesta, asignando ${chatId}`
 					);
 					chat.id = chatId;
 				}
@@ -354,7 +358,7 @@ class ChatService {
 			throw new Error(`No se pudo obtener información del chat ${chatId}`);
 		} catch (error) {
 			console.error(
-				`ChatService: Error al obtener detalles del chat ${chatId} ${this.isSeller ? "como vendedor" : "como usuario"}:`,
+				`ChatService (${this.serviceId}): Error al obtener detalles del chat ${chatId} ${this.isSeller ? "como vendedor" : "como usuario"}:`,
 				error
 			);
 			throw error;
@@ -371,7 +375,7 @@ class ChatService {
 	): Promise<MessagesResponse> {
 		try {
 			console.log(
-				`ChatService: Obteniendo mensajes del chat ${chatId} (página ${page}, límite ${limit}) ${this.isSeller ? "como vendedor" : "como usuario"}`
+				`ChatService (${this.serviceId}): Obteniendo mensajes del chat ${chatId} (página ${page}, límite ${limit}) ${this.isSeller ? "como vendedor" : "como usuario"}`
 			);
 
 			const endpoint = this.getEndpoint("GET_MESSAGES", chatId);
@@ -417,7 +421,7 @@ class ChatService {
 			};
 		} catch (error) {
 			console.error(
-				`ChatService: Error al obtener mensajes del chat ${chatId} ${this.isSeller ? "como vendedor" : "como usuario"}:`,
+				`ChatService (${this.serviceId}): Error al obtener mensajes del chat ${chatId} ${this.isSeller ? "como vendedor" : "como usuario"}:`,
 				error
 			);
 			throw error;
@@ -433,13 +437,13 @@ class ChatService {
 	): Promise<MessageResponse> {
 		try {
 			console.log(
-				`ChatService: Enviando mensaje al chat ${chatId} ${this.isSeller ? "como vendedor" : "como usuario"}`
+				`ChatService (${this.serviceId}): Enviando mensaje al chat ${chatId} ${this.isSeller ? "como vendedor" : "como usuario"}`
 			);
 
 			// Validar parámetros
 			if (!chatId || !message.content.trim()) {
 				throw new Error(
-					"ChatService: ID de chat o contenido del mensaje inválidos"
+					`ChatService (${this.serviceId}): ID de chat o contenido del mensaje inválidos`
 				);
 			}
 
@@ -483,7 +487,7 @@ class ChatService {
 			};
 		} catch (error) {
 			console.error(
-				`ChatService: Error al enviar mensaje al chat ${chatId} ${this.isSeller ? "como vendedor" : "como usuario"}:`,
+				`ChatService (${this.serviceId}): Error al enviar mensaje al chat ${chatId} ${this.isSeller ? "como vendedor" : "como usuario"}:`,
 				error
 			);
 			throw error;
@@ -496,12 +500,14 @@ class ChatService {
 	async createChat(data: CreateChatRequest): Promise<CreateChatResponse> {
 		try {
 			console.log(
-				`ChatService: Creando chat con vendedor ${data.seller_id} para producto ${data.product_id}`
+				`ChatService (${this.serviceId}): Creando chat con vendedor ${data.seller_id} para producto ${data.product_id}`
 			);
 
 			// Validar parámetros
 			if (!data.seller_id || !data.product_id) {
-				throw new Error("ChatService: ID de vendedor o producto inválidos");
+				throw new Error(
+					`ChatService (${this.serviceId}): ID de vendedor o producto inválidos`
+				);
 			}
 
 			const endpoint = this.getEndpoint("CREATE");
@@ -547,7 +553,7 @@ class ChatService {
 				// Si no encontramos un ID pero la respuesta indica éxito
 				if (response.status === "success") {
 					console.warn(
-						"ChatService: Respuesta de éxito sin ID de chat:",
+						`ChatService (${this.serviceId}): Respuesta de éxito sin ID de chat:`,
 						response
 					);
 					return {
@@ -562,7 +568,10 @@ class ChatService {
 
 			throw new Error("Formato de respuesta inesperado al crear chat");
 		} catch (error) {
-			console.error("ChatService: Error al crear chat:", error);
+			console.error(
+				`ChatService (${this.serviceId}): Error al crear chat:`,
+				error
+			);
 			throw error;
 		}
 	}
@@ -576,12 +585,14 @@ class ChatService {
 	): Promise<UpdateChatStatusResponse> {
 		try {
 			console.log(
-				`ChatService: Actualizando estado del chat ${chatId} a ${data.status} ${this.isSeller ? "como vendedor" : "como usuario"}`
+				`ChatService (${this.serviceId}): Actualizando estado del chat ${chatId} a ${data.status} ${this.isSeller ? "como vendedor" : "como usuario"}`
 			);
 
 			// Validar parámetros
 			if (!chatId || !data.status) {
-				throw new Error("ChatService: ID de chat o estado inválidos");
+				throw new Error(
+					`ChatService (${this.serviceId}): ID de chat o estado inválidos`
+				);
 			}
 
 			const endpoint = this.getEndpoint("UPDATE_STATUS", chatId);
@@ -617,7 +628,7 @@ class ChatService {
 			throw new Error("No se recibió respuesta al actualizar estado");
 		} catch (error) {
 			console.error(
-				`ChatService: Error al actualizar estado del chat ${chatId} ${this.isSeller ? "como vendedor" : "como usuario"}:`,
+				`ChatService (${this.serviceId}): Error al actualizar estado del chat ${chatId} ${this.isSeller ? "como vendedor" : "como usuario"}:`,
 				error
 			);
 			throw error;
@@ -630,7 +641,7 @@ class ChatService {
 	async markAllMessagesAsRead(chatId: number): Promise<MarkAsReadResponse> {
 		try {
 			console.log(
-				`ChatService: Marcando todos los mensajes del chat ${chatId} como leídos ${this.isSeller ? "como vendedor" : "como usuario"}`
+				`ChatService (${this.serviceId}): Marcando todos los mensajes del chat ${chatId} como leídos ${this.isSeller ? "como vendedor" : "como usuario"}`
 			);
 
 			const endpoint = this.getEndpoint("MARK_ALL_READ", chatId);
@@ -650,7 +661,7 @@ class ChatService {
 			};
 		} catch (error) {
 			console.error(
-				`ChatService: Error al marcar mensajes como leídos en chat ${chatId} ${this.isSeller ? "como vendedor" : "como usuario"}:`,
+				`ChatService (${this.serviceId}): Error al marcar mensajes como leídos en chat ${chatId} ${this.isSeller ? "como vendedor" : "como usuario"}:`,
 				error
 			);
 			throw error;
@@ -666,7 +677,7 @@ class ChatService {
 	): Promise<MarkAsReadResponse> {
 		try {
 			console.log(
-				`ChatService: Marcando mensaje ${messageId} del chat ${chatId} como leído ${this.isSeller ? "como vendedor" : "como usuario"}`
+				`ChatService (${this.serviceId}): Marcando mensaje ${messageId} del chat ${chatId} como leído ${this.isSeller ? "como vendedor" : "como usuario"}`
 			);
 
 			const endpoint = this.getEndpoint("MARK_MESSAGE_READ", chatId, messageId);
@@ -684,7 +695,7 @@ class ChatService {
 			};
 		} catch (error) {
 			console.error(
-				`ChatService: Error al marcar mensaje ${messageId} como leído en chat ${chatId} ${this.isSeller ? "como vendedor" : "como usuario"}:`,
+				`ChatService (${this.serviceId}): Error al marcar mensaje ${messageId} como leído en chat ${chatId} ${this.isSeller ? "como vendedor" : "como usuario"}:`,
 				error
 			);
 			throw error;
@@ -697,7 +708,7 @@ class ChatService {
 	async deleteChat(chatId: number): Promise<MarkAsReadResponse> {
 		try {
 			console.log(
-				`ChatService: Eliminando chat ${chatId} ${this.isSeller ? "como vendedor" : "como usuario"}`
+				`ChatService (${this.serviceId}): Eliminando chat ${chatId} ${this.isSeller ? "como vendedor" : "como usuario"}`
 			);
 
 			const endpoint = this.getEndpoint("DELETE", chatId);
@@ -715,7 +726,7 @@ class ChatService {
 			};
 		} catch (error) {
 			console.error(
-				`ChatService: Error al eliminar chat ${chatId} ${this.isSeller ? "como vendedor" : "como usuario"}:`,
+				`ChatService (${this.serviceId}): Error al eliminar chat ${chatId} ${this.isSeller ? "como vendedor" : "como usuario"}:`,
 				error
 			);
 			throw error;

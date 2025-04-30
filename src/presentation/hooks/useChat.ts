@@ -1,4 +1,4 @@
-// src/presentation/hooks/useChat.ts - Versión simplificada
+// src/presentation/hooks/useChat.ts - VERSIÓN CORREGIDA
 import {useState, useEffect, useCallback, useRef} from "react";
 import {useAuth} from "./useAuth";
 import ChatService from "../../core/services/ChatService";
@@ -18,19 +18,25 @@ export const useChat = (isSeller = false) => {
 	const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
 	const localChatsRef = useRef<Chat[]>([]);
 
-	// Almacenar el valor de isSeller en una ref para evitar que cambie entre renderizados
+	// CORRECCIÓN 1: Almacenar el valor de isSeller en una ref y NO actualizarlo nunca
 	const isSellerRef = useRef<boolean>(isSeller);
 
-	// Asegurar que isSellerRef siempre tenga el valor correcto
-	useEffect(() => {
-		isSellerRef.current = isSeller;
-	}, [isSeller]);
+	// CORRECCIÓN 2: Referencia para almacenar instancia única del servicio
+	const chatServiceRef = useRef<ChatService | null>(null);
 
 	// Obtener el usuario actual del hook de autenticación
 	const {user} = useAuth();
 
-	// Crear el servicio de chat
-	const chatService = new ChatService(isSellerRef.current);
+	// CORRECCIÓN 3: Crear una sola instancia del servicio de chat
+	const getChatService = useCallback(() => {
+		if (!chatServiceRef.current) {
+			console.log(
+				`Creando instancia única de ChatService (isSeller=${isSellerRef.current})`
+			);
+			chatServiceRef.current = new ChatService(isSellerRef.current);
+		}
+		return chatServiceRef.current;
+	}, []);
 
 	/**
 	 * Carga la lista de chats del usuario
@@ -47,6 +53,7 @@ export const useChat = (isSeller = false) => {
 			setLoading(true);
 			setError(null);
 
+			const chatService = getChatService();
 			const response = await chatService.getChats();
 
 			if (!response || !response.data) {
@@ -73,7 +80,7 @@ export const useChat = (isSeller = false) => {
 			setLoading(false);
 			isLoadingRef.current = false;
 		}
-	}, [user?.id]);
+	}, [getChatService]);
 
 	/**
 	 * Carga los mensajes de un chat específico
@@ -118,6 +125,7 @@ export const useChat = (isSeller = false) => {
 				chatFetchAttempts.current[chatId] = attempts + 1;
 
 				try {
+					const chatService = getChatService();
 					const response = await chatService.getChatDetails(chatId);
 
 					if (response && response.status === "success") {
@@ -175,7 +183,7 @@ export const useChat = (isSeller = false) => {
 				setLoading(false);
 			}
 		},
-		[user?.id]
+		[getChatService]
 	);
 
 	/**
@@ -197,6 +205,7 @@ export const useChat = (isSeller = false) => {
 				setError(null);
 
 				// Enviar la petición al servidor
+				const chatService = getChatService();
 				const response = await chatService.createChat({
 					seller_id: sellerId,
 					product_id: productId,
@@ -224,7 +233,7 @@ export const useChat = (isSeller = false) => {
 				setLoading(false);
 			}
 		},
-		[fetchChatMessages]
+		[fetchChatMessages, getChatService]
 	);
 
 	/**
@@ -249,6 +258,7 @@ export const useChat = (isSeller = false) => {
 				setError(null);
 
 				try {
+					const chatService = getChatService();
 					const response = await chatService.sendMessage(chatId, {
 						content: content.trim(),
 					});
@@ -277,7 +287,7 @@ export const useChat = (isSeller = false) => {
 				setLoading(false);
 			}
 		},
-		[fetchChatMessages]
+		[fetchChatMessages, getChatService]
 	);
 
 	/**
@@ -306,6 +316,7 @@ export const useChat = (isSeller = false) => {
 				setError(null);
 
 				try {
+					const chatService = getChatService();
 					const response = await chatService.sendMessage(selectedChat.id, {
 						content: content.trim(),
 					});
@@ -331,7 +342,7 @@ export const useChat = (isSeller = false) => {
 				setLoading(false);
 			}
 		},
-		[selectedChat, fetchChatMessages]
+		[selectedChat, fetchChatMessages, getChatService]
 	);
 
 	/**
@@ -365,6 +376,7 @@ export const useChat = (isSeller = false) => {
 				}
 
 				try {
+					const chatService = getChatService();
 					const response = await chatService.updateChatStatus(chatId, {
 						status,
 					});
@@ -403,10 +415,12 @@ export const useChat = (isSeller = false) => {
 				setLoading(false);
 			}
 		},
-		[selectedChat, fetchChats]
+		[selectedChat, fetchChats, getChatService]
 	);
 
-	// NUEVA FUNCIÓN: Iniciar actualización periódica de mensajes
+	/**
+	 * Iniciar actualización periódica de mensajes
+	 */
 	const startMessagesPolling = useCallback(
 		(chatId: number, intervalMs = 15000) => {
 			// Limpiar cualquier intervalo existente
@@ -439,7 +453,9 @@ export const useChat = (isSeller = false) => {
 		[fetchChatMessages]
 	);
 
-	// Detener el polling al desmontar
+	/**
+	 * Detener el polling de mensajes
+	 */
 	const stopMessagesPolling = useCallback(() => {
 		if (refreshIntervalRef.current) {
 			clearInterval(refreshIntervalRef.current);
@@ -448,11 +464,18 @@ export const useChat = (isSeller = false) => {
 		}
 	}, []);
 
-	// Cargar chats al montar el componente, solo una vez
+	// CORRECCIÓN 4: Cargar chats al montar el componente, solo una vez
 	useEffect(() => {
 		const controller = new AbortController();
 
 		if (user?.id) {
+			// Asegurarse de que isSellerRef no cambie
+			console.log(
+				`Valor de isSellerRef.current fijado en: ${isSellerRef.current}`
+			);
+
+			// Crear instancia y cargar chats
+			getChatService();
 			fetchChats();
 		}
 
@@ -467,26 +490,33 @@ export const useChat = (isSeller = false) => {
 			setSelectedChat(null);
 			setMessages([]);
 		};
-	}, [user?.id, fetchChats, stopMessagesPolling]);
+	}, [user?.id, fetchChats, stopMessagesPolling, getChatService]);
 
-	// Exponer un método para actualizar selectedChat directamente
+	// CORRECCIÓN 5: Optimizar la función selectChat para evitar cambios innecesarios
 	const selectChat = useCallback(
 		(chat: Chat | null) => {
+			// CORRECCIÓN: Evitar actualizar estado si el chat es el mismo o ambos son null
 			if (!chat) {
-				console.log("Seleccionando chat: null");
-				setSelectedChat(null);
-				setMessages([]);
-				stopMessagesPolling();
+				// Solo actualizar si previamente había un chat seleccionado
+				if (selectedChat !== null) {
+					console.log("Seleccionando chat: null");
+					setSelectedChat(null);
+					setMessages([]);
+					stopMessagesPolling();
+				}
+				return;
+			}
+
+			// Evitar actualizar si es el mismo chat
+			if (selectedChat && selectedChat.id === chat.id) {
+				console.log(
+					`Chat ${chat.id} ya está seleccionado, omitiendo cambio de estado.`
+				);
 				return;
 			}
 
 			console.log("Seleccionando chat:", chat);
-
-			// Verificar si el chat ya está seleccionado antes de establecerlo
-			// Esto evita renderizados innecesarios
-			if (selectedChat?.id !== chat.id) {
-				setSelectedChat(chat);
-			}
+			setSelectedChat(chat);
 
 			if (chat && chat.id) {
 				fetchChatMessages(chat.id);
@@ -537,6 +567,7 @@ export const useChat = (isSeller = false) => {
 				);
 
 				// Enviar la solicitud al servidor
+				const chatService = getChatService();
 				const response = await chatService.markAllMessagesAsRead(chatId);
 
 				return response.status === "success";
@@ -551,7 +582,7 @@ export const useChat = (isSeller = false) => {
 				return false;
 			}
 		},
-		[user?.id, setMessages, setChats, chatService]
+		[user?.id, getChatService]
 	);
 
 	/**
@@ -584,6 +615,7 @@ export const useChat = (isSeller = false) => {
 				);
 
 				// Enviar la solicitud al servidor
+				const chatService = getChatService();
 				const response = await chatService.markMessageAsRead(chatId, messageId);
 
 				// Actualizar el conteo de no leídos en la lista de chats
@@ -618,7 +650,7 @@ export const useChat = (isSeller = false) => {
 				return false;
 			}
 		},
-		[user?.id, messages, setMessages, setChats, chatService]
+		[user?.id, messages, getChatService]
 	);
 
 	/**
@@ -649,6 +681,7 @@ export const useChat = (isSeller = false) => {
 				setError(null);
 
 				// Obtener mensajes paginados
+				const chatService = getChatService();
 				const response = await chatService.getMessages(chatId, page, limit);
 
 				if (response.status === "success" && response.data.messages) {
@@ -690,7 +723,7 @@ export const useChat = (isSeller = false) => {
 				setLoading(false);
 			}
 		},
-		[setMessages, chatService]
+		[getChatService]
 	);
 
 	/**
@@ -719,6 +752,7 @@ export const useChat = (isSeller = false) => {
 				}
 
 				// Enviar la solicitud al servidor
+				const chatService = getChatService();
 				const response = await chatService.deleteChat(chatId);
 
 				return response.status === "success";
@@ -738,7 +772,7 @@ export const useChat = (isSeller = false) => {
 			setSelectedChat,
 			stopMessagesPolling,
 			fetchChats,
-			chatService,
+			getChatService,
 		]
 	);
 
