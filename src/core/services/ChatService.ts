@@ -51,7 +51,6 @@ export interface SendMessageRequest {
 export interface CreateChatRequest {
 	seller_id: number;
 	product_id: number;
-	initial_message?: string;
 }
 
 export interface UpdateChatStatusRequest {
@@ -72,42 +71,59 @@ class ChatService {
 
 			// Validación mejorada de la respuesta
 			if (response) {
-				// Caso 1: response.data es un array - formato directo
-				if (Array.isArray(response.data)) {
+				// Caso 1: response tiene estructura de éxito con data
+				if (response.status === "success" && response.data) {
+					// Si data es un array directamente
+					if (Array.isArray(response.data)) {
+						console.log(
+							`ChatService: Se encontraron ${response.data.length} chats`
+						);
+						return {
+							status: "success",
+							data: response.data,
+						};
+					}
+					// Si data.data es un array (formato anidado)
+					else if (response.data.data && Array.isArray(response.data.data)) {
+						console.log(
+							`ChatService: Se encontraron ${response.data.data.length} chats (formato anidado)`
+						);
+						return {
+							status: "success",
+							data: response.data.data,
+						};
+					}
+					// Si respuesta tiene otra estructura pero con datos
+					else {
+						console.warn(
+							"ChatService: Formato de respuesta no estándar:",
+							response
+						);
+						return {
+							status: "success",
+							data: [],
+						};
+					}
+				}
+				// Caso 2: respuesta es directamente un array
+				else if (Array.isArray(response)) {
 					console.log(
-						`ChatService: Se encontraron ${response.data.length} chats`
+						`ChatService: Se encontraron ${response.length} chats (array directo)`
 					);
 					return {
 						status: "success",
-						data: response.data,
+						data: response,
 					};
 				}
-				// Caso 2: response.data.data es un array - formato anidado
-				else if (response.data?.data && Array.isArray(response.data.data)) {
-					console.log(
-						`ChatService: Se encontraron ${response.data.data.length} chats (formato anidado)`
+				// Caso 3: Otros formatos pero con status de éxito
+				else if (typeof response === "object") {
+					console.warn(
+						"ChatService: Formato de respuesta inesperado pero válido",
+						response
 					);
 					return {
 						status: "success",
-						data: response.data.data,
-					};
-				}
-				// Caso 3: La respuesta es un objeto con status y data como objeto
-				else if (response.status === "success" && response.data) {
-					// Si data es un objeto pero no un array, podría ser un único chat
-					const chatList = Array.isArray(response.data)
-						? response.data
-						: response.data.chats
-							? response.data.chats
-							: [];
-
-					console.log(
-						`ChatService: Se procesaron ${chatList.length} chats (formato especial)`
-					);
-
-					return {
-						status: "success",
-						data: chatList,
+						data: [],
 					};
 				}
 			}
@@ -146,7 +162,7 @@ class ChatService {
 				const responseData = response.data || {};
 
 				// Extraer chat y mensajes con manejo de diferentes estructuras
-				let chat: Chat | null = null;
+				let chat: Chat;
 				let messages: Message[] = [];
 
 				// Caso 1: Respuesta directa con chat y messages
@@ -160,21 +176,18 @@ class ChatService {
 					messages = responseData.data.messages || [];
 				}
 				// Caso 3: La respuesta completa es el chat (sin estructura anidada)
-				else if (responseData.id) {
-					chat = responseData;
+				else if (
+					responseData.id ||
+					(responseData.data && responseData.data.id)
+				) {
+					chat = responseData.id ? responseData : responseData.data;
 					// En este caso, los mensajes podrían estar en .messages o ser un array separado
-					messages = responseData.messages || [];
+					messages = chat.messages || [];
 				}
-
-				// Si el chat es un objeto vacío ({}), asignar null para mejor manejo
-				if (chat && Object.keys(chat).length === 0) {
-					chat = null;
-				}
-
-				// Si no hemos podido extraer un chat, creamos uno básico con el ID proporcionado
-				if (!chat) {
+				// Fallback: Si no podemos identificar un chat, creamos uno básico con el ID proporcionado
+				else {
 					console.warn(
-						`ChatService: No se encontró un formato de chat válido para ${chatId}, creando objeto básico`
+						`ChatService: Respuesta no estándar para chat ${chatId}, construyendo objeto básico`
 					);
 					chat = {
 						id: chatId,
@@ -184,9 +197,14 @@ class ChatService {
 						status: "active",
 						messages: [],
 					};
-				} else {
-					// Asegurar que el chat tiene ID
-					if (!chat.id) chat.id = chatId;
+				}
+
+				// Asegurar que el chat tiene ID
+				if (!chat.id) {
+					console.warn(
+						`ChatService: Chat sin ID en la respuesta, asignando ${chatId}`
+					);
+					chat.id = chatId;
 				}
 
 				return {
@@ -217,7 +235,15 @@ class ChatService {
 	): Promise<MessageResponse> {
 		try {
 			console.log(`ChatService: Enviando mensaje al chat ${chatId}`);
-			const response = await ApiClient.post<MessageResponse>(
+
+			// Validar parámetros
+			if (!chatId || !message.content.trim()) {
+				throw new Error(
+					"ChatService: ID de chat o contenido del mensaje inválidos"
+				);
+			}
+
+			const response = await ApiClient.post<any>(
 				API_ENDPOINTS.CHAT.SEND_MESSAGE(chatId),
 				message
 			);
@@ -226,23 +252,41 @@ class ChatService {
 				throw new Error("No se recibió respuesta al enviar mensaje");
 			}
 
-			// Si la respuesta no tiene la estructura esperada, adaptarla
-			if (!response.data && response.status) {
+			// Si la respuesta tiene la estructura esperada
+			if (
+				response.status === "success" &&
+				response.data &&
+				response.data.message
+			) {
 				return {
 					status: response.status,
 					message: response.message || "Mensaje enviado",
-					data: {
-						id: Math.floor(Math.random() * 10000), // ID temporal si no viene en la respuesta
-						chatId: chatId,
-						senderId: 0, // Se sobreescribirá en el hook
-						content: message.content,
-						isRead: false,
-						createdAt: new Date().toISOString(),
-					},
+					data: response.data.message,
 				};
 			}
 
-			return response;
+			// Si la respuesta tiene otra estructura pero contiene datos del mensaje
+			if (response.data && (response.data.id || response.data.content)) {
+				return {
+					status: "success",
+					message: "Mensaje enviado",
+					data: response.data,
+				};
+			}
+
+			// Intentar adaptar la respuesta si tiene otra estructura
+			return {
+				status: response.status || "success",
+				message: response.message || "Mensaje enviado",
+				data: {
+					id: Math.floor(Math.random() * 10000), // ID temporal si no viene en la respuesta
+					chatId: chatId,
+					senderId: 0, // Se sobreescribirá en el hook
+					content: message.content,
+					isRead: false,
+					createdAt: new Date().toISOString(),
+				},
+			};
 		} catch (error) {
 			console.error(
 				`ChatService: Error al enviar mensaje al chat ${chatId}:`,
@@ -254,13 +298,18 @@ class ChatService {
 
 	/**
 	 * Crea un nuevo chat con un vendedor para un producto
-	 * Opcionalmente puede incluir un mensaje inicial
 	 */
 	async createChat(data: CreateChatRequest): Promise<CreateChatResponse> {
 		try {
 			console.log(
 				`ChatService: Creando chat con vendedor ${data.seller_id} para producto ${data.product_id}`
 			);
+
+			// Validar parámetros
+			if (!data.seller_id || !data.product_id) {
+				throw new Error("ChatService: ID de vendedor o producto inválidos");
+			}
+
 			const response = await ApiClient.post<any>(
 				API_ENDPOINTS.CHAT.CREATE,
 				data
@@ -268,36 +317,50 @@ class ChatService {
 
 			// Validación y adaptación de respuesta
 			if (response) {
-				// Intentar extraer chatId de diferentes formatos de respuesta posibles
-				let chatId: number | null = null;
-
-				// Opción 1: chat_id en data
-				if (response.data?.chat_id) {
-					chatId = response.data.chat_id;
-				}
-				// Opción 2: id en data
-				else if (response.data?.id) {
-					chatId = response.data.id;
-				}
-				// Opción 3: chat anidado con id
-				else if (response.data?.chat?.id) {
-					chatId = response.data.chat.id;
-				}
-				// Opción 4: chat anidado en data.data
-				else if (response.data?.data?.chat?.id) {
-					chatId = response.data.data.chat.id;
-				}
-				// Opción 5: chatId directo en data
-				else if (response.data?.chatId) {
-					chatId = response.data.chatId;
+				// Si la respuesta tiene la estructura esperada
+				if (response.data && response.data.chat_id) {
+					return {
+						status: "success",
+						message: response.message || "Chat creado correctamente",
+						data: {
+							chat_id: response.data.chat_id,
+						},
+					};
 				}
 
-				if (chatId) {
+				// Si la respuesta tiene otra estructura pero contiene el ID del chat
+				if (response.data && typeof response.data.id === "number") {
 					return {
 						status: "success",
 						message: "Chat creado correctamente",
 						data: {
-							chat_id: chatId,
+							chat_id: response.data.id,
+						},
+					};
+				}
+
+				// Si la respuesta es un objeto con id directamente
+				if (response.id) {
+					return {
+						status: "success",
+						message: "Chat creado correctamente",
+						data: {
+							chat_id: response.id,
+						},
+					};
+				}
+
+				// Si no encontramos un ID pero la respuesta indica éxito
+				if (response.status === "success") {
+					console.warn(
+						"ChatService: Respuesta de éxito sin ID de chat:",
+						response
+					);
+					return {
+						status: "success",
+						message: "Chat creado, pero no se recibió su ID",
+						data: {
+							chat_id: 0, // Se manejará en el hook
 						},
 					};
 				}
@@ -321,17 +384,43 @@ class ChatService {
 			console.log(
 				`ChatService: Actualizando estado del chat ${chatId} a ${data.status}`
 			);
-			const response = await ApiClient.put<UpdateChatStatusResponse>(
+
+			// Validar parámetros
+			if (!chatId || !data.status) {
+				throw new Error("ChatService: ID de chat o estado inválidos");
+			}
+
+			const response = await ApiClient.put<any>(
 				API_ENDPOINTS.CHAT.UPDATE_STATUS(chatId),
 				data
 			);
 
-			// Validación y adaptación similar a las anteriores
-			if (!response) {
-				throw new Error("No se recibió respuesta al actualizar estado");
+			// Validación y adaptación
+			if (response) {
+				// Si la respuesta tiene la estructura esperada
+				if (response.status === "success" && response.data) {
+					return {
+						status: "success",
+						message: response.message || `Chat ${data.status} correctamente`,
+						data: {
+							chat_id: response.data.chat_id || chatId,
+							status: response.data.status || data.status,
+						},
+					};
+				}
+
+				// Adaptar respuesta para mantener consistencia
+				return {
+					status: response.status || "success",
+					message: response.message || `Chat ${data.status} correctamente`,
+					data: {
+						chat_id: chatId,
+						status: data.status,
+					},
+				};
 			}
 
-			return response;
+			throw new Error("No se recibió respuesta al actualizar estado");
 		} catch (error) {
 			console.error(
 				`ChatService: Error al actualizar estado del chat ${chatId}:`,
