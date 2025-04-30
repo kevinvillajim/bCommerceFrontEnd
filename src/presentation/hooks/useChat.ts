@@ -3,8 +3,9 @@ import {useAuth} from "./useAuth";
 import ChatService from "../../core/services/ChatService";
 import type {Chat, Message} from "../../core/domain/entities/Chat";
 import { extractErrorMessage } from "../../utils/errorHandler";
+import { is } from "date-fns/locale";
 
-export const useChat = () => {
+export const useChat = (isSeller = false) => {
 	const [chats, setChats] = useState<Chat[]>([]);
 	const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
 	const [messages, setMessages] = useState<Message[]>([]);
@@ -50,7 +51,9 @@ export const useChat = () => {
 		if (isLoadingRef.current) return [];
 
 		try {
-			console.log("🔄 Obteniendo lista de chats...");
+			 console.log(
+					`🔄 Obteniendo lista de chats ${isSeller ? "como vendedor" : "como usuario"}...`
+				);
 			isLoadingRef.current = true;
 			setLoading(true);
 			setError(null);
@@ -113,12 +116,14 @@ export const useChat = () => {
 							lastMessage: chat.last_message || chat.lastMessage,
 						};
 
-						// Marcar los mensajes como propios
+						// Marcar los mensajes como propios según si es vendedor o no
 						if (normalizedChat.messages && normalizedChat.messages.length > 0) {
 							normalizedChat.messages = normalizedChat.messages.map(
 								(message) => ({
 									...message,
-									isMine: message.senderId === user?.id,
+									isMine: isSeller
+										? message.senderId === normalizedChat.sellerId
+										: message.senderId === normalizedChat.userId,
 								})
 							);
 						}
@@ -151,7 +156,7 @@ export const useChat = () => {
 			setLoading(false);
 			isLoadingRef.current = false;
 		}
-	}, [user?.id, generateTemporaryId]);
+	}, [user?.id, generateTemporaryId, isSeller]);
 
 	/**
 	 * Carga los mensajes de un chat específico
@@ -276,9 +281,11 @@ export const useChat = () => {
 								// Marcar los mensajes como propios o no
 								const chatMessages = responseMessages.map((message: any) => ({
 									...message,
-									isMine:
-										message.senderId === user?.id ||
-										message.sender_id === user?.id,
+									isMine: isSeller
+										? message.senderId === selectedChat?.sellerId ||
+											message.sender_id === selectedChat?.sellerId
+										: message.senderId === user?.id ||
+											message.sender_id === user?.id,
 								}));
 
 								// Actualizar estados
@@ -375,7 +382,7 @@ export const useChat = () => {
 				setLoading(false);
 			}
 		},
-		[user?.id, resolveRealId]
+		[user?.id, resolveRealId, isSeller]
 	);
 
 	/**
@@ -636,16 +643,21 @@ export const useChat = () => {
 			}
 
 			try {
-				console.log(`Enviando mensaje a chat ${resolvedChatId}...`);
+				console.log(
+					`Enviando mensaje a chat ${resolvedChatId} ${isSeller ? "como vendedor" : "como usuario"}...`
+				);
 				isLoadingRef.current = true;
 				setLoading(true);
 				setError(null);
+
+				// Identificar qué ID usar como senderId según el rol
+				const senderId = isSeller ? selectedChat.sellerId : user?.id;
 
 				// Crear un mensaje temporal para mostrar inmediatamente
 				const tempMessage: Message = {
 					id: generateTemporaryId(),
 					chatId: resolvedChatId,
-					senderId: user?.id || 0,
+					senderId: senderId || 0,
 					content: content.trim(),
 					isRead: false,
 					isMine: true,
@@ -749,7 +761,7 @@ export const useChat = () => {
 				setLoading(false);
 			}
 		},
-		[selectedChat, user?.id, resolveRealId, generateTemporaryId]
+		[selectedChat, user?.id, resolveRealId, generateTemporaryId, isSeller]
 	);
 
 	/**
