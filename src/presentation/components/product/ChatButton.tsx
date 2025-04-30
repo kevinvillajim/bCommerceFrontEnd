@@ -21,7 +21,7 @@ const ChatButton: React.FC<ChatButtonProps> = ({
 }) => {
 	const navigate = useNavigate();
 	const {isAuthenticated, user} = useAuth();
-	const {createChat, fetchChatMessages, sendMessage} = useChat();
+	const {createChat, fetchChatMessages, sendMessageForNewChat} = useChat();
 
 	const [loading, setLoading] = useState(false);
 	const [message, setMessage] = useState("");
@@ -66,17 +66,15 @@ const ChatButton: React.FC<ChatButtonProps> = ({
 				throw new Error("No se pudo crear la conversación");
 			}
 
-			// 2. Cargar detalles del chat para asegurar que existe en el sistema
-			await fetchChatMessages(chatId);
-
-			// 3. Enviar el mensaje inicial
-			const success = await sendMessage(message);
+			// 2. Enviar el mensaje inicial con el ID del chat
+			const success = await sendMessageForNewChat(chatId, message.trim());
 
 			if (!success) {
 				throw new Error("No se pudo enviar el mensaje");
 			}
 
-			// 4. Redirigir al chat
+			// 3. Redirigir al chat
+			console.log(`Redirigiendo a chat ${chatId}...`);
 			navigate(`/chats/${chatId}`);
 		} catch (err) {
 			console.error("Error al iniciar conversación:", err);

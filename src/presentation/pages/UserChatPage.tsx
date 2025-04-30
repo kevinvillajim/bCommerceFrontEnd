@@ -1,5 +1,5 @@
 import React, {useState, useEffect, useRef, useCallback} from "react";
-import {useParams, useNavigate} from "react-router-dom";
+import {useParams, useNavigate, useLocation} from "react-router-dom";
 import {MessageSquare, ArrowLeft, RefreshCw} from "lucide-react";
 import {useChat} from "../hooks/useChat";
 import ChatList from "../components/chat/ChatList";
@@ -9,6 +9,7 @@ import MessageForm from "../components/chat/MessageForm";
 
 const UserChatPage: React.FC = () => {
 	const navigate = useNavigate();
+	const location = useLocation();
 	const {chatId: chatIdParam} = useParams<{chatId?: string}>();
 
 	// Estados para filtros y búsqueda
@@ -20,10 +21,14 @@ const UserChatPage: React.FC = () => {
 	);
 	const [showChatList, setShowChatList] = useState<boolean>(!chatIdParam);
 	const [isLoadingChat, setIsLoadingChat] = useState<boolean>(false);
+	const [loadingMessage, setLoadingMessage] = useState<string>(
+		"Cargando conversaciones..."
+	);
 
 	// Referencias para evitar bucles infinitos
 	const initialLoadComplete = useRef<boolean>(false);
 	const chatIdRef = useRef<string | undefined>(chatIdParam);
+	const loadAttempts = useRef<number>(0);
 
 	// Obtener datos del chat usando el hook personalizado
 	const {
@@ -37,6 +42,8 @@ const UserChatPage: React.FC = () => {
 		sendMessage,
 		updateChatStatus,
 		setSelectedChat,
+		startMessagesPolling,
+		stopMessagesPolling,
 	} = useChat();
 
 	// Función para detectar cambios en el tamaño de la ventana
@@ -55,67 +62,127 @@ const UserChatPage: React.FC = () => {
 			console.log("Cargando lista inicial de chats...");
 			setIsLoadingChat(true);
 			fetchChats()
-				.then(() => {
+				.then((fetchedChats) => {
 					initialLoadComplete.current = true;
 					setIsLoadingChat(false);
-					console.log("Lista inicial de chats cargada");
+					console.log(`Lista inicial de ${fetchedChats.length} chats cargada`);
+
+					// Si hay un chatId en la URL, seleccionarlo tras cargar la lista
+					if (chatIdParam && fetchedChats.length > 0) {
+						const chatId = parseInt(chatIdParam, 10);
+						const chat = fetchedChats.find((c) => c.id === chatId);
+
+						if (chat) {
+							console.log(
+								`Chat ${chatId} encontrado en carga inicial, seleccionando...`
+							);
+							setSelectedChat(chat);
+							setShowChatList(false);
+						}
+					}
 				})
 				.catch(() => {
 					setIsLoadingChat(false);
 					initialLoadComplete.current = true;
 				});
 		}
-	}, [fetchChats]);
+	}, [fetchChats, chatIdParam, setSelectedChat]);
 
 	// Función para cargar un chat específico
 	const loadSpecificChat = useCallback(
 		async (chatId: number) => {
 			console.log(`Intentando cargar chat específico ${chatId}...`);
 			setIsLoadingChat(true);
+			setLoadingMessage(`Cargando conversación #${chatId}...`);
+			loadAttempts.current += 1;
 
-			// Buscar el chat en la lista de chats
-			const chat = chats.find((c) => c.id === chatId);
+			try {
+				// Buscar el chat en la lista de chats
+				const chat = chats.find((c) => c.id === chatId);
 
-			if (chat) {
-				console.log(`Chat ${chatId} encontrado en la lista, seleccionando...`);
-				// Si encontramos el chat en la lista, seleccionarlo y cargar mensajes
-				setSelectedChat(chat);
-				setShowChatList(false);
-			} else {
-				console.log(
-					`Chat ${chatId} no encontrado en la lista, cargando desde API...`
-				);
-				// Intentar cargar los mensajes directamente
-				const result = await fetchChatMessages(chatId);
-
-				if (result) {
-					console.log(`Chat ${chatId} cargado correctamente desde API`);
-					setShowChatList(false);
-				} else {
-					console.warn(
-						`Chat ${chatId} no encontrado, redirigiendo a lista de chats`
+				if (chat) {
+					console.log(
+						`Chat ${chatId} encontrado en la lista, seleccionando...`
 					);
-					navigate("/chats", {replace: true});
-				}
-			}
+					// Si encontramos el chat en la lista, seleccionarlo y cargar mensajes
+					setSelectedChat(chat);
+					setShowChatList(false);
 
-			setIsLoadingChat(false);
+					// Iniciar polling de mensajes
+					startMessagesPolling(chatId);
+				} else {
+					console.log(
+						`Chat ${chatId} no encontrado en la lista, cargando desde API...`
+					);
+					// Intentar cargar los mensajes directamente
+					const result = await fetchChatMessages(chatId);
+
+					if (result) {
+						console.log(`Chat ${chatId} cargado correctamente desde API`);
+						setShowChatList(false);
+
+						// Iniciar polling de mensajes
+						startMessagesPolling(chatId);
+					} else {
+						console.warn(
+							`Chat ${chatId} no encontrado, redirigiendo a lista de chats`
+						);
+
+						// Si hay demasiados intentos, redireccionar a la lista general
+						if (loadAttempts.current >= 3) {
+							navigate("/chats", {replace: true});
+						} else {
+							// Intentar recargar los chats y volver a intentar
+							await fetchChats();
+							// Si sigue sin encontrar el chat, redireccionar
+							const updatedChat = chats.find((c) => c.id === chatId);
+							if (!updatedChat) {
+								navigate("/chats", {replace: true});
+							} else {
+								setSelectedChat(updatedChat);
+								setShowChatList(false);
+							}
+						}
+					}
+				}
+			} catch (error) {
+				console.error(`Error al cargar chat ${chatId}:`, error);
+				navigate("/chats", {replace: true});
+			} finally {
+				setIsLoadingChat(false);
+			}
 		},
-		[chats, fetchChatMessages, navigate, setSelectedChat]
+		[
+			chats,
+			fetchChatMessages,
+			navigate,
+			setSelectedChat,
+			fetchChats,
+			startMessagesPolling,
+		]
 	);
 
 	// Cargar chat específico cuando cambia el ID en la URL
 	useEffect(() => {
+		// Si la carga inicial no está completa, esperar
+		if (!initialLoadComplete.current) {
+			return;
+		}
+
 		// Evitar procesar el mismo chatId múltiples veces
 		if (chatIdParam === chatIdRef.current && selectedChat) {
 			return;
 		}
 
+		// Detener cualquier polling activo al cambiar de chat
+		stopMessagesPolling();
+
 		// Actualizar la referencia
 		chatIdRef.current = chatIdParam;
+		loadAttempts.current = 0;
 
-		// Si hay un ID de chat en la URL y la carga inicial está completa
-		if (chatIdParam && initialLoadComplete.current) {
+		// Si hay un ID de chat en la URL
+		if (chatIdParam) {
 			const chatId = parseInt(chatIdParam, 10);
 
 			// Si no es un número válido, redirigir a chats
@@ -126,12 +193,19 @@ const UserChatPage: React.FC = () => {
 
 			// Cargar el chat específico
 			loadSpecificChat(chatId);
-		} else if (!chatIdParam) {
+		} else {
 			// Si no hay chatId, limpiar selección y mostrar lista
 			setSelectedChat(null);
 			setShowChatList(true);
 		}
-	}, [chatIdParam, loadSpecificChat, navigate, selectedChat, setSelectedChat]);
+	}, [
+		chatIdParam,
+		loadSpecificChat,
+		navigate,
+		selectedChat,
+		setSelectedChat,
+		stopMessagesPolling,
+	]);
 
 	// Filtrar chats según los criterios
 	const filteredChats = chats.filter((chat) => {
@@ -149,8 +223,8 @@ const UserChatPage: React.FC = () => {
 			searchTerm === "" ||
 			(chat.product?.name &&
 				chat.product.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-			(chat.user?.name &&
-				chat.user.name.toLowerCase().includes(searchTerm.toLowerCase()));
+			(chat.seller?.storeName &&
+				chat.seller.storeName.toLowerCase().includes(searchTerm.toLowerCase()));
 
 		return matchesStatus && matchesUnread && matchesSearch;
 	});
@@ -159,6 +233,9 @@ const UserChatPage: React.FC = () => {
 	const handleSelectChat = (chat: typeof selectedChat) => {
 		if (chat && chat.id) {
 			console.log(`Usuario seleccionó chat ${chat.id}`);
+
+			// Detener cualquier polling activo
+			stopMessagesPolling();
 
 			// Actualizar la URL sin causar un bucle
 			navigate(`/chats/${chat.id}`, {replace: true});
@@ -178,6 +255,13 @@ const UserChatPage: React.FC = () => {
 	const handleSendMessage = async (content: string): Promise<boolean> => {
 		console.log("Enviando mensaje...");
 		const result = await sendMessage(content);
+
+		// Si el mensaje se envió correctamente, actualizar la lista de chats
+		// para reflejar el último mensaje
+		if (result && selectedChat) {
+			await fetchChatMessages(selectedChat.id);
+		}
+
 		return result;
 	};
 
@@ -193,6 +277,10 @@ const UserChatPage: React.FC = () => {
 	// Volver a la lista en móvil
 	const handleBackToList = () => {
 		console.log("Volviendo a lista de chats");
+
+		// Detener polling de mensajes
+		stopMessagesPolling();
+
 		setShowChatList(true);
 		navigate("/chats", {replace: true});
 		chatIdRef.current = undefined;
@@ -202,6 +290,11 @@ const UserChatPage: React.FC = () => {
 	const refreshChats = () => {
 		console.log("Refrescando lista de chats");
 		fetchChats();
+
+		// Si hay un chat seleccionado, recargar sus mensajes
+		if (selectedChat && selectedChat.id) {
+			fetchChatMessages(selectedChat.id);
+		}
 	};
 
 	// Contenido principal a renderizar
@@ -209,8 +302,9 @@ const UserChatPage: React.FC = () => {
 		// Si estamos cargando inicialmente y no hay selectedChat
 		if ((loading || isLoadingChat) && !selectedChat) {
 			return (
-				<div className="flex justify-center items-center h-full">
-					<div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
+				<div className="flex flex-col justify-center items-center h-full">
+					<div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600 mb-4"></div>
+					<p className="text-gray-600 dark:text-gray-300">{loadingMessage}</p>
 				</div>
 			);
 		}
@@ -304,6 +398,12 @@ const UserChatPage: React.FC = () => {
 				<div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
 					<strong className="font-bold">Error: </strong>
 					<span className="block sm:inline">{error}</span>
+					<button
+						onClick={refreshChats}
+						className="underline ml-2 text-red-700 hover:text-red-900"
+					>
+						Reintentar
+					</button>
 				</div>
 			)}
 

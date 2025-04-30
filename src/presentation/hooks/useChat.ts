@@ -14,6 +14,8 @@ export const useChat = () => {
 	// Añadimos una referencia para controlar peticiones repetidas
 	const isLoadingRef = useRef(false);
 	const chatFetchAttempts = useRef<Record<number, number>>({});
+	// Referencia para autoactualización
+	const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
 	// Obtener el usuario actual del hook de autenticación
 	const {user} = useAuth();
@@ -137,7 +139,9 @@ export const useChat = () => {
 							if (!exists) {
 								return [...prevChats, chat];
 							}
-							return prevChats;
+							return prevChats.map((c) =>
+								c.id === chat.id ? {...c, ...chat} : c
+							);
 						});
 
 						return chat;
@@ -161,6 +165,56 @@ export const useChat = () => {
 			}
 		},
 		[user?.id]
+	);
+
+	/**
+	 * NUEVA FUNCIÓN: Enviar mensaje a un chat recién creado (sin requerir selectedChat)
+	 */
+	const sendMessageForNewChat = useCallback(
+		async (chatId: number, content: string): Promise<boolean> => {
+			if (!chatId || !content.trim()) {
+				console.error("No se puede enviar mensaje: Chat ID o contenido vacío");
+				return false;
+			}
+
+			if (isLoadingRef.current) {
+				console.log("Envío bloqueado, hay una operación en curso");
+				return false;
+			}
+
+			try {
+				console.log(`Enviando mensaje al nuevo chat ${chatId}...`);
+				isLoadingRef.current = true;
+				setLoading(true);
+				setError(null);
+
+				const response = await chatService.sendMessage(chatId, {
+					content: content.trim(),
+				});
+
+				if (response.status === "success") {
+					console.log(
+						"Mensaje para nuevo chat enviado correctamente:",
+						response.data
+					);
+					// Refrescar lista de chats para incluir el nuevo
+					await fetchChats();
+					return true;
+				} else {
+					console.error("Error en respuesta al enviar mensaje:", response);
+					setError(response.message || "Error al enviar el mensaje");
+					return false;
+				}
+			} catch (err) {
+				console.error("Error al enviar mensaje a nuevo chat:", err);
+				setError(extractErrorMessage(err, "Error al enviar el mensaje"));
+				return false;
+			} finally {
+				isLoadingRef.current = false;
+				setLoading(false);
+			}
+		},
+		[fetchChats, user?.id]
 	);
 
 	/**
@@ -261,9 +315,6 @@ export const useChat = () => {
 
 				if (response.status === "success") {
 					console.log("Chat creado correctamente:", response.data);
-
-					// Actualizar la lista de chats
-					await fetchChats();
 					return response.data.chat_id;
 				} else {
 					console.error("Error en respuesta al crear chat:", response);
@@ -279,7 +330,7 @@ export const useChat = () => {
 				setLoading(false);
 			}
 		},
-		[fetchChats]
+		[]
 	);
 
 	/**
@@ -344,6 +395,42 @@ export const useChat = () => {
 		[selectedChat]
 	);
 
+	// NUEVA FUNCIÓN: Iniciar actualización periódica de mensajes
+	const startMessagesPolling = useCallback(
+		(chatId: number, intervalMs = 10000) => {
+			// Limpiar cualquier intervalo existente
+			if (refreshIntervalRef.current) {
+				clearInterval(refreshIntervalRef.current);
+			}
+
+			// Crear un nuevo intervalo
+			refreshIntervalRef.current = setInterval(() => {
+				// Solo actualizar si no hay otra petición en curso
+				if (!isLoadingRef.current && chatId) {
+					console.log(`Actualizando mensajes del chat ${chatId} (polling)...`);
+					fetchChatMessages(chatId);
+				}
+			}, intervalMs);
+
+			return () => {
+				if (refreshIntervalRef.current) {
+					clearInterval(refreshIntervalRef.current);
+					refreshIntervalRef.current = null;
+				}
+			};
+		},
+		[fetchChatMessages]
+	);
+
+	// Detener el polling al desmontar
+	const stopMessagesPolling = useCallback(() => {
+		if (refreshIntervalRef.current) {
+			clearInterval(refreshIntervalRef.current);
+			refreshIntervalRef.current = null;
+			console.log("Polling de mensajes detenido");
+		}
+	}, []);
+
 	// Cargar chats al montar el componente, solo una vez
 	useEffect(() => {
 		const controller = new AbortController();
@@ -356,12 +443,14 @@ export const useChat = () => {
 			controller.abort();
 			// Asegurarse de que no quedan referencias de carga activas
 			isLoadingRef.current = false;
+			// Detener cualquier polling activo
+			stopMessagesPolling();
 			// Limpiar estados al desmontar
 			setChats([]);
 			setSelectedChat(null);
 			setMessages([]);
 		};
-	}, [user?.id, fetchChats]);
+	}, [user?.id, fetchChats, stopMessagesPolling]);
 
 	// Exponer un método para actualizar selectedChat directamente
 	const selectChat = useCallback(
@@ -371,9 +460,11 @@ export const useChat = () => {
 
 			if (chat && chat.id) {
 				fetchChatMessages(chat.id);
+				// Iniciar polling de mensajes
+				startMessagesPolling(chat.id);
 			}
 		},
-		[fetchChatMessages]
+		[fetchChatMessages, startMessagesPolling]
 	);
 
 	return {
@@ -385,9 +476,12 @@ export const useChat = () => {
 		fetchChats,
 		fetchChatMessages,
 		sendMessage,
+		sendMessageForNewChat,
 		createChat,
 		updateChatStatus,
 		setSelectedChat: selectChat,
+		startMessagesPolling,
+		stopMessagesPolling,
 	};
 };
 
