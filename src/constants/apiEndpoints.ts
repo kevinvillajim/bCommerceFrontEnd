@@ -154,7 +154,15 @@ export const API_ENDPOINTS = {
 		MARK_ALL_READ: (id: number) => `/chats/${id}/mark-read`,
 		MARK_MESSAGE_READ: (id: number, messageId: number) =>
 			`/chats/${id}/messages/${messageId}/read`,
-	},
+		SELLER: {
+    	  LIST: "/seller/chats",
+    	  DETAILS: (id: number) => `/seller/chats/${id}`,
+    	  SEND_MESSAGE: (id: number) => `/seller/chats/${id}/messages`,
+    	  UPDATE_STATUS: (id: number) => `/seller/chats/${id}`,
+    	  GET_MESSAGES: (id: number) => `/seller/chats/${id}/messages`,
+    	  MARK_ALL_READ: (id: number) => `/seller/chats/${id}/mark-read`,
+    	},
+  	},
 
 	// Recommendations
 	RECOMMENDATIONS: {

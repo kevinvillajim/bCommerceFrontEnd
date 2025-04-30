@@ -83,15 +83,104 @@ export interface UpdateChatStatusRequest {
 
 /**
  * Servicio para gestionar chats y mensajes
+ *
+ * CORRECCIÓN: Añadir soporte para diferentes rutas según el rol del usuario
  */
 class ChatService {
+	private isSeller: boolean = false;
+
+	/**
+	 * Construye una instancia del servicio
+	 * @param isSeller Indica si el usuario es un vendedor
+	 */
+	constructor(isSeller = false) {
+		this.isSeller = isSeller;
+		console.log(
+			`ChatService inicializado ${isSeller ? "como vendedor" : "como usuario"}`
+		);
+	}
+
+	/**
+	 * Obtiene el endpoint adecuado según el rol del usuario
+	 * @private
+	 */
+	private getEndpoint(
+		type:
+			| "LIST"
+			| "DETAILS"
+			| "CREATE"
+			| "SEND_MESSAGE"
+			| "UPDATE_STATUS"
+			| "GET_MESSAGES"
+			| "MARK_ALL_READ"
+			| "MARK_MESSAGE_READ"
+			| "DELETE",
+		...params: any[]
+	): string {
+		if (this.isSeller) {
+			// Usar endpoints específicos para vendedores
+			switch (type) {
+				case "LIST":
+					return API_ENDPOINTS.CHAT.SELLER.LIST;
+				case "DETAILS":
+					return API_ENDPOINTS.CHAT.SELLER.DETAILS(params[0]);
+				case "SEND_MESSAGE":
+					return API_ENDPOINTS.CHAT.SELLER.SEND_MESSAGE(params[0]);
+				case "UPDATE_STATUS":
+					return API_ENDPOINTS.CHAT.SELLER.UPDATE_STATUS(params[0]);
+				case "GET_MESSAGES":
+					return API_ENDPOINTS.CHAT.SELLER.GET_MESSAGES(params[0]);
+				case "MARK_ALL_READ":
+					return API_ENDPOINTS.CHAT.SELLER.MARK_ALL_READ(params[0]);
+				// Para los que no tienen endpoints específicos de vendedor, usar los generales
+				case "MARK_MESSAGE_READ":
+					return API_ENDPOINTS.CHAT.MARK_MESSAGE_READ(params[0], params[1]);
+				case "DELETE":
+					return API_ENDPOINTS.CHAT.DELETE(params[0]);
+				case "CREATE":
+					return API_ENDPOINTS.CHAT.CREATE;
+				default:
+					return "";
+			}
+		} else {
+			// Usar endpoints generales para usuarios normales
+			switch (type) {
+				case "LIST":
+					return API_ENDPOINTS.CHAT.LIST;
+				case "DETAILS":
+					return API_ENDPOINTS.CHAT.DETAILS(params[0]);
+				case "CREATE":
+					return API_ENDPOINTS.CHAT.CREATE;
+				case "SEND_MESSAGE":
+					return API_ENDPOINTS.CHAT.SEND_MESSAGE(params[0]);
+				case "UPDATE_STATUS":
+					return API_ENDPOINTS.CHAT.UPDATE_STATUS(params[0]);
+				case "DELETE":
+					return API_ENDPOINTS.CHAT.DELETE(params[0]);
+				case "GET_MESSAGES":
+					return API_ENDPOINTS.CHAT.GET_MESSAGES(params[0]);
+				case "MARK_ALL_READ":
+					return API_ENDPOINTS.CHAT.MARK_ALL_READ(params[0]);
+				case "MARK_MESSAGE_READ":
+					return API_ENDPOINTS.CHAT.MARK_MESSAGE_READ(params[0], params[1]);
+				default:
+					return "";
+			}
+		}
+	}
+
 	/**
 	 * Obtiene la lista de chats del usuario actual
 	 */
 	async getChats(): Promise<ChatListResponse> {
 		try {
-			console.log("ChatService: Obteniendo lista de chats");
-			const response = await ApiClient.get<any>(API_ENDPOINTS.CHAT.LIST);
+			console.log(
+				`ChatService: Obteniendo lista de chats ${this.isSeller ? "como vendedor" : "como usuario"}`
+			);
+			const endpoint = this.getEndpoint("LIST");
+			console.log(`Usando endpoint: ${endpoint}`);
+
+			const response = await ApiClient.get<any>(endpoint);
 
 			// Validación mejorada de la respuesta
 			if (response) {
@@ -161,7 +250,10 @@ class ChatService {
 				data: [],
 			};
 		} catch (error) {
-			console.error("ChatService: Error al obtener chats:", error);
+			console.error(
+				`ChatService: Error al obtener chats ${this.isSeller ? "de vendedor" : "de usuario"}:`,
+				error
+			);
 			// En caso de error, devolver una respuesta vacía pero válida
 			return {
 				status: "error",
@@ -180,10 +272,14 @@ class ChatService {
 	): Promise<ChatDetailResponse> {
 		try {
 			console.log(
-				`ChatService: Obteniendo detalles del chat ${chatId} (página ${page}, límite ${limit})`
+				`ChatService: Obteniendo detalles del chat ${chatId} (página ${page}, límite ${limit}) ${this.isSeller ? "como vendedor" : "como usuario"}`
 			);
+
+			const endpoint = this.getEndpoint("DETAILS", chatId);
+			console.log(`Usando endpoint: ${endpoint}`);
+
 			const response = await ApiClient.get<any>(
-				`${API_ENDPOINTS.CHAT.DETAILS(chatId)}?page=${page}&limit=${limit}`
+				`${endpoint}?page=${page}&limit=${limit}`
 			);
 
 			// Validación mejorada
@@ -258,7 +354,7 @@ class ChatService {
 			throw new Error(`No se pudo obtener información del chat ${chatId}`);
 		} catch (error) {
 			console.error(
-				`ChatService: Error al obtener detalles del chat ${chatId}:`,
+				`ChatService: Error al obtener detalles del chat ${chatId} ${this.isSeller ? "como vendedor" : "como usuario"}:`,
 				error
 			);
 			throw error;
@@ -275,10 +371,14 @@ class ChatService {
 	): Promise<MessagesResponse> {
 		try {
 			console.log(
-				`ChatService: Obteniendo mensajes del chat ${chatId} (página ${page}, límite ${limit})`
+				`ChatService: Obteniendo mensajes del chat ${chatId} (página ${page}, límite ${limit}) ${this.isSeller ? "como vendedor" : "como usuario"}`
 			);
+
+			const endpoint = this.getEndpoint("GET_MESSAGES", chatId);
+			console.log(`Usando endpoint: ${endpoint}`);
+
 			const response = await ApiClient.get<any>(
-				`${API_ENDPOINTS.CHAT.GET_MESSAGES(chatId)}?page=${page}&limit=${limit}`
+				`${endpoint}?page=${page}&limit=${limit}`
 			);
 
 			if (!response) {
@@ -317,7 +417,7 @@ class ChatService {
 			};
 		} catch (error) {
 			console.error(
-				`ChatService: Error al obtener mensajes del chat ${chatId}:`,
+				`ChatService: Error al obtener mensajes del chat ${chatId} ${this.isSeller ? "como vendedor" : "como usuario"}:`,
 				error
 			);
 			throw error;
@@ -332,7 +432,9 @@ class ChatService {
 		message: SendMessageRequest
 	): Promise<MessageResponse> {
 		try {
-			console.log(`ChatService: Enviando mensaje al chat ${chatId}`);
+			console.log(
+				`ChatService: Enviando mensaje al chat ${chatId} ${this.isSeller ? "como vendedor" : "como usuario"}`
+			);
 
 			// Validar parámetros
 			if (!chatId || !message.content.trim()) {
@@ -341,10 +443,10 @@ class ChatService {
 				);
 			}
 
-			const response = await ApiClient.post<any>(
-				API_ENDPOINTS.CHAT.SEND_MESSAGE(chatId),
-				message
-			);
+			const endpoint = this.getEndpoint("SEND_MESSAGE", chatId);
+			console.log(`Usando endpoint: ${endpoint}`);
+
+			const response = await ApiClient.post<any>(endpoint, message);
 
 			if (!response) {
 				throw new Error("No se recibió respuesta al enviar mensaje");
@@ -381,7 +483,7 @@ class ChatService {
 			};
 		} catch (error) {
 			console.error(
-				`ChatService: Error al enviar mensaje al chat ${chatId}:`,
+				`ChatService: Error al enviar mensaje al chat ${chatId} ${this.isSeller ? "como vendedor" : "como usuario"}:`,
 				error
 			);
 			throw error;
@@ -402,10 +504,10 @@ class ChatService {
 				throw new Error("ChatService: ID de vendedor o producto inválidos");
 			}
 
-			const response = await ApiClient.post<any>(
-				API_ENDPOINTS.CHAT.CREATE,
-				data
-			);
+			const endpoint = this.getEndpoint("CREATE");
+			console.log(`Usando endpoint: ${endpoint}`);
+
+			const response = await ApiClient.post<any>(endpoint, data);
 
 			// Validación y adaptación de respuesta
 			if (response) {
@@ -474,7 +576,7 @@ class ChatService {
 	): Promise<UpdateChatStatusResponse> {
 		try {
 			console.log(
-				`ChatService: Actualizando estado del chat ${chatId} a ${data.status}`
+				`ChatService: Actualizando estado del chat ${chatId} a ${data.status} ${this.isSeller ? "como vendedor" : "como usuario"}`
 			);
 
 			// Validar parámetros
@@ -482,10 +584,10 @@ class ChatService {
 				throw new Error("ChatService: ID de chat o estado inválidos");
 			}
 
-			const response = await ApiClient.put<any>(
-				API_ENDPOINTS.CHAT.UPDATE_STATUS(chatId),
-				data
-			);
+			const endpoint = this.getEndpoint("UPDATE_STATUS", chatId);
+			console.log(`Usando endpoint: ${endpoint}`);
+
+			const response = await ApiClient.put<any>(endpoint, data);
 
 			// Validación y adaptación
 			if (response) {
@@ -515,7 +617,7 @@ class ChatService {
 			throw new Error("No se recibió respuesta al actualizar estado");
 		} catch (error) {
 			console.error(
-				`ChatService: Error al actualizar estado del chat ${chatId}:`,
+				`ChatService: Error al actualizar estado del chat ${chatId} ${this.isSeller ? "como vendedor" : "como usuario"}:`,
 				error
 			);
 			throw error;
@@ -528,13 +630,13 @@ class ChatService {
 	async markAllMessagesAsRead(chatId: number): Promise<MarkAsReadResponse> {
 		try {
 			console.log(
-				`ChatService: Marcando todos los mensajes del chat ${chatId} como leídos`
+				`ChatService: Marcando todos los mensajes del chat ${chatId} como leídos ${this.isSeller ? "como vendedor" : "como usuario"}`
 			);
 
-			const response = await ApiClient.post<any>(
-				API_ENDPOINTS.CHAT.MARK_ALL_READ(chatId),
-				{}
-			);
+			const endpoint = this.getEndpoint("MARK_ALL_READ", chatId);
+			console.log(`Usando endpoint: ${endpoint}`);
+
+			const response = await ApiClient.post<any>(endpoint, {});
 
 			if (!response) {
 				throw new Error(
@@ -548,7 +650,7 @@ class ChatService {
 			};
 		} catch (error) {
 			console.error(
-				`ChatService: Error al marcar mensajes como leídos en chat ${chatId}:`,
+				`ChatService: Error al marcar mensajes como leídos en chat ${chatId} ${this.isSeller ? "como vendedor" : "como usuario"}:`,
 				error
 			);
 			throw error;
@@ -564,13 +666,13 @@ class ChatService {
 	): Promise<MarkAsReadResponse> {
 		try {
 			console.log(
-				`ChatService: Marcando mensaje ${messageId} del chat ${chatId} como leído`
+				`ChatService: Marcando mensaje ${messageId} del chat ${chatId} como leído ${this.isSeller ? "como vendedor" : "como usuario"}`
 			);
 
-			const response = await ApiClient.patch<any>(
-				API_ENDPOINTS.CHAT.MARK_MESSAGE_READ(chatId, messageId),
-				{}
-			);
+			const endpoint = this.getEndpoint("MARK_MESSAGE_READ", chatId, messageId);
+			console.log(`Usando endpoint: ${endpoint}`);
+
+			const response = await ApiClient.patch<any>(endpoint, {});
 
 			if (!response) {
 				throw new Error("No se recibió respuesta al marcar mensaje como leído");
@@ -582,7 +684,7 @@ class ChatService {
 			};
 		} catch (error) {
 			console.error(
-				`ChatService: Error al marcar mensaje ${messageId} como leído en chat ${chatId}:`,
+				`ChatService: Error al marcar mensaje ${messageId} como leído en chat ${chatId} ${this.isSeller ? "como vendedor" : "como usuario"}:`,
 				error
 			);
 			throw error;
@@ -594,11 +696,14 @@ class ChatService {
 	 */
 	async deleteChat(chatId: number): Promise<MarkAsReadResponse> {
 		try {
-			console.log(`ChatService: Eliminando chat ${chatId}`);
-
-			const response = await ApiClient.delete<any>(
-				API_ENDPOINTS.CHAT.DELETE(chatId)
+			console.log(
+				`ChatService: Eliminando chat ${chatId} ${this.isSeller ? "como vendedor" : "como usuario"}`
 			);
+
+			const endpoint = this.getEndpoint("DELETE", chatId);
+			console.log(`Usando endpoint: ${endpoint}`);
+
+			const response = await ApiClient.delete<any>(endpoint);
 
 			if (!response) {
 				throw new Error("No se recibió respuesta al eliminar chat");
@@ -609,7 +714,10 @@ class ChatService {
 				message: response.message || "Chat eliminado correctamente",
 			};
 		} catch (error) {
-			console.error(`ChatService: Error al eliminar chat ${chatId}:`, error);
+			console.error(
+				`ChatService: Error al eliminar chat ${chatId} ${this.isSeller ? "como vendedor" : "como usuario"}:`,
+				error
+			);
 			throw error;
 		}
 	}

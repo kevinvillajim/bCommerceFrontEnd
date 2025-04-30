@@ -1,3 +1,5 @@
+// src/presentation/pages/seller/SellerMessagesPage.tsx - Correcciones para arreglar el ciclo infinito
+
 import React, {useState, useEffect, useRef, useCallback} from "react";
 import {useParams, useNavigate, useLocation} from "react-router-dom";
 import {MessageSquare, ArrowLeft, RefreshCw} from "lucide-react";
@@ -34,8 +36,11 @@ const SellerMessagesPage: React.FC = () => {
 	const isInitialNavRef = useRef<boolean>(true);
 	const messagesReadRef = useRef<Record<number, boolean>>({});
 
+	// CORRECCIÓN 1: Referencia para evitar actualizaciones de estados innecesarias
+	const markAllAsReadCalledRef = useRef<Record<number, boolean>>({});
+
 	// Obtener datos del chat usando el hook personalizado
-	// CORRECCIÓN 1: Pasar true para indicar que es un vendedor
+	// Importante: Pasamos true para indicar que es un vendedor
 	const {
 		chats,
 		selectedChat,
@@ -62,7 +67,7 @@ const SellerMessagesPage: React.FC = () => {
 		return () => window.removeEventListener("resize", handleResize);
 	}, []);
 
-	// Cargar chats al iniciar
+	// CORRECCIÓN 2: Optimizar la carga inicial de chats para evitar recargas innecesarias
 	useEffect(() => {
 		if (!initialLoadComplete.current && user?.id) {
 			console.log("Cargando lista inicial de chats para vendedor...");
@@ -85,6 +90,19 @@ const SellerMessagesPage: React.FC = () => {
 							);
 							setSelectedChat(chat);
 							setShowChatList(false);
+
+							// CORRECCIÓN: Marcar mensajes como leídos al seleccionar chat
+							if (
+								chat.unreadCount &&
+								chat.unreadCount > 0 &&
+								!markAllAsReadCalledRef.current[chatId]
+							) {
+								markAllAsReadCalledRef.current[chatId] = true;
+								// Usamos setTimeout para evitar que esto ocurra durante el render
+								setTimeout(() => {
+									markAllAsRead(chatId).catch(console.error);
+								}, 0);
+							}
 						} else {
 							// Si no se encuentra el chat en la lista inicial, intentar cargar directamente
 							console.log(
@@ -100,10 +118,9 @@ const SellerMessagesPage: React.FC = () => {
 					initialLoadComplete.current = true;
 				});
 		}
-	}, [fetchChats, chatIdParam, setSelectedChat, user?.id]);
+	}, [fetchChats, chatIdParam, setSelectedChat, user?.id, markAllAsRead]);
 
-	// Función para cargar un chat específico
-	// CORRECCIÓN 2: Memoizar correctamente la función y controlar llamadas a markAllAsRead
+	// CORRECCIÓN 3: Optimizar loadSpecificChat para evitar bucles
 	const loadSpecificChat = useCallback(
 		async (chatId: number) => {
 			if (!user?.id) return;
@@ -128,14 +145,17 @@ const SellerMessagesPage: React.FC = () => {
 					// Iniciar polling de mensajes
 					startMessagesPolling(chatId);
 
-					// CORRECCIÓN: Solo marcar como leído si no lo hemos hecho antes y hay mensajes sin leer
+					// CORRECCIÓN: Marcar mensajes como leídos con protección contra loops
 					if (
 						chat.unreadCount &&
 						chat.unreadCount > 0 &&
-						!messagesReadRef.current[chatId]
+						!markAllAsReadCalledRef.current[chatId]
 					) {
-						messagesReadRef.current[chatId] = true;
-						await markAllAsRead(chatId);
+						markAllAsReadCalledRef.current[chatId] = true;
+						// Ejecutar fuera del render cycle
+						setTimeout(() => {
+							markAllAsRead(chatId).catch(console.error);
+						}, 0);
 					}
 				} else {
 					console.log(
@@ -152,10 +172,13 @@ const SellerMessagesPage: React.FC = () => {
 							// Iniciar polling de mensajes
 							startMessagesPolling(chatId);
 
-							// CORRECCIÓN: Solo marcar como leído si no lo hemos hecho antes
-							if (!messagesReadRef.current[chatId]) {
-								messagesReadRef.current[chatId] = true;
-								await markAllAsRead(chatId);
+							// CORRECCIÓN: Proteger llamada a markAllAsRead
+							if (!markAllAsReadCalledRef.current[chatId]) {
+								markAllAsReadCalledRef.current[chatId] = true;
+								// Ejecutar fuera del render cycle
+								setTimeout(() => {
+									markAllAsRead(chatId).catch(console.error);
+								}, 0);
 							}
 						} else {
 							console.warn(
@@ -164,7 +187,6 @@ const SellerMessagesPage: React.FC = () => {
 
 							// Si hay demasiados intentos, mostrar página principal de chats
 							if (loadAttempts.current >= 3) {
-								// CORRECCIÓN 3: Verificar la ruta correcta
 								navigate("/seller/messages", {replace: true});
 							} else {
 								// Intentar recargar los chats y volver a intentar
@@ -204,7 +226,7 @@ const SellerMessagesPage: React.FC = () => {
 		]
 	);
 
-	// Cargar chat específico cuando cambia el ID en la URL
+	// CORRECCIÓN 4: Optimizar useEffect para cargar chat específico
 	useEffect(() => {
 		// Si la carga inicial no está completa, esperar
 		if (!initialLoadComplete.current || !user?.id) {
@@ -235,10 +257,12 @@ const SellerMessagesPage: React.FC = () => {
 
 			// Si no es un número válido, redirigir a chats
 			if (isNaN(chatId)) {
-				// CORRECCIÓN: Usar la ruta correcta
 				navigate("/seller/messages", {replace: true});
 				return;
 			}
+
+			// Resetear el flag de marcado como leído para este chat
+			markAllAsReadCalledRef.current[chatId] = false;
 
 			// Cargar el chat específico
 			loadSpecificChat(chatId);
@@ -279,7 +303,7 @@ const SellerMessagesPage: React.FC = () => {
 		return matchesStatus && matchesUnread && matchesSearch;
 	});
 
-	// Seleccionar un chat
+	// CORRECCIÓN 5: Optimizar handleSelectChat para evitar llamadas innecesarias a markAllAsRead
 	const handleSelectChat = (chat: typeof selectedChat) => {
 		if (chat && chat.id) {
 			console.log(`Vendedor seleccionó chat ${chat.id}`);
@@ -288,7 +312,6 @@ const SellerMessagesPage: React.FC = () => {
 			stopMessagesPolling();
 
 			// Actualizar la URL
-			// CORRECCIÓN: Usar la ruta correcta
 			navigate(`/seller/messages/${chat.id}`, {replace: true});
 			chatIdRef.current = String(chat.id);
 
@@ -300,14 +323,17 @@ const SellerMessagesPage: React.FC = () => {
 				setShowChatList(false);
 			}
 
-			// CORRECCIÓN: Solo marcar como leído si no lo hemos hecho antes y hay mensajes sin leer
+			// CORRECCIÓN: Proteger llamada a markAllAsRead con timeout para evitar ciclos
 			if (
 				chat.unreadCount &&
 				chat.unreadCount > 0 &&
-				!messagesReadRef.current[chat.id]
+				!markAllAsReadCalledRef.current[chat.id]
 			) {
-				messagesReadRef.current[chat.id] = true;
-				markAllAsRead(chat.id);
+				markAllAsReadCalledRef.current[chat.id] = true;
+				// Usar setTimeout para asegurar que esto ocurre después del render
+				setTimeout(() => {
+					markAllAsRead(chat.id).catch(console.error);
+				}, 0);
 			}
 		}
 	};
@@ -343,7 +369,6 @@ const SellerMessagesPage: React.FC = () => {
 		stopMessagesPolling();
 
 		setShowChatList(true);
-		// CORRECCIÓN: Usar la ruta correcta
 		navigate("/seller/messages", {replace: true});
 		chatIdRef.current = undefined;
 	};
@@ -351,6 +376,10 @@ const SellerMessagesPage: React.FC = () => {
 	// Refrescar lista de chats
 	const refreshChats = () => {
 		console.log("Refrescando lista de chats");
+
+		// Resetear los marcados como leído para permitir marcar de nuevo
+		markAllAsReadCalledRef.current = {};
+
 		fetchChats();
 
 		// Si hay un chat seleccionado, recargar sus mensajes
