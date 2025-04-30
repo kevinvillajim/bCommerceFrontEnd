@@ -732,6 +732,100 @@ class ChatService {
 			throw error;
 		}
 	}
+	/**
+	 * Obtiene la lista de chats para un vendedor específico usando ID explícito
+	 * Este método es un fallback para cuando la ruta principal no funciona
+	 */
+	async getChatsBySellerIdExplicit(
+		sellerId: number
+	): Promise<ChatListResponse> {
+		try {
+			console.log(
+				`ChatService (${this.serviceId}): Obteniendo lista de chats para vendedor ${sellerId} (búsqueda explícita)`
+			);
+
+			// Utiliza la ruta explícita usando el ID del vendedor
+			const endpoint = `/seller/chats/by-seller/${sellerId}`;
+			console.log(`Usando endpoint explícito: ${endpoint}`);
+
+			const response = await ApiClient.get<any>(endpoint);
+
+			// Validación mejorada de la respuesta
+			if (response) {
+				// Caso 1: response tiene estructura de éxito con data
+				if (response.status === "success" && response.data) {
+					// Si data es un array directamente
+					if (Array.isArray(response.data)) {
+						console.log(
+							`ChatService (${this.serviceId}): Se encontraron ${response.data.length} chats (método explícito)`
+						);
+						return {
+							status: "success",
+							data: response.data,
+						};
+					}
+					// Si data.data es un array (formato anidado)
+					else if (response.data.data && Array.isArray(response.data.data)) {
+						console.log(
+							`ChatService (${this.serviceId}): Se encontraron ${response.data.data.length} chats (método explícito, formato anidado)`
+						);
+						return {
+							status: "success",
+							data: response.data.data,
+						};
+					}
+					// Si respuesta tiene otra estructura pero con datos
+					else {
+						console.warn(
+							`ChatService (${this.serviceId}): Formato de respuesta no estándar en método explícito:`,
+							response
+						);
+						return {
+							status: "success",
+							data: [],
+						};
+					}
+				}
+				// Caso 2: respuesta es directamente un array
+				else if (Array.isArray(response)) {
+					console.log(
+						`ChatService (${this.serviceId}): Se encontraron ${response.length} chats (array directo, método explícito)`
+					);
+					return {
+						status: "success",
+						data: response,
+					};
+				}
+				// Caso 3: Otros formatos pero con status de éxito
+				else if (typeof response === "object") {
+					console.warn(
+						`ChatService (${this.serviceId}): Formato de respuesta inesperado pero válido (método explícito)`,
+						response
+					);
+					return {
+						status: "success",
+						data: [],
+					};
+				}
+			}
+
+			// Si llegamos aquí, la respuesta es válida pero sin chats
+			console.log(
+				`ChatService (${this.serviceId}): No se encontraron chats o formato no reconocido (método explícito)`
+			);
+			return {
+				status: "success",
+				data: [],
+			};
+		} catch (error) {
+			console.error(
+				`ChatService (${this.serviceId}): Error al obtener chats para vendedor ${sellerId} (método explícito):`,
+				error
+			);
+			// Relanzamos el error para que el hook pueda manejarlo y probar el siguiente método
+			throw error;
+		}
+	}
 }
 
 export default ChatService;

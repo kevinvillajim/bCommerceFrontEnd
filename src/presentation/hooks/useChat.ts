@@ -54,7 +54,29 @@ export const useChat = (isSeller = false) => {
 			setError(null);
 
 			const chatService = getChatService();
-			const response = await chatService.getChats();
+			let response;
+
+			// Si es vendedor y tenemos el ID del usuario, intentar con la ruta específica por ID
+			if (isSellerRef.current && user?.id) {
+				console.log(
+					`Intentando obtener chats para vendedor con ID: ${user.id}`
+				);
+				try {
+					// Intentar primero con la ruta explícita por ID de vendedor
+					response = await chatService.getChatsBySellerIdExplicit(user.id);
+					console.log(`Respuesta de búsqueda explícita por ID: `, response);
+				} catch (explicitError) {
+					console.warn(
+						`Error en búsqueda explícita, intentando ruta general: `,
+						explicitError
+					);
+					// Si falla, intentar con la ruta general
+					response = await chatService.getChats();
+				}
+			} else {
+				// Para usuarios normales, usar la ruta estándar
+				response = await chatService.getChats();
+			}
 
 			if (!response || !response.data) {
 				console.warn("Respuesta vacía o inválida");
@@ -80,7 +102,7 @@ export const useChat = (isSeller = false) => {
 			setLoading(false);
 			isLoadingRef.current = false;
 		}
-	}, [getChatService]);
+	}, [getChatService, user?.id]);
 
 	/**
 	 * Carga los mensajes de un chat específico
