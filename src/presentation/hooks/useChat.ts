@@ -118,6 +118,23 @@ export const useChat = (isSeller = false) => {
 				// Para usuarios normales, usar la ruta estándar
 				response = await chatService.getChats();
 			}
+
+			// Si no tenemos respuesta o la respuesta no tiene status "success", lanzar error
+			if (!response || response.status !== "success") {
+				throw new Error("No se pudo obtener la lista de chats");
+			}
+
+			// Actualizar el estado con los chats obtenidos
+			const chatList = response.data || [];
+			setChats(chatList);
+			localChatsRef.current = chatList;
+
+			// Registrar en consola la carga exitosa
+			console.log(
+				`✅ Cargados ${chatList.length} chats ${isSellerRef.current ? "como vendedor" : "como usuario"}`
+			);
+
+			return chatList;
 		} catch (err) {
 			console.error("Error al obtener chats:", err);
 			setError(extractErrorMessage(err, "Error al cargar los chats"));
