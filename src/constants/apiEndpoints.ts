@@ -215,11 +215,16 @@ export const API_ENDPOINTS = {
 
 	// Admin
 	ADMIN: {
-		DASHBOARD: "/admin/dashboard",
 		// Users management
 		USERS: "/admin/users",
-		BLOCK_USER: (id: string | number) => `/admin/users/${id}/block`,
-		UNBLOCK_USER: (id: string | number) => `/admin/users/${id}/unblock`,
+		USER_DETAIL: (id: number) => `/admin/users/${id}`,
+		BLOCK_USER: (id: number) => `/admin/users/${id}/block`,
+		UNBLOCK_USER: (id: number) => `/admin/users/${id}/unblock`,
+		RESET_PASSWORD: (id: number) => `/admin/users/${id}/reset-password`,
+		MAKE_ADMIN: (id: number) => `/admin/users/${id}/make-admin`,
+		MAKE_SELLER: (id: number) => `/admin/users/${id}/make-seller`,
+
+		DASHBOARD: "/admin/dashboard",
 		// Sellers management
 		SELLERS: "/admin/sellers",
 		SELLER_STATUS: (id: string | number) => `/admin/sellers/${id}/status`,

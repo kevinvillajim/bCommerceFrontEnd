@@ -1,205 +1,170 @@
-import React, {useState, useEffect} from "react";
-import Table from "../../components/dashboard/Table"; // Importar el componente Table que creamos
+// src/presentation/pages/admin/AdminUsersPage.tsx
+import React, {useState, useEffect, useRef} from "react";
+import Table from "../../components/dashboard/Table";
 import {
 	User,
 	Lock,
 	Unlock,
 	Mail,
-	Edit,
+	Store,
 	Shield,
 	Filter,
 	RefreshCw,
+	AlertCircle,
+	X,
 } from "lucide-react";
+import useAdminUsers from "../../hooks/useAdminUsers";
+import type {AdminUserData} from "../../hooks/useAdminUsers";
 
-// Tipo de usuario
-interface UserData {
-	id: number;
-	name: string;
-	email: string;
-	role: "customer" | "seller" | "admin";
-	status: "active" | "blocked";
-	lastLogin: string;
-	registeredDate: string;
-	ordersCount: number;
-}
-
-
+/**
+ * Página de gestión de usuarios para administradores
+ */
 const AdminUsersPage: React.FC = () => {
-	const [users, setUsers] = useState<UserData[]>([]);
-	const [loading, setLoading] = useState(true);
+	const {
+		users,
+		loading,
+		error,
+		pagination,
+		fetchUsers,
+		toggleUserStatus,
+		sendPasswordReset,
+		makeUserAdmin,
+		makeUserSeller,
+		filterUsers,
+	} = useAdminUsers();
+
+	// Estados para filtros y búsqueda
 	const [roleFilter, setRoleFilter] = useState<string>("all");
 	const [statusFilter, setStatusFilter] = useState<string>("all");
-	const [pagination, setPagination] = useState({
-		currentPage: 1,
-		totalPages: 5,
-		totalItems: 48,
-		itemsPerPage: 10,
-	});
+	const [searchTerm, setSearchTerm] = useState<string>("");
+	const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-	// Obtener datos de usuarios (simulado)
+	// Estados para el modal de crear vendedor
+	const [showSellerModal, setShowSellerModal] = useState<boolean>(false);
+	const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+	const [storeName, setStoreName] = useState<string>("");
+	const [storeDescription, setStoreDescription] = useState<string>("");
+	const [validationErrors, setValidationErrors] = useState<{
+		[key: string]: string;
+	}>({});
+
+	// Obtener datos de usuarios al iniciar
 	useEffect(() => {
-		const fetchUsers = () => {
-			setLoading(true);
-
-			// Datos de ejemplo
-			const mockUsers: UserData[] = [
-				{
-					id: 1,
-					name: "John Doe",
-					email: "john@example.com",
-					role: "customer",
-					status: "active",
-					lastLogin: "2023-11-05",
-					registeredDate: "2023-01-15",
-					ordersCount: 12,
-				},
-				{
-					id: 2,
-					name: "Jane Smith",
-					email: "jane@example.com",
-					role: "customer",
-					status: "active",
-					lastLogin: "2023-11-02",
-					registeredDate: "2023-02-20",
-					ordersCount: 8,
-				},
-				{
-					id: 3,
-					name: "Michael Brown",
-					email: "michael@example.com",
-					role: "seller",
-					status: "active",
-					lastLogin: "2023-11-04",
-					registeredDate: "2023-03-10",
-					ordersCount: 0,
-				},
-				{
-					id: 4,
-					name: "Sarah Johnson",
-					email: "sarah@example.com",
-					role: "customer",
-					status: "blocked",
-					lastLogin: "2023-10-28",
-					registeredDate: "2023-04-05",
-					ordersCount: 3,
-				},
-				{
-					id: 5,
-					name: "David Wilson",
-					email: "david@example.com",
-					role: "seller",
-					status: "active",
-					lastLogin: "2023-11-01",
-					registeredDate: "2023-05-12",
-					ordersCount: 0,
-				},
-				{
-					id: 6,
-					name: "Jennifer Lee",
-					email: "jennifer@example.com",
-					role: "customer",
-					status: "active",
-					lastLogin: "2023-11-03",
-					registeredDate: "2023-06-22",
-					ordersCount: 5,
-				},
-				{
-					id: 7,
-					name: "Robert Garcia",
-					email: "robert@example.com",
-					role: "admin",
-					status: "active",
-					lastLogin: "2023-11-05",
-					registeredDate: "2023-07-18",
-					ordersCount: 0,
-				},
-				{
-					id: 8,
-					name: "Emily Taylor",
-					email: "emily@example.com",
-					role: "customer",
-					status: "active",
-					lastLogin: "2023-10-30",
-					registeredDate: "2023-08-14",
-					ordersCount: 2,
-				},
-				{
-					id: 9,
-					name: "Kevin Martinez",
-					email: "kevin@example.com",
-					role: "customer",
-					status: "blocked",
-					lastLogin: "2023-10-15",
-					registeredDate: "2023-09-28",
-					ordersCount: 1,
-				},
-				{
-					id: 10,
-					name: "Amanda White",
-					email: "amanda@example.com",
-					role: "seller",
-					status: "active",
-					lastLogin: "2023-11-04",
-					registeredDate: "2023-10-05",
-					ordersCount: 0,
-				},
-			];
-
-			setTimeout(() => {
-				setUsers(mockUsers);
-				setPagination({
-					currentPage: 1,
-					totalPages: 5,
-					totalItems: 48,
-					itemsPerPage: 10,
-				});
-				setLoading(false);
-			}, 500); // Simular retardo de red
-		};
-
-		fetchUsers();
-	}, []);
+		fetchUsers(pagination.currentPage, pagination.itemsPerPage);
+	}, [fetchUsers, pagination.currentPage, pagination.itemsPerPage]);
 
 	// Filtrar usuarios basado en rol y estado
-	const filteredUsers = users.filter((user) => {
-		const matchesRole = roleFilter === "all" || user.role === roleFilter;
-		const matchesStatus =
-			statusFilter === "all" || user.status === statusFilter;
-		return matchesRole && matchesStatus;
+	const filteredUsers = filterUsers({
+		role: roleFilter,
+		status: statusFilter,
+		searchTerm: searchTerm,
 	});
 
 	// Manejar cambio de estado de usuario (bloquear/desbloquear)
-	const toggleUserStatus = (userId: number) => {
-		setUsers((prevUsers) =>
-			prevUsers.map((user) =>
-				user.id === userId
-					? {...user, status: user.status === "active" ? "blocked" : "active"}
-					: user
-			)
-		);
+	const handleToggleUserStatus = async (
+		userId: number,
+		currentStatus: string
+	) => {
+		const isCurrentlyBlocked = currentStatus === "blocked";
+		const success = await toggleUserStatus(userId, isCurrentlyBlocked);
+
+		if (success) {
+			setSuccessMessage(
+				`Usuario ${isCurrentlyBlocked ? "desbloqueado" : "bloqueado"} correctamente.`
+			);
+
+			// Limpiar mensaje después de 3 segundos
+			setTimeout(() => setSuccessMessage(null), 3000);
+		}
 	};
 
 	// Manejar envío de restablecimiento de contraseña
-	const sendPasswordReset = (userId: number) => {
-		// En una app real, harías una llamada a la API aquí
-		alert(
-			`Correo de restablecimiento de contraseña enviado al usuario #${userId}`
-		);
+	const handleSendPasswordReset = async (userId: number) => {
+		const success = await sendPasswordReset(userId);
+
+		if (success) {
+			setSuccessMessage(
+				"Correo de restablecimiento de contraseña enviado correctamente."
+			);
+
+			// Limpiar mensaje después de 3 segundos
+			setTimeout(() => setSuccessMessage(null), 3000);
+		}
+	};
+
+	// Manejar promoción a administrador
+	const handleMakeAdmin = async (userId: number) => {
+		const success = await makeUserAdmin(userId);
+
+		if (success) {
+			setSuccessMessage("Usuario promocionado a administrador correctamente.");
+
+			// Limpiar mensaje después de 3 segundos
+			setTimeout(() => setSuccessMessage(null), 3000);
+		}
+	};
+
+	// Abrir modal para convertir en vendedor
+	const handleShowMakeSellerModal = (userId: number) => {
+		setSelectedUserId(userId);
+		setStoreName("");
+		setStoreDescription("");
+		setValidationErrors({});
+		setShowSellerModal(true);
+	};
+
+	// Cerrar modal
+	const handleCloseSellerModal = () => {
+		setShowSellerModal(false);
+		setSelectedUserId(null);
+		setStoreName("");
+		setStoreDescription("");
+		setValidationErrors({});
+	};
+
+	// Validar formulario de vendedor
+	const validateSellerForm = (): boolean => {
+		const errors: {[key: string]: string} = {};
+
+		if (!storeName || storeName.trim().length < 3) {
+			errors.storeName =
+				"El nombre de la tienda debe tener al menos 3 caracteres";
+		}
+
+		setValidationErrors(errors);
+		return Object.keys(errors).length === 0;
+	};
+
+	// Convertir en vendedor
+	const handleMakeSeller = async () => {
+		if (!selectedUserId) return;
+
+		if (validateSellerForm()) {
+			const storeData = {
+				store_name: storeName,
+				description: storeDescription,
+			};
+
+			const success = await makeUserSeller(selectedUserId, storeData);
+
+			if (success) {
+				setSuccessMessage("Usuario convertido en vendedor correctamente.");
+				handleCloseSellerModal();
+
+				// Limpiar mensaje después de 3 segundos
+				setTimeout(() => setSuccessMessage(null), 3000);
+			}
+		}
 	};
 
 	// Manejar cambio de página
 	const handlePageChange = (page: number) => {
-		setPagination((prev) => ({...prev, currentPage: page}));
-		// En una app real, aquí obtendrías los datos para la nueva página
+		fetchUsers(page, pagination.itemsPerPage);
 	};
 
 	// Refrescar datos
 	const refreshData = () => {
-		setLoading(true);
-		// Simular recarga de datos
-		setTimeout(() => {
-			setLoading(false);
-		}, 500);
+		fetchUsers(pagination.currentPage, pagination.itemsPerPage);
 	};
 
 	// Definir columnas de la tabla
@@ -208,7 +173,7 @@ const AdminUsersPage: React.FC = () => {
 			key: "user",
 			header: "Usuario",
 			sortable: true,
-			render: (user: UserData) => (
+			render: (user: AdminUserData) => (
 				<div className="flex items-center">
 					<div className="flex-shrink-0 h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden">
 						<User className="h-6 w-6 text-gray-500 dark:text-gray-400" />
@@ -228,7 +193,7 @@ const AdminUsersPage: React.FC = () => {
 			key: "role",
 			header: "Rol",
 			sortable: true,
-			render: (user: UserData) => (
+			render: (user: AdminUserData) => (
 				<span
 					className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
 						user.role === "admin"
@@ -248,7 +213,7 @@ const AdminUsersPage: React.FC = () => {
 			key: "status",
 			header: "Estado",
 			sortable: true,
-			render: (user: UserData) => (
+			render: (user: AdminUserData) => (
 				<span
 					className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
 						user.status === "active"
@@ -278,10 +243,10 @@ const AdminUsersPage: React.FC = () => {
 		{
 			key: "actions",
 			header: "Acciones",
-			render: (user: UserData) => (
+			render: (user: AdminUserData) => (
 				<div className="flex justify-end space-x-2">
 					<button
-						onClick={() => toggleUserStatus(user.id)}
+						onClick={() => handleToggleUserStatus(user.id, user.status)}
 						className={`p-1 rounded-md ${
 							user.status === "active"
 								? "text-red-600 hover:bg-red-100 dark:text-red-400 dark:hover:bg-red-900"
@@ -300,20 +265,24 @@ const AdminUsersPage: React.FC = () => {
 						)}
 					</button>
 					<button
-						onClick={() => sendPasswordReset(user.id)}
+						onClick={() => handleSendPasswordReset(user.id)}
 						className="p-1 text-blue-600 hover:bg-blue-100 rounded-md dark:text-blue-400 dark:hover:bg-blue-900"
 						title="Enviar Restablecimiento de Contraseña"
 					>
 						<Mail size={18} />
 					</button>
-					<button
-						className="p-1 text-yellow-600 hover:bg-yellow-100 rounded-md dark:text-yellow-400 dark:hover:bg-yellow-900"
-						title="Editar Usuario"
-					>
-						<Edit size={18} />
-					</button>
+					{user.role !== "seller" && (
+						<button
+							onClick={() => handleShowMakeSellerModal(user.id)}
+							className="p-1 text-green-600 hover:bg-green-100 rounded-md dark:text-green-400 dark:hover:bg-green-900"
+							title="Convertir en Vendedor"
+						>
+							<Store size={18} />
+						</button>
+					)}
 					{user.role !== "admin" && (
 						<button
+							onClick={() => handleMakeAdmin(user.id)}
 							className="p-1 text-purple-600 hover:bg-purple-100 rounded-md dark:text-purple-400 dark:hover:bg-purple-900"
 							title="Hacer Administrador"
 						>
@@ -335,12 +304,32 @@ const AdminUsersPage: React.FC = () => {
 					<button
 						onClick={refreshData}
 						className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+						disabled={loading}
 					>
-						<RefreshCw size={18} className="inline mr-2" />
+						<RefreshCw
+							size={18}
+							className={`inline mr-2 ${loading ? "animate-spin" : ""}`}
+						/>
 						Actualizar
 					</button>
 				</div>
 			</div>
+
+			{/* Mensajes de error y éxito */}
+			{error && (
+				<div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
+					<div className="flex items-center">
+						<AlertCircle className="h-5 w-5 mr-2" />
+						<span>{error}</span>
+					</div>
+				</div>
+			)}
+
+			{successMessage && (
+				<div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4">
+					<span>{successMessage}</span>
+				</div>
+			)}
 
 			{/* Filtros */}
 			<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
@@ -372,6 +361,17 @@ const AdminUsersPage: React.FC = () => {
 							<option value="blocked">Bloqueado</option>
 						</select>
 					</div>
+
+					{/* Búsqueda */}
+					<div className="flex-grow">
+						<input
+							type="text"
+							placeholder="Buscar por nombre o email..."
+							className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+							value={searchTerm}
+							onChange={(e) => setSearchTerm(e.target.value)}
+						/>
+					</div>
 				</div>
 			</div>
 
@@ -390,7 +390,90 @@ const AdminUsersPage: React.FC = () => {
 					onPageChange: handlePageChange,
 				}}
 			/>
+
+			{/* Modal para Crear Vendedor */}
+			{showSellerModal && (
+				<div className="fixed inset-0 flex items-center justify-center z-50">
+					<div
+						className="fixed inset-0 bg-black bg-opacity-50"
+						onClick={handleCloseSellerModal}
+					></div>
+					<div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md relative z-10">
+						<div className="flex justify-between items-center mb-4">
+							<h2 className="text-xl font-bold text-gray-900 dark:text-white">
+								Convertir en Vendedor
+							</h2>
+							<button
+								onClick={handleCloseSellerModal}
+								className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+							>
+								<X size={20} />
+							</button>
+						</div>
+
+						<div className="space-y-4">
+							<div>
+								<label
+									htmlFor="store_name"
+									className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+								>
+									Nombre de la Tienda *
+								</label>
+								<input
+									type="text"
+									id="store_name"
+									className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white dark:border-gray-600 ${
+										validationErrors.storeName
+											? "border-red-500"
+											: "border-gray-300"
+									}`}
+									value={storeName}
+									onChange={(e) => setStoreName(e.target.value)}
+								/>
+								{validationErrors.storeName && (
+									<p className="mt-1 text-sm text-red-500">
+										{validationErrors.storeName}
+									</p>
+								)}
+							</div>
+
+							<div>
+								<label
+									htmlFor="description"
+									className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+								>
+									Descripción
+								</label>
+								<textarea
+									id="description"
+									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white dark:border-gray-600"
+									value={storeDescription}
+									onChange={(e) => setStoreDescription(e.target.value)}
+									rows={4}
+								></textarea>
+							</div>
+
+							<div className="flex justify-end space-x-3 mt-6">
+								<button
+									onClick={handleCloseSellerModal}
+									className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+								>
+									Cancelar
+								</button>
+								<button
+									onClick={handleMakeSeller}
+									className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+									disabled={loading}
+								>
+									{loading ? "Procesando..." : "Guardar"}
+								</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			)}
 		</div>
 	);
 };
+
 export default AdminUsersPage;

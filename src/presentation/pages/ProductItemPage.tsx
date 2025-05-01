@@ -23,7 +23,8 @@ import { getImageUrl } from "../../utils/imageUtils";
 import {useCart} from "../hooks/useCart";
 import {useFavorites} from "../hooks/useFavorites";
 import {useChat} from "../hooks/useChat";
-import {NotificationType} from "../contexts/CartContext";
+import { NotificationType } from "../contexts/CartContext";
+import ApiClient from "../../infrastructure/api/apiClient";
 
 
 const ProductItemPage: React.FC = () => {
@@ -145,9 +146,66 @@ useEffect(() => {
 	
 	const handleChatWithSeller = async () => {
 		try {
-			// Usamos el ID de la marca como seller_id para este ejemplo
-			// En producción real, deberías tener un campo sellerId en el producto
-			const sellerId = Number(product.brand === "AudioTech" ? 1 : 2); // ID de ejemplo
+			let sellerId;
+
+			// Caso 1: El producto ya tiene seller_id directamente
+			if (product.seller_id) {
+				sellerId = product.seller_id;
+				console.log(`Usando seller_id directo del producto: ${sellerId}`);
+			}
+			// Caso 2: El producto tiene objeto seller con id
+			else if (product.seller && product.seller.id) {
+				sellerId = product.seller.id;
+				console.log(`Usando seller.id del producto: ${sellerId}`);
+			}
+			// Caso 3: Necesitamos convertir user_id a seller_id
+			else if (product.user_id) {
+				console.log(
+					`Intentando obtener seller_id a partir de user_id: ${product.user_id}`
+				);
+
+				try {
+					// Usar el endpoint específico para obtener seller_id a partir de user_id
+					const response = await ApiClient.get(
+						`/sellers/by-user/${product.user_id}`
+					);
+
+					if (response && response.data && response.data.id) {
+						sellerId = response.data.id;
+						console.log(
+							`Convertido user_id ${product.user_id} a seller_id ${sellerId}`
+						);
+					} else if (response && response.data && response.data.seller_id) {
+						sellerId = response.data.seller_id;
+						console.log(
+							`Convertido user_id ${product.user_id} a seller_id ${sellerId}`
+						);
+					} else {
+						// Si no podemos obtener el seller_id, usamos el user_id como fallback
+						console.warn(
+							`No se pudo obtener seller_id, usando user_id como fallback`
+						);
+						sellerId = product.user_id;
+					}
+				} catch (error) {
+					console.error("Error al obtener seller_id:", error);
+					// Como fallback, usamos el user_id directamente
+					sellerId = product.user_id;
+					console.warn(
+						`Fallback: usando user_id ${sellerId} como seller_id debido a error`
+					);
+				}
+			} else {
+				console.error(
+					"No se encontró información de vendedor en datos del producto:",
+					product
+				);
+				throw new Error("No se pudo determinar el vendedor del producto");
+			}
+
+			console.log(
+				`Iniciando chat con vendedor ID ${sellerId} para producto ${product.id}`
+			);
 
 			const chatId = await createChat(sellerId, Number(id));
 			if (chatId) {
