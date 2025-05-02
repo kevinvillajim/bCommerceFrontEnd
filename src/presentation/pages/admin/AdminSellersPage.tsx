@@ -12,163 +12,13 @@ import {
 	Ban,
 	CheckCircle,
 	Clock,
+	UserPlus,
 } from "lucide-react";
 import {Link} from "react-router-dom";
 import type {Seller} from "../../../core/domain/entities/Seller";
-
-// Datos simulados para vendedores
-const mockSellers: Seller[] = [
-	{
-		id: 1,
-		userId: 101,
-		storeName: "TechGizmo Shop",
-		description: "Tienda especializada en gadgets tecnológicos",
-		status: "active",
-		verificationLevel: "verified",
-		commissionRate: 5.0,
-		totalSales: 35420.5,
-		isFeatured: true,
-		averageRating: 4.8,
-		totalRatings: 124,
-		createdAt: "2023-05-15T10:30:00Z",
-		updatedAt: "2023-11-02T14:22:00Z",
-	},
-	{
-		id: 2,
-		userId: 102,
-		storeName: "Fashion Trends",
-		description: "Ropa y accesorios de moda",
-		status: "active",
-		verificationLevel: "premium",
-		commissionRate: 7.5,
-		totalSales: 28950.25,
-		isFeatured: true,
-		averageRating: 4.6,
-		totalRatings: 87,
-		createdAt: "2023-04-22T09:15:00Z",
-		updatedAt: "2023-11-03T11:45:00Z",
-	},
-	{
-		id: 3,
-		userId: 103,
-		storeName: "Home Essentials",
-		description: "Todo para el hogar",
-		status: "active",
-		verificationLevel: "basic",
-		commissionRate: 4.0,
-		totalSales: 22340.75,
-		isFeatured: false,
-		averageRating: 4.2,
-		totalRatings: 56,
-		createdAt: "2023-06-10T14:20:00Z",
-		updatedAt: "2023-10-28T16:30:00Z",
-	},
-	{
-		id: 4,
-		userId: 104,
-		storeName: "Sports Equipment",
-		description: "Equipamiento deportivo profesional",
-		status: "suspended",
-		verificationLevel: "verified",
-		commissionRate: 6.0,
-		totalSales: 18750.3,
-		isFeatured: false,
-		averageRating: 4.5,
-		totalRatings: 43,
-		createdAt: "2023-03-05T08:40:00Z",
-		updatedAt: "2023-10-15T13:25:00Z",
-	},
-	{
-		id: 5,
-		userId: 105,
-		storeName: "Beauty World",
-		description: "Productos de belleza y cuidado personal",
-		status: "active",
-		verificationLevel: "basic",
-		commissionRate: 5.5,
-		totalSales: 15670.45,
-		isFeatured: false,
-		averageRating: 4.3,
-		totalRatings: 38,
-		createdAt: "2023-07-18T11:10:00Z",
-		updatedAt: "2023-11-01T09:50:00Z",
-	},
-	{
-		id: 6,
-		userId: 106,
-		storeName: "Kitchen Masters",
-		description: "Utensilios y electrodomésticos de cocina",
-		status: "active",
-		verificationLevel: "none",
-		commissionRate: 4.5,
-		totalSales: 12840.8,
-		isFeatured: false,
-		averageRating: 4.0,
-		totalRatings: 21,
-		createdAt: "2023-08-01T12:30:00Z",
-		updatedAt: "2023-10-25T10:15:00Z",
-	},
-	{
-		id: 7,
-		userId: 107,
-		storeName: "Pet Paradise",
-		description: "Todo para mascotas",
-		status: "pending",
-		verificationLevel: "none",
-		commissionRate: 4.0,
-		totalSales: 0,
-		isFeatured: false,
-		averageRating: 0,
-		totalRatings: 0,
-		createdAt: "2023-11-02T15:45:00Z",
-		updatedAt: "2023-11-02T15:45:00Z",
-	},
-	{
-		id: 8,
-		userId: 108,
-		storeName: "Book Haven",
-		description: "Librería online",
-		status: "inactive",
-		verificationLevel: "basic",
-		commissionRate: 3.5,
-		totalSales: 8950.2,
-		isFeatured: false,
-		averageRating: 4.4,
-		totalRatings: 15,
-		createdAt: "2023-06-20T13:50:00Z",
-		updatedAt: "2023-09-18T11:20:00Z",
-	},
-	{
-		id: 9,
-		userId: 109,
-		storeName: "Electronics Hub",
-		description: "Electrónica y accesorios",
-		status: "active",
-		verificationLevel: "verified",
-		commissionRate: 6.5,
-		totalSales: 42680.15,
-		isFeatured: true,
-		averageRating: 4.7,
-		totalRatings: 92,
-		createdAt: "2023-02-15T10:15:00Z",
-		updatedAt: "2023-11-04T14:10:00Z",
-	},
-	{
-		id: 10,
-		userId: 110,
-		storeName: "Crafty Corner",
-		description: "Artículos de manualidades y arte",
-		status: "pending",
-		verificationLevel: "none",
-		commissionRate: 4.0,
-		totalSales: 0,
-		isFeatured: false,
-		averageRating: 0,
-		totalRatings: 0,
-		createdAt: "2023-11-04T09:30:00Z",
-		updatedAt: "2023-11-04T09:30:00Z",
-	},
-];
+import SellerAdminService from "../../../core/services/SellerAdminService";
+import StatusUpdateModal from "../../components/admin/StatusUpdateModal";
+import SellerFormModal from "../../components/admin/SellerFormModal";
 
 const AdminSellersPage: React.FC = () => {
 	const [sellers, setSellers] = useState<Seller[]>([]);
@@ -177,116 +27,309 @@ const AdminSellersPage: React.FC = () => {
 	const [verificationFilter, setVerificationFilter] = useState<string>("all");
 	const [pagination, setPagination] = useState({
 		currentPage: 1,
-		totalPages: 5,
-		totalItems: 48,
+		totalPages: 1,
+		totalItems: 0,
 		itemsPerPage: 10,
 	});
 
+	// Estados para modales
+	const [statusModal, setStatusModal] = useState({
+		isOpen: false,
+		sellerId: 0,
+		status: "activate" as "activate" | "suspend" | "deactivate",
+		title: "",
+		message: "",
+		buttonText: "",
+	});
+
+	const [sellerFormModal, setSellerFormModal] = useState({
+		isOpen: false,
+		seller: null as Seller | null,
+		isCreate: true,
+		title: "Crear nuevo vendedor",
+	});
+
+	const [nonSellerUsers, setNonSellerUsers] = useState<
+		Array<{id: number; name: string; email: string}>
+	>([]);
+	const [error, setError] = useState<string | null>(null);
+
+	// Inicializar el servicio
+	const sellerService = new SellerAdminService();
+
 	// Cargar datos de vendedores
 	useEffect(() => {
-		const fetchSellers = () => {
-			setLoading(true);
-			// Simulación de llamada a API
-			setTimeout(() => {
-				setSellers(mockSellers);
-				setPagination({
-					currentPage: 1,
-					totalPages: 1,
-					totalItems: mockSellers.length,
-					itemsPerPage: 10,
-				});
-				setLoading(false);
-			}, 500);
-		};
-
 		fetchSellers();
-	}, []);
+	}, [statusFilter, verificationFilter, pagination.currentPage]);
 
-	// Filtrar vendedores basado en estado y nivel de verificación
-	const filteredSellers = sellers.filter((seller) => {
-		const matchesStatus =
-			statusFilter === "all" || seller.status === statusFilter;
-		const matchesVerification =
-			verificationFilter === "all" ||
-			seller.verificationLevel === verificationFilter;
-		return matchesStatus && matchesVerification;
-	});
+	// Función para obtener vendedores del backend
+	const fetchSellers = async () => {
+		setLoading(true);
+		setError(null);
+		try {
+			const filters: any = {
+				page: pagination.currentPage,
+				per_page: pagination.itemsPerPage,
+			};
+
+			// Añadir filtros si están definidos
+			if (statusFilter !== "all") {
+				filters.status = statusFilter;
+			}
+
+			if (verificationFilter !== "all") {
+				filters.verification_level = verificationFilter;
+			}
+
+			const result = await sellerService.getSellers(filters);
+			setSellers(result.sellers);
+			setPagination(result.pagination);
+		} catch (error) {
+			console.error("Error al obtener vendedores:", error);
+			setError("Error al cargar vendedores. Por favor, inténtalo de nuevo.");
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	// Cargar usuarios no vendedores (para crear nuevos vendedores)
+	const loadNonSellerUsers = async () => {
+		try {
+			const users = await sellerService.getNonSellerUsers();
+			setNonSellerUsers(users);
+		} catch (error) {
+			console.error("Error al cargar usuarios:", error);
+			setError("Error al cargar usuarios. Por favor, inténtalo de nuevo.");
+		}
+	};
 
 	// Manejar cambio de estado de vendedor
 	const toggleSellerStatus = (sellerId: number) => {
-		setSellers((prevSellers) =>
-			prevSellers.map((seller) => {
-				if (seller.id === sellerId) {
-					let newStatus: "pending" | "active" | "suspended" | "inactive";
+		// Buscar el vendedor
+		const seller = sellers.find((s) => s.id === sellerId);
+		if (!seller) return;
 
-					// Ciclo de estados: active -> suspended -> inactive -> active
-					if (seller.status === "active") newStatus = "suspended";
-					else if (seller.status === "suspended") newStatus = "inactive";
-					else newStatus = "active"; // Si está inactivo o pendiente, activar
+		let status: "activate" | "suspend" | "deactivate";
+		let title = "";
+		let message = "";
+		let buttonText = "";
 
-					return {...seller, status: newStatus};
-				}
-				return seller;
-			})
-		);
+		if (seller.status === "active") {
+			status = "suspend";
+			title = "Suspender vendedor";
+			message = `¿Estás seguro de que deseas suspender al vendedor "${seller.storeName}"? Esta acción limitará temporalmente su capacidad para vender.`;
+			buttonText = "Suspender";
+		} else if (seller.status === "suspended") {
+			status = "deactivate";
+			title = "Desactivar vendedor";
+			message = `¿Estás seguro de que deseas desactivar al vendedor "${seller.storeName}"? Esta acción lo desactivará completamente.`;
+			buttonText = "Desactivar";
+		} else {
+			status = "activate";
+			title = "Activar vendedor";
+			message = `¿Estás seguro de que deseas activar al vendedor "${seller.storeName}"? Esta acción permitirá que vuelva a vender en la plataforma.`;
+			buttonText = "Activar";
+		}
+
+		setStatusModal({
+			isOpen: true,
+			sellerId,
+			status,
+			title,
+			message,
+			buttonText,
+		});
+	};
+
+	// Procesar cambio de estado
+	const handleStatusUpdate = async (reason: string) => {
+		setLoading(true);
+		setError(null);
+		try {
+			const {sellerId, status} = statusModal;
+			let newStatus: "active" | "suspended" | "inactive";
+
+			if (status === "activate") {
+				newStatus = "active";
+			} else if (status === "suspend") {
+				newStatus = "suspended";
+			} else {
+				newStatus = "inactive";
+			}
+
+			await sellerService.updateSellerStatus(sellerId, newStatus, reason);
+
+			// Actualizar el estado local para reflejar el cambio inmediatamente
+			setSellers((prevSellers) =>
+				prevSellers.map((seller) => {
+					if (seller.id === sellerId) {
+						return {...seller, status: newStatus};
+					}
+					return seller;
+				})
+			);
+
+			// Cerrar el modal
+			setStatusModal((prev) => ({...prev, isOpen: false}));
+		} catch (error) {
+			console.error("Error al actualizar estado:", error);
+			setError(
+				"Error al actualizar el estado del vendedor. Por favor, inténtalo de nuevo."
+			);
+		} finally {
+			setLoading(false);
+		}
 	};
 
 	// Aprobar vendedor pendiente
-	const approveSeller = (sellerId: number) => {
-		setSellers((prevSellers) =>
-			prevSellers.map((seller) => {
-				if (seller.id === sellerId && seller.status === "pending") {
-					return {...seller, status: "active"};
-				}
-				return seller;
-			})
-		);
-		alert(`Vendedor #${sellerId} ha sido aprobado`);
+	const approveSeller = async (sellerId: number) => {
+		setLoading(true);
+		setError(null);
+		try {
+			await sellerService.updateSellerStatus(sellerId, "active");
+
+			// Actualizar el estado local
+			setSellers((prevSellers) =>
+				prevSellers.map((seller) => {
+					if (seller.id === sellerId) {
+						return {...seller, status: "active"};
+					}
+					return seller;
+				})
+			);
+
+			alert(`Vendedor #${sellerId} ha sido aprobado`);
+		} catch (error) {
+			console.error("Error al aprobar vendedor:", error);
+			setError("Error al aprobar el vendedor. Por favor, inténtalo de nuevo.");
+		} finally {
+			setLoading(false);
+		}
 	};
 
 	// Cambiar nivel de verificación
-	const updateVerificationLevel = (
+	const updateVerificationLevel = async (
 		sellerId: number,
 		level: "none" | "basic" | "verified" | "premium"
 	) => {
-		setSellers((prevSellers) =>
-			prevSellers.map((seller) => {
-				if (seller.id === sellerId) {
-					return {...seller, verificationLevel: level};
-				}
-				return seller;
-			})
-		);
-		alert(
-			`Nivel de verificación actualizado a "${level}" para vendedor #${sellerId}`
-		);
+		setLoading(true);
+		setError(null);
+		try {
+			await sellerService.updateSeller(sellerId, {verification_level: level});
+
+			// Actualizar el estado local
+			setSellers((prevSellers) =>
+				prevSellers.map((seller) => {
+					if (seller.id === sellerId) {
+						return {...seller, verificationLevel: level};
+					}
+					return seller;
+				})
+			);
+
+			alert(
+				`Nivel de verificación actualizado a "${level}" para vendedor #${sellerId}`
+			);
+		} catch (error) {
+			console.error("Error al actualizar verificación:", error);
+			setError(
+				"Error al actualizar nivel de verificación. Por favor, inténtalo de nuevo."
+			);
+		} finally {
+			setLoading(false);
+		}
 	};
 
 	// Destacar/Quitar destacado de vendedor
-	const toggleFeatured = (sellerId: number) => {
-		setSellers((prevSellers) =>
-			prevSellers.map((seller) => {
-				if (seller.id === sellerId) {
-					return {...seller, isFeatured: !seller.isFeatured};
-				}
-				return seller;
-			})
-		);
+	const toggleFeatured = async (sellerId: number) => {
+		// Buscar el vendedor para determinar el estado actual
+		const seller = sellers.find((s) => s.id === sellerId);
+		if (!seller) return;
+
+		setLoading(true);
+		setError(null);
+		try {
+			await sellerService.updateSeller(sellerId, {
+				is_featured: !seller.isFeatured,
+			});
+
+			// Actualizar el estado local
+			setSellers((prevSellers) =>
+				prevSellers.map((seller) => {
+					if (seller.id === sellerId) {
+						return {...seller, isFeatured: !seller.isFeatured};
+					}
+					return seller;
+				})
+			);
+		} catch (error) {
+			console.error("Error al actualizar estado destacado:", error);
+			setError(
+				"Error al actualizar estado destacado. Por favor, inténtalo de nuevo."
+			);
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	// Abrir modal para crear nuevo vendedor
+	const handleCreateSeller = () => {
+		// Cargar usuarios no vendedores
+		loadNonSellerUsers();
+
+		setSellerFormModal({
+			isOpen: true,
+			seller: null,
+			isCreate: true,
+			title: "Crear nuevo vendedor",
+		});
+	};
+
+	// Abrir modal para editar vendedor
+	const handleEditSeller = (seller: Seller) => {
+		setSellerFormModal({
+			isOpen: true,
+			seller,
+			isCreate: false,
+			title: `Editar vendedor: ${seller.storeName}`,
+		});
+	};
+
+	// Procesar formulario de creación/edición
+	const handleSellerFormSubmit = async (formData: any) => {
+		setLoading(true);
+		setError(null);
+		try {
+			if (sellerFormModal.isCreate) {
+				// Crear nuevo vendedor
+				await sellerService.createSeller(formData);
+				alert("Vendedor creado correctamente");
+			} else if (sellerFormModal.seller) {
+				// Actualizar vendedor existente
+				await sellerService.updateSeller(sellerFormModal.seller.id, formData);
+				alert("Vendedor actualizado correctamente");
+			}
+
+			// Recargar lista de vendedores
+			fetchSellers();
+			// Cerrar modal
+			setSellerFormModal((prev) => ({...prev, isOpen: false}));
+		} catch (error) {
+			console.error("Error al procesar vendedor:", error);
+			throw error; // Propagamos el error para que lo maneje el componente del formulario
+		} finally {
+			setLoading(false);
+		}
 	};
 
 	// Manejar cambio de página
 	const handlePageChange = (page: number) => {
 		setPagination((prev) => ({...prev, currentPage: page}));
-		// En una app real, aquí obtendrías los datos para la nueva página
 	};
 
 	// Refrescar datos
 	const refreshData = () => {
-		setLoading(true);
-		// Simular recarga de datos
-		setTimeout(() => {
-			setLoading(false);
-		}, 500);
+		fetchSellers();
 	};
 
 	// Formatear moneda
@@ -558,6 +601,28 @@ const AdminSellersPage: React.FC = () => {
 						</div>
 					</div>
 
+					{/* Botón para editar vendedor */}
+					<button
+						onClick={() => handleEditSeller(seller)}
+						className="p-1 text-blue-600 hover:bg-blue-100 rounded-md dark:text-blue-400 dark:hover:bg-blue-900"
+						title="Editar vendedor"
+					>
+						<svg
+							xmlns="http://www.w3.org/2000/svg"
+							className="h-4 w-4"
+							fill="none"
+							viewBox="0 0 24 24"
+							stroke="currentColor"
+						>
+							<path
+								strokeLinecap="round"
+								strokeLinejoin="round"
+								strokeWidth={2}
+								d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+							/>
+						</svg>
+					</button>
+
 					{/* Ver detalles del vendedor */}
 					<Link
 						to={`/admin/sellers/${seller.id}`}
@@ -579,14 +644,32 @@ const AdminSellersPage: React.FC = () => {
 				</h1>
 				<div className="flex space-x-2">
 					<button
+						onClick={handleCreateSeller}
+						className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center"
+					>
+						<UserPlus size={18} className="inline mr-2" />
+						Nuevo Vendedor
+					</button>
+					<button
 						onClick={refreshData}
 						className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+						disabled={loading}
 					>
-						<RefreshCw size={18} className="inline mr-2" />
+						<RefreshCw
+							size={18}
+							className={`inline mr-2 ${loading ? "animate-spin" : ""}`}
+						/>
 						Actualizar
 					</button>
 				</div>
 			</div>
+
+			{/* Mensaje de error */}
+			{error && (
+				<div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
+					<span className="block sm:inline">{error}</span>
+				</div>
+			)}
 
 			{/* Filtros */}
 			<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
@@ -626,7 +709,7 @@ const AdminSellersPage: React.FC = () => {
 
 			{/* Tabla de Vendedores */}
 			<Table
-				data={filteredSellers}
+				data={sellers}
 				columns={columns}
 				searchFields={["storeName", "description"]}
 				loading={loading}
@@ -638,6 +721,28 @@ const AdminSellersPage: React.FC = () => {
 					itemsPerPage: pagination.itemsPerPage,
 					onPageChange: handlePageChange,
 				}}
+			/>
+
+			{/* Modal de actualización de estado */}
+			<StatusUpdateModal
+				isOpen={statusModal.isOpen}
+				onClose={() => setStatusModal((prev) => ({...prev, isOpen: false}))}
+				onConfirm={handleStatusUpdate}
+				title={statusModal.title}
+				message={statusModal.message}
+				confirmButtonText={statusModal.buttonText}
+				status={statusModal.status}
+			/>
+
+			{/* Modal de creación/edición de vendedor */}
+			<SellerFormModal
+				isOpen={sellerFormModal.isOpen}
+				onClose={() => setSellerFormModal((prev) => ({...prev, isOpen: false}))}
+				onSubmit={handleSellerFormSubmit}
+				seller={sellerFormModal.seller}
+				title={sellerFormModal.title}
+				isCreate={sellerFormModal.isCreate}
+				users={nonSellerUsers}
 			/>
 		</div>
 	);
