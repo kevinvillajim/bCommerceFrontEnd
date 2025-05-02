@@ -35,12 +35,16 @@ C:.
     +---core
     |   +---adapters
     |   |       OrderServiceAdapter.ts
+    |   |       PendingRatingsAdapter.ts
+    |   |       RatingAdapter.ts
     |   |       SellerOrderServiceAdapter.ts
+    |   |       ShippingServiceAdapter.ts
     |   |       
     |   +---domain
     |   |   +---entities
     |   |   |       Accounting.ts
     |   |   |       Category.ts
+    |   |   |       Chat.ts
     |   |   |       DescountCode.ts
     |   |   |       Favorite.ts
     |   |   |       Feedback.ts
@@ -64,18 +68,25 @@ C:.
     |   |           Money.ts
     |   |           
     |   +---services
+    |   |       AdminUserService.ts
     |   |       AuthService.ts
     |   |       CartService.ts
     |   |       CategoryService.ts
+    |   |       ChatService.ts
     |   |       CheckoutService.ts
+    |   |       ConfigurationService.ts
     |   |       OrderService.ts
     |   |       ProductService.ts
+    |   |       RatingService.ts
     |   |       RecommendationService.ts
+    |   |       SellerAdminService.ts
+    |   |       SellerOrderService.ts
     |   |       
     |   \---useCases
     |       +---order
     |       |       GetOrderDetailUseCase.ts
     |       |       GetOrderStatsUseCase.ts
+    |       |       GetSellerOrderDetailUseCase.ts
     |       |       GetSellerOrdersUseCase.ts
     |       |       GetUserOrdersUseCase.ts
     |       |       UpdateOrderStatusUseCase.ts
@@ -110,8 +121,20 @@ C:.
     |           
     +---presentation
     |   +---components
+    |   |   +---admin
+    |   |   |       RatingConfiguration.tsx
+    |   |   |       SellerFormModal.tsx
+    |   |   |       StatusUpdateModal.tsx
+    |   |   |       
     |   |   +---cart
     |   |   |       CartSellerDebug.tsx
+    |   |   |       
+    |   |   +---chat
+    |   |   |       ChatHeader.tsx
+    |   |   |       ChatInterface.tsx
+    |   |   |       ChatList.tsx
+    |   |   |       ChatMessages.tsx
+    |   |   |       MessageForm.tsx
     |   |   |       
     |   |   +---checkout
     |   |   |       CreditCardForm.tsx
@@ -185,6 +208,7 @@ C:.
     |   |   |       CategoriesCarousel.tsx
     |   |   |       CategoriesProduct.tsx
     |   |   |       CategoryFilterSection.tsx
+    |   |   |       ChatButton.tsx
     |   |   |       DiscountFilterSection.tsx
     |   |   |       FilterSection.tsx
     |   |   |       MobileFilterPanel.tsx
@@ -207,6 +231,16 @@ C:.
     |   |   |       ProfileSidebar.tsx
     |   |   |       SecurityTab.tsx
     |   |   |       
+    |   |   +---rating
+    |   |   |       PendingRatingsList.tsx
+    |   |   |       RatingCard.tsx
+    |   |   |       RatingModal.tsx
+    |   |   |       RatingsSummary.tsx
+    |   |   |       StarRating.tsx
+    |   |   |       
+    |   |   +---shipping
+    |   |   |       ShippingFormModal.tsx
+    |   |   |       
     |   |   \---user
     |   |           LoginForm.tsx
     |   |           ProfileCard.tsx
@@ -220,10 +254,12 @@ C:.
     |   |       
     |   +---hooks
     |   |       index.ts
+    |   |       useAdminUsers.ts
     |   |       useAuth.ts
     |   |       useCart.ts
     |   |       useCategories.ts
     |   |       useCategoriesSelect.ts
+    |   |       useChat.ts
     |   |       useFavoriteApi.ts
     |   |       useFavorites.ts
     |   |       useFilterState.ts
@@ -231,7 +267,10 @@ C:.
     |   |       useProductFilters.ts
     |   |       useProducts.ts
     |   |       useProductSearch.ts
+    |   |       useRatings.ts
+    |   |       useSellerAdmin.ts
     |   |       useSellerProducts.ts
+    |   |       useSellerRatings.ts
     |   |       useTheme.ts
     |   |       
     |   +---layouts
@@ -262,8 +301,12 @@ C:.
     |   |   |   ProductPage.tsx
     |   |   |   RegisterPage.tsx
     |   |   |   ResetPasswordPage.tsx
+    |   |   |   UserChatPage.tsx
     |   |   |   UserProfilePage.tsx
     |   |   |   
+    |   |   +---account
+    |   |   |       PendingRatingsPage.tsx
+    |   |   |       
     |   |   +---admin
     |   |   |       AdminAccountingPage.tsx
     |   |   |       AdminCategoriesPage.tsx
@@ -292,11 +335,16 @@ C:.
     |   |           SellerProductsPage.tsx
     |   |           SellerProfilePage.tsx
     |   |           SellerRatingsPage.tsx
+    |   |           SellerShippingDetailsPage.tsx
     |   |           SellerShippingPage.tsx
     |   |           
     |   \---types
     |       |   ProductFilterParams.ts
+    |       |   ratingTypes.ts
     |       |   
+    |       +---admin
+    |       |       ratingConfigTypes.ts
+    |       |       
     |       \---dashboard
     |           \---dataTable
     |                   DataTableTypes.ts
@@ -320,6 +368,7 @@ C:.
         |   categoryUtils.ts
         |   errorHandler.ts
         |   helpers.ts
+        |   imageUtils.ts
         |   productAdapter.ts
         |   sellerHelper.ts
         |   
