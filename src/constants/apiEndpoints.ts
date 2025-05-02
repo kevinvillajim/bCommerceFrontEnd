@@ -240,12 +240,17 @@ export const API_ENDPOINTS = {
 		ORDER_STATS: "/admin/orders/stats",
 		UPDATE_ORDER_STATUS: (id: number) => `/admin/orders/${id}/status`,
 		CANCEL_ORDER: (id: number) => `/admin/orders/${id}/cancel`,
-		UPDATE_SHIPPING: (id: number) => `/admin/orders/${id}/shipping`,
+
 		// Shipping
+		SHIPPING_LIST: "/admin/shippings",
+		SHIPPING_DETAIL: (id: number) => `/admin/shippings/${id}`,
+		SHIPPING_HISTORY: (trackingNumber: string) => `/shipping/${trackingNumber}/history`,
+		UPDATE_SHIPPING: (id: number) => `/admin/orders/${id}/shipping`,
 		UPDATE_SHIPPING_STATUS: (trackingNumber: string) =>
 			`/admin/shipping/${trackingNumber}/status`,
 		SIMULATE_SHIPPING: (trackingNumber: string) =>
 			`/admin/shipping/${trackingNumber}/simulate`,
+		SHIPPING_SEND_NOTIFICATION: (trackingNumber: string) => `/admin/shipping/${trackingNumber}/notify`,
 		// Admin management (super admin only)
 		ADMINS: "/admin/admins",
 		MANAGE_ADMIN: "/admin/admins",
