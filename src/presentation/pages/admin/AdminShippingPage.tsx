@@ -1,3 +1,4 @@
+// src/presentation/pages/admin/AdminShippingPage.tsx
 import React from "react";
 import Table from "../../components/dashboard/Table";
 import {
@@ -20,56 +21,6 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import useAdminShipping from "../../hooks/useAdminShipping";
-
-// Interfaz para el modelo de datos de envío
-interface Shipping {
-  id: number;
-  trackingNumber: string;
-  orderId: number;
-  orderNumber: string;
-  userId: number;
-  customerName: string;
-  status: ShippingStatus;
-  carrier: string;
-  estimatedDeliveryDate?: string;
-  shippedDate?: string;
-  deliveredDate?: string;
-  address: {
-    street: string;
-    city: string;
-    state: string;
-    country: string;
-    postalCode: string;
-    phone: string;
-  };
-  weight?: number;
-  dimensions?: string;
-  trackingHistory: TrackingEvent[];
-  createdAt: string;
-  updatedAt: string;
-}
-
-// Estados posibles de un envío
-type ShippingStatus =
-  | "pending"
-  | "processing"
-  | "ready_to_ship"
-  | "shipped"
-  | "in_transit"
-  | "out_for_delivery"
-  | "delivered"
-  | "failed_delivery"
-  | "returned"
-  | "cancelled";
-
-// Eventos de seguimiento
-interface TrackingEvent {
-  id: number;
-  status: string;
-  location: string;
-  timestamp: string;
-  description: string;
-}
 
 // Mapeo de estado para los envíos
 const shippingStatusMap: Record<
@@ -197,8 +148,8 @@ const AdminShippingPage: React.FC = () => {
   };
 
   // Obtener siguiente estado del envío
-  const getNextStatus = (currentStatus: ShippingStatus): ShippingStatus => {
-    const statusFlow: Record<ShippingStatus, ShippingStatus> = {
+  const getNextStatus = (currentStatus: string): string => {
+    const statusFlow: Record<string, string> = {
       pending: "processing",
       processing: "ready_to_ship",
       ready_to_ship: "shipped",
@@ -431,6 +382,13 @@ const AdminShippingPage: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Mostrar mensaje de error si existe */}
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+          <p>{error}</p>
+        </div>
+      )}
 
       {/* Filtros */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">

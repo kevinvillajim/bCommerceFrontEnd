@@ -1,16 +1,16 @@
-// src/admin/hooks/useAdminShipping.ts
 import {useState, useEffect, useCallback} from "react";
-import AdminShippingService from "../../core/services/AdminShippingService";
 import type {
-	AdminShippingFilters,
+	ShippingFilters,
 } from "../../core/services/AdminShippingService";
-import type {
-	AdminShippingModel,
-	AdminTrackingEvent,
-} from "../../core/adapters/AdminShippingAdapter";
+import AdminShippingService from "../../core/services/AdminShippingService";
+import type {AdminShippingModel} from "../../core/adapters/AdminShippingAdapter";
 
-export const useAdminShipping = () => {
-	const shippingService = new AdminShippingService();
+/**
+ * Hook personalizado para la administración de envíos
+ */
+const useAdminShipping = () => {
+	// Instanciar el servicio
+	const adminShippingService = new AdminShippingService();
 
 	// Estados
 	const [adminShippings, setAdminShippings] = useState<AdminShippingModel[]>(
@@ -18,7 +18,7 @@ export const useAdminShipping = () => {
 	);
 	const [selectedAdminShipping, setSelectedAdminShipping] =
 		useState<AdminShippingModel | null>(null);
-	const [loading, setLoading] = useState<boolean>(false);
+	const [loading, setLoading] = useState<boolean>(true);
 	const [error, setError] = useState<string | null>(null);
 	const [showTrackingModal, setShowTrackingModal] = useState<boolean>(false);
 
@@ -28,10 +28,8 @@ export const useAdminShipping = () => {
 	const [dateRangeFilter, setDateRangeFilter] = useState<{
 		from: string;
 		to: string;
-	}>({
-		from: "",
-		to: "",
-	});
+	}>({from: "", to: ""});
+	const [searchTerm, setSearchTerm] = useState<string>("");
 
 	// Paginación
 	const [pagination, setPagination] = useState({
@@ -42,7 +40,7 @@ export const useAdminShipping = () => {
 	});
 
 	/**
-	 * Cargar listado de envíos para administración
+	 * Obtiene la lista de envíos desde el backend
 	 */
 	const fetchAdminShippings = useCallback(async () => {
 		setLoading(true);
@@ -50,272 +48,225 @@ export const useAdminShipping = () => {
 
 		try {
 			// Preparar filtros para la API
-			const filters: AdminShippingFilters = {
+			const filters: ShippingFilters = {
 				page: pagination.currentPage,
 				limit: pagination.itemsPerPage,
 			};
 
-			// Añadir filtros opcionales si están seleccionados
-			if (statusFilter !== "all") {
-				filters.status = statusFilter;
-			}
+			// Añadir filtros adicionales si están definidos
+			if (statusFilter !== "all") filters.status = statusFilter;
+			if (carrierFilter !== "all") filters.carrier = carrierFilter;
+			if (dateRangeFilter.from) filters.dateFrom = dateRangeFilter.from;
+			if (dateRangeFilter.to) filters.dateTo = dateRangeFilter.to;
+			if (searchTerm) filters.search = searchTerm;
 
-			if (carrierFilter !== "all") {
-				filters.carrier = carrierFilter;
-			}
+			// Llamar al servicio
+			const result = await adminShippingService.getShippings(filters);
 
-			if (dateRangeFilter.from) {
-				filters.date_from = dateRangeFilter.from;
-			}
-
-			if (dateRangeFilter.to) {
-				filters.date_to = dateRangeFilter.to;
-			}
-
-			const response = await shippingService.getAdminShippings(filters);
-
-			setAdminShippings(response.data);
-			setPagination({
-				currentPage: response.pagination.currentPage,
-				totalPages: response.pagination.totalPages,
-				totalItems: response.pagination.totalItems,
-				itemsPerPage: response.pagination.itemsPerPage,
-			});
+			// Actualizar estados
+			setAdminShippings(result.shippings);
+			setPagination(result.pagination);
 		} catch (err) {
-			console.error("Error al obtener envíos para administración:", err);
-			setError("Error al cargar los envíos. Inténtalo de nuevo más tarde.");
+			console.error("Error al obtener envíos:", err);
+			setError(err instanceof Error ? err.message : "Error al cargar envíos");
 		} finally {
 			setLoading(false);
 		}
 	}, [
+		adminShippingService,
 		pagination.currentPage,
 		pagination.itemsPerPage,
 		statusFilter,
 		carrierFilter,
 		dateRangeFilter,
-		shippingService,
+		searchTerm,
 	]);
 
 	/**
-	 * Cargar los datos al montar el componente y cuando cambien los filtros
-	 */
-	useEffect(() => {
-		fetchAdminShippings();
-	}, [fetchAdminShippings]);
-
-	/**
-	 * Obtener detalles de un envío para administración
+	 * Obtiene los detalles de un envío específico
 	 */
 	const fetchAdminShippingDetail = useCallback(
 		async (shipping: AdminShippingModel) => {
-			setSelectedAdminShipping(shipping);
-			setShowTrackingModal(true);
+			setLoading(true);
 
 			try {
-				// Cargar historial del envío si no lo tiene o está vacío
-				if (
-					!shipping.trackingHistory ||
-					shipping.trackingHistory.length === 0
-				) {
-					const history = await shippingService.getAdminShippingHistory(
-						shipping.trackingNumber
-					);
-
-					// Actualizar el envío seleccionado con el historial
-					setSelectedAdminShipping((prev) => {
-						if (!prev) return null;
-						return {
-							...prev,
-							trackingHistory: history,
-						};
-					});
+				// Si ya tenemos el historial completo, usamos ese
+				if (shipping.trackingHistory && shipping.trackingHistory.length > 0) {
+					setSelectedAdminShipping(shipping);
+					setShowTrackingModal(true);
+					setLoading(false);
+					return;
 				}
+
+				// Si no, obtenemos el historial del backend
+				const history = await adminShippingService.getShippingHistory(
+					shipping.trackingNumber
+				);
+
+				// Creamos una copia del envío con el historial actualizado
+				const shippingWithHistory = {
+					...shipping,
+					trackingHistory: history,
+				};
+
+				setSelectedAdminShipping(shippingWithHistory);
+				setShowTrackingModal(true);
 			} catch (err) {
 				console.error(
-					"Error al obtener detalles del envío para administración:",
+					`Error al obtener detalles del envío ${shipping.trackingNumber}:`,
 					err
 				);
+				setError(
+					err instanceof Error
+						? err.message
+						: "Error al cargar detalles del envío"
+				);
+
+				// Aún así mostramos el modal con los datos que tenemos
+				setSelectedAdminShipping(shipping);
+				setShowTrackingModal(true);
+			} finally {
+				setLoading(false);
 			}
 		},
-		[shippingService]
+		[adminShippingService]
 	);
 
 	/**
-	 * Actualizar estado de un envío para administración
+	 * Actualiza el estado de un envío
 	 */
 	const updateAdminShippingStatus = useCallback(
 		async (trackingNumber: string, status: string) => {
 			setLoading(true);
 
 			try {
-				const success = await shippingService.updateAdminShippingStatus(
+				const success = await adminShippingService.updateShippingStatus(
 					trackingNumber,
 					status
 				);
 
 				if (success) {
-					// Actualizar el envío en la lista local
-					setAdminShippings((prevShippings) =>
-						prevShippings.map((shipping) =>
-							shipping.trackingNumber === trackingNumber
-								? {...shipping, status}
-								: shipping
-						)
-					);
-
-					// Si hay un envío seleccionado, actualizarlo también
-					if (
-						selectedAdminShipping &&
-						selectedAdminShipping.trackingNumber === trackingNumber
-					) {
-						setSelectedAdminShipping((prev) => {
-							if (!prev) return null;
-
-							// Crear un nuevo evento en el historial
-							const newEvent: AdminTrackingEvent = {
-								id:
-									prev.trackingHistory.length > 0
-										? Math.max(...prev.trackingHistory.map((e) => e.id)) + 1
-										: 1,
-								status,
-								location: "Actualización del administrador",
-								timestamp: new Date().toISOString(),
-								description: `Estado actualizado a: ${status}`,
-							};
-
-							return {
-								...prev,
-								status,
-								trackingHistory: [newEvent, ...prev.trackingHistory],
-							};
-						});
-					}
-
+					// Refrescar la lista después de actualizar
+					await fetchAdminShippings();
 					return true;
 				}
 
-				throw new Error("No se pudo actualizar el estado del envío");
+				return false;
 			} catch (err) {
 				console.error(
-					`Error al actualizar el estado del envío ${trackingNumber}:`,
+					`Error al actualizar estado del envío ${trackingNumber}:`,
 					err
 				);
 				setError(
-					"Error al actualizar el estado del envío. Inténtalo de nuevo."
+					err instanceof Error ? err.message : "Error al actualizar estado"
 				);
 				return false;
 			} finally {
 				setLoading(false);
 			}
 		},
-		[shippingService, selectedAdminShipping]
+		[adminShippingService, fetchAdminShippings]
 	);
 
 	/**
-	 * Avanzar al siguiente estado del envío para administración
+	 * Avanza el estado de un envío al siguiente estado lógico
 	 */
 	const advanceAdminShippingStatus = useCallback(
-		(shippingId: number, currentStatus: string) => {
-			// Encontrar el envío por ID
-			const shipping = adminShippings.find((s) => s.id === shippingId);
-			if (!shipping) return;
+		async (id: number, currentStatus: string) => {
+			const shipping = adminShippings.find((s) => s.id === id);
 
-			// Determinar el siguiente estado según el estado actual
-			const statusFlow: Record<string, string> = {
-				pending: "processing",
-				processing: "ready_for_pickup",
-				ready_for_pickup: "shipped",
-				shipped: "in_transit",
-				in_transit: "out_for_delivery",
-				out_for_delivery: "delivered",
-				delivered: "delivered", // Estado final
-				failed_delivery: "out_for_delivery", // Reintentar entrega
-				returned: "returned", // Estado final
-				cancelled: "cancelled", // Estado final
-			};
+			if (!shipping) {
+				setError("Envío no encontrado");
+				return false;
+			}
 
-			const nextStatus = statusFlow[currentStatus] || currentStatus;
+			setLoading(true);
 
-			// Si hay un siguiente estado diferente, actualizarlo
-			if (nextStatus !== currentStatus) {
-				updateAdminShippingStatus(shipping.trackingNumber, nextStatus);
+			try {
+				const success = await adminShippingService.advanceShippingStatus(
+					shipping.trackingNumber,
+					currentStatus
+				);
+
+				if (success) {
+					// Refrescar la lista después de actualizar
+					await fetchAdminShippings();
+					return true;
+				}
+
+				return false;
+			} catch (err) {
+				console.error(
+					`Error al avanzar estado del envío ${shipping.trackingNumber}:`,
+					err
+				);
+				setError(
+					err instanceof Error ? err.message : "Error al avanzar estado"
+				);
+				return false;
+			} finally {
+				setLoading(false);
 			}
 		},
-		[adminShippings, updateAdminShippingStatus]
+		[adminShippingService, adminShippings, fetchAdminShippings]
 	);
 
 	/**
-	 * Enviar notificación de seguimiento para administración
+	 * Envía una notificación de seguimiento al cliente
 	 */
 	const sendAdminTrackingNotification = useCallback(
 		async (trackingNumber: string) => {
+			setLoading(true);
+
 			try {
 				const success =
-					await shippingService.sendAdminTrackingNotification(trackingNumber);
+					await adminShippingService.sendTrackingNotification(trackingNumber);
 
 				if (success) {
-					alert(
-						`Se ha enviado la notificación de seguimiento para el envío ${trackingNumber}`
-					);
+					alert("Notificación enviada correctamente");
+					return true;
 				}
 
-				return success;
+				return false;
 			} catch (err) {
 				console.error(
 					`Error al enviar notificación para ${trackingNumber}:`,
 					err
 				);
-				return false;
-			}
-		},
-		[shippingService]
-	);
-
-	/**
-	 * Simular eventos de envío para pruebas en administración
-	 */
-	const simulateAdminShippingEvents = useCallback(
-		async (trackingNumber: string, days: number = 5) => {
-			setLoading(true);
-
-			try {
-				const success = await shippingService.simulateAdminShippingEvents(
-					trackingNumber,
-					days
+				setError(
+					err instanceof Error ? err.message : "Error al enviar notificación"
 				);
-
-				// Recargar los datos después de la simulación
-				if (success) {
-					await fetchAdminShippings();
-				}
-
-				return success;
-			} catch (err) {
-				console.error(`Error al simular eventos para ${trackingNumber}:`, err);
 				return false;
 			} finally {
 				setLoading(false);
 			}
 		},
-		[shippingService, fetchAdminShippings]
+		[adminShippingService]
 	);
 
 	/**
-	 * Cambiar página de resultados para administración
+	 * Maneja el cambio de página en la paginación
 	 */
 	const handleAdminPageChange = useCallback((page: number) => {
-		setPagination((prev) => ({
-			...prev,
-			currentPage: page,
-		}));
+		setPagination((prev) => ({...prev, currentPage: page}));
 	}, []);
 
 	/**
-	 * Refrescar datos para administración
+	 * Refresca los datos de la lista de envíos
 	 */
 	const refreshAdminData = useCallback(() => {
 		fetchAdminShippings();
 	}, [fetchAdminShippings]);
+
+	// Cargar envíos cuando cambian los filtros o la paginación
+	useEffect(() => {
+		fetchAdminShippings();
+	}, [
+		fetchAdminShippings,
+		pagination.currentPage,
+		statusFilter,
+		carrierFilter,
+	]);
 
 	return {
 		adminShippings,
@@ -326,17 +277,18 @@ export const useAdminShipping = () => {
 		statusFilter,
 		carrierFilter,
 		dateRangeFilter,
+		searchTerm,
 		pagination,
 		setStatusFilter,
 		setCarrierFilter,
 		setDateRangeFilter,
+		setSearchTerm,
 		setShowTrackingModal,
 		fetchAdminShippings,
 		fetchAdminShippingDetail,
 		updateAdminShippingStatus,
 		advanceAdminShippingStatus,
 		sendAdminTrackingNotification,
-		simulateAdminShippingEvents,
 		handleAdminPageChange,
 		refreshAdminData,
 	};
