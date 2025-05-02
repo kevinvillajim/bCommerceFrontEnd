@@ -40,16 +40,18 @@ const useAdminShipping = () => {
 	});
 
 	// Flag para controlar si ya se ha cargado inicialmente
-	const initialLoadDoneRef = useRef(false);
+    const initialLoadDoneRef = useRef(false);
+    const isLoadingRef = useRef(false);
 
 	/**
 	 * Obtiene la lista de envíos desde el backend
 	 */
 	const fetchAdminShippings = useCallback(async () => {
 		// Evitar carga si ya está en proceso
-		if (loading) return;
+		if (isLoadingRef.current) return;
 
-		setLoading(true);
+        setLoading(true);
+        isLoadingRef.current = true;
 		setError(null);
 
 		try {
@@ -76,7 +78,8 @@ const useAdminShipping = () => {
 			console.error("Error al obtener envíos:", err);
 			setError(err instanceof Error ? err.message : "Error al cargar envíos");
 		} finally {
-			setLoading(false);
+            setLoading(false);
+            isLoadingRef.current = false;
 		}
 	}, [
 		adminShippingService,
@@ -87,7 +90,6 @@ const useAdminShipping = () => {
 		dateRangeFilter.from,
 		dateRangeFilter.to,
 		searchTerm,
-		loading, // Importante: añadir loading para evitar múltiples llamadas
 	]);
 
 	/**
@@ -113,7 +115,7 @@ const useAdminShipping = () => {
 
 				if (details) {
 					// Intentar obtener el historial si hay un número de seguimiento
-					let history = [];
+                    let history: AdminShippingModel['trackingHistory'] = [];
 					if (details.trackingNumber) {
 						history = await adminShippingService.getShippingHistory(
 							details.trackingNumber

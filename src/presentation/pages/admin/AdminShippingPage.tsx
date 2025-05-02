@@ -17,7 +17,6 @@ import {
   AlertTriangle,
   ArrowRight,
   Share2,
-  BarChart2,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import useAdminShipping from "../../hooks/useAdminShipping";
@@ -116,7 +115,6 @@ const AdminShippingPage: React.FC = () => {
     setDateRangeFilter,
     setShowTrackingModal,
     fetchAdminShippingDetail,
-    updateAdminShippingStatus,
     advanceAdminShippingStatus,
     sendAdminTrackingNotification,
     handleAdminPageChange,
@@ -366,13 +364,6 @@ const AdminShippingPage: React.FC = () => {
           Gestión de Envíos
         </h1>
         <div className="flex space-x-2">
-          <Link
-            to="/admin/shipping/dashboard"
-            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-          >
-            <BarChart2 size={18} className="inline mr-2" />
-            Dashboard Envíos
-          </Link>
           <button
             onClick={refreshAdminData}
             className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"

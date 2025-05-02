@@ -244,13 +244,15 @@ export const API_ENDPOINTS = {
 		// Shipping
 		SHIPPING_LIST: "/admin/shippings",
 		SHIPPING_DETAIL: (id: number) => `/admin/shippings/${id}`,
-		SHIPPING_HISTORY: (trackingNumber: string) => `/shipping/${trackingNumber}/history`,
+		SHIPPING_HISTORY: (trackingNumber: string) =>
+			`/admin/shipping/${trackingNumber}/history`,
 		UPDATE_SHIPPING: (id: number) => `/admin/orders/${id}/shipping`,
 		UPDATE_SHIPPING_STATUS: (trackingNumber: string) =>
 			`/admin/shipping/${trackingNumber}/status`,
 		SIMULATE_SHIPPING: (trackingNumber: string) =>
 			`/admin/shipping/${trackingNumber}/simulate`,
-		SHIPPING_SEND_NOTIFICATION: (trackingNumber: string) => `/admin/shipping/${trackingNumber}/notify`,
+		SHIPPING_SEND_NOTIFICATION: (trackingNumber: string) =>
+			`/admin/shipping/${trackingNumber}/notify`,
 		// Admin management (super admin only)
 		ADMINS: "/admin/admins",
 		MANAGE_ADMIN: "/admin/admins",

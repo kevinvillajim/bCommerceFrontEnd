@@ -1,6 +1,5 @@
 import ApiClient from "../../infrastructure/api/apiClient";
 import {API_ENDPOINTS} from "../../constants/apiEndpoints";
-import AdminShippingAdapter from "../adapters/AdminShippingAdapter";
 import type {
 	AdminShippingModel,
 	AdminTrackingEvent,
@@ -30,15 +29,13 @@ export class AdminShippingService {
 				filters
 			);
 
-			// Usar el endpoint de administrador en lugar del de vendedor
-			const response = await ApiClient.get<any>(API_ENDPOINTS.ADMIN.ORDERS, {
-				...filters,
-				// Podemos filtrar solo por órdenes con estado de envío
-				status: filters.status || "shipped,in_transit,delivered",
-			});
+			// Usar el endpoint específico de envíos
+			const response = await ApiClient.get<any>(
+				API_ENDPOINTS.ADMIN.SHIPPING_LIST,
+				filters
+			);
 
 			if (!response || !response.data) {
-				// Retornar lista vacía en caso de no obtener respuesta
 				return {
 					shippings: [],
 					pagination: {
@@ -50,9 +47,9 @@ export class AdminShippingService {
 				};
 			}
 
-			// Convertir las órdenes en objetos de envío
+			// Convertir respuesta a formato de envíos
             const shippingsList: AdminShippingModel[] = Array.isArray(response.data)
-                ? response.data.map((order: any): AdminShippingModel => this.mapOrderToShipping(order))
+                ? response.data.map((shipping: any) => this.mapShippingToModel(shipping))
                 : [];
 
 			// Obtener información de paginación
@@ -74,7 +71,6 @@ export class AdminShippingService {
 			};
 		} catch (error) {
 			console.error("AdminShippingService: Error al obtener envíos:", error);
-			// Retornar un objeto válido con una lista vacía para evitar errores en UI
 			return {
 				shippings: [],
 				pagination: {
@@ -304,6 +300,68 @@ export class AdminShippingService {
 		};
 
 		return statusFlow[currentStatus] || "processing";
+	}
+	private mapShippingToModel(shipping: any): AdminShippingModel {
+		return {
+			id: shipping.id || 0,
+			trackingNumber: shipping.tracking_number || "",
+			orderId: shipping.order_id || 0,
+			orderNumber:
+				shipping.order?.order_number || `ORD-${shipping.order_id || 0}`,
+			userId: shipping.user_id || 0,
+			customerName: shipping.user_name || "Cliente",
+			status: shipping.status || "pending",
+			carrier: shipping.carrier_name || "Transportista por defecto",
+			estimatedDeliveryDate: shipping.estimated_delivery,
+			shippedDate: shipping.shipped_date,
+			deliveredDate: shipping.delivered_at,
+			address: this.extractAddressFromShipping(shipping),
+			weight: shipping.weight || 0,
+			dimensions: shipping.dimensions || "",
+			trackingHistory: shipping.history || [],
+			createdAt: shipping.created_at || new Date().toISOString(),
+			updatedAt: shipping.updated_at || new Date().toISOString(),
+		};
+	}
+	private extractAddressFromShipping(shipping: any): any {
+		const address = {
+			street: "",
+			city: "",
+			state: "",
+			country: "",
+			postalCode: "",
+			phone: "",
+		};
+
+		// Extraer dirección de current_location si existe
+		if (shipping.current_location) {
+			const location =
+				typeof shipping.current_location === "string"
+					? JSON.parse(shipping.current_location)
+					: shipping.current_location;
+
+			if (location.address) {
+				address.street = location.address;
+			}
+		}
+
+		// Extraer datos adicionales de shipping_data de la orden si existe
+		if (shipping.order && shipping.order.shipping_data) {
+			const shippingData =
+				typeof shipping.order.shipping_data === "string"
+					? JSON.parse(shipping.order.shipping_data)
+					: shipping.order.shipping_data;
+
+			if (shippingData) {
+				address.city = shippingData.city || "";
+				address.state = shippingData.state || "";
+				address.country = shippingData.country || "";
+				address.postalCode = shippingData.postal_code || "";
+				address.phone = shippingData.phone || "";
+			}
+		}
+
+		return address;
 	}
 }
 
