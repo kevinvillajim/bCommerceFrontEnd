@@ -103,6 +103,10 @@ const AdminCategoriesPage = lazy(
 const AdminOrdersPage = lazy(
 	() => import("../presentation/pages/admin/AdminOrdersPage")
 );
+
+const AdminOrderDetailPage = lazy(
+	() => import("../presentation/pages/admin/AdminOrderDetailPage")
+);
 const AdminRatingsPage = lazy(
 	() => import("../presentation/pages/admin/AdminRatingsPage")
 );
@@ -469,6 +473,10 @@ const appRoutes: RouteObject[] = [
 			{
 				path: "orders",
 				element: <AdminOrdersPage />,
+			},
+			{
+				path: "orders/:id",
+				element: <AdminOrderDetailPage />,
 			},
 			{
 				path: "shipping",

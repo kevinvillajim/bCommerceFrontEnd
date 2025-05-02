@@ -236,6 +236,11 @@ export const API_ENDPOINTS = {
 		DELETE_RATING: (id: string | number) => `/admin/ratings/${id}`,
 		// Orders
 		ORDERS: "/admin/orders",
+		ORDER_DETAIL: (id: number) => `/admin/orders/${id}`,
+		ORDER_STATS: "/admin/orders/stats",
+		UPDATE_ORDER_STATUS: (id: number) => `/admin/orders/${id}/status`,
+		CANCEL_ORDER: (id: number) => `/admin/orders/${id}/cancel`,
+		UPDATE_SHIPPING: (id: number) => `/admin/orders/${id}/shipping`,
 		// Shipping
 		UPDATE_SHIPPING_STATUS: (trackingNumber: string) =>
 			`/admin/shipping/${trackingNumber}/status`,
