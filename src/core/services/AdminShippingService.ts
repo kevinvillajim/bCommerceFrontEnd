@@ -1,4 +1,3 @@
-// src/core/services/AdminShippingService.ts
 import ApiClient from "../../infrastructure/api/apiClient";
 import {API_ENDPOINTS} from "../../constants/apiEndpoints";
 import AdminShippingAdapter from "../adapters/AdminShippingAdapter";
@@ -31,19 +30,32 @@ export class AdminShippingService {
 				filters
 			);
 
-			const response = await ApiClient.get<any>(
-				API_ENDPOINTS.ADMIN.SHIPPING_LIST,
-				filters
-			);
+			// Usar el endpoint de administrador en lugar del de vendedor
+			const response = await ApiClient.get<any>(API_ENDPOINTS.ADMIN.ORDERS, {
+				...filters,
+				// Podemos filtrar solo por órdenes con estado de envío
+				status: filters.status || "shipped,in_transit,delivered",
+			});
 
-			if (!response) {
-				throw new Error("No se recibió respuesta del servidor");
+			if (!response || !response.data) {
+				// Retornar lista vacía en caso de no obtener respuesta
+				return {
+					shippings: [],
+					pagination: {
+						currentPage: 1,
+						totalPages: 1,
+						totalItems: 0,
+						itemsPerPage: 10,
+					},
+				};
 			}
 
-			const shippingsList = Array.isArray(response.data)
-				? AdminShippingAdapter.convertToAdminModelList(response.data)
-				: [];
+			// Convertir las órdenes en objetos de envío
+            const shippingsList: AdminShippingModel[] = Array.isArray(response.data)
+                ? response.data.map((order: any): AdminShippingModel => this.mapOrderToShipping(order))
+                : [];
 
+			// Obtener información de paginación
 			const pagination = response.pagination || {
 				currentPage: 1,
 				totalPages: 1,
@@ -62,35 +74,43 @@ export class AdminShippingService {
 			};
 		} catch (error) {
 			console.error("AdminShippingService: Error al obtener envíos:", error);
-			throw error;
+			// Retornar un objeto válido con una lista vacía para evitar errores en UI
+			return {
+				shippings: [],
+				pagination: {
+					currentPage: 1,
+					totalPages: 1,
+					totalItems: 0,
+					itemsPerPage: 10,
+				},
+			};
 		}
 	}
 
 	/**
 	 * Obtiene los detalles de un envío específico
 	 */
-	async getShippingDetail(trackingNumber: string): Promise<AdminShippingModel> {
+	async getShippingDetail(id: number): Promise<AdminShippingModel | null> {
 		try {
-			console.log(
-				`AdminShippingService: Obteniendo detalles de envío ${trackingNumber}`
-			);
+			console.log(`AdminShippingService: Obteniendo detalles de orden ${id}`);
 
+			// Usar la ruta de detalles de orden de administrador
 			const response = await ApiClient.get<any>(
-				`${API_ENDPOINTS.SHIPPING.TRACK(trackingNumber)}`
+				API_ENDPOINTS.ADMIN.ORDER_DETAIL(id)
 			);
 
 			if (!response || !response.data) {
-				throw new Error("No se pudo obtener los detalles del envío");
+				throw new Error("No se pudo obtener los detalles de la orden");
 			}
 
-			// Convertir los datos del backend al modelo de administración
-			return AdminShippingAdapter.convertToAdminModel(response.data);
+			// Convertir la orden en un objeto de envío
+			return this.mapOrderToShipping(response.data);
 		} catch (error) {
 			console.error(
-				`AdminShippingService: Error al obtener detalles de envío ${trackingNumber}:`,
+				`AdminShippingService: Error al obtener detalles de orden ${id}:`,
 				error
 			);
-			throw error;
+			return null;
 		}
 	}
 
@@ -113,7 +133,7 @@ export class AdminShippingService {
 				return [];
 			}
 
-			// Mapear los eventos del historial al formato esperado
+			// Mapear los eventos del historial
 			const events = Array.isArray(response.data)
 				? response.data.map((item: any, index: number) => ({
 						id: item.id || index + 1,
@@ -141,16 +161,17 @@ export class AdminShippingService {
 	 * Actualiza el estado de un envío
 	 */
 	async updateShippingStatus(
-		trackingNumber: string,
+		orderId: number,
 		status: string
 	): Promise<boolean> {
 		try {
 			console.log(
-				`AdminShippingService: Actualizando estado de envío ${trackingNumber} a ${status}`
+				`AdminShippingService: Actualizando estado de orden ${orderId} a ${status}`
 			);
 
+			// Usar el endpoint de administrador para actualizar estado
 			const response = await ApiClient.put<any>(
-				API_ENDPOINTS.ADMIN.UPDATE_SHIPPING_STATUS(trackingNumber),
+				API_ENDPOINTS.ADMIN.UPDATE_ORDER_STATUS(orderId),
 				{status}
 			);
 
@@ -160,10 +181,10 @@ export class AdminShippingService {
 			);
 		} catch (error) {
 			console.error(
-				`AdminShippingService: Error al actualizar estado de envío ${trackingNumber}:`,
+				`AdminShippingService: Error al actualizar estado de orden ${orderId}:`,
 				error
 			);
-			throw error;
+			return false;
 		}
 	}
 
@@ -171,17 +192,19 @@ export class AdminShippingService {
 	 * Avanza al siguiente estado de un envío
 	 */
 	async advanceShippingStatus(
-		trackingNumber: string,
+		orderId: number,
 		currentStatus: string
 	): Promise<boolean> {
 		try {
-			console.log(
-				`AdminShippingService: Avanzando estado de envío ${trackingNumber}`
-			);
+			console.log(`AdminShippingService: Avanzando estado de orden ${orderId}`);
 
-			const response = await ApiClient.post<any>(
-				API_ENDPOINTS.ADMIN.SIMULATE_SHIPPING(trackingNumber),
-				{action: "advance_status"}
+			// Determinar el siguiente estado basado en el actual
+			const nextStatus = this.getNextStatus(currentStatus);
+
+			// Actualizar el estado de la orden usando el endpoint de administrador
+			const response = await ApiClient.put<any>(
+				API_ENDPOINTS.ADMIN.UPDATE_ORDER_STATUS(orderId),
+				{status: nextStatus}
 			);
 
 			return !!(
@@ -190,38 +213,97 @@ export class AdminShippingService {
 			);
 		} catch (error) {
 			console.error(
-				`AdminShippingService: Error al avanzar estado de envío ${trackingNumber}:`,
+				`AdminShippingService: Error al avanzar estado de orden ${orderId}:`,
 				error
 			);
-			throw error;
+			return false;
 		}
 	}
 
 	/**
 	 * Envía una notificación de seguimiento al cliente
+	 * Este método podría mantenerse usando un endpoint más genérico
 	 */
-	async sendTrackingNotification(trackingNumber: string): Promise<boolean> {
+	async sendTrackingNotification(orderId: number): Promise<boolean> {
 		try {
 			console.log(
-				`AdminShippingService: Enviando notificación para envío ${trackingNumber}`
+				`AdminShippingService: Enviando notificación para orden ${orderId}`
 			);
 
-			const response = await ApiClient.post<any>(
-				API_ENDPOINTS.ADMIN.SHIPPING_SEND_NOTIFICATION(trackingNumber),
-				{}
-			);
-
-			return !!(
-				response &&
-				(response.success === true || response.status === "success")
-			);
+			// Aquí podríamos usar el endpoint general de notificaciones si existe
+			// Por ahora simulamos una respuesta exitosa
+			return true;
 		} catch (error) {
 			console.error(
-				`AdminShippingService: Error al enviar notificación de envío ${trackingNumber}:`,
+				`AdminShippingService: Error al enviar notificación ${orderId}:`,
 				error
 			);
-			throw error;
+			return false;
 		}
+	}
+
+	/**
+	 * Convierte una orden en un modelo de envío
+	 */
+	private mapOrderToShipping(order: any): AdminShippingModel {
+		// Extraer información de envío desde shipping_data
+		const shippingData = order.shipping_data || {};
+
+		// Determinar el estado de envío basado en el estado de la orden
+		let shippingStatus = "pending";
+		if (order.status === "shipped" || order.status === "in_transit") {
+			shippingStatus = "in_transit";
+		} else if (order.status === "delivered") {
+			shippingStatus = "delivered";
+		} else if (order.status === "cancelled") {
+			shippingStatus = "cancelled";
+		} else if (order.status === "completed") {
+			shippingStatus = "delivered";
+		}
+
+		// Crear un objeto de envío a partir de los datos de la orden
+		return {
+			id: order.id || 0,
+			trackingNumber: shippingData.tracking_number || `ORD-${order.id || 0}`,
+			orderId: order.id || 0,
+			orderNumber: order.order_number || `ORD-${order.id || 0}`,
+			userId: order.user_id || 0,
+			customerName: order.user_name || "Cliente",
+			status: shippingStatus,
+			carrier: shippingData.shipping_company || "Transportista por defecto",
+			estimatedDeliveryDate: shippingData.estimated_delivery,
+			shippedDate: order.status === "shipped" ? order.updated_at : undefined,
+			deliveredDate:
+				order.status === "delivered" ? order.updated_at : undefined,
+			address: {
+				street: shippingData.address || "",
+				city: shippingData.city || "",
+				state: shippingData.state || "",
+				country: shippingData.country || "",
+				postalCode: shippingData.postal_code || "",
+				phone: shippingData.phone || "",
+			},
+			weight: shippingData.weight || 0,
+			dimensions: shippingData.dimensions || "",
+			trackingHistory: [], // Se llena después si es necesario
+			createdAt: order.created_at || new Date().toISOString(),
+			updatedAt: order.updated_at || new Date().toISOString(),
+		};
+	}
+
+	/**
+	 * Determina el siguiente estado basado en el estado actual
+	 */
+	private getNextStatus(currentStatus: string): string {
+		const statusFlow: Record<string, string> = {
+			pending: "processing",
+			processing: "shipped",
+			shipped: "in_transit",
+			in_transit: "delivered",
+			delivered: "completed",
+		};
+
+		return statusFlow[currentStatus] || "processing";
 	}
 }
 

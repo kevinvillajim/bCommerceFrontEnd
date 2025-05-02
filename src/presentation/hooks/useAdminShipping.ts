@@ -1,7 +1,6 @@
-import {useState, useEffect, useCallback} from "react";
-import type {
-	ShippingFilters,
-} from "../../core/services/AdminShippingService";
+// src/presentation/hooks/useAdminShipping.ts
+import {useState, useEffect, useCallback, useRef} from "react";
+import type {ShippingFilters} from "../../core/services/AdminShippingService";
 import AdminShippingService from "../../core/services/AdminShippingService";
 import type {AdminShippingModel} from "../../core/adapters/AdminShippingAdapter";
 
@@ -9,8 +8,9 @@ import type {AdminShippingModel} from "../../core/adapters/AdminShippingAdapter"
  * Hook personalizado para la administración de envíos
  */
 const useAdminShipping = () => {
-	// Instanciar el servicio
-	const adminShippingService = new AdminShippingService();
+	// Instanciar el servicio (usando useRef para mantener la misma instancia)
+	const serviceRef = useRef(new AdminShippingService());
+	const adminShippingService = serviceRef.current;
 
 	// Estados
 	const [adminShippings, setAdminShippings] = useState<AdminShippingModel[]>(
@@ -18,7 +18,7 @@ const useAdminShipping = () => {
 	);
 	const [selectedAdminShipping, setSelectedAdminShipping] =
 		useState<AdminShippingModel | null>(null);
-	const [loading, setLoading] = useState<boolean>(true);
+	const [loading, setLoading] = useState<boolean>(false);
 	const [error, setError] = useState<string | null>(null);
 	const [showTrackingModal, setShowTrackingModal] = useState<boolean>(false);
 
@@ -39,10 +39,16 @@ const useAdminShipping = () => {
 		itemsPerPage: 10,
 	});
 
+	// Flag para controlar si ya se ha cargado inicialmente
+	const initialLoadDoneRef = useRef(false);
+
 	/**
 	 * Obtiene la lista de envíos desde el backend
 	 */
 	const fetchAdminShippings = useCallback(async () => {
+		// Evitar carga si ya está en proceso
+		if (loading) return;
+
 		setLoading(true);
 		setError(null);
 
@@ -78,8 +84,10 @@ const useAdminShipping = () => {
 		pagination.itemsPerPage,
 		statusFilter,
 		carrierFilter,
-		dateRangeFilter,
+		dateRangeFilter.from,
+		dateRangeFilter.to,
 		searchTerm,
+		loading, // Importante: añadir loading para evitar múltiples llamadas
 	]);
 
 	/**
@@ -98,22 +106,36 @@ const useAdminShipping = () => {
 					return;
 				}
 
-				// Si no, obtenemos el historial del backend
-				const history = await adminShippingService.getShippingHistory(
-					shipping.trackingNumber
+				// Obtener detalles completos y historial
+				const details = await adminShippingService.getShippingDetail(
+					shipping.id
 				);
 
-				// Creamos una copia del envío con el historial actualizado
-				const shippingWithHistory = {
-					...shipping,
-					trackingHistory: history,
-				};
+				if (details) {
+					// Intentar obtener el historial si hay un número de seguimiento
+					let history = [];
+					if (details.trackingNumber) {
+						history = await adminShippingService.getShippingHistory(
+							details.trackingNumber
+						);
+					}
 
-				setSelectedAdminShipping(shippingWithHistory);
+					// Crear una copia del envío con el historial actualizado
+					const shippingWithHistory = {
+						...details,
+						trackingHistory: history,
+					};
+
+					setSelectedAdminShipping(shippingWithHistory);
+				} else {
+					// Si no hay detalles, usar los datos básicos
+					setSelectedAdminShipping(shipping);
+				}
+
 				setShowTrackingModal(true);
 			} catch (err) {
 				console.error(
-					`Error al obtener detalles del envío ${shipping.trackingNumber}:`,
+					`Error al obtener detalles del envío ${shipping.id}:`,
 					err
 				);
 				setError(
@@ -136,12 +158,12 @@ const useAdminShipping = () => {
 	 * Actualiza el estado de un envío
 	 */
 	const updateAdminShippingStatus = useCallback(
-		async (trackingNumber: string, status: string) => {
+		async (orderId: number, status: string) => {
 			setLoading(true);
 
 			try {
 				const success = await adminShippingService.updateShippingStatus(
-					trackingNumber,
+					orderId,
 					status
 				);
 
@@ -153,10 +175,7 @@ const useAdminShipping = () => {
 
 				return false;
 			} catch (err) {
-				console.error(
-					`Error al actualizar estado del envío ${trackingNumber}:`,
-					err
-				);
+				console.error(`Error al actualizar estado del envío ${orderId}:`, err);
 				setError(
 					err instanceof Error ? err.message : "Error al actualizar estado"
 				);
@@ -173,18 +192,11 @@ const useAdminShipping = () => {
 	 */
 	const advanceAdminShippingStatus = useCallback(
 		async (id: number, currentStatus: string) => {
-			const shipping = adminShippings.find((s) => s.id === id);
-
-			if (!shipping) {
-				setError("Envío no encontrado");
-				return false;
-			}
-
 			setLoading(true);
 
 			try {
 				const success = await adminShippingService.advanceShippingStatus(
-					shipping.trackingNumber,
+					id,
 					currentStatus
 				);
 
@@ -196,10 +208,7 @@ const useAdminShipping = () => {
 
 				return false;
 			} catch (err) {
-				console.error(
-					`Error al avanzar estado del envío ${shipping.trackingNumber}:`,
-					err
-				);
+				console.error(`Error al avanzar estado del envío ${id}:`, err);
 				setError(
 					err instanceof Error ? err.message : "Error al avanzar estado"
 				);
@@ -208,19 +217,19 @@ const useAdminShipping = () => {
 				setLoading(false);
 			}
 		},
-		[adminShippingService, adminShippings, fetchAdminShippings]
+		[adminShippingService, fetchAdminShippings]
 	);
 
 	/**
 	 * Envía una notificación de seguimiento al cliente
 	 */
 	const sendAdminTrackingNotification = useCallback(
-		async (trackingNumber: string) => {
+		async (orderId: number) => {
 			setLoading(true);
 
 			try {
 				const success =
-					await adminShippingService.sendTrackingNotification(trackingNumber);
+					await adminShippingService.sendTrackingNotification(orderId);
 
 				if (success) {
 					alert("Notificación enviada correctamente");
@@ -229,10 +238,7 @@ const useAdminShipping = () => {
 
 				return false;
 			} catch (err) {
-				console.error(
-					`Error al enviar notificación para ${trackingNumber}:`,
-					err
-				);
+				console.error(`Error al enviar notificación para ${orderId}:`, err);
 				setError(
 					err instanceof Error ? err.message : "Error al enviar notificación"
 				);
@@ -258,15 +264,31 @@ const useAdminShipping = () => {
 		fetchAdminShippings();
 	}, [fetchAdminShippings]);
 
-	// Cargar envíos cuando cambian los filtros o la paginación
+	// Efecto para manejar cambios en los filtros principales
 	useEffect(() => {
-		fetchAdminShippings();
+		// Evitar la primera carga ya que se hará en el efecto de carga inicial
+		if (!initialLoadDoneRef.current) return;
+
+		const timer = setTimeout(() => {
+			fetchAdminShippings();
+		}, 300); // Pequeño retraso para evitar múltiples llamadas
+
+		// Limpieza para evitar múltiples ejecuciones
+		return () => clearTimeout(timer);
 	}, [
 		fetchAdminShippings,
 		pagination.currentPage,
 		statusFilter,
 		carrierFilter,
 	]);
+
+	// Efecto para la carga inicial que se ejecuta solo una vez
+	useEffect(() => {
+		if (!initialLoadDoneRef.current) {
+			fetchAdminShippings();
+			initialLoadDoneRef.current = true;
+		}
+	}, [fetchAdminShippings]);
 
 	return {
 		adminShippings,

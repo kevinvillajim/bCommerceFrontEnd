@@ -334,7 +334,7 @@ const AdminShippingPage: React.FC = () => {
 
             {/* Enviar notificación */}
             <button
-              onClick={() => sendAdminTrackingNotification(shipping.trackingNumber)}
+              onClick={() => sendAdminTrackingNotification(shipping.id)}
               className="p-1 text-indigo-600 hover:bg-indigo-100 rounded-md dark:text-indigo-400 dark:hover:bg-indigo-900"
               title="Enviar notificación"
             >
@@ -635,7 +635,7 @@ const AdminShippingPage: React.FC = () => {
               <div className="mt-6 flex justify-end space-x-4">
                 <button
                   onClick={() =>
-                    sendAdminTrackingNotification(selectedAdminShipping.trackingNumber)
+                    sendAdminTrackingNotification(selectedAdminShipping.id)
                   }
                   className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
                 >
