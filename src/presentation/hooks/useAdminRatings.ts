@@ -47,6 +47,9 @@ export const useAdminRatings = () => {
 	const [showRatingModal, setShowRatingModal] = useState(false);
 	const [moderationNote, setModerationNote] = useState("");
 
+	// Añade un estado para controlar la inicialización
+	const [isInitialized, setIsInitialized] = useState(false);
+
 	// Inicializar el servicio
 	const adminRatingService = new AdminRatingService();
 
@@ -128,11 +131,35 @@ export const useAdminRatings = () => {
 		}
 	}, [adminRatingService]);
 
-	// Cargar datos iniciales
-	useEffect(() => {
+useEffect(() => {
+	// Función para verificar la sesión antes de cargar datos
+	const checkSessionAndLoad = async () => {
+		try {
+			// Opción 1: Hacer una petición liviana que solo verifique permisos
+			// Por ejemplo: await ApiClient.get('/api/admin/check-session');
+
+			// O simplemente esperar un momento para permitir que se inicialice la sesión
+			await new Promise((resolve) => setTimeout(resolve, 500));
+
+			// Si llegamos aquí, procedemos a cargar los datos
+			setIsInitialized(true);
+		} catch (err) {
+			// Si hay un error, no inicializar
+			console.error("Error al verificar la sesión:", err);
+		}
+	};
+
+	checkSessionAndLoad();
+}, []);
+
+// Modifica el useEffect original para depender de isInitialized
+useEffect(() => {
+	if (isInitialized) {
 		fetchRatings();
 		fetchStats();
-	}, [fetchRatings, fetchStats]);
+	}
+}, [isInitialized, fetchRatings, fetchStats]);
+    
 
 	// Función para cambiar de página
 	const handlePageChange = (page: number) => {
