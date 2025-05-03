@@ -92,7 +92,7 @@ export class AdminRatingService {
 	}
 
 	/**
-	 * Reporta una valoración para revisión adicional
+	 * Reporta o desmarca una valoración para revisión adicional
 	 */
 	async flagRating(
 		ratingId: number,
@@ -105,7 +105,7 @@ export class AdminRatingService {
 			);
 			return response;
 		} catch (error) {
-			console.error(`Error al marcar valoración ${ratingId}:`, error);
+			console.error(`Error al marcar/desmarcar valoración ${ratingId}:`, error);
 			throw error;
 		}
 	}

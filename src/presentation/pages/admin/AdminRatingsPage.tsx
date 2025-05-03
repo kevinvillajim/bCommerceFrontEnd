@@ -129,189 +129,208 @@ const AdminRatingsPage: React.FC = () => {
   };
 
   const columns = [
-    {
-      key: "user",
-      header: "Usuario",
-      sortable: true,
-      render: (rating: Rating) => (
-        <div className="flex items-center">
-          <div className="flex-shrink-0 h-8 w-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden">
-            {rating.user?.avatar ? (
-              <img
-                src={`/images/avatars/${rating.user.avatar}`}
-                alt={rating.user?.name}
-                className="h-8 w-8 object-cover"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src =
-                    "https://via.placeholder.com/40?text=User";
-                }}
-              />
-            ) : (
-              <User className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-            )}
-          </div>
-          <div className="ml-3">
-            <div className="text-sm font-medium text-gray-900 dark:text-white">
-              {rating.user?.name || `Usuario #${rating.userId}`}
-            </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">
-              ID: {rating.userId}
-              {rating.isVerifiedPurchase && (
-                <span className="ml-2 text-green-600 dark:text-green-400">
-                  ✓ Compra verificada
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-      ),
-    },
-    {
-      key: "ratingScore",
-      header: "Valoración",
-      sortable: true,
-      render: (rating: Rating) => renderStars(rating.rating),
-    },
-    {
-      key: "item",
-      header: "Elemento",
-      sortable: true,
-      render: (rating: Rating) => {
-        if (rating.type === "product" && rating.productId) {
-          return (
-            <Link
-              to={`/admin/products/${rating.productId}`}
-              className="flex items-center text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300"
-            >
-              <Package className="h-4 w-4 mr-1" />
-              Producto #{rating.productId}
-            </Link>
-          );
-        } else if (rating.type === "seller" && rating.sellerId) {
-          return (
-            <Link
-              to={`/admin/sellers/${rating.sellerId}`}
-              className="flex items-center text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300"
-            >
-              <Store className="h-4 w-4 mr-1" />
-              Vendedor #{rating.sellerId}
-            </Link>
-          );
-        } else {
-          return (
-            <span className="text-gray-500 dark:text-gray-400">
-              No especificado
-            </span>
-          );
-        }
-      },
-    },
-    {
-      key: "type",
-      header: "Tipo",
-      sortable: true,
-      render: (rating: Rating) => {
-        const type = ratingTypeMap[rating.type] || {
-          label: rating.type,
-          color:
-            "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200",
-          icon: <AlertTriangle className="w-3 h-3 mr-1" />,
-        };
-        return (
-          <span
-            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${type.color}`}
-          >
-            {type.icon}
-            {type.label}
-          </span>
-        );
-      },
-    },
-    {
-      key: "title",
-      header: "Título",
-      sortable: true,
-      render: (rating: Rating) => (
-        <div className="text-sm font-medium text-gray-900 dark:text-white line-clamp-2">
-          {rating.title || "Sin título"}
-        </div>
-      ),
-    },
-    {
-      key: "date",
-      header: "Fecha",
-      sortable: true,
-      render: (rating: Rating) => (
-        <div className="text-xs text-gray-500 dark:text-gray-400">
-          Creado: {formatDate(rating.createdAt)}
-          {rating.updatedAt !== rating.createdAt && (
-            <div>Actualizado: {formatDate(rating.updatedAt)}</div>
-          )}
-        </div>
-      ),
-    },
-    {
-      key: "status",
-      header: "Estado",
-      sortable: true,
-      render: (rating: Rating) => {
-        const status = ratingStatusMap[rating.status] || {
-          label: rating.status,
-          color:
-            "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200",
-          icon: <AlertTriangle className="w-3 h-3 mr-1" />,
-        };
-        return (
-          <span
-            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${status.color}`}
-          >
-            {status.icon}
-            {status.label}
-          </span>
-        );
-      },
-    },
-    {
-      key: "actions",
-      header: "Acciones",
-      render: (rating: Rating) => (
-        <div className="flex justify-end space-x-2">
-          <button
-            onClick={() => openRatingModal(rating)}
-            className="p-1 text-blue-600 hover:bg-blue-100 rounded-md dark:text-blue-400 dark:hover:bg-blue-900"
-            title="Ver detalles"
-          >
-            <Eye size={18} />
-          </button>
-          {rating.status === "pending" && (
-            <>
-              <button
-                onClick={() => approveRating(rating.id || 0)}
-                className="p-1 text-green-600 hover:bg-green-100 rounded-md dark:text-green-400 dark:hover:bg-green-900"
-                title="Aprobar valoración"
-              >
-                <CheckCircle size={18} />
-              </button>
-              <button
-                onClick={() => rejectRating(rating.id || 0)}
-                className="p-1 text-red-600 hover:bg-red-100 rounded-md dark:text-red-400 dark:hover:bg-red-900"
-                title="Rechazar valoración"
-              >
-                <XCircle size={18} />
-              </button>
-            </>
-          )}
-          <button
-            onClick={() => flagRating(rating.id || 0, "Marcada para revisión por administrador")}
-            className="p-1 text-orange-600 hover:bg-orange-100 rounded-md dark:text-orange-400 dark:hover:bg-orange-900"
-            title="Reportar valoración"
-          >
-            <Flag size={18} />
-          </button>
-        </div>
-      ),
-    },
-  ];
+		{
+			key: "user",
+			header: "Usuario",
+			sortable: true,
+			render: (rating: Rating) => (
+				<div className="flex items-center">
+					<div className="flex-shrink-0 h-8 w-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden">
+						{rating.user?.avatar ? (
+							<img
+								src={`/images/avatars/${rating.user.avatar}`}
+								alt={rating.user?.name}
+								className="h-8 w-8 object-cover"
+								onError={(e) => {
+									(e.target as HTMLImageElement).src =
+										"https://via.placeholder.com/40?text=User";
+								}}
+							/>
+						) : (
+							<User className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+						)}
+					</div>
+					<div className="ml-3">
+						<div className="text-sm font-medium text-gray-900 dark:text-white">
+							{rating.user?.name || `Usuario #${rating.userId}`}
+						</div>
+						<div className="text-xs text-gray-500 dark:text-gray-400">
+							ID: {rating.userId}
+							{rating.isVerifiedPurchase && (
+								<span className="ml-2 text-green-600 dark:text-green-400">
+									✓ Compra verificada
+								</span>
+							)}
+						</div>
+					</div>
+				</div>
+			),
+		},
+		{
+			key: "ratingScore",
+			header: "Valoración",
+			sortable: true,
+			render: (rating: Rating) => renderStars(rating.rating),
+		},
+		{
+			key: "item",
+			header: "Elemento",
+			sortable: true,
+			render: (rating: Rating) => {
+				if (rating.type === "product" && rating.productId) {
+					return (
+						<Link
+							to={`/admin/products/${rating.productId}`}
+							className="flex items-center text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300"
+						>
+							<Package className="h-4 w-4 mr-1" />
+							Producto #{rating.productId}
+						</Link>
+					);
+				} else if (rating.type === "seller" && rating.sellerId) {
+					return (
+						<Link
+							to={`/admin/sellers/${rating.sellerId}`}
+							className="flex items-center text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300"
+						>
+							<Store className="h-4 w-4 mr-1" />
+							Vendedor #{rating.sellerId}
+						</Link>
+					);
+				} else {
+					return (
+						<span className="text-gray-500 dark:text-gray-400">
+							No especificado
+						</span>
+					);
+				}
+			},
+		},
+		{
+			key: "type",
+			header: "Tipo",
+			sortable: true,
+			render: (rating: Rating) => {
+				const type = ratingTypeMap[rating.type] || {
+					label: rating.type,
+					color:
+						"bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200",
+					icon: <AlertTriangle className="w-3 h-3 mr-1" />,
+				};
+				return (
+					<span
+						className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${type.color}`}
+					>
+						{type.icon}
+						{type.label}
+					</span>
+				);
+			},
+		},
+		{
+			key: "title",
+			header: "Título",
+			sortable: true,
+			render: (rating: Rating) => (
+				<div className="text-sm font-medium text-gray-900 dark:text-white line-clamp-2">
+					{rating.title || "Sin título"}
+				</div>
+			),
+		},
+		{
+			key: "date",
+			header: "Fecha",
+			sortable: true,
+			render: (rating: Rating) => (
+				<div className="text-xs text-gray-500 dark:text-gray-400">
+					Creado: {formatDate(rating.createdAt)}
+					{rating.updatedAt !== rating.createdAt && (
+						<div>Actualizado: {formatDate(rating.updatedAt)}</div>
+					)}
+				</div>
+			),
+		},
+		{
+			key: "status",
+			header: "Estado",
+			sortable: true,
+			render: (rating: Rating) => {
+				const status = ratingStatusMap[rating.status] || {
+					label: rating.status,
+					color:
+						"bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200",
+					icon: <AlertTriangle className="w-3 h-3 mr-1" />,
+				};
+				return (
+					<span
+						className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${status.color}`}
+					>
+						{status.icon}
+						{status.label}
+					</span>
+				);
+			},
+		},
+		{
+			key: "actions",
+			header: "Acciones",
+			render: (rating: Rating) => (
+				<div className="flex justify-end space-x-2">
+					<button
+						onClick={() => openRatingModal(rating)}
+						className="p-1 text-blue-600 hover:bg-blue-100 rounded-md dark:text-blue-400 dark:hover:bg-blue-900"
+						title="Ver detalles"
+					>
+						<Eye size={18} />
+					</button>
+					{rating.status === "pending" && (
+						<>
+							<button
+								onClick={() => approveRating(rating.id || 0)}
+								className="p-1 text-green-600 hover:bg-green-100 rounded-md dark:text-green-400 dark:hover:bg-green-900"
+								title="Aprobar valoración"
+							>
+								<CheckCircle size={18} />
+							</button>
+							<button
+								onClick={() => rejectRating(rating.id || 0)}
+								className="p-1 text-red-600 hover:bg-red-100 rounded-md dark:text-red-400 dark:hover:bg-red-900"
+								title="Rechazar valoración"
+							>
+								<XCircle size={18} />
+							</button>
+						</>
+					)}
+					<button
+						onClick={() =>
+							flagRating(
+								rating.id || 0,
+								rating.status === "flagged"
+									? "Desmarcada por administrador"
+									: "Marcada para revisión por administrador"
+							)
+						}
+						className={`p-1 ${
+							rating.status === "flagged"
+								? "text-green-600 hover:bg-green-100 dark:text-green-400 dark:hover:bg-green-900"
+								: "text-orange-600 hover:bg-orange-100 dark:text-orange-400 dark:hover:bg-orange-900"
+						} rounded-md`}
+						title={
+							rating.status === "flagged"
+								? "Desmarcar valoración"
+								: "Reportar valoración"
+						}
+					>
+						{rating.status === "flagged" ? (
+							<CheckCircle size={18} /> // Icono para desmarcar
+						) : (
+							<Flag size={18} /> // Icono para marcar
+						)}
+					</button>
+				</div>
+			),
+		},
+	];
 
   const statsItemsRating = [
     {

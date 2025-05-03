@@ -1,9 +1,7 @@
 // src/presentation/hooks/useAdminRatings.ts
 import {useState, useEffect, useCallback} from "react";
 import AdminRatingService from "../../core/services/AdminRatingService";
-import type {
-	AdminRatingFilters,
-} from "../../core/services/AdminRatingService";
+import type {AdminRatingFilters} from "../../core/services/AdminRatingService";
 import type {Rating} from "../../core/domain/entities/Rating";
 import {extractErrorMessage} from "../../utils/errorHandler";
 
@@ -131,35 +129,60 @@ export const useAdminRatings = () => {
 		}
 	}, [adminRatingService]);
 
-useEffect(() => {
-	// Función para verificar la sesión antes de cargar datos
-	const checkSessionAndLoad = async () => {
-		try {
-			// Opción 1: Hacer una petición liviana que solo verifique permisos
-			// Por ejemplo: await ApiClient.get('/api/admin/check-session');
+	useEffect(() => {
+		// Función para verificar la sesión antes de cargar datos
+		const checkSessionAndLoad = async () => {
+			try {
+				// Opción 1: Hacer una petición liviana que solo verifique permisos
+				// Por ejemplo: await ApiClient.get('/api/admin/check-session');
 
-			// O simplemente esperar un momento para permitir que se inicialice la sesión
-			await new Promise((resolve) => setTimeout(resolve, 500));
+				// O simplemente esperar un momento para permitir que se inicialice la sesión
+				await new Promise((resolve) => setTimeout(resolve, 500));
 
-			// Si llegamos aquí, procedemos a cargar los datos
-			setIsInitialized(true);
-		} catch (err) {
-			// Si hay un error, no inicializar
-			console.error("Error al verificar la sesión:", err);
+				// Si llegamos aquí, procedemos a cargar los datos
+				setIsInitialized(true);
+			} catch (err) {
+				// Si hay un error, no inicializar
+				console.error("Error al verificar la sesión:", err);
+			}
+		};
+
+		checkSessionAndLoad();
+	}, []);
+
+	// Modifica el useEffect original para depender SOLO de isInitialized
+	useEffect(() => {
+		if (isInitialized) {
+			fetchRatings();
+			fetchStats();
 		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [isInitialized]); // Eliminamos fetchRatings y fetchStats de las dependencias
+
+	// Modificamos las funciones que cambian filtros para que llamen a fetchRatings
+	const handleStatusFilterChange = (status: string) => {
+		setStatusFilter(status);
+		// Utilizamos setTimeout para asegurar que el estado se actualice antes de fetchRatings
+		setTimeout(() => fetchRatings(), 0);
 	};
 
-	checkSessionAndLoad();
-}, []);
+	const handleTypeFilterChange = (type: string) => {
+		setTypeFilter(type);
+		setTimeout(() => fetchRatings(), 0);
+	};
 
-// Modifica el useEffect original para depender de isInitialized
-useEffect(() => {
-	if (isInitialized) {
-		fetchRatings();
-		fetchStats();
-	}
-}, [isInitialized, fetchRatings, fetchStats]);
-    
+	const handleRatingFilterChange = (rating: number | null) => {
+		setRatingFilter(rating);
+		setTimeout(() => fetchRatings(), 0);
+	};
+
+	const handleDateRangeFilterChange = (dateRange: {
+		from: string;
+		to: string;
+	}) => {
+		setDateRangeFilter(dateRange);
+		setTimeout(() => fetchRatings(), 0);
+	};
 
 	// Función para cambiar de página
 	const handlePageChange = (page: number) => {
@@ -167,6 +190,8 @@ useEffect(() => {
 			...prev,
 			currentPage: page,
 		}));
+		// Cargar datos nuevamente cuando cambia la página
+		setTimeout(() => fetchRatings(), 0);
 	};
 
 	// Función para abrir el modal de valoración
@@ -259,14 +284,36 @@ useEffect(() => {
 	const flagRating = async (ratingId: number, reason: string) => {
 		try {
 			const response = await adminRatingService.flagRating(ratingId, reason);
+
 			if (response.status === "success") {
+				// Actualizar el estado local con el nuevo estado
+				if (response.data && response.data.newStatus) {
+					setRatings((prevRatings) =>
+						prevRatings.map((rating) =>
+							rating.id === ratingId
+								? {...rating, status: response.data.newStatus}
+								: rating
+						)
+					);
+				}
+
+				// Actualizar estadísticas
+				fetchStats();
+
 				return true;
 			} else {
-				throw new Error(response.message || "Error al reportar la valoración");
+				throw new Error(
+					response.message || "Error al modificar el estado de la valoración"
+				);
 			}
 		} catch (err) {
-			console.error(`Error al reportar valoración ${ratingId}:`, err);
-			setError(extractErrorMessage(err, "Error al reportar la valoración"));
+			console.error(
+				`Error al modificar estado de valoración ${ratingId}:`,
+				err
+			);
+			setError(
+				extractErrorMessage(err, "Error al modificar estado de valoración")
+			);
 			return false;
 		}
 	};
@@ -294,10 +341,10 @@ useEffect(() => {
 		moderationNote,
 
 		// Funciones de acción
-		setStatusFilter,
-		setTypeFilter,
-		setRatingFilter,
-		setDateRangeFilter,
+		setStatusFilter: handleStatusFilterChange,
+		setTypeFilter: handleTypeFilterChange,
+		setRatingFilter: handleRatingFilterChange,
+		setDateRangeFilter: handleDateRangeFilterChange,
 		handlePageChange,
 		openRatingModal,
 		closeRatingModal,
