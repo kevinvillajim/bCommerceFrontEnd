@@ -261,9 +261,13 @@ export const API_ENDPOINTS = {
 		PENDING_FEEDBACK: "/admin/feedback/pending",
 		REVIEW_FEEDBACK: (id: string | number) => `/admin/feedback/${id}/review`,
 		RATINGS: {
+			LIST: "/admin/ratings",
 			STATS: "/admin/ratings/stats",
 			PENDING: "/admin/ratings/pending",
 			MODERATE: (id: string | number) => `/admin/ratings/${id}/moderate`,
+			APPROVE: (id: number) => `/api/admin/ratings/${id}/approve`,
+			REJECT: (id: number) => `/api/admin/ratings/${id}/reject`,
+			FLAG: (id: number) => `/api/admin/ratings/${id}/flag`,
 			APPROVE_ALL: "/admin/ratings/approve-all",
 			DELETE: (id: string | number) => `/admin/ratings/${id}`,
 		},

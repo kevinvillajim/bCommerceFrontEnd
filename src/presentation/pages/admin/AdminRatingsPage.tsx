@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+// src/presentation/pages/admin/AdminRatingsPage.tsx
+import React from "react";
 import Table from "../../components/dashboard/Table";
 import {
   Star,
@@ -19,250 +20,7 @@ import {
 import { Link } from "react-router-dom";
 import type { Rating } from "../../../core/domain/entities/Rating";
 import StatCardList from "../../components/dashboard/StatCardList";
-
-// Datos simulados para valoraciones y reseñas
-const mockRatings: Rating[] = [
-  {
-    id: 1,
-    userId: 101,
-    productId: 1,
-    sellerId: 1,
-    orderId: 1,
-    rating: 5,
-    title: "Excelente producto, muy satisfecho",
-    comment: "El producto superó mis expectativas. La calidad de los materiales es excepcional y el rendimiento es increíble. Totalmente recomendado para cualquiera que busque un equipo confiable.",
-    status: "approved",
-    type: "product",
-    createdAt: "2023-11-03T15:30:00Z",
-    updatedAt: "2023-11-04T09:20:00Z",
-    user: {
-      id: 101,
-      name: "Juan Pérez",
-      avatar: "avatar1.jpg"
-    },
-    isVerifiedPurchase: true
-  },
-  {
-    id: 2,
-    userId: 102,
-    productId: 2,
-    sellerId: 2,
-    orderId: 2,
-    rating: 4,
-    title: "Buen producto pero podría mejorar",
-    comment: "En general estoy satisfecho con el producto. El diseño es atractivo y funciona bien, pero hay algunos detalles que podrían mejorarse. La batería dura menos de lo esperado.",
-    status: "approved",
-    type: "product",
-    createdAt: "2023-11-02T10:15:00Z",
-    updatedAt: "2023-11-02T14:45:00Z",
-    user: {
-      id: 102,
-      name: "María Rodríguez",
-      avatar: "avatar2.jpg"
-    },
-    isVerifiedPurchase: true
-  },
-  {
-    id: 3,
-    userId: 103,
-    productId: 3,
-    sellerId: 3,
-    orderId: 3,
-    rating: 5,
-    title: "¡Increíble calidad de sonido!",
-    comment: "Estos auriculares ofrecen una calidad de sonido excepcional. La cancelación de ruido funciona perfectamente y la duración de la batería es impresionante. Sin duda los recomendaría.",
-    status: "approved",
-    type: "product",
-    createdAt: "2023-11-01T16:40:00Z",
-    updatedAt: "2023-11-01T16:40:00Z",
-    user: {
-      id: 103,
-      name: "Carlos Sánchez",
-      avatar: "avatar3.jpg"
-    },
-    isVerifiedPurchase: true
-  },
-  {
-    id: 4,
-    userId: 104,
-    productId: 4,
-    sellerId: 2,
-    orderId: 4,
-    rating: 2,
-    title: "No cumple con lo esperado",
-    comment: "La calidad del producto no corresponde con lo mostrado en las imágenes. Los materiales parecen baratos y el rendimiento es deficiente. No lo recomendaría.",
-    status: "pending",
-    type: "product",
-    createdAt: "2023-11-04T11:10:00Z",
-    updatedAt: "2023-11-04T11:10:00Z",
-    user: {
-      id: 104,
-      name: "Ana Martínez",
-      avatar: "avatar4.jpg"
-    },
-    isVerifiedPurchase: true
-  },
-  {
-    id: 5,
-    userId: 105,
-    sellerId: 1,
-    productId: 6,
-    orderId: 5,
-    rating: 5,
-    title: "Excelente servicio y atención",
-    comment: "Muy satisfecho con la atención recibida. El vendedor fue muy profesional y respondió rápidamente a todas mis consultas. El envío fue rápido y el producto llegó en perfectas condiciones.",
-    status: "approved",
-    type: "seller",
-    createdAt: "2023-11-05T14:50:00Z",
-    updatedAt: "2023-11-05T18:20:00Z",
-    user: {
-      id: 105,
-      name: "Javier García",
-      avatar: "avatar5.jpg"
-    },
-    isVerifiedPurchase: true
-  },
-  {
-    id: 6,
-    userId: 106,
-    sellerId: 2,
-    productId: 6,
-    orderId: 6,
-    rating: 4,
-    title: "Buen servicio pero envío lento",
-    comment: "El vendedor fue amable y el producto coincide con la descripción, pero el envío tardó más de lo esperado. En general, una buena experiencia de compra.",
-    status: "approved",
-    type: "seller",
-    createdAt: "2023-10-30T10:25:00Z",
-    updatedAt: "2023-10-30T15:40:00Z",
-    user: {
-      id: 106,
-      name: "Lucía Fernández",
-      avatar: "avatar6.jpg"
-    },
-    isVerifiedPurchase: true
-  },
-  {
-    id: 7,
-    userId: 107,
-    productId: 10,
-    sellerId: 6,
-    orderId: 7,
-    rating: 3,
-    title: "Producto aceptable para el precio",
-    comment: "Para el precio que tiene, es un producto aceptable. No es excepcional pero cumple con lo básico. El diseño es bonito pero la durabilidad es cuestionable.",
-    status: "pending",
-    type: "product",
-    createdAt: "2023-11-01T17:15:00Z",
-    updatedAt: "2023-11-01T17:15:00Z",
-    user: {
-      id: 107,
-      name: "David López",
-      avatar: "avatar7.jpg"
-    },
-    isVerifiedPurchase: true
-  },
-  {
-    id: 8,
-    userId: 108,
-    productId: 6,
-    sellerId: 6,
-    orderId: 8,
-    rating: 1,
-    title: "Pésima experiencia con este producto",
-    comment: "Totalmente decepcionado con este producto. No funciona como se describe y la calidad es horrible. Además, el servicio al cliente no fue de ayuda cuando intenté resolver el problema.",
-    status: "rejected",
-    type: "product",
-    createdAt: "2023-11-05T12:30:00Z",
-    updatedAt: "2023-11-06T09:15:00Z",
-    user: {
-      id: 108,
-      name: "Elena Gómez",
-      avatar: "avatar8.jpg"
-    },
-    isVerifiedPurchase: true
-  },
-  {
-    id: 9,
-    userId: 109,
-    productId: 7,
-    sellerId: 5,
-    orderId: 9,
-    rating: 5,
-    title: "¡Producto perfecto!",
-    comment: "Esta impresora es exactamente lo que necesitaba. Fácil de configurar, excelente calidad de impresión y el Wi-Fi funciona perfectamente. ¡Muy feliz con mi compra!",
-    status: "pending",
-    type: "product",
-    createdAt: "2023-10-28T09:20:00Z",
-    updatedAt: "2023-10-28T09:20:00Z",
-    user: {
-      id: 109,
-      name: "Miguel Torres",
-      avatar: "avatar9.jpg"
-    },
-    isVerifiedPurchase: true
-  },
-  {
-    id: 10,
-    userId: 110,
-    sellerId: 2,
-    productId: 5,
-    orderId: 10,
-    rating: 1,
-    title: "Pésimo servicio, no lo recomiendo",
-    comment: "El vendedor fue muy poco profesional. No respondió a mis mensajes y el paquete llegó dañado. Muy decepcionado con todo el proceso de compra.",
-    status: "pending",
-    type: "seller",
-    createdAt: "2023-10-25T15:40:00Z",
-    updatedAt: "2023-10-25T15:40:00Z",
-    user: {
-      id: 110,
-      name: "Carmen Navarro",
-      avatar: "avatar10.jpg"
-    },
-    isVerifiedPurchase: true
-  },
-  {
-    id: 11,
-    userId: 111,
-    productId: 9,
-    sellerId: 5,
-    orderId: 11,
-    rating: 4,
-    title: "Muy buen ratón para gaming",
-    comment: "El ratón es cómodo y responde muy bien. Los botones programables son útiles y la calidad de construcción es excelente. Solo le quito una estrella porque el software podría ser más intuitivo.",
-    status: "approved",
-    type: "product",
-    createdAt: "2023-11-03T12:20:00Z",
-    updatedAt: "2023-11-03T16:45:00Z",
-    user: {
-      id: 111,
-      name: "Pedro Morales",
-      avatar: "avatar11.jpg"
-    },
-    isVerifiedPurchase: true
-  },
-  {
-    id: 12,
-    userId: 112,
-    productId: 2,
-    sellerId: 4,
-    orderId: 12,
-    rating: 3,
-    title: "HORRIBLE EXPERIENCIA, EVITEN ESTE PRODUCTO A TODA COSTA!!!",
-    comment: "Este producto es una completa ESTAFA. El fabricante miente descaradamente sobre sus características. La pantalla es de pésima calidad y el rendimiento es HORRIBLE. No pierdan su dinero en esta basura. Además, la atención al cliente es inexistente cuando intenté reclamar. TODOS DEBERÍAN SABER LA VERDAD SOBRE ESTE PRODUCTO!!!!",
-    status: "rejected",
-    type: "product",
-    createdAt: "2023-10-29T14:35:00Z",
-    updatedAt: "2023-10-30T10:15:00Z",
-    user: {
-      id: 112,
-      name: "Roberto Jiménez",
-      avatar: "avatar12.jpg"
-    },
-    isVerifiedPurchase: false
-  }
-];
+import useAdminRatings from "../../hooks/useAdminRatings";
 
 // Mapeo de estado para las valoraciones
 const ratingStatusMap: Record<
@@ -271,14 +29,12 @@ const ratingStatusMap: Record<
 > = {
   pending: {
     label: "Pendiente",
-    color:
-      "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
+    color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
     icon: <Clock className="w-3 h-3 mr-1" />,
   },
   approved: {
     label: "Aprobada",
-    color:
-      "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+    color: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
     icon: <CheckCircle className="w-3 h-3 mr-1" />,
   },
   rejected: {
@@ -300,135 +56,47 @@ const ratingTypeMap: Record<
   },
   seller: {
     label: "Vendedor",
-    color:
-      "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
+    color: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
     icon: <Store className="w-3 h-3 mr-1" />,
   },
   user: {
     label: "Usuario",
-    color:
-      "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
+    color: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
     icon: <User className="w-3 h-3 mr-1" />,
   },
 };
 
 const AdminRatingsPage: React.FC = () => {
-  const [ratings, setRatings] = useState<Rating[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [typeFilter, setTypeFilter] = useState<string>("all");
-  const [ratingFilter, setRatingFilter] = useState<number | null>(null);
-  const [dateRangeFilter, setDateRangeFilter] = useState<{
-    from: string;
-    to: string;
-  }>({
-    from: "",
-    to: "",
-  });
-  const [pagination, setPagination] = useState({
-    currentPage: 1,
-    totalPages: 1,
-    totalItems: 0,
-    itemsPerPage: 10,
-  });
-  const [selectedRating, setSelectedRating] = useState<Rating | null>(null);
-  const [showRatingModal, setShowRatingModal] = useState(false);
-  const [moderationNote, setModerationNote] = useState("");
-
-  // Cargar datos de valoraciones
-  useEffect(() => {
-    const fetchRatings = () => {
-      setLoading(true);
-      // Simulación de llamada a API
-      setTimeout(() => {
-        setRatings(mockRatings);
-        setPagination({
-          currentPage: 1,
-          totalPages: 1,
-          totalItems: mockRatings.length,
-          itemsPerPage: 10,
-        });
-        setLoading(false);
-      }, 500);
-    };
-
-    fetchRatings();
-  }, []);
-
-  // Filtrar valoraciones
-  const filteredRatings = ratings.filter((rating) => {
-    // Filtro por estado
-    const matchesStatus = statusFilter === "all" || rating.status === statusFilter;
-
-    // Filtro por tipo
-    const matchesType = typeFilter === "all" || rating.type === typeFilter;
-
-    // Filtro por puntuación
-    const matchesRating = ratingFilter === null || rating.rating === ratingFilter;
-
-    // Filtro por rango de fechas
-    let matchesDateRange = true;
-    if (dateRangeFilter.from) {
-      const ratingDate = new Date(rating.createdAt || "");
-      const fromDate = new Date(dateRangeFilter.from);
-      matchesDateRange = ratingDate >= fromDate;
-    }
-    if (dateRangeFilter.to && matchesDateRange) {
-      const ratingDate = new Date(rating.createdAt || "");
-      const toDate = new Date(dateRangeFilter.to);
-      toDate.setHours(23, 59, 59, 999);
-      matchesDateRange = ratingDate <= toDate;
-    }
-
-    return matchesStatus && matchesType && matchesRating && matchesDateRange;
-  });
-
-  // Funciones para el modal de valoración
-  const openRatingModal = (rating: Rating) => {
-    setSelectedRating(rating);
-    setModerationNote("");
-    setShowRatingModal(true);
-  };
-
-  const closeRatingModal = () => {
-    setSelectedRating(null);
-    setShowRatingModal(false);
-    setModerationNote("");
-  };
-
-  const approveRating = (ratingId: number) => {
-    if (selectedRating) {
-      closeRatingModal();
-    }
-    setRatings((prevRatings) =>
-      prevRatings.map((rating) =>
-        rating.id === ratingId
-          ? { ...rating, status: "approved", updatedAt: new Date().toISOString() }
-          : rating
-      )
-    );
-  };
-
-  const rejectRating = (ratingId: number) => {
-    if (selectedRating) {
-      if (!moderationNote) {
-        alert("Por favor, proporciona una nota de moderación para explicar el rechazo.");
-        return;
-      }
-      closeRatingModal();
-    }
-    setRatings((prevRatings) =>
-      prevRatings.map((rating) =>
-        rating.id === ratingId
-          ? { ...rating, status: "rejected", updatedAt: new Date().toISOString() }
-          : rating
-      )
-    );
-  };
-
-  const reportRating = (ratingId: number) => {
-    alert(`La valoración #${ratingId} ha sido reportada para revisión.`);
-  };
+  const {
+    // Estado
+    ratings,
+    loading,
+    error,
+    statsLoading,
+    stats,
+    statusFilter,
+    typeFilter,
+    ratingFilter,
+    dateRangeFilter,
+    pagination,
+    selectedRating,
+    showRatingModal,
+    moderationNote,
+    
+    // Funciones de acción
+    setStatusFilter,
+    setTypeFilter,
+    setRatingFilter,
+    setDateRangeFilter,
+    handlePageChange,
+    openRatingModal,
+    closeRatingModal,
+    setModerationNote,
+    approveRating,
+    rejectRating,
+    flagRating,
+    refreshData
+  } = useAdminRatings();
 
   const formatDate = (dateString: string | undefined) => {
     if (!dateString) return "N/A";
@@ -458,18 +126,6 @@ const AdminRatingsPage: React.FC = () => {
         <span className="ml-1 text-sm font-medium">{rating}</span>
       </div>
     );
-  };
-
-  const handlePageChange = (page: number) => {
-    setPagination((prev) => ({ ...prev, currentPage: page }));
-    // Aquí iría la lógica para obtener la nueva página de datos en una app real.
-  };
-
-  const refreshData = () => {
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-    }, 500);
   };
 
   const columns = [
@@ -646,7 +302,7 @@ const AdminRatingsPage: React.FC = () => {
             </>
           )}
           <button
-            onClick={() => reportRating(rating.id || 0)}
+            onClick={() => flagRating(rating.id || 0, "Marcada para revisión por administrador")}
             className="p-1 text-orange-600 hover:bg-orange-100 rounded-md dark:text-orange-400 dark:hover:bg-orange-900"
             title="Reportar valoración"
           >
@@ -660,7 +316,7 @@ const AdminRatingsPage: React.FC = () => {
   const statsItemsRating = [
     {
       title: "Total",
-      value: ratings.length,
+      value: stats.total,
       description: "Valoraciones y reseñas",
       icon: Star,
       bgColor: "bg-blue-50 dark:bg-blue-900/20",
@@ -671,7 +327,7 @@ const AdminRatingsPage: React.FC = () => {
     },
     {
       title: "Pendientes",
-      value: ratings.filter((r) => r.status === "pending").length,
+      value: stats.pending,
       description: "Esperando moderación",
       icon: Clock,
       bgColor: "bg-yellow-50 dark:bg-yellow-900/20",
@@ -682,7 +338,7 @@ const AdminRatingsPage: React.FC = () => {
     },
     {
       title: "Aprobadas",
-      value: ratings.filter((r) => r.status === "approved").length,
+      value: stats.approved,
       description: "Publicadas",
       icon: CheckCircle,
       bgColor: "bg-green-50 dark:bg-green-900/20",
@@ -693,7 +349,7 @@ const AdminRatingsPage: React.FC = () => {
     },
     {
       title: "Rechazadas",
-      value: ratings.filter((r) => r.status === "rejected").length,
+      value: stats.rejected,
       description: "Ocultadas del público",
       icon: XCircle,
       bgColor: "bg-red-50 dark:bg-red-900/20",
@@ -703,10 +359,15 @@ const AdminRatingsPage: React.FC = () => {
       iconColor: "text-red-600 dark:text-red-400",
     },
   ];
-  
 
   return (
     <div className="space-y-6">
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
+          <span className="block sm:inline">{error}</span>
+        </div>
+      )}
+      
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
           Gestión de Valoraciones y Reseñas
@@ -723,15 +384,14 @@ const AdminRatingsPage: React.FC = () => {
             onClick={refreshData}
             className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
           >
-            <RefreshCw size={18} className="inline mr-2" />
+            <RefreshCw size={18} className={`inline mr-2 ${loading ? "animate-spin" : ""}`} />
             Actualizar
           </button>
         </div>
       </div>
 
       {/* Panel de estadísticas */}
-      <StatCardList items={statsItemsRating} />
-
+      <StatCardList items={statsItemsRating}/>
       {/* Filtros */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
         <div className="flex flex-col md:flex-row gap-4">
@@ -805,9 +465,9 @@ const AdminRatingsPage: React.FC = () => {
 
       {/* Tabla de Valoraciones */}
       <Table
-        data={filteredRatings}
+        data={ratings}
         columns={columns}
-        searchFields={["title", "comment", "user.name"]}
+        searchFields={["title", "comment"]}
         loading={loading}
         emptyMessage="No se encontraron valoraciones"
         pagination={{
