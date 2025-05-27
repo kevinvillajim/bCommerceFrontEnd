@@ -18,7 +18,7 @@ const getSellerColumns = (): Column<Seller>[] => [
     header: 'Vendedor',
     showLabelInCompact: false,
     render: (value, row) => (
-      <Link to={`/admin/sellers/${row.id}`} className="text-primary-600 dark:text-primary-400 hover:underline font-medium">
+      <Link to={`/admin/sellers/${row.id}`} className="text-primary-600 hover:underline font-medium">
         {value}
       </Link>
     )

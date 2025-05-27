@@ -41,10 +41,10 @@ const SellerLayout: React.FC = () => {
 		if (pendingOrders === 0) return null;
 
 		return (
-			<div className="bg-gradient-to-r from-primary-50 to-blue-50 dark:from-primary-900/20 dark:to-blue-900/20 px-4 py-3 border-b border-primary-100 dark:border-primary-800">
+			<div className="bg-gradient-to-r from-primary-50 to-blue-50 px-4 py-3 border-b border-primary-100">
 				<div className="flex items-center">
 					<TrendingUp className="h-5 w-5 text-primary-500 mr-2" />
-					<span className="text-sm text-primary-700 dark:text-primary-300">
+					<span className="text-sm text-primary-700">
 						Tienes <strong>{pendingOrders}</strong> pedido
 						{pendingOrders !== 1 ? "s" : ""} pendiente
 						{pendingOrders !== 1 ? "s" : ""} por procesar. ¡Revísalos pronto!

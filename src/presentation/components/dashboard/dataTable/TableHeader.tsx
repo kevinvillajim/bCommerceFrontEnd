@@ -10,14 +10,14 @@ const TableHeader: React.FC<TableHeaderProps> = ({
   viewAllText = "Ver todo"
 }) => {
   return (
-    <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-      <h2 className="text-lg font-medium text-gray-900 dark:text-white">
+    <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+      <h2 className="text-lg font-medium text-gray-900">
         {title}
       </h2>
       {viewAllLink && (
         <Link
           to={viewAllLink}
-          className="text-primary-600 dark:text-primary-400 text-sm font-medium hover:underline flex items-center"
+          className="text-primary-600 text-sm font-medium hover:underline flex items-center"
         >
           {viewAllText} <ChevronRight size={16} />
         </Link>

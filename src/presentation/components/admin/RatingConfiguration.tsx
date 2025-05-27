@@ -153,12 +153,12 @@ const RatingConfigPage = () => {
 	return (
 		<div className="space-y-6">
 			<div className="flex justify-between items-center">
-				<h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+				<h1 className="text-2xl font-bold text-gray-900">
 					Configuración de Valoraciones
 				</h1>
 				<button
 					onClick={loadConfigurations}
-					className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 flex items-center"
+					className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 flex items-center"
 					disabled={loading}
 				>
 					<RefreshCw
@@ -170,7 +170,7 @@ const RatingConfigPage = () => {
 			</div>
 
 			{/* Panel de información */}
-			<div className="bg-blue-50 dark:bg-blue-900 text-blue-800 dark:text-blue-200 p-4 rounded-lg flex items-start">
+			<div className="bg-blue-50 text-blue-800 p-4 rounded-lg flex items-start">
 				<Info className="w-5 h-5 mr-3 mt-1 flex-shrink-0" />
 				<div>
 					<h3 className="font-medium">Acerca de las valoraciones</h3>
@@ -197,44 +197,44 @@ const RatingConfigPage = () => {
 
 			{/* Panel de estadísticas */}
 			<div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-				<div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
-					<h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
+				<div className="bg-white p-4 rounded-lg shadow-sm">
+					<h3 className="text-sm font-medium text-gray-500">
 						Total de valoraciones
 					</h3>
-					<p className="text-2xl font-bold text-gray-900 dark:text-white">
+					<p className="text-2xl font-bold text-gray-900">
 						{stats.totalCount}
 					</p>
 				</div>
-				<div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
-					<h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
+				<div className="bg-white p-4 rounded-lg shadow-sm">
+					<h3 className="text-sm font-medium text-gray-500">
 						Aprobadas
 					</h3>
-					<p className="text-2xl font-bold text-green-600 dark:text-green-400">
+					<p className="text-2xl font-bold text-green-600">
 						{stats.approvedCount}
 					</p>
 				</div>
-				<div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
-					<h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
+				<div className="bg-white p-4 rounded-lg shadow-sm">
+					<h3 className="text-sm font-medium text-gray-500">
 						Pendientes
 					</h3>
-					<p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
+					<p className="text-2xl font-bold text-yellow-600">
 						{stats.pendingCount}
 					</p>
 				</div>
-				<div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm">
-					<h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
+				<div className="bg-white p-4 rounded-lg shadow-sm">
+					<h3 className="text-sm font-medium text-gray-500">
 						Rechazadas
 					</h3>
-					<p className="text-2xl font-bold text-red-600 dark:text-red-400">
+					<p className="text-2xl font-bold text-red-600">
 						{stats.rejectedCount}
 					</p>
 				</div>
 			</div>
 
 			{/* Configuraciones */}
-			<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+			<div className="bg-white rounded-lg shadow-sm">
 				<div className="p-6">
-					<h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+					<h2 className="text-lg font-medium text-gray-900 mb-4">
 						Configuración de Aprobación Automática
 					</h2>
 
@@ -248,11 +248,11 @@ const RatingConfigPage = () => {
 								className="form-checkbox h-5 w-5 text-blue-600 rounded focus:ring-blue-500"
 								disabled={saving}
 							/>
-							<span className="text-gray-900 dark:text-white font-medium">
+							<span className="text-gray-900 font-medium">
 								Aprobar automáticamente todas las valoraciones
 							</span>
 						</label>
-						<p className="text-sm text-gray-500 dark:text-gray-400 ml-8">
+						<p className="text-sm text-gray-500 ml-8">
 							Cuando está activado, todas las valoraciones se aprobarán
 							automáticamente sin moderación. No recomendado para sitios con
 							alto tráfico o riesgo de spam.
@@ -261,7 +261,7 @@ const RatingConfigPage = () => {
 
 					{/* Umbral de aprobación automática */}
 					<div className={autoApproveAll ? "opacity-50" : ""}>
-						<label className="block text-gray-700 dark:text-gray-300 font-medium mb-2">
+						<label className="block text-gray-700 font-medium mb-2">
 							Umbral de aprobación automática
 						</label>
 
@@ -276,7 +276,7 @@ const RatingConfigPage = () => {
 									onChange={(e) =>
 										setAutoApproveThreshold(Number(e.target.value))
 									}
-									className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
+									className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
 									disabled={autoApproveAll || saving}
 								/>
 							</div>
@@ -289,28 +289,28 @@ const RatingConfigPage = () => {
 										className={`${
 											star <= autoApproveThreshold
 												? "text-yellow-400 fill-current"
-												: "text-gray-400 dark:text-gray-600"
+												: "text-gray-400"
 										}`}
 									/>
 								))}
 							</div>
 						</div>
 
-						<div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 px-1">
+						<div className="flex justify-between text-xs text-gray-500 px-1">
 							<span>Se requiere moderación: 1-{autoApproveThreshold}</span>
 							<span>Aprobación automática: &gt;{autoApproveThreshold}</span>
 						</div>
 
-						<p className="text-sm text-gray-500 dark:text-gray-400 mt-3">
+						<p className="text-sm text-gray-500 mt-3">
 							Las valoraciones con {autoApproveThreshold} estrellas o menos
 							requerirán aprobación manual. Las valoraciones con más de{" "}
 							{autoApproveThreshold} estrellas se aprobarán automáticamente.
 						</p>
 
 						{autoApproveThreshold < 2 && (
-							<div className="mt-3 flex items-start bg-yellow-50 dark:bg-yellow-900 p-3 rounded-md">
-								<AlertTriangle className="w-5 h-5 text-yellow-600 dark:text-yellow-400 mr-2 mt-0.5 flex-shrink-0" />
-								<p className="text-sm text-yellow-700 dark:text-yellow-300">
+							<div className="mt-3 flex items-start bg-yellow-50 p-3 rounded-md">
+								<AlertTriangle className="w-5 h-5 text-yellow-600 mr-2 mt-0.5 flex-shrink-0" />
+								<p className="text-sm text-yellow-700">
 									Un umbral muy bajo puede permitir valoraciones negativas
 									automáticamente. Considera usar un valor de 2 o superior para
 									una mejor moderación.
@@ -321,7 +321,7 @@ const RatingConfigPage = () => {
 				</div>
 
 				{/* Acciones */}
-				<div className="px-6 py-3 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600 rounded-b-lg flex flex-col sm:flex-row gap-3 justify-end">
+				<div className="px-6 py-3 bg-gray-50 border-t border-gray-200 rounded-b-lg flex flex-col sm:flex-row gap-3 justify-end">
 					{stats.pendingCount > 0 && (
 						<button
 							type="button"

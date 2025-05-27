@@ -128,17 +128,17 @@ const SellerFormModal: React.FC<SellerFormModalProps> = ({
 			></div>
 
 			{/* Modal */}
-			<div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-lg z-10 max-h-[90vh] overflow-y-auto">
+			<div className="bg-white rounded-lg p-6 w-full max-w-lg z-10 max-h-[90vh] overflow-y-auto">
 				<div className="flex justify-between items-center mb-4">
 					<div className="flex items-center">
 						<Store className="h-6 w-6 mr-2 text-primary-600" />
-						<h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+						<h3 className="text-xl font-semibold text-gray-900">
 							{title}
 						</h3>
 					</div>
 					<button
 						onClick={onClose}
-						className="text-gray-400 hover:text-gray-500 dark:text-gray-300 dark:hover:text-gray-200"
+						className="text-gray-400 hover:text-gray-500"
 					>
 						<X className="h-5 w-5" />
 					</button>
@@ -154,7 +154,7 @@ const SellerFormModal: React.FC<SellerFormModalProps> = ({
 					{/* Selección de usuario (solo para creación) */}
 					{isCreate && (
 						<div className="mb-4">
-							<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+							<label className="block text-sm font-medium text-gray-700 mb-1">
 								Usuario:
 							</label>
 							<select
@@ -162,7 +162,7 @@ const SellerFormModal: React.FC<SellerFormModalProps> = ({
 								value={formData.user_id}
 								onChange={handleChange}
 								required
-								className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+								className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
 							>
 								<option value="">Seleccionar usuario</option>
 								{users.map((user) => (
@@ -176,7 +176,7 @@ const SellerFormModal: React.FC<SellerFormModalProps> = ({
 
 					{/* Nombre de la tienda */}
 					<div className="mb-4">
-						<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+						<label className="block text-sm font-medium text-gray-700 mb-1">
 							Nombre de la tienda:
 						</label>
 						<input
@@ -185,13 +185,13 @@ const SellerFormModal: React.FC<SellerFormModalProps> = ({
 							value={formData.store_name}
 							onChange={handleChange}
 							required
-							className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+							className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
 						/>
 					</div>
 
 					{/* Descripción */}
 					<div className="mb-4">
-						<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+						<label className="block text-sm font-medium text-gray-700 mb-1">
 							Descripción:
 						</label>
 						<textarea
@@ -199,14 +199,14 @@ const SellerFormModal: React.FC<SellerFormModalProps> = ({
 							value={formData.description}
 							onChange={handleChange}
 							rows={3}
-							className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+							className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
 						/>
 					</div>
 
 					{/* Estado (solo para creación) */}
 					{isCreate && (
 						<div className="mb-4">
-							<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+							<label className="block text-sm font-medium text-gray-700 mb-1">
 								Estado inicial:
 							</label>
 							<select
@@ -214,7 +214,7 @@ const SellerFormModal: React.FC<SellerFormModalProps> = ({
 								value={(formData as CreateSellerData).status}
 								onChange={handleChange}
 								required
-								className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+								className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
 							>
 								<option value="pending">Pendiente</option>
 								<option value="active">Activo</option>
@@ -224,7 +224,7 @@ const SellerFormModal: React.FC<SellerFormModalProps> = ({
 
 					{/* Nivel de verificación */}
 					<div className="mb-4">
-						<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+						<label className="block text-sm font-medium text-gray-700 mb-1">
 							Nivel de verificación:
 						</label>
 						<select
@@ -232,7 +232,7 @@ const SellerFormModal: React.FC<SellerFormModalProps> = ({
 							value={formData.verification_level}
 							onChange={handleChange}
 							required
-							className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+							className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
 						>
 							<option value="none">Sin verificar</option>
 							<option value="basic">Básica</option>
@@ -243,7 +243,7 @@ const SellerFormModal: React.FC<SellerFormModalProps> = ({
 
 					{/* Comisión */}
 					<div className="mb-4">
-						<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+						<label className="block text-sm font-medium text-gray-700 mb-1">
 							Tasa de comisión (%):
 						</label>
 						<input
@@ -254,7 +254,7 @@ const SellerFormModal: React.FC<SellerFormModalProps> = ({
 							min="0"
 							max="100"
 							step="0.1"
-							className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+							className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
 						/>
 					</div>
 
@@ -275,7 +275,7 @@ const SellerFormModal: React.FC<SellerFormModalProps> = ({
 						/>
 						<label
 							htmlFor="is_featured"
-							className="ml-2 block text-sm text-gray-700 dark:text-gray-300"
+							className="ml-2 block text-sm text-gray-700"
 						>
 							Destacar vendedor
 						</label>
@@ -286,7 +286,7 @@ const SellerFormModal: React.FC<SellerFormModalProps> = ({
 						<button
 							type="button"
 							onClick={onClose}
-							className="px-4 py-2 bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-md hover:bg-gray-400 dark:hover:bg-gray-600 transition-colors"
+							className="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 transition-colors"
 						>
 							Cancelar
 						</button>

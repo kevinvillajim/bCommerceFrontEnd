@@ -17,21 +17,21 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
   change,
   text = null,
   icon: Icon,
-  iconBgColor = "bg-gray-100 dark:bg-gray-700",
-  iconColor = "text-gray-600 dark:text-gray-300",
+  iconBgColor = "bg-gray-100",
+  iconColor = "text-gray-600",
 }) => {
   const isPositive = change > 0;
   const changeColor = isPositive
-    ? "text-green-600 dark:text-green-400"
-    : "text-red-600 dark:text-red-400";
+    ? "text-green-600"
+    : "text-red-600";
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 flex items-start justify-between">
+    <div className="bg-white rounded-lg shadow-sm p-6 flex items-start justify-between">
       <div>
-        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+        <p className="text-sm font-medium text-gray-500">
           {title}
         </p>
-        <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+        <p className="text-2xl font-bold text-gray-900 mt-1">
           {value}
         </p>
         {change !== 0 && (
@@ -43,7 +43,7 @@ const DashboardCard: React.FC<DashboardCardProps> = ({
           </div>
         )}
         {text && (
-          <span className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+          <span className="text-sm text-gray-500 mt-2">
             {text}
           </span>
         )}

@@ -27,7 +27,7 @@ const OrderFilters: React.FC<OrderFiltersProps> = ({
 	};
 
 	return (
-		<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+		<div className="bg-white rounded-lg shadow-sm p-4">
 			<div className="flex flex-col md:flex-row gap-4">
 				{/* Buscador */}
 				<div className="relative flex-grow">
@@ -35,7 +35,7 @@ const OrderFilters: React.FC<OrderFiltersProps> = ({
 						type="text"
 						name="search"
 						placeholder="Buscar por número de pedido, cliente..."
-						className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+						className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
 						value={filters.search}
 						onChange={handleInputChange}
 					/>
@@ -44,10 +44,10 @@ const OrderFilters: React.FC<OrderFiltersProps> = ({
 
 				{/* Filtro de Estado */}
 				<div className="flex items-center space-x-2">
-					<Filter className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+					<Filter className="h-5 w-5 text-gray-500" />
 					<select
 						name="status"
-						className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+						className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 						value={filters.status}
 						onChange={handleInputChange}
 					>
@@ -66,7 +66,7 @@ const OrderFilters: React.FC<OrderFiltersProps> = ({
 				<div className="flex items-center space-x-2">
 					<select
 						name="paymentStatus"
-						className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+						className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 						value={filters.paymentStatus}
 						onChange={handleInputChange}
 					>
@@ -81,7 +81,7 @@ const OrderFilters: React.FC<OrderFiltersProps> = ({
 				<div className="flex items-center space-x-2">
 					<select
 						name="dateFilter"
-						className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+						className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 						value={filters.dateFilter}
 						onChange={handleInputChange}
 					>
@@ -97,15 +97,15 @@ const OrderFilters: React.FC<OrderFiltersProps> = ({
 							<input
 								type="date"
 								name="dateFrom"
-								className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+								className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 								value={filters.dateFrom || ""}
 								onChange={handleInputChange}
 							/>
-							<span className="text-gray-500 dark:text-gray-400">a</span>
+							<span className="text-gray-500">a</span>
 							<input
 								type="date"
 								name="dateTo"
-								className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+								className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 								value={filters.dateTo || ""}
 								onChange={handleInputChange}
 							/>
@@ -116,7 +116,7 @@ const OrderFilters: React.FC<OrderFiltersProps> = ({
 				{/* Botón para limpiar filtros */}
 				<button
 					onClick={onClearFilters}
-					className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+					className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300"
 				>
 					Limpiar filtros
 				</button>

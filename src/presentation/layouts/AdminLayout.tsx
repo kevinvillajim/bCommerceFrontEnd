@@ -96,10 +96,10 @@ const AdminLayout: React.FC = () => {
 		if (!hasSystemAlert) return null;
 
 		return (
-			<div className="bg-amber-50 dark:bg-amber-900/30 border-b border-amber-200 dark:border-amber-800 px-4 py-2">
+			<div className="bg-amber-50 border-b border-amber-200 px-4 py-2">
 				<div className="flex items-center">
 					<AlertTriangle className="h-5 w-5 text-amber-500 mr-2" />
-					<span className="text-sm text-amber-800 dark:text-amber-200">
+					<span className="text-sm text-amber-800">
 						Hay acciones pendientes que requieren tu atención en el panel de
 						administración.
 					</span>

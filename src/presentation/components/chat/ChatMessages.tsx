@@ -67,13 +67,13 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({
 	if (!messages.length) {
 		return (
 			<div className="flex flex-col items-center justify-center h-full text-center p-8">
-				<div className="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
-					<User className="h-8 w-8 text-gray-500 dark:text-gray-400" />
+				<div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mb-4">
+					<User className="h-8 w-8 text-gray-500" />
 				</div>
-				<h3 className="text-lg font-medium text-gray-900 dark:text-white">
+				<h3 className="text-lg font-medium text-gray-900">
 					{noMessagesText}
 				</h3>
-				<p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+				<p className="text-sm text-gray-500 mt-2">
 					Envía un mensaje para iniciar la conversación
 				</p>
 			</div>
@@ -106,8 +106,8 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({
 										}}
 									/>
 								) : (
-									<div className="h-8 w-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-										<User className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+									<div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">
+										<User className="h-4 w-4 text-gray-500" />
 									</div>
 								)}
 							</div>
@@ -116,7 +116,7 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({
 							className={`rounded-lg px-4 py-2 ${
 								message.isMine
 									? "bg-primary-600 text-white"
-									: "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white"
+									: "bg-gray-100 text-gray-800"
 							}`}
 						>
 							<p className="text-sm whitespace-pre-wrap break-words">
@@ -126,7 +126,7 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({
 								className={`text-xs mt-1 flex items-center ${
 									message.isMine
 										? "text-primary-100"
-										: "text-gray-500 dark:text-gray-400"
+										: "text-gray-500"
 								}`}
 							>
 								<Clock className="h-3 w-3 mr-1" />

@@ -69,12 +69,12 @@ const AdminLogViewerPage: React.FC = () => {
 			sortable: true,
 			render: (log: LogEntry) => {
 				const colors = {
-					info: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+					info: "bg-blue-100 text-blue-800",
 					warning:
-						"bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
-					error: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+						"bg-yellow-100 text-yellow-800",
+					error: "bg-red-100 text-red-800",
 					critical:
-						"bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
+						"bg-purple-100 text-purple-800",
 				};
 
 				return (
@@ -120,7 +120,7 @@ const AdminLogViewerPage: React.FC = () => {
 				<div className="flex space-x-2">
 					<button
 						onClick={() => setSelectedLog(log)}
-						className="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-300"
+						className="text-primary-600 hover:text-primary-900"
 						title="Ver detalles"
 					>
 						<Eye size={18} />
@@ -256,64 +256,64 @@ const AdminLogViewerPage: React.FC = () => {
 		  value: logSummary.info, 
 		  description: "Registros informativos", 
 		  icon: Info, 
-		  bgColor: "bg-blue-50 dark:bg-blue-900/20", 
-		  textColor: "text-blue-700 dark:text-blue-300", 
-		  valueColor: "text-blue-800 dark:text-blue-200", 
-		  descriptionColor: "text-blue-600 dark:text-blue-400", 
-		  iconColor: "text-blue-600 dark:text-blue-400", 
+		  bgColor: "bg-blue-50/20", 
+		  textColor: "text-blue-700", 
+		  valueColor: "text-blue-800", 
+		  descriptionColor: "text-blue-600", 
+		  iconColor: "text-blue-600", 
 		},
 		{ 
 		  title: "Advertencias", 
 		  value: logSummary.warning, 
 		  description: "Registros de advertencia", 
 		  icon: AlertCircle, 
-		  bgColor: "bg-yellow-50 dark:bg-yellow-900/20", 
-		  textColor: "text-yellow-700 dark:text-yellow-300", 
-		  valueColor: "text-yellow-800 dark:text-yellow-200", 
-		  descriptionColor: "text-yellow-600 dark:text-yellow-400", 
-		  iconColor: "text-yellow-600 dark:text-yellow-400", 
+		  bgColor: "bg-yellow-50/20", 
+		  textColor: "text-yellow-700", 
+		  valueColor: "text-yellow-800", 
+		  descriptionColor: "text-yellow-600", 
+		  iconColor: "text-yellow-600", 
 		},
 		{ 
 		  title: "Errores", 
 		  value: logSummary.error, 
 		  description: "Registros de error", 
 		  icon: XCircle, 
-		  bgColor: "bg-red-50 dark:bg-red-900/20", 
-		  textColor: "text-red-700 dark:text-red-300", 
-		  valueColor: "text-red-800 dark:text-red-200", 
-		  descriptionColor: "text-red-600 dark:text-red-400", 
-		  iconColor: "text-red-600 dark:text-red-400", 
+		  bgColor: "bg-red-50/20", 
+		  textColor: "text-red-700", 
+		  valueColor: "text-red-800", 
+		  descriptionColor: "text-red-600", 
+		  iconColor: "text-red-600", 
 		},
 		{ 
 		  title: "Críticos", 
 		  value: logSummary.critical, 
 		  description: "Registros críticos", 
 		  icon: AlertTriangle, 
-		  bgColor: "bg-purple-50 dark:bg-purple-900/20", 
-		  textColor: "text-purple-700 dark:text-purple-300", 
-		  valueColor: "text-purple-800 dark:text-purple-200", 
-		  descriptionColor: "text-purple-600 dark:text-purple-400", 
-		  iconColor: "text-purple-600 dark:text-purple-400", 
+		  bgColor: "bg-purple-50/20", 
+		  textColor: "text-purple-700", 
+		  valueColor: "text-purple-800", 
+		  descriptionColor: "text-purple-600", 
+		  iconColor: "text-purple-600", 
 		}
 	  ];
 
 	return (
 		<div className="space-y-6">
 			<div className="flex justify-between items-center">
-				<h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+				<h1 className="text-2xl font-bold text-gray-900">
 					Registros de Errores
 				</h1>
 				<div className="flex space-x-2">
 					<button
 						onClick={refreshLogs}
-						className="px-3 py-2 bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300 rounded-md hover:bg-primary-200 dark:hover:bg-primary-800"
+						className="px-3 py-2 bg-primary-100 text-primary-700 rounded-md hover:bg-primary-200"
 						title="Refrescar datos"
 					>
 						<RefreshCw size={20} />
 					</button>
 					<button
 						onClick={exportLogs}
-						className="px-3 py-2 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 rounded-md hover:bg-green-200 dark:hover:bg-green-800"
+						className="px-3 py-2 bg-green-100 text-green-700 rounded-md hover:bg-green-200"
 						title="Exportar registros"
 					>
 						<Download size={20} />
@@ -325,10 +325,10 @@ const AdminLogViewerPage: React.FC = () => {
 			<StatCardList items={statItems} />
 
 			{/* Filtros */}
-			<div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm space-y-4">
+			<div className="bg-white p-4 rounded-lg shadow-sm space-y-4">
 				<div className="flex items-center mb-2">
-					<AlertTriangle className="w-5 h-5 text-gray-500 dark:text-gray-400 mr-2" />
-					<h2 className="text-lg font-medium text-gray-900 dark:text-white">
+					<AlertTriangle className="w-5 h-5 text-gray-500 mr-2" />
+					<h2 className="text-lg font-medium text-gray-900">
 						Filtros
 					</h2>
 				</div>
@@ -338,7 +338,7 @@ const AdminLogViewerPage: React.FC = () => {
 					<div>
 						<label
 							htmlFor="levelFilter"
-							className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+							className="block text-sm font-medium text-gray-700 mb-1"
 						>
 							Nivel
 						</label>
@@ -346,7 +346,7 @@ const AdminLogViewerPage: React.FC = () => {
 							id="levelFilter"
 							value={levelFilter}
 							onChange={(e) => setLevelFilter(e.target.value)}
-							className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+							className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
 						>
 							{levels.map((level) => (
 								<option key={level} value={level}>
@@ -362,7 +362,7 @@ const AdminLogViewerPage: React.FC = () => {
 					<div>
 						<label
 							htmlFor="sourceFilter"
-							className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+							className="block text-sm font-medium text-gray-700 mb-1"
 						>
 							Origen
 						</label>
@@ -370,7 +370,7 @@ const AdminLogViewerPage: React.FC = () => {
 							id="sourceFilter"
 							value={sourceFilter}
 							onChange={(e) => setSourceFilter(e.target.value)}
-							className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+							className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
 						>
 							{sources.map((source) => (
 								<option key={source} value={source}>
@@ -386,7 +386,7 @@ const AdminLogViewerPage: React.FC = () => {
 					<div>
 						<label
 							htmlFor="dateFilter"
-							className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+							className="block text-sm font-medium text-gray-700 mb-1"
 						>
 							Fecha
 						</label>
@@ -395,7 +395,7 @@ const AdminLogViewerPage: React.FC = () => {
 							id="dateFilter"
 							value={dateFilter}
 							onChange={(e) => setDateFilter(e.target.value)}
-							className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+							className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
 						/>
 					</div>
 				</div>
@@ -403,7 +403,7 @@ const AdminLogViewerPage: React.FC = () => {
 				<div className="flex justify-end">
 					<button
 						onClick={clearFilters}
-						className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600"
+						className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
 					>
 						Limpiar filtros
 					</button>
@@ -429,14 +429,14 @@ const AdminLogViewerPage: React.FC = () => {
 			{/* Modal de detalles */}
 			{selectedLog && (
 				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-					<div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg w-full max-w-3xl max-h-[80vh] overflow-hidden">
-						<div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-							<h3 className="text-lg font-medium text-gray-900 dark:text-white">
+					<div className="bg-white rounded-lg shadow-lg w-full max-w-3xl max-h-[80vh] overflow-hidden">
+						<div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+							<h3 className="text-lg font-medium text-gray-900">
 								Detalles del Registro #{selectedLog.id}
 							</h3>
 							<button
 								onClick={() => setSelectedLog(null)}
-								className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
+								className="text-gray-500 hover:text-gray-700"
 							>
 								<svg
 									className="w-5 h-5"
@@ -457,72 +457,72 @@ const AdminLogViewerPage: React.FC = () => {
 						<div className="px-6 py-4 overflow-y-auto max-h-[60vh]">
 							<div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
 								<div>
-									<p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+									<p className="text-sm font-medium text-gray-500">
 										Nivel
 									</p>
-									<p className="font-semibold text-gray-900 dark:text-white">
+									<p className="font-semibold text-gray-900">
 										{selectedLog.level.toUpperCase()}
 									</p>
 								</div>
 								<div>
-									<p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+									<p className="text-sm font-medium text-gray-500">
 										Fecha y Hora
 									</p>
-									<p className="font-semibold text-gray-900 dark:text-white">
+									<p className="font-semibold text-gray-900">
 										{new Date(selectedLog.timestamp).toLocaleString()}
 									</p>
 								</div>
 								<div>
-									<p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+									<p className="text-sm font-medium text-gray-500">
 										Origen
 									</p>
-									<p className="font-semibold text-gray-900 dark:text-white">
+									<p className="font-semibold text-gray-900">
 										{selectedLog.source}
 									</p>
 								</div>
 								<div>
-									<p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+									<p className="text-sm font-medium text-gray-500">
 										Usuario ID
 									</p>
-									<p className="font-semibold text-gray-900 dark:text-white">
+									<p className="font-semibold text-gray-900">
 										{selectedLog.userId || "N/A"}
 									</p>
 								</div>
 								<div>
-									<p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+									<p className="text-sm font-medium text-gray-500">
 										Dirección IP
 									</p>
-									<p className="font-semibold text-gray-900 dark:text-white">
+									<p className="font-semibold text-gray-900">
 										{selectedLog.ip || "N/A"}
 									</p>
 								</div>
 								<div className="md:col-span-2">
-									<p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+									<p className="text-sm font-medium text-gray-500">
 										Mensaje
 									</p>
-									<p className="font-semibold text-gray-900 dark:text-white">
+									<p className="font-semibold text-gray-900">
 										{selectedLog.message}
 									</p>
 								</div>
 								<div className="md:col-span-2">
-									<p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+									<p className="text-sm font-medium text-gray-500">
 										User Agent
 									</p>
-									<p className="font-semibold text-gray-900 dark:text-white break-words">
+									<p className="font-semibold text-gray-900 break-words">
 										{selectedLog.userAgent || "N/A"}
 									</p>
 								</div>
 								<div className="md:col-span-2">
-									<p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+									<p className="text-sm font-medium text-gray-500">
 										Detalles
 									</p>
-									<pre className="mt-2 p-3 bg-gray-100 dark:bg-gray-900 rounded-md text-sm text-gray-900 dark:text-gray-300 overflow-x-auto">
+									<pre className="mt-2 p-3 bg-gray-100 rounded-md text-sm text-gray-900 overflow-x-auto">
 										{selectedLog.details || "Sin detalles adicionales."}
 									</pre>
 								</div>
 							</div>
 						</div>
-						<div className="px-6 py-3 border-t border-gray-200 dark:border-gray-700 flex justify-end">
+						<div className="px-6 py-3 border-t border-gray-200 flex justify-end">
 							<button
 								onClick={() => setSelectedLog(null)}
 								className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700"

@@ -186,7 +186,7 @@ const PendingRatingsPage: React.FC = () => {
 
 	return (
 		<div className="container mx-auto p-4">
-			<h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+			<h1 className="text-2xl font-bold text-gray-900">
 				Valoraciones pendientes
 			</h1>
 
@@ -196,7 +196,7 @@ const PendingRatingsPage: React.FC = () => {
 					<input
 						type="text"
 						placeholder="Buscar por pedido o producto..."
-						className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+						className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
 						value={searchTerm}
 						onChange={(e) => setSearchTerm(e.target.value)}
 					/>
@@ -211,7 +211,7 @@ const PendingRatingsPage: React.FC = () => {
 							checked={showRated}
 							onChange={(e) => setShowRated(e.target.checked)}
 						/>
-						<span className="ml-2 text-gray-700 dark:text-gray-300">
+						<span className="ml-2 text-gray-700">
 							Mostrar también valorados
 						</span>
 					</label>
@@ -235,12 +235,12 @@ const PendingRatingsPage: React.FC = () => {
 
 			{/* Sin valoraciones pendientes */}
 			{!loading && !error && !hasPendingItems && (
-				<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-8 text-center">
+				<div className="bg-white rounded-lg shadow-sm p-8 text-center">
 					<ShoppingBag className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-					<h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+					<h2 className="text-xl font-semibold text-gray-900 mb-2">
 						No tienes valoraciones pendientes
 					</h2>
-					<p className="text-gray-600 dark:text-gray-400 max-w-md mx-auto">
+					<p className="text-gray-600 max-w-md mx-auto">
 						Todas tus compras recientes han sido valoradas. ¡Gracias por
 						compartir tu opinión!
 					</p>

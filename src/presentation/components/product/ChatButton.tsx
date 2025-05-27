@@ -116,7 +116,7 @@ const ChatButton: React.FC<ChatButtonProps> = ({
 				<button
 					onClick={handleChatClick}
 					disabled={loading}
-					className={`flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md border border-gray-300 hover:bg-gray-50 dark:border-gray-600 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 ${className}`}
+					className={`flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 ${className}`}
 					title={`Chatear con ${sellerName} sobre ${productName}`}
 				>
 					{loading ? (
@@ -131,13 +131,13 @@ const ChatButton: React.FC<ChatButtonProps> = ({
 					</span>
 				</button>
 			) : (
-				<div className="border border-gray-300 rounded-md p-3 dark:border-gray-600">
-					<div className="text-sm mb-2 text-gray-700 dark:text-gray-300">
+				<div className="border border-gray-300 rounded-md p-3">
+					<div className="text-sm mb-2 text-gray-700">
 						Envía un mensaje a {sellerName} sobre {productName}:
 					</div>
 
 					{error && (
-						<div className="text-sm text-red-600 mb-2 p-2 bg-red-50 dark:bg-red-900/20 rounded">
+						<div className="text-sm text-red-600 mb-2 p-2 bg-red-50 rounded">
 							{error}
 						</div>
 					)}
@@ -148,7 +148,7 @@ const ChatButton: React.FC<ChatButtonProps> = ({
 							value={message}
 							onChange={(e) => setMessage(e.target.value)}
 							placeholder="Escribe tu pregunta aquí..."
-							className="flex-1 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-l-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+							className="flex-1 border border-gray-300 rounded-l-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 							autoFocus
 							disabled={loading}
 						/>
@@ -157,7 +157,7 @@ const ChatButton: React.FC<ChatButtonProps> = ({
 							disabled={loading || !message.trim()}
 							className={`px-3 py-2 flex items-center justify-center rounded-r-md ${
 								loading || !message.trim()
-									? "bg-gray-300 text-gray-600 dark:bg-gray-600 dark:text-gray-300"
+									? "bg-gray-300 text-gray-600"
 									: "bg-primary-600 text-white hover:bg-primary-700"
 							}`}
 						>
@@ -172,7 +172,7 @@ const ChatButton: React.FC<ChatButtonProps> = ({
 					<div className="flex justify-end mt-2">
 						<button
 							onClick={() => setShowMessageInput(false)}
-							className="text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+							className="text-xs text-gray-500 hover:text-gray-700"
 							disabled={loading}
 						>
 							Cancelar

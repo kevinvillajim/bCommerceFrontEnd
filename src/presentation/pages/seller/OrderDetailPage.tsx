@@ -152,21 +152,21 @@ const OrderDetailPage: React.FC = () => {
 	const getStatusClass = (status: string) => {
 		switch (status) {
 			case "pending":
-				return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
+				return "bg-yellow-100 text-yellow-800";
 			case "processing":
-				return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
+				return "bg-blue-100 text-blue-800";
 			case "paid":
-				return "bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200";
+				return "bg-cyan-100 text-cyan-800";
 			case "shipped":
-				return "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200";
+				return "bg-indigo-100 text-indigo-800";
 			case "delivered":
-				return "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200";
+				return "bg-purple-100 text-purple-800";
 			case "completed":
-				return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
+				return "bg-green-100 text-green-800";
 			case "cancelled":
-				return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
+				return "bg-red-100 text-red-800";
 			default:
-				return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200";
+				return "bg-gray-100 text-gray-800";
 		}
 	};
 
@@ -194,15 +194,15 @@ const OrderDetailPage: React.FC = () => {
 	const getPaymentStatusClass = (status: string | null | undefined) => {
 		switch (status) {
 			case "pending":
-				return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
+				return "bg-yellow-100 text-yellow-800";
 			case "completed":
 			case "paid":
-				return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
+				return "bg-green-100 text-green-800";
 			case "failed":
 			case "rejected":
-				return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
+				return "bg-red-100 text-red-800";
 			default:
-				return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200";
+				return "bg-gray-100 text-gray-800";
 		}
 	};
 
@@ -259,7 +259,7 @@ const OrderDetailPage: React.FC = () => {
 		return (
 			<div className="flex flex-col items-center justify-center min-h-screen p-4">
 				<div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-500"></div>
-				<p className="mt-4 text-gray-700 dark:text-gray-300">
+				<p className="mt-4 text-gray-700">
 					Cargando detalles del pedido...
 				</p>
 			</div>
@@ -268,15 +268,15 @@ const OrderDetailPage: React.FC = () => {
 
 	if (error || !order) {
 		return (
-			<div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 max-w-4xl mx-auto my-8">
+			<div className="bg-white rounded-lg shadow p-6 max-w-4xl mx-auto my-8">
 				<div className="text-center">
 					<div className="text-red-500 text-5xl mb-4">
 						<X className="h-16 w-16 mx-auto" />
 					</div>
-					<h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+					<h2 className="text-2xl font-bold text-gray-900 mb-2">
 						Error al cargar el pedido
 					</h2>
-					<p className="text-gray-600 dark:text-gray-400 mb-6">
+					<p className="text-gray-600 mb-6">
 						{error || "No se pudo encontrar el pedido solicitado"}
 					</p>
 					<button
@@ -306,12 +306,12 @@ const OrderDetailPage: React.FC = () => {
 				<div>
 					<button
 						onClick={() => navigate(-1)}
-						className="flex items-center text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 mb-2"
+						className="flex items-center text-gray-600 hover:text-primary-600 mb-2"
 					>
 						<ArrowLeft size={16} className="mr-1" />
 						<span>Volver a pedidos</span>
 					</button>
-					<h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+					<h1 className="text-2xl font-bold text-gray-900">
 						Pedido #{order.orderNumber}
 					</h1>
 				</div>
@@ -422,13 +422,13 @@ const OrderDetailPage: React.FC = () => {
 				{/* Información general y estado */}
 				<div className="col-span-3 md:col-span-1 space-y-6">
 					{/* Tarjeta de estado */}
-					<div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-						<h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+					<div className="bg-white rounded-lg shadow p-6">
+						<h2 className="text-lg font-medium text-gray-900 mb-4">
 							Estado del pedido
 						</h2>
 						<div className="space-y-3">
 							<div className="flex justify-between items-center">
-								<span className="text-gray-600 dark:text-gray-400">
+								<span className="text-gray-600">
 									Estado:
 								</span>
 								<span
@@ -438,7 +438,7 @@ const OrderDetailPage: React.FC = () => {
 								</span>
 							</div>
 							<div className="flex justify-between items-center">
-								<span className="text-gray-600 dark:text-gray-400">Pago:</span>
+								<span className="text-gray-600">Pago:</span>
 								<span
 									className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${getPaymentStatusClass(order.paymentStatus)}`}
 								>
@@ -446,10 +446,10 @@ const OrderDetailPage: React.FC = () => {
 								</span>
 							</div>
 							<div className="flex justify-between items-center">
-								<span className="text-gray-600 dark:text-gray-400">
+								<span className="text-gray-600">
 									Método de pago:
 								</span>
-								<span className="text-gray-900 dark:text-gray-100">
+								<span className="text-gray-900">
 									{order.paymentMethod === "credit_card" &&
 										"Tarjeta de crédito"}
 									{order.paymentMethod === "paypal" && "PayPal"}
@@ -459,8 +459,8 @@ const OrderDetailPage: React.FC = () => {
 								</span>
 							</div>
 							<div className="flex justify-between items-center">
-								<span className="text-gray-600 dark:text-gray-400">Fecha:</span>
-								<span className="text-gray-900 dark:text-gray-100">
+								<span className="text-gray-600">Fecha:</span>
+								<span className="text-gray-900">
 									{order.createdAt ? formatDate(order.createdAt) : "Sin fecha"}
 								</span>
 							</div>
@@ -468,34 +468,34 @@ const OrderDetailPage: React.FC = () => {
 					</div>
 
 					{/* Información del cliente */}
-					<div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+					<div className="bg-white rounded-lg shadow p-6">
 						<div className="flex justify-between items-center mb-4">
-							<h2 className="text-lg font-medium text-gray-900 dark:text-white">
+							<h2 className="text-lg font-medium text-gray-900">
 								Cliente
 							</h2>
 						</div>
 						<div className="space-y-3">
 							<div>
-								<label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+								<label className="block text-sm font-medium text-gray-600">
 									Nombre:
 								</label>
-								<div className="mt-1 text-gray-900 dark:text-gray-100">
+								<div className="mt-1 text-gray-900">
 									{order.user_name || "No disponible"}
 								</div>
 							</div>
 							<div>
-								<label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+								<label className="block text-sm font-medium text-gray-600">
 									Email:
 								</label>
-								<div className="mt-1 text-gray-900 dark:text-gray-100">
+								<div className="mt-1 text-gray-900">
 									{order.user_email || "No disponible"}
 								</div>
 							</div>
 							<div>
-								<label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+								<label className="block text-sm font-medium text-gray-600">
 									Dirección de envío:
 								</label>
-								<div className="mt-1 text-gray-900 dark:text-gray-100">
+								<div className="mt-1 text-gray-900">
 									{order.shippingData ? (
 										<div>
 											<p>{order.shippingData.address}</p>
@@ -523,47 +523,47 @@ const OrderDetailPage: React.FC = () => {
 				{/* Productos y resumen */}
 				<div className="col-span-3 md:col-span-2 space-y-6">
 					{/* Productos */}
-					<div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-						<h2 className="text-lg font-medium text-gray-900 dark:text-white p-6 pb-3">
+					<div className="bg-white rounded-lg shadow overflow-hidden">
+						<h2 className="text-lg font-medium text-gray-900 p-6 pb-3">
 							Productos
 						</h2>
 						<div className="overflow-x-auto">
-							<table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-								<thead className="bg-gray-50 dark:bg-gray-700">
+							<table className="min-w-full divide-y divide-gray-200">
+								<thead className="bg-gray-50">
 									<tr>
 										<th
 											scope="col"
-											className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+											className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
 										>
 											Producto
 										</th>
 										<th
 											scope="col"
-											className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+											className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
 										>
 											SKU
 										</th>
 										<th
 											scope="col"
-											className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+											className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
 										>
 											Precio
 										</th>
 										<th
 											scope="col"
-											className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+											className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
 										>
 											Cantidad
 										</th>
 										<th
 											scope="col"
-											className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+											className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
 										>
 											Subtotal
 										</th>
 									</tr>
 								</thead>
-								<tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+								<tbody className="bg-white divide-y divide-gray-200">
 									{order.items.map((item) => (
 										<tr key={item.id}>
 											<td className="px-6 py-4 whitespace-nowrap">
@@ -582,7 +582,7 @@ const OrderDetailPage: React.FC = () => {
 														</div>
 													)}
 													<div>
-														<div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+														<div className="text-sm font-medium text-gray-900">
 															{item.product?.name ||
 																item.product_name ||
 																"Producto"}
@@ -591,7 +591,7 @@ const OrderDetailPage: React.FC = () => {
 														{item.product?.slug && (
 															<Link
 																to={`/products/${item.product.slug}`}
-																className="text-xs text-primary-600 dark:text-primary-400 hover:underline"
+																className="text-xs text-primary-600 hover:underline"
 															>
 																Ver producto
 															</Link>
@@ -599,16 +599,16 @@ const OrderDetailPage: React.FC = () => {
 													</div>
 												</div>
 											</td>
-											<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+											<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
 												{item.product?.sku || item.product_sku || "N/A"}
 											</td>
-											<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 text-right">
+											<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
 												{formatCurrency(item.price)}
 											</td>
-											<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 text-right">
+											<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
 												{item.quantity}
 											</td>
-											<td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100 text-right">
+											<td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-right">
 												{formatCurrency(item.price * item.quantity)}
 											</td>
 										</tr>
@@ -619,31 +619,31 @@ const OrderDetailPage: React.FC = () => {
 					</div>
 
 					{/* Resumen de precios */}
-					<div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-						<h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+					<div className="bg-white rounded-lg shadow p-6">
+						<h2 className="text-lg font-medium text-gray-900 mb-4">
 							Resumen
 						</h2>
 						<div className="space-y-3">
 							<div className="flex justify-between items-center pb-2">
-								<span className="text-gray-600 dark:text-gray-400">
+								<span className="text-gray-600">
 									Subtotal:
 								</span>
-								<span className="text-gray-900 dark:text-gray-100">
+								<span className="text-gray-900">
 									{formatCurrency(calculateSubtotal())}
 								</span>
 							</div>
 							{/* Añadir impuestos u otros cargos si es necesario */}
 							<div className="flex justify-between items-center pb-2">
-								<span className="text-gray-600 dark:text-gray-400">
+								<span className="text-gray-600">
 									IVA (15%):
 								</span>
-								<span className="text-gray-900 dark:text-gray-100">
+								<span className="text-gray-900">
 									{formatCurrency(calculateTax())}
 								</span>
 							</div>
-							<div className="flex justify-between items-center pt-3 border-t border-gray-200 dark:border-gray-700 font-medium">
-								<span className="text-gray-900 dark:text-gray-100">Total:</span>
-								<span className="text-lg text-gray-900 dark:text-gray-100">
+							<div className="flex justify-between items-center pt-3 border-t border-gray-200 font-medium">
+								<span className="text-gray-900">Total:</span>
+								<span className="text-lg text-gray-900">
 									{formatCurrency(calculateTotal())}
 								</span>
 							</div>
@@ -652,35 +652,35 @@ const OrderDetailPage: React.FC = () => {
 
 					{/* Notas y seguimiento */}
 					{order.shippingData?.tracking_number && (
-						<div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-							<h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+						<div className="bg-white rounded-lg shadow p-6">
+							<h2 className="text-lg font-medium text-gray-900 mb-4">
 								Información de envío
 							</h2>
 							<div className="space-y-3">
 								<div className="flex justify-between items-center">
-									<span className="text-gray-600 dark:text-gray-400">
+									<span className="text-gray-600">
 										Número de seguimiento:
 									</span>
-									<span className="text-primary-600 dark:text-primary-400 font-medium">
+									<span className="text-primary-600 font-medium">
 										{order.shippingData.tracking_number}
 									</span>
 								</div>
 								{order.shippingData.shipping_company && (
 									<div className="flex justify-between items-center">
-										<span className="text-gray-600 dark:text-gray-400">
+										<span className="text-gray-600">
 											Transportista:
 										</span>
-										<span className="text-gray-900 dark:text-gray-100">
+										<span className="text-gray-900">
 											{order.shippingData.shipping_company}
 										</span>
 									</div>
 								)}
 								{order.shippingData.estimated_delivery && (
 									<div className="flex justify-between items-center">
-										<span className="text-gray-600 dark:text-gray-400">
+										<span className="text-gray-600">
 											Entrega estimada:
 										</span>
-										<span className="text-gray-900 dark:text-gray-100">
+										<span className="text-gray-900">
 											{formatDate(order.shippingData.estimated_delivery)}
 										</span>
 									</div>
@@ -688,7 +688,7 @@ const OrderDetailPage: React.FC = () => {
 								<div className="mt-3">
 									<Link
 										to={`/seller/shipping/${order.id}`}
-										className="bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300 px-4 py-2 rounded-lg hover:bg-indigo-200 dark:hover:bg-indigo-800 inline-flex items-center mt-2"
+										className="bg-indigo-100 text-indigo-700 px-4 py-2 rounded-lg hover:bg-indigo-200 inline-flex items-center mt-2"
 									>
 										<Truck size={16} className="mr-2" />
 										<span>Gestionar envío</span>
@@ -700,11 +700,11 @@ const OrderDetailPage: React.FC = () => {
 
 					{/* Mostrar notas si existen */}
 					{order.shippingData?.notes && (
-						<div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-							<h2 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+						<div className="bg-white rounded-lg shadow p-6">
+							<h2 className="text-lg font-medium text-gray-900 mb-2">
 								Notas
 							</h2>
-							<p className="text-gray-600 dark:text-gray-400">
+							<p className="text-gray-600">
 								{order.shippingData.notes}
 							</p>
 						</div>

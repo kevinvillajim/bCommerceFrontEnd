@@ -106,7 +106,7 @@ const OrdersPage: React.FC = () => {
 			render: (order: OrderUI) => (
 				<Link
 					to={`/orders/${order.id}`}
-					className="font-medium text-primary-600 dark:text-primary-400 hover:underline"
+					className="font-medium text-primary-600 hover:underline"
 				>
 					{order.orderNumber}
 				</Link>
@@ -139,7 +139,7 @@ const OrdersPage: React.FC = () => {
 					) : (
 						<Link
 							to={`/orders/${order.id}`}
-							className="flex items-center text-primary-600 dark:text-primary-400 hover:text-primary-800 dark:hover:text-primary-300"
+							className="flex items-center text-primary-600 hover:text-primary-800"
 						>
 							<ShoppingBag size={16} className="mr-1" />
 							<span>Ver detalle</span>
@@ -170,7 +170,7 @@ const OrdersPage: React.FC = () => {
 					{/* Ver detalles */}
 					<Link
 						to={`/orders/${order.id}`}
-						className="p-1 text-blue-600 hover:bg-blue-100 rounded-md dark:text-blue-400 dark:hover:bg-blue-900"
+						className="p-1 text-blue-600 hover:bg-blue-100 rounded-md"
 						title="Ver detalles"
 					>
 						<Eye size={18} />
@@ -180,7 +180,7 @@ const OrdersPage: React.FC = () => {
 					{["completed", "delivered"].includes(order.status) && (
 						<Link
 							to={`/invoices/${order.id}`}
-							className="p-1 text-indigo-600 hover:bg-indigo-100 rounded-md dark:text-indigo-400 dark:hover:bg-indigo-900"
+							className="p-1 text-indigo-600 hover:bg-indigo-100 rounded-md"
 							title="Ver factura"
 						>
 							<FileText size={18} />
@@ -195,7 +195,7 @@ const OrdersPage: React.FC = () => {
 		<div className="py-8 px-4 md:px-8 max-w-7xl mx-auto">
 			<div className="space-y-6">
 				<div className="flex justify-between items-center">
-					<h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">
+					<h1 className="text-2xl font-bold text-gray-800">
 						Mis Pedidos
 					</h1>
 					<div className="flex space-x-2">
@@ -220,14 +220,14 @@ const OrdersPage: React.FC = () => {
 				)}
 
 				{/* Panel de filtros */}
-				<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+				<div className="bg-white rounded-lg shadow-sm p-4">
 					<div className="flex flex-col md:flex-row gap-4">
 						{/* Buscador */}
 						<div className="relative flex-grow">
 							<input
 								type="text"
 								placeholder="Buscar por número de pedido..."
-								className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+								className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
 								value={searchTerm}
 								onChange={(e) => setSearchTerm(e.target.value)}
 							/>
@@ -236,10 +236,10 @@ const OrdersPage: React.FC = () => {
 
 						{/* Filtro de Estado */}
 						<div className="flex items-center space-x-2">
-							<Filter className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+							<Filter className="h-5 w-5 text-gray-500" />
 							<select
 								name="status"
-								className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+								className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 								value={statusFilter}
 								onChange={(e) => setStatusFilter(e.target.value)}
 							>

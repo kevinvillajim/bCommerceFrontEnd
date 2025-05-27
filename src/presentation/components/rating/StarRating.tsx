@@ -48,7 +48,7 @@ const StarRating: React.FC<StarRatingProps> = ({
 		if (shouldBeFilled) {
 			return "fill-yellow-400 text-yellow-400";
 		}
-		return "fill-none text-gray-300 dark:text-gray-600";
+		return "fill-none text-gray-300";
 	};
 
 	// Evento al hacer clic en una estrella

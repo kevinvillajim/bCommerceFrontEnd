@@ -349,11 +349,11 @@ const AdminSellersPage: React.FC = () => {
 			sortable: true,
 			render: (seller: Seller) => (
 				<div className="flex items-center">
-					<div className="flex-shrink-0 h-10 w-10 rounded-full bg-primary-100 dark:bg-primary-800 flex items-center justify-center overflow-hidden">
-						<Store className="h-6 w-6 text-primary-600 dark:text-primary-400" />
+					<div className="flex-shrink-0 h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center overflow-hidden">
+						<Store className="h-6 w-6 text-primary-600" />
 					</div>
 					<div className="ml-4">
-						<div className="text-sm font-medium text-gray-900 dark:text-white flex items-center">
+						<div className="text-sm font-medium text-gray-900 flex items-center">
 							{seller.storeName}
 							{seller.isFeatured && (
 								<span className="ml-2">
@@ -361,7 +361,7 @@ const AdminSellersPage: React.FC = () => {
 								</span>
 							)}
 						</div>
-						<div className="text-xs text-gray-500 dark:text-gray-400">
+						<div className="text-xs text-gray-500">
 							ID: {seller.id} - User ID: {seller.userId}
 						</div>
 					</div>
@@ -380,25 +380,25 @@ const AdminSellersPage: React.FC = () => {
 				switch (seller.status) {
 					case "active":
 						statusColor =
-							"bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
+							"bg-green-100 text-green-800";
 						statusText = "Activo";
 						StatusIcon = CheckCircle;
 						break;
 					case "pending":
 						statusColor =
-							"bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
+							"bg-yellow-100 text-yellow-800";
 						statusText = "Pendiente";
 						StatusIcon = Clock;
 						break;
 					case "suspended":
 						statusColor =
-							"bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
+							"bg-red-100 text-red-800";
 						statusText = "Suspendido";
 						StatusIcon = Ban;
 						break;
 					case "inactive":
 						statusColor =
-							"bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200";
+							"bg-gray-100 text-gray-800";
 						statusText = "Inactivo";
 						StatusIcon = Eye;
 						break;
@@ -425,22 +425,22 @@ const AdminSellersPage: React.FC = () => {
 				switch (seller.verificationLevel) {
 					case "none":
 						verificationColor =
-							"bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300";
+							"bg-gray-100 text-gray-800";
 						verificationText = "Sin verificar";
 						break;
 					case "basic":
 						verificationColor =
-							"bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
+							"bg-blue-100 text-blue-800";
 						verificationText = "Básica";
 						break;
 					case "verified":
 						verificationColor =
-							"bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
+							"bg-green-100 text-green-800";
 						verificationText = "Verificada";
 						break;
 					case "premium":
 						verificationColor =
-							"bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200";
+							"bg-purple-100 text-purple-800";
 						verificationText = "Premium";
 						break;
 				}
@@ -464,12 +464,12 @@ const AdminSellersPage: React.FC = () => {
 						<>
 							<Star className="h-4 w-4 text-yellow-500 mr-1" />
 							<span>{(seller.averageRating ?? 0).toFixed(1)}</span>
-							<span className="text-xs text-gray-500 dark:text-gray-400 ml-1">
+							<span className="text-xs text-gray-500 ml-1">
 								({seller.totalRatings ?? 0})
 							</span>
 						</>
 					) : (
-						<span className="text-xs text-gray-500 dark:text-gray-400">
+						<span className="text-xs text-gray-500">
 							Sin valoraciones
 						</span>
 					)}
@@ -493,7 +493,7 @@ const AdminSellersPage: React.FC = () => {
 			render: (seller: Seller) => (
 				<Link
 					to={`/admin/products?sellerId=${seller.id}`}
-					className="text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300 underline flex items-center"
+					className="text-primary-600 hover:text-primary-800 underline flex items-center"
 				>
 					<Package className="h-4 w-4 mr-1" />
 					Ver productos
@@ -519,8 +519,8 @@ const AdminSellersPage: React.FC = () => {
 						onClick={() => toggleSellerStatus(seller.id)}
 						className={`p-1 rounded-md ${
 							seller.status === "active"
-								? "text-red-600 hover:bg-red-100 dark:text-red-400 dark:hover:bg-red-900"
-								: "text-green-600 hover:bg-green-100 dark:text-green-400 dark:hover:bg-green-900"
+								? "text-red-600 hover:bg-red-100"
+								: "text-green-600 hover:bg-green-100"
 						}`}
 						title={
 							seller.status === "active"
@@ -541,7 +541,7 @@ const AdminSellersPage: React.FC = () => {
 					{seller.status === "pending" && (
 						<button
 							onClick={() => approveSeller(seller.id)}
-							className="p-1 text-green-600 hover:bg-green-100 rounded-md dark:text-green-400 dark:hover:bg-green-900"
+							className="p-1 text-green-600 hover:bg-green-100 rounded-md"
 							title="Aprobar vendedor"
 						>
 							<CheckCircle size={18} />
@@ -553,8 +553,8 @@ const AdminSellersPage: React.FC = () => {
 						onClick={() => toggleFeatured(seller.id)}
 						className={`p-1 rounded-md ${
 							seller.isFeatured
-								? "text-yellow-600 hover:bg-yellow-100 dark:text-yellow-400 dark:hover:bg-yellow-900"
-								: "text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+								? "text-yellow-600 hover:bg-yellow-100"
+								: "text-gray-600 hover:bg-gray-100"
 						}`}
 						title={seller.isFeatured ? "Quitar destacado" : "Destacar vendedor"}
 					>
@@ -564,36 +564,36 @@ const AdminSellersPage: React.FC = () => {
 					{/* Botones para niveles de verificación (menú desplegable en una app real) */}
 					<div className="relative group">
 						<button
-							className="p-1 text-blue-600 hover:bg-blue-100 rounded-md dark:text-blue-400 dark:hover:bg-blue-900"
+							className="p-1 text-blue-600 hover:bg-blue-100 rounded-md"
 							title="Actualizar nivel de verificación"
 						>
 							<ShieldCheck size={18} />
 						</button>
 
 						{/* En una app real, esto sería un menú desplegable */}
-						<div className="hidden group-hover:block absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-10 border border-gray-200 dark:border-gray-700">
+						<div className="hidden group-hover:block absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200">
 							<div className="py-1">
 								<button
 									onClick={() => updateVerificationLevel(seller.id, "none")}
-									className="block w-full px-4 py-2 text-sm text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+									className="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100"
 								>
 									Sin verificar
 								</button>
 								<button
 									onClick={() => updateVerificationLevel(seller.id, "basic")}
-									className="block w-full px-4 py-2 text-sm text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+									className="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100"
 								>
 									Verificación básica
 								</button>
 								<button
 									onClick={() => updateVerificationLevel(seller.id, "verified")}
-									className="block w-full px-4 py-2 text-sm text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+									className="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100"
 								>
 									Verificado
 								</button>
 								<button
 									onClick={() => updateVerificationLevel(seller.id, "premium")}
-									className="block w-full px-4 py-2 text-sm text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+									className="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100"
 								>
 									Verificación premium
 								</button>
@@ -604,7 +604,7 @@ const AdminSellersPage: React.FC = () => {
 					{/* Botón para editar vendedor */}
 					<button
 						onClick={() => handleEditSeller(seller)}
-						className="p-1 text-blue-600 hover:bg-blue-100 rounded-md dark:text-blue-400 dark:hover:bg-blue-900"
+						className="p-1 text-blue-600 hover:bg-blue-100 rounded-md"
 						title="Editar vendedor"
 					>
 						<svg
@@ -626,7 +626,7 @@ const AdminSellersPage: React.FC = () => {
 					{/* Ver detalles del vendedor */}
 					<Link
 						to={`/admin/sellers/${seller.id}`}
-						className="p-1 text-primary-600 hover:bg-primary-100 rounded-md dark:text-primary-400 dark:hover:bg-primary-900"
+						className="p-1 text-primary-600 hover:bg-primary-100 rounded-md"
 						title="Ver detalles"
 					>
 						<Eye size={18} />
@@ -639,7 +639,7 @@ const AdminSellersPage: React.FC = () => {
 	return (
 		<div className="space-y-6">
 			<div className="flex justify-between items-center">
-				<h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+				<h1 className="text-2xl font-bold text-gray-900">
 					Gestión de Vendedores
 				</h1>
 				<div className="flex space-x-2">
@@ -672,13 +672,13 @@ const AdminSellersPage: React.FC = () => {
 			)}
 
 			{/* Filtros */}
-			<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+			<div className="bg-white rounded-lg shadow-sm p-4">
 				<div className="flex flex-col md:flex-row gap-4">
 					{/* Filtro de Estado */}
 					<div className="flex items-center space-x-2">
-						<Filter className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+						<Filter className="h-5 w-5 text-gray-500" />
 						<select
-							className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+							className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 							value={statusFilter}
 							onChange={(e) => setStatusFilter(e.target.value)}
 						>
@@ -693,7 +693,7 @@ const AdminSellersPage: React.FC = () => {
 					{/* Filtro de Nivel de Verificación */}
 					<div className="flex items-center space-x-2">
 						<select
-							className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+							className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 							value={verificationFilter}
 							onChange={(e) => setVerificationFilter(e.target.value)}
 						>

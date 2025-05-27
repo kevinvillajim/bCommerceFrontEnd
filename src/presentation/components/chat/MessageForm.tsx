@@ -121,8 +121,8 @@ const MessageForm: React.FC<MessageFormProps> = ({
 	// Si el chat está deshabilitado, mostrar mensaje informativo
 	if (isDisabled) {
 		return (
-			<div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700">
-				<p className="text-center text-gray-500 dark:text-gray-400">
+			<div className="p-4 border-t border-gray-200 bg-gray-50">
+				<p className="text-center text-gray-500">
 					{disabledText}
 				</p>
 			</div>
@@ -130,9 +130,9 @@ const MessageForm: React.FC<MessageFormProps> = ({
 	}
 
 	return (
-		<div className="p-4 border-t border-gray-200 dark:border-gray-700">
+		<div className="p-4 border-t border-gray-200">
 			{error && (
-				<div className="mb-2 p-2 bg-red-50 text-red-600 text-sm rounded-md dark:bg-red-900/20 dark:text-red-400">
+				<div className="mb-2 p-2 bg-red-50 text-red-600 text-sm rounded-md">
 					{error}
 				</div>
 			)}
@@ -145,12 +145,12 @@ const MessageForm: React.FC<MessageFormProps> = ({
 						onChange={autoAdjustHeight}
 						onKeyDown={handleKeyDown}
 						placeholder={placeholder}
-						className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white resize-none"
+						className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
 						rows={1}
 						style={{minHeight: "40px", maxHeight: "150px"}}
 						disabled={isLoading || localLoading}
 					/>
-					<p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+					<p className="text-xs text-gray-500 mt-1">
 						Presiona Ctrl+Enter para enviar
 					</p>
 				</div>
@@ -159,7 +159,7 @@ const MessageForm: React.FC<MessageFormProps> = ({
 					className={`h-10 px-4 rounded-lg flex items-center justify-center transition-colors ${
 						message.trim() && !isLoading && !localLoading
 							? "bg-primary-600 text-white hover:bg-primary-700"
-							: "bg-gray-300 text-gray-600 dark:bg-gray-600 dark:text-gray-300 cursor-not-allowed"
+							: "bg-gray-300 text-gray-600 cursor-not-allowed"
 					}`}
 					disabled={!message.trim() || isLoading || localLoading}
 				>

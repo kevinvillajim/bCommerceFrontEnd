@@ -83,16 +83,16 @@ const ShippingFormModal: React.FC<ShippingFormModalProps> = ({
 
 			{/* Modal */}
 			<div className="flex items-center justify-center min-h-screen p-4">
-				<div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full">
+				<div className="relative bg-white rounded-lg shadow-xl max-w-md w-full">
 					{/* Cabecera */}
-					<div className="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
-						<h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center">
+					<div className="flex justify-between items-center p-6 border-b border-gray-200">
+						<h2 className="text-xl font-semibold text-gray-900 flex items-center">
 							<Package className="h-5 w-5 mr-2" />
 							Información de Envío
 						</h2>
 						<button
 							onClick={onClose}
-							className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+							className="text-gray-400 hover:text-gray-500"
 							disabled={isLoading}
 						>
 							<X size={24} />
@@ -104,31 +104,31 @@ const ShippingFormModal: React.FC<ShippingFormModalProps> = ({
 						<div className="p-6 space-y-4">
 							{/* Orden ID (no editable) */}
 							<div>
-								<label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+								<label className="block text-sm font-medium text-gray-700">
 									ID de Orden
 								</label>
 								<input
 									type="text"
 									value={orderId}
 									disabled
-									className="mt-1 block w-full px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300"
+									className="mt-1 block w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md text-gray-700"
 								/>
 							</div>
 
 							{/* Número de Tracking */}
 							<div>
-								<label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+								<label className="block text-sm font-medium text-gray-700">
 									Número de Seguimiento <span className="text-red-500">*</span>
 								</label>
 								<input
 									type="text"
 									value={trackingNumber}
 									onChange={(e) => setTrackingNumber(e.target.value)}
-									className={`mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-800 border ${
+									className={`mt-1 block w-full px-3 py-2 bg-white border ${
 										errors.trackingNumber
 											? "border-red-500"
-											: "border-gray-300 dark:border-gray-600"
-									} rounded-md text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500`}
+											: "border-gray-300"
+									} rounded-md text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500`}
 									placeholder="Ej. TRA123456789"
 									disabled={isLoading}
 								/>
@@ -141,17 +141,17 @@ const ShippingFormModal: React.FC<ShippingFormModalProps> = ({
 
 							{/* Transportista */}
 							<div>
-								<label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+								<label className="block text-sm font-medium text-gray-700">
 									Transportista <span className="text-red-500">*</span>
 								</label>
 								<select
 									value={shippingCompany}
 									onChange={(e) => setShippingCompany(e.target.value)}
-									className={`mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-800 border ${
+									className={`mt-1 block w-full px-3 py-2 bg-white border ${
 										errors.shippingCompany
 											? "border-red-500"
-											: "border-gray-300 dark:border-gray-600"
-									} rounded-md text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500`}
+											: "border-gray-300"
+									} rounded-md text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500`}
 									disabled={isLoading}
 								>
 									<option value="">Seleccionar transportista</option>
@@ -173,18 +173,18 @@ const ShippingFormModal: React.FC<ShippingFormModalProps> = ({
 
 							{/* Fecha Estimada de Entrega */}
 							<div>
-								<label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+								<label className="block text-sm font-medium text-gray-700">
 									Fecha Estimada de Entrega
 								</label>
 								<input
 									type="date"
 									value={estimatedDelivery}
 									onChange={(e) => setEstimatedDelivery(e.target.value)}
-									className={`mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-800 border ${
+									className={`mt-1 block w-full px-3 py-2 bg-white border ${
 										errors.estimatedDelivery
 											? "border-red-500"
-											: "border-gray-300 dark:border-gray-600"
-									} rounded-md text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500`}
+											: "border-gray-300"
+									} rounded-md text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500`}
 									disabled={isLoading}
 								/>
 								{errors.estimatedDelivery && (
@@ -196,13 +196,13 @@ const ShippingFormModal: React.FC<ShippingFormModalProps> = ({
 
 							{/* Notas */}
 							<div>
-								<label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+								<label className="block text-sm font-medium text-gray-700">
 									Notas
 								</label>
 								<textarea
 									value={notes}
 									onChange={(e) => setNotes(e.target.value)}
-									className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+									className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
 									rows={3}
 									placeholder="Instrucciones especiales de entrega..."
 									disabled={isLoading}
@@ -211,11 +211,11 @@ const ShippingFormModal: React.FC<ShippingFormModalProps> = ({
 						</div>
 
 						{/* Pie del modal con botones */}
-						<div className="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3">
+						<div className="p-6 border-t border-gray-200 flex justify-end gap-3">
 							<button
 								type="button"
 								onClick={onClose}
-								className="px-4 py-2 bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500"
+								className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500"
 								disabled={isLoading}
 							>
 								Cancelar

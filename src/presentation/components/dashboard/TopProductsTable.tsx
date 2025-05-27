@@ -23,7 +23,7 @@ const getTopProductColumns = (): Column<Product>[] => [
 		render: (value, row) => (
 			<Link
 				to={`/seller/products/edit/${row.id}`}
-				className="text-primary-600 dark:text-primary-400 hover:underline font-medium"
+				className="text-primary-600 hover:underline font-medium"
 			>
 				{value}
 			</Link>

@@ -151,7 +151,7 @@ const SellerProductsPage: React.FC = () => {
 	return (
 		<div className="space-y-6">
 			<div className="flex justify-between items-center">
-				<h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+				<h1 className="text-2xl font-bold text-gray-900">
 					Mis Productos
 				</h1>
 				<Link
@@ -164,14 +164,14 @@ const SellerProductsPage: React.FC = () => {
 			</div>
 
 			{/* Filters */}
-			<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+			<div className="bg-white rounded-lg shadow-sm p-4">
 				<div className="flex flex-col md:flex-row gap-4">
 					{/* Search */}
 					<div className="relative flex-grow">
 						<input
 							type="text"
 							placeholder="Buscar productos..."
-							className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+							className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
 							value={searchTerm}
 							onChange={(e) => setSearchTerm(e.target.value)}
 						/>
@@ -180,9 +180,9 @@ const SellerProductsPage: React.FC = () => {
 
 					{/* Status Filter */}
 					<div className="flex items-center space-x-2">
-						<Filter className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+						<Filter className="h-5 w-5 text-gray-500" />
 						<select
-							className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+							className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 							value={statusFilter}
 							onChange={(e) => setStatusFilter(e.target.value)}
 						>
@@ -196,18 +196,18 @@ const SellerProductsPage: React.FC = () => {
 			</div>
 
 			{/* Products Table */}
-			<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
+			<div className="bg-white rounded-lg shadow-sm overflow-hidden">
 				{loading ? (
 					<div className="p-8 flex justify-center">
 						<div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
 					</div>
 				) : error ? (
 					<div className="p-8 text-center">
-						<AlertCircle className="h-12 w-12 mx-auto text-red-500 dark:text-red-400 mb-4" />
-						<h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+						<AlertCircle className="h-12 w-12 mx-auto text-red-500 mb-4" />
+						<h3 className="text-lg font-medium text-gray-900 mb-2">
 							Error al cargar productos
 						</h3>
-						<p className="text-gray-500 dark:text-gray-400 mb-4">{error}</p>
+						<p className="text-gray-500 mb-4">{error}</p>
 						<button
 							onClick={() => fetchSellerProducts()}
 							className="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
@@ -217,11 +217,11 @@ const SellerProductsPage: React.FC = () => {
 					</div>
 				) : filteredProducts.length === 0 ? (
 					<div className="p-8 text-center">
-						<Package className="h-12 w-12 mx-auto text-gray-400 dark:text-gray-600 mb-4" />
-						<h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+						<Package className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+						<h3 className="text-lg font-medium text-gray-900 mb-2">
 							No se encontraron productos
 						</h3>
-						<p className="text-gray-500 dark:text-gray-400 mb-4">
+						<p className="text-gray-500 mb-4">
 							{searchTerm || statusFilter !== "all"
 								? "Intenta ajustar tu búsqueda o filtro para encontrar lo que buscas."
 								: "Comienza agregando tu primer producto."}
@@ -236,87 +236,87 @@ const SellerProductsPage: React.FC = () => {
 					</div>
 				) : (
 					<div className="overflow-x-auto">
-						<table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-							<thead className="bg-gray-50 dark:bg-gray-700">
+						<table className="min-w-full divide-y divide-gray-200">
+							<thead className="bg-gray-50">
 								<tr>
 									<th
 										scope="col"
-										className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+										className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
 									>
 										Producto
 									</th>
 									<th
 										scope="col"
-										className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+										className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
 									>
 										Categoría
 									</th>
 									<th
 										scope="col"
-										className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+										className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
 									>
 										Precio
 									</th>
 									<th
 										scope="col"
-										className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+										className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
 									>
 										Stock
 									</th>
 									<th
 										scope="col"
-										className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+										className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
 									>
 										Estado
 									</th>
 									<th
 										scope="col"
-										className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+										className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
 									>
 										Creado
 									</th>
 									<th
 										scope="col"
-										className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+										className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
 									>
 										Acciones
 									</th>
 								</tr>
 							</thead>
-							<tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+							<tbody className="bg-white divide-y divide-gray-200">
 								{filteredProducts.map((product) => (
 									<tr
 										key={product.id}
-										className="hover:bg-gray-50 dark:hover:bg-gray-700"
+										className="hover:bg-gray-50"
 									>
 										<td className="px-6 py-4 whitespace-nowrap">
 											<div className="flex items-center">
-												<div className="flex-shrink-0 h-10 w-10 bg-gray-100 dark:bg-gray-700 rounded-md flex items-center justify-center">
-													<Package className="h-6 w-6 text-gray-500 dark:text-gray-400" />
+												<div className="flex-shrink-0 h-10 w-10 bg-gray-100 rounded-md flex items-center justify-center">
+													<Package className="h-6 w-6 text-gray-500" />
 												</div>
 												<div className="ml-4">
-													<div className="text-sm font-medium text-gray-900 dark:text-white">
+													<div className="text-sm font-medium text-gray-900">
 														{product.name}
 													</div>
-													<div className="text-sm text-gray-500 dark:text-gray-400">
+													<div className="text-sm text-gray-500">
 														ID: {product.id}
 													</div>
 												</div>
 											</div>
 										</td>
 										<td className="px-6 py-4 whitespace-nowrap">
-											<div className="text-sm text-gray-900 dark:text-white">
+											<div className="text-sm text-gray-900">
 												{product.category || "Sin categoría"}
 											</div>
 										</td>
 										<td className="px-6 py-4 whitespace-nowrap">
-											<div className="text-sm text-gray-900 dark:text-white">
+											<div className="text-sm text-gray-900">
 												{formatCurrency(product.price)}
 											</div>
 										</td>
 										<td className="px-6 py-4 whitespace-nowrap">
 											<div
-												className={`text-sm ${product.stock > 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
+												className={`text-sm ${product.stock > 0 ? "text-green-600" : "text-red-600"}`}
 											>
 												{product.stock > 0 ? product.stock : "Sin stock"}
 											</div>
@@ -325,10 +325,10 @@ const SellerProductsPage: React.FC = () => {
 											<span
 												className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
 													product.status === "active"
-														? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+														? "bg-green-100 text-green-800"
 														: product.status === "inactive"
-															? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
-															: "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200"
+															? "bg-yellow-100 text-yellow-800"
+															: "bg-gray-100 text-gray-800"
 												}`}
 											>
 												{product.status === "active" && "Activo"}
@@ -336,7 +336,7 @@ const SellerProductsPage: React.FC = () => {
 												{product.status === "draft" && "Borrador"}
 											</span>
 										</td>
-										<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+										<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
 											{product.createdAt}
 										</td>
 										<td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
@@ -351,8 +351,8 @@ const SellerProductsPage: React.FC = () => {
 														isTogglingStatus === product.id
 															? "opacity-50 cursor-not-allowed"
 															: product.status === "active"
-																? "text-yellow-600 hover:bg-yellow-100 dark:text-yellow-400 dark:hover:bg-yellow-900"
-																: "text-green-600 hover:bg-green-100 dark:text-green-400 dark:hover:bg-green-900"
+																? "text-yellow-600 hover:bg-yellow-100"
+																: "text-green-600 hover:bg-green-100"
 													}`}
 													title={
 														product.status === "active"
@@ -372,7 +372,7 @@ const SellerProductsPage: React.FC = () => {
 												{/* Botón para editar */}
 												<button
 													onClick={() => handleEdit(product.id)}
-													className="p-1 text-blue-600 hover:bg-blue-100 rounded-md dark:text-blue-400 dark:hover:bg-blue-900"
+													className="p-1 text-blue-600 hover:bg-blue-100 rounded-md"
 													title="Editar producto"
 												>
 													<Edit size={18} />
@@ -382,7 +382,7 @@ const SellerProductsPage: React.FC = () => {
 												<button
 													onClick={() => handleDelete(product.id)}
 													disabled={isDeleting === product.id}
-													className={`p-1 text-red-600 hover:bg-red-100 rounded-md dark:text-red-400 dark:hover:bg-red-900 ${
+													className={`p-1 text-red-600 hover:bg-red-100 rounded-md ${
 														isDeleting === product.id
 															? "opacity-50 cursor-not-allowed"
 															: ""

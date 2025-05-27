@@ -18,7 +18,7 @@ const getOrderColumns = (): Column<Order>[] => [
     header: 'ID Pedido',
     showLabelInCompact: false,
     render: (value) => (
-      <Link to={`/admin/orders/${value}`} className="text-primary-600 dark:text-primary-400 hover:underline font-medium">
+      <Link to={`/admin/orders/${value}`} className="text-primary-600 hover:underline font-medium">
         #{value}
       </Link>
     )
@@ -33,7 +33,7 @@ const getOrderColumns = (): Column<Order>[] => [
     header: 'Cliente',
     showLabelInCompact: true,
     render: (value) => (
-      <span className="text-gray-900 dark:text-white">{value}</span>
+      <span className="text-gray-900">{value}</span>
     )
   },
   {
@@ -47,14 +47,14 @@ const getOrderColumns = (): Column<Order>[] => [
     header: 'Estado',
     showLabelInCompact: true,
     render: (value) => {
-      let bgColorClass = 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+      let bgColorClass = 'bg-yellow-100 text-yellow-800';
       let displayText = 'En Proceso';
       
       if (value === 'Completed') {
-        bgColorClass = 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+        bgColorClass = 'bg-green-100 text-green-800';
         displayText = 'Completado';
       } else if (value === 'Shipped') {
-        bgColorClass = 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+        bgColorClass = 'bg-blue-100 text-blue-800';
         displayText = 'Enviado';
       }
       

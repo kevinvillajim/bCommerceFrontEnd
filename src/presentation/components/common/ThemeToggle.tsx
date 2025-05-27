@@ -15,7 +15,7 @@ const ThemeToggle: React.FC<ThemeToggleProps> = ({ className = '' }) => {
   return (
     <button
       onClick={toggleTheme}
-      className={`cursor-pointer text-gray-700 transition-colors dark:text-gray-300 ${className}`}
+      className={`cursor-pointer text-gray-500 transition-colors ${className}`}
       aria-label={theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
       title={theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
     >

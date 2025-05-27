@@ -24,16 +24,16 @@ const cards = [
 	  value: formatCurrency(12580.45),
 	  change: 12.5,
 	  icon: DollarSign,
-	  iconBgColor: "bg-primary-50 dark:bg-primary-900",
-	  iconColor: "text-primary-600 dark:text-primary-400",
+	  iconBgColor: "bg-primary-50",
+	  iconColor: "text-primary-600",
 	},
 	{
 	  title: "Pedidos Totales",
 	  value: 157,
 	  change: 8.2,
 	  icon: ShoppingBag,
-	  iconBgColor: "bg-orange-50 dark:bg-orange-900",
-	  iconColor: "text-orange-600 dark:text-orange-400",
+	  iconBgColor: "bg-orange-50",
+	  iconColor: "text-orange-600",
 	},
 	{
 	  title: "Productos Activos",
@@ -41,8 +41,8 @@ const cards = [
 	  change: 0,
 	  text: `42 productos activos`,
 	  icon: Package,
-	  iconBgColor: "bg-blue-50 dark:bg-blue-900",
-	  iconColor: "text-blue-600 dark:text-blue-400",
+	  iconBgColor: "bg-blue-50",
+	  iconColor: "text-blue-600",
 	},
 	{
 	  title: "Promedio de Valoraciones",
@@ -52,8 +52,8 @@ const cards = [
 		<RatingStars rating={4.7} size={15}/>
 	  ),
 	  icon: Star,
-	  iconBgColor: "bg-yellow-50 dark:bg-yellow-900",
-	  iconColor: "text-yellow-600 dark:text-yellow-400",
+	  iconBgColor: "bg-yellow-50",
+	  iconColor: "text-yellow-600",
 	},
 ];
   
@@ -62,8 +62,8 @@ const pendingOrders = 12;
   const pendingCardItems = [
 		{
 			icon: ShoppingBag,
-			iconBgColor: "bg-orange-50 dark:bg-orange-900",
-			iconColor: "text-orange-600 dark:text-orange-400",
+			iconBgColor: "bg-orange-50",
+			iconColor: "text-orange-600",
 			title: "Pedidos Pendientes",
 			description:
 				`Tienes ${pendingOrders} pedidos esperando ser procesados.`,
@@ -72,8 +72,8 @@ const pendingOrders = 12;
 		},
 		{
 			icon: Package,
-			iconBgColor: "bg-blue-50 dark:bg-blue-900",
-			iconColor: "text-blue-600 dark:text-blue-400",
+			iconBgColor: "bg-blue-50",
+			iconColor: "text-blue-600",
 			title: "Añadir Nuevo Producto",
 			description:
 				"Aumenta tu catálogo añadiendo nuevos productos a tu tienda.",
@@ -82,8 +82,8 @@ const pendingOrders = 12;
 		},
 		{
 			icon: TrendingUp,
-			iconBgColor: "bg-green-50 dark:bg-green-900",
-			iconColor: "text-green-600 dark:text-green-400",
+			iconBgColor: "bg-green-50",
+			iconColor: "text-green-600",
 			title: "Informes de Ventas",
 			description:
 				"Consulta informes detallados de ventas y análisis para tu tienda.",
@@ -155,7 +155,7 @@ const SellerDashboard: React.FC = () => {
 
 	return (
 		<div className="space-y-6">
-			<h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+			<h1 className="text-2xl font-bold text-gray-900">
 				Panel del Vendedor
 			</h1>
 

@@ -273,7 +273,7 @@ const AdminOrderDetailPage: React.FC = () => {
 				{/* Información de la orden */}
 				<div className="md:col-span-2 space-y-6">
 					{/* Estado y fecha */}
-					<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+					<div className="bg-white rounded-lg shadow-sm p-4">
 						<div className="flex justify-between items-center mb-4">
 							<h2 className="text-lg font-semibold">Información General</h2>
 							<OrderStatusBadge status={orderDetail.status} />
@@ -281,41 +281,41 @@ const AdminOrderDetailPage: React.FC = () => {
 
 						<div className="grid grid-cols-2 gap-4">
 							<div className="space-y-2">
-								<div className="flex items-center text-gray-600 dark:text-gray-400">
+								<div className="flex items-center text-gray-600">
 									<Calendar className="w-4 h-4 mr-2" />
 									<span className="text-sm">Fecha del pedido:</span>
 								</div>
-								<p className="text-gray-900 dark:text-white">
+								<p className="text-gray-900">
 									{formatDate(orderDetail.date || orderDetail.createdAt)}
 								</p>
 							</div>
 
 							<div className="space-y-2">
-								<div className="flex items-center text-gray-600 dark:text-gray-400">
+								<div className="flex items-center text-gray-600">
 									<Clock className="w-4 h-4 mr-2" />
 									<span className="text-sm">Última actualización:</span>
 								</div>
-								<p className="text-gray-900 dark:text-white">
+								<p className="text-gray-900">
 									{formatDate(orderDetail.updatedAt)}
 								</p>
 							</div>
 
 							<div className="space-y-2">
-								<div className="flex items-center text-gray-600 dark:text-gray-400">
+								<div className="flex items-center text-gray-600">
 									<CreditCard className="w-4 h-4 mr-2" />
 									<span className="text-sm">Método de pago:</span>
 								</div>
-								<p className="text-gray-900 dark:text-white">
+								<p className="text-gray-900">
 									{orderDetail.paymentMethod || "No especificado"}
 								</p>
 							</div>
 
 							<div className="space-y-2">
-								<div className="flex items-center text-gray-600 dark:text-gray-400">
+								<div className="flex items-center text-gray-600">
 									<CreditCard className="w-4 h-4 mr-2" />
 									<span className="text-sm">Estado de pago:</span>
 								</div>
-								<p className="text-gray-900 dark:text-white">
+								<p className="text-gray-900">
 									<OrderStatusBadge
 										status={orderDetail.paymentStatus}
 										type="payment"
@@ -326,7 +326,7 @@ const AdminOrderDetailPage: React.FC = () => {
 					</div>
 
 					{/* Productos */}
-					<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+					<div className="bg-white rounded-lg shadow-sm p-4">
 						<h2 className="text-lg font-semibold mb-4">Productos</h2>
 
 						<div className="space-y-4">
@@ -334,9 +334,9 @@ const AdminOrderDetailPage: React.FC = () => {
 								orderDetail.items.map((item: any) => (
 									<div
 										key={item.id}
-										className="flex border-b border-gray-200 dark:border-gray-700 pb-4 last:border-0 last:pb-0"
+										className="flex border-b border-gray-200 pb-4 last:border-0 last:pb-0"
 									>
-										<div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-md overflow-hidden flex-shrink-0">
+										<div className="w-16 h-16 bg-gray-100 rounded-md overflow-hidden flex-shrink-0">
 											{item.image ? (
 												<img
 													src={item.image}
@@ -353,18 +353,18 @@ const AdminOrderDetailPage: React.FC = () => {
 										<div className="ml-4 flex-grow">
 											<div className="flex justify-between">
 												<div>
-													<h3 className="text-sm font-medium text-gray-900 dark:text-white">
+													<h3 className="text-sm font-medium text-gray-900">
 														{item.name}
 													</h3>
-													<p className="text-sm text-gray-500 dark:text-gray-400">
+													<p className="text-sm text-gray-500">
 														ID: {item.productId}
 													</p>
 												</div>
 												<div className="text-right">
-													<p className="text-sm font-medium text-gray-900 dark:text-white">
+													<p className="text-sm font-medium text-gray-900">
 														{formatCurrency(item.price)} x {item.quantity}
 													</p>
-													<p className="text-sm font-bold text-gray-900 dark:text-white">
+													<p className="text-sm font-bold text-gray-900">
 														{formatCurrency(item.subtotal)}
 													</p>
 												</div>
@@ -375,12 +375,12 @@ const AdminOrderDetailPage: React.FC = () => {
 						</div>
 
 						{/* Resumen de totales */}
-						<div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+						<div className="mt-4 pt-4 border-t border-gray-200">
 							<div className="flex justify-between text-sm">
-								<span className="text-gray-600 dark:text-gray-400">
+								<span className="text-gray-600">
 									Subtotal:
 								</span>
-								<span className="font-medium text-gray-900 dark:text-white">
+								<span className="font-medium text-gray-900">
 									{formatCurrency(
 										orderDetail.items.reduce(
 											(sum: number, item: any) => sum + (item.subtotal || 0),
@@ -390,10 +390,10 @@ const AdminOrderDetailPage: React.FC = () => {
 								</span>
 							</div>
 							<div className="flex justify-between text-sm mt-2">
-								<span className="text-gray-600 dark:text-gray-400">
+								<span className="text-gray-600">
 									IVA (15%):
 								</span>
-								<span className="font-medium text-gray-900 dark:text-white">
+								<span className="font-medium text-gray-900">
 									{formatCurrency(
 										orderDetail.items.reduce(
 											(sum: number, item: any) => sum + (item.subtotal || 0),
@@ -411,7 +411,7 @@ const AdminOrderDetailPage: React.FC = () => {
 
 					{/* Historial de la orden (si hay disponible) */}
 					{orderDetail.history && orderDetail.history.length > 0 && (
-						<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+						<div className="bg-white rounded-lg shadow-sm p-4">
 							<h2 className="text-lg font-semibold mb-4">
 								Historial de la Orden
 							</h2>
@@ -432,7 +432,7 @@ const AdminOrderDetailPage: React.FC = () => {
 										</div>
 
 										<div className="ml-3">
-											<p className="text-sm font-medium text-gray-900 dark:text-white">
+											<p className="text-sm font-medium text-gray-900">
 												{event.status === "created" && "Orden creada"}
 												{event.status === "paid" && "Pago realizado"}
 												{event.status === "processing" && "Procesando orden"}
@@ -441,11 +441,11 @@ const AdminOrderDetailPage: React.FC = () => {
 												{event.status === "completed" && "Orden completada"}
 												{event.status === "cancelled" && "Orden cancelada"}
 											</p>
-											<p className="text-xs text-gray-500 dark:text-gray-400">
+											<p className="text-xs text-gray-500">
 												{formatDate(event.timestamp)}
 											</p>
 											{event.description && (
-												<p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+												<p className="text-sm text-gray-600 mt-1">
 													{event.description}
 												</p>
 											)}
@@ -460,31 +460,31 @@ const AdminOrderDetailPage: React.FC = () => {
 				{/* Sidebar con información del cliente y envío */}
 				<div className="space-y-6">
 					{/* Cliente */}
-					<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+					<div className="bg-white rounded-lg shadow-sm p-4">
 						<h2 className="text-lg font-semibold mb-4">Cliente</h2>
 
 						<div className="flex items-center mb-4">
-							<div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center">
-								<User className="w-6 h-6 text-gray-500 dark:text-gray-400" />
+							<div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
+								<User className="w-6 h-6 text-gray-500" />
 							</div>
 							<div className="ml-3">
-								<p className="text-sm font-medium text-gray-900 dark:text-white">
+								<p className="text-sm font-medium text-gray-900">
 									{orderDetail.customer?.name || "Cliente"}
 								</p>
-								<p className="text-xs text-gray-500 dark:text-gray-400">
+								<p className="text-xs text-gray-500">
 									ID: {orderDetail.customer?.id || orderDetail.userId}
 								</p>
 							</div>
 						</div>
 
 						<div className="space-y-2 text-sm">
-							<p className="text-gray-600 dark:text-gray-400">
+							<p className="text-gray-600">
 								<strong>Email:</strong>{" "}
 								{orderDetail.customer?.email || "No disponible"}
 							</p>
 
 							{orderDetail.customer?.phone && (
-								<p className="text-gray-600 dark:text-gray-400">
+								<p className="text-gray-600">
 									<strong>Teléfono:</strong> {orderDetail.customer.phone}
 								</p>
 							)}
@@ -492,18 +492,18 @@ const AdminOrderDetailPage: React.FC = () => {
 					</div>
 
 					{/* Vendedor */}
-					<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+					<div className="bg-white rounded-lg shadow-sm p-4">
 						<h2 className="text-lg font-semibold mb-4">Vendedor</h2>
 
 						<div className="space-y-2 text-sm">
-							<p className="text-gray-600 dark:text-gray-400">
+							<p className="text-gray-600">
 								<strong>ID:</strong>{" "}
 								{orderDetail.seller?.id ||
 									orderDetail.sellerId ||
 									"No disponible"}
 							</p>
 
-							<p className="text-gray-600 dark:text-gray-400">
+							<p className="text-gray-600">
 								<strong>Nombre:</strong>{" "}
 								{orderDetail.seller?.name || "Vendedor"}
 							</p>
@@ -521,7 +521,7 @@ const AdminOrderDetailPage: React.FC = () => {
 					</div>
 
 					{/* Información de envío */}
-					<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+					<div className="bg-white rounded-lg shadow-sm p-4">
 						<div className="flex justify-between items-center mb-4">
 							<h2 className="text-lg font-semibold">Información de Envío</h2>
 							<button
@@ -535,7 +535,7 @@ const AdminOrderDetailPage: React.FC = () => {
 
 						{orderDetail.shippingData ? (
 							<div className="space-y-2 text-sm">
-								<p className="text-gray-600 dark:text-gray-400 flex items-start">
+								<p className="text-gray-600 flex items-start">
 									<MapPin className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
 									<span>
 										{orderDetail.shippingData.address},<br />
@@ -548,38 +548,38 @@ const AdminOrderDetailPage: React.FC = () => {
 								</p>
 
 								{orderDetail.shippingData.phone && (
-									<p className="text-gray-600 dark:text-gray-400 mt-2">
+									<p className="text-gray-600 mt-2">
 										<strong>Teléfono:</strong> {orderDetail.shippingData.phone}
 									</p>
 								)}
 
 								{orderDetail.shippingData.tracking_number && (
-									<div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-										<p className="text-gray-600 dark:text-gray-400">
+									<div className="mt-3 pt-3 border-t border-gray-200">
+										<p className="text-gray-600">
 											<strong>Número de seguimiento:</strong>
 										</p>
-										<p className="font-mono bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded mt-1">
+										<p className="font-mono bg-gray-100 px-2 py-1 rounded mt-1">
 											{orderDetail.shippingData.tracking_number}
 										</p>
 									</div>
 								)}
 
 								{orderDetail.shippingData.shipping_company && (
-									<p className="text-gray-600 dark:text-gray-400 mt-2">
+									<p className="text-gray-600 mt-2">
 										<strong>Transportista:</strong>{" "}
 										{orderDetail.shippingData.shipping_company}
 									</p>
 								)}
 
 								{orderDetail.shippingData.estimated_delivery && (
-									<p className="text-gray-600 dark:text-gray-400 mt-2">
+									<p className="text-gray-600 mt-2">
 										<strong>Entrega estimada:</strong>{" "}
 										{formatDate(orderDetail.shippingData.estimated_delivery)}
 									</p>
 								)}
 							</div>
 						) : (
-							<div className="text-gray-500 dark:text-gray-400 text-sm">
+							<div className="text-gray-500 text-sm">
 								No hay información de envío disponible.
 							</div>
 						)}
@@ -590,19 +590,19 @@ const AdminOrderDetailPage: React.FC = () => {
 			{/* Modal para cambiar estado */}
 			{showStatusModal && (
 				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-					<div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
+					<div className="bg-white rounded-lg p-6 w-full max-w-md">
 						<h3 className="text-lg font-bold mb-4">
 							Cambiar Estado del Pedido
 						</h3>
 
 						<div className="mb-4">
-							<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+							<label className="block text-sm font-medium text-gray-700 mb-2">
 								Nuevo Estado
 							</label>
 							<select
 								value={newStatus}
 								onChange={(e) => setNewStatus(e.target.value)}
-								className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+								className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 							>
 								{availableStatuses.map((status) => (
 									<option key={status.value} value={status.value}>
@@ -615,7 +615,7 @@ const AdminOrderDetailPage: React.FC = () => {
 						<div className="flex justify-end space-x-3">
 							<button
 								onClick={() => setShowStatusModal(false)}
-								className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+								className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100"
 							>
 								Cancelar
 							</button>
@@ -634,14 +634,14 @@ const AdminOrderDetailPage: React.FC = () => {
 			{/* Modal para editar información de envío */}
 			{showShippingModal && (
 				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-					<div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
+					<div className="bg-white rounded-lg p-6 w-full max-w-md">
 						<h3 className="text-lg font-bold mb-4">
 							Editar Información de Envío
 						</h3>
 
 						<div className="space-y-4">
 							<div>
-								<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+								<label className="block text-sm font-medium text-gray-700 mb-2">
 									Número de Seguimiento
 								</label>
 								<input
@@ -653,12 +653,12 @@ const AdminOrderDetailPage: React.FC = () => {
 											tracking_number: e.target.value,
 										})
 									}
-									className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+									className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 								/>
 							</div>
 
 							<div>
-								<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+								<label className="block text-sm font-medium text-gray-700 mb-2">
 									Empresa de Transporte
 								</label>
 								<input
@@ -670,12 +670,12 @@ const AdminOrderDetailPage: React.FC = () => {
 											shipping_company: e.target.value,
 										})
 									}
-									className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+									className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 								/>
 							</div>
 
 							<div>
-								<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+								<label className="block text-sm font-medium text-gray-700 mb-2">
 									Fecha Estimada de Entrega
 								</label>
 								<input
@@ -687,12 +687,12 @@ const AdminOrderDetailPage: React.FC = () => {
 											estimated_delivery: e.target.value,
 										})
 									}
-									className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+									className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 								/>
 							</div>
 
 							<div>
-								<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+								<label className="block text-sm font-medium text-gray-700 mb-2">
 									Notas
 								</label>
 								<textarea
@@ -700,7 +700,7 @@ const AdminOrderDetailPage: React.FC = () => {
 									onChange={(e) =>
 										setShippingInfo({...shippingInfo, notes: e.target.value})
 									}
-									className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+									className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 									rows={3}
 								/>
 							</div>
@@ -709,7 +709,7 @@ const AdminOrderDetailPage: React.FC = () => {
 						<div className="flex justify-end space-x-3 mt-6">
 							<button
 								onClick={() => setShowShippingModal(false)}
-								className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+								className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100"
 							>
 								Cancelar
 							</button>

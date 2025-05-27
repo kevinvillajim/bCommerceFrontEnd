@@ -147,32 +147,32 @@ const SellerOrdersPage: React.FC = () => {
 				switch (stat.label) {
 					case "Total Pedidos":
 						icon = (
-							<ShoppingBag className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+							<ShoppingBag className="h-5 w-5 text-blue-600" />
 						);
 						break;
 					case "Pendientes":
 						icon = (
-							<Package className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+							<Package className="h-5 w-5 text-yellow-600" />
 						);
 						break;
 					case "En Proceso":
 						icon = (
-							<ShoppingBag className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+							<ShoppingBag className="h-5 w-5 text-blue-600" />
 						);
 						break;
 					case "Enviados":
 						icon = (
-							<Truck className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+							<Truck className="h-5 w-5 text-indigo-600" />
 						);
 						break;
 					case "Total Ventas":
 						icon = (
-							<BarChart2 className="h-5 w-5 text-green-600 dark:text-green-400" />
+							<BarChart2 className="h-5 w-5 text-green-600" />
 						);
 						break;
 					default:
 						icon = (
-							<ShoppingBag className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+							<ShoppingBag className="h-5 w-5 text-blue-600" />
 						);
 				}
 
@@ -197,7 +197,7 @@ const SellerOrdersPage: React.FC = () => {
 					label: "Total Pedidos",
 					value: orders.length,
 					icon: (
-						<ShoppingBag className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+						<ShoppingBag className="h-5 w-5 text-blue-600" />
 					),
 					color: "blue",
 				},
@@ -205,7 +205,7 @@ const SellerOrdersPage: React.FC = () => {
 					label: "Pendientes",
 					value: orders.filter((order) => order.status === "pending").length,
 					icon: (
-						<Package className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+						<Package className="h-5 w-5 text-yellow-600" />
 					),
 					color: "yellow",
 				},
@@ -213,7 +213,7 @@ const SellerOrdersPage: React.FC = () => {
 					label: "En Proceso",
 					value: orders.filter((order) => order.status === "processing").length,
 					icon: (
-						<ShoppingBag className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+						<ShoppingBag className="h-5 w-5 text-blue-600" />
 					),
 					color: "blue",
 				},
@@ -223,7 +223,7 @@ const SellerOrdersPage: React.FC = () => {
 						orders.reduce((sum, order) => sum + order.total, 0)
 					),
 					icon: (
-						<BarChart2 className="h-5 w-5 text-green-600 dark:text-green-400" />
+						<BarChart2 className="h-5 w-5 text-green-600" />
 					),
 					color: "green",
 				},
@@ -282,7 +282,7 @@ const SellerOrdersPage: React.FC = () => {
 			render: (order: SellerOrderUI) => (
 				<Link
 					to={`/seller/orders/${order.id}`}
-					className="font-medium text-primary-600 dark:text-primary-400 hover:underline"
+					className="font-medium text-primary-600 hover:underline"
 				>
 					{order.orderNumber}
 				</Link>
@@ -312,7 +312,7 @@ const SellerOrdersPage: React.FC = () => {
 			render: (order: SellerOrderUI) => (
 				<div>
 					<div className="font-medium">{order.customer.name}</div>
-					<div className="text-xs text-gray-500 dark:text-gray-400">
+					<div className="text-xs text-gray-500">
 						{order.customer.email}
 					</div>
 				</div>
@@ -346,37 +346,37 @@ const SellerOrdersPage: React.FC = () => {
 				switch (order.status) {
 					case "pending":
 						statusClass =
-							"bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
+							"bg-yellow-100 text-yellow-800";
 						statusText = "Pendiente";
 						break;
 					case "processing":
 						statusClass =
-							"bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
+							"bg-blue-100 text-blue-800";
 						statusText = "En Proceso";
 						break;
 					case "paid":
 						statusClass =
-							"bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200";
+							"bg-cyan-100 text-cyan-800";
 						statusText = "Pagado";
 						break;
 					case "shipped":
 						statusClass =
-							"bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200";
+							"bg-indigo-100 text-indigo-800";
 						statusText = "Enviado";
 						break;
 					case "delivered":
 						statusClass =
-							"bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200";
+							"bg-purple-100 text-purple-800";
 						statusText = "Entregado";
 						break;
 					case "completed":
 						statusClass =
-							"bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
+							"bg-green-100 text-green-800";
 						statusText = "Completado";
 						break;
 					case "cancelled":
 						statusClass =
-							"bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
+							"bg-red-100 text-red-800";
 						statusText = "Cancelado";
 						break;
 				}
@@ -401,18 +401,18 @@ const SellerOrdersPage: React.FC = () => {
 				switch (order.paymentStatus) {
 					case "pending":
 						paymentClass =
-							"bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
+							"bg-yellow-100 text-yellow-800";
 						paymentText = "Pendiente";
 						break;
 					case "paid":
 					case "completed": // Manejar "completed" como "Pagado"
 						paymentClass =
-							"bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
+							"bg-green-100 text-green-800";
 						paymentText = "Pagado";
 						break;
 					case "rejected":
 						paymentClass =
-							"bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
+							"bg-red-100 text-red-800";
 						paymentText = "Rechazado";
 						break;
 				}
@@ -446,7 +446,7 @@ const SellerOrdersPage: React.FC = () => {
 					{/* Ver detalles */}
 					<Link
 						to={`/seller/orders/${order.id}`}
-						className="p-1 text-blue-600 hover:bg-blue-100 rounded-md dark:text-blue-400 dark:hover:bg-blue-900"
+						className="p-1 text-blue-600 hover:bg-blue-100 rounded-md"
 						title="Ver detalles"
 					>
 						<Eye size={18} />
@@ -455,7 +455,7 @@ const SellerOrdersPage: React.FC = () => {
 					{/* Generar factura */}
 					<Link
 						to={`/seller/invoices/generate/${order.id}`}
-						className="p-1 text-indigo-600 hover:bg-indigo-100 rounded-md dark:text-indigo-400 dark:hover:bg-indigo-900"
+						className="p-1 text-indigo-600 hover:bg-indigo-100 rounded-md"
 						title="Generar factura"
 					>
 						<FileText size={18} />
@@ -466,7 +466,7 @@ const SellerOrdersPage: React.FC = () => {
 						to={`/seller/shipping/${order.id}`}
 						className={`p-1 rounded-md ${
 							order.status === "pending" || order.status === "processing"
-								? "text-green-600 hover:bg-green-100 dark:text-green-400 dark:hover:bg-green-900"
+								? "text-green-600 hover:bg-green-100"
 								: "text-gray-400 cursor-not-allowed"
 						}`}
 						title={
@@ -482,7 +482,7 @@ const SellerOrdersPage: React.FC = () => {
 					{order.status === "pending" && (
 						<button
 							onClick={() => updateOrderStatus(order.id, "processing")}
-							className="p-1 text-orange-600 hover:bg-orange-100 rounded-md dark:text-orange-400 dark:hover:bg-orange-900"
+							className="p-1 text-orange-600 hover:bg-orange-100 rounded-md"
 							title="Preparar pedido"
 						>
 							<Package size={18} />
@@ -496,7 +496,7 @@ const SellerOrdersPage: React.FC = () => {
 	return (
 		<div className="space-y-6">
 			<div className="flex justify-between items-center">
-				<h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+				<h1 className="text-2xl font-bold text-gray-900">
 					Gestión de Pedidos
 				</h1>
 				<div className="flex space-x-2">
@@ -511,14 +511,14 @@ const SellerOrdersPage: React.FC = () => {
 			</div>
 
 			{/* Panel de filtros */}
-			<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+			<div className="bg-white rounded-lg shadow-sm p-4">
 				<div className="flex flex-col md:flex-row gap-4">
 					{/* Buscador */}
 					<div className="relative flex-grow">
 						<input
 							type="text"
 							placeholder="Buscar por número de pedido, cliente..."
-							className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+							className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
 							value={searchTerm}
 							onChange={(e) => setSearchTerm(e.target.value)}
 						/>
@@ -527,9 +527,9 @@ const SellerOrdersPage: React.FC = () => {
 
 					{/* Filtro de Estado */}
 					<div className="flex items-center space-x-2">
-						<Filter className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+						<Filter className="h-5 w-5 text-gray-500" />
 						<select
-							className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+							className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 							value={statusFilter}
 							onChange={(e) => setStatusFilter(e.target.value)}
 						>
@@ -545,7 +545,7 @@ const SellerOrdersPage: React.FC = () => {
 					{/* Filtro de Pago */}
 					<div className="flex items-center space-x-2">
 						<select
-							className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+							className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 							value={paymentFilter}
 							onChange={(e) => setPaymentFilter(e.target.value)}
 						>
@@ -559,7 +559,7 @@ const SellerOrdersPage: React.FC = () => {
 					{/* Filtro de Fecha */}
 					<div className="flex items-center space-x-2">
 						<select
-							className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+							className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 							value={dateFilter}
 							onChange={(e) => setDateFilter(e.target.value)}
 						>
@@ -573,16 +573,16 @@ const SellerOrdersPage: React.FC = () => {
 							<div className="flex items-center space-x-2">
 								<input
 									type="date"
-									className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+									className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 									value={dateRange.from}
 									onChange={(e) =>
 										setDateRange({...dateRange, from: e.target.value})
 									}
 								/>
-								<span className="text-gray-500 dark:text-gray-400">a</span>
+								<span className="text-gray-500">a</span>
 								<input
 									type="date"
-									className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+									className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 									value={dateRange.to}
 									onChange={(e) =>
 										setDateRange({...dateRange, to: e.target.value})
@@ -601,7 +601,7 @@ const SellerOrdersPage: React.FC = () => {
 							setSearchTerm("");
 							setDateRange({from: "", to: ""});
 						}}
-						className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+						className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300"
 					>
 						Limpiar filtros
 					</button>

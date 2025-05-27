@@ -24,40 +24,40 @@ import type { Order, Seller } from '../../types/dashboard/dataTable/DataTableTyp
       value: formatCurrency(426380.85),
       change: 8.3,
       icon: DollarSign,
-      iconBgColor: "bg-green-50 dark:bg-green-900",
-      iconColor: "text-green-600 dark:text-green-400",
+      iconBgColor: "bg-green-50",
+      iconColor: "text-green-600",
     },
     {
       title: "Usuarios Totales",
       value: 2458,
       change: 15.2,
       icon: Users,
-      iconBgColor: "bg-blue-50 dark:bg-blue-900",
-      iconColor: "text-blue-600 dark:text-blue-400",
+      iconBgColor: "bg-blue-50",
+      iconColor: "text-blue-600",
     },
     {
       title: "Pedidos Totales",
       value: 3749,
       change: 5.7,
       icon: ShoppingBag,
-      iconBgColor: "bg-purple-50 dark:bg-purple-900",
-      iconColor: "text-purple-600 dark:text-purple-400",
+      iconBgColor: "bg-purple-50",
+      iconColor: "text-purple-600",
     },
     {
       title: "Productos Activos",
       value: `1186 / 1284`,
       change: Number(((1186 / 1284) * 100).toFixed(1)),
       icon: Package,
-      iconBgColor: "bg-yellow-50 dark:bg-yellow-900",
-      iconColor: "text-yellow-600 dark:text-yellow-400",
+      iconBgColor: "bg-yellow-50",
+      iconColor: "text-yellow-600",
     },
   ];
 
   const pendingCardItems = [
 	{
 	  icon: Star,
-	  iconBgColor: "bg-yellow-50 dark:bg-yellow-900",
-	  iconColor: "text-yellow-600 dark:text-yellow-400",
+	  iconBgColor: "bg-yellow-50",
+	  iconColor: "text-yellow-600",
 	  title: "Valoraciones y Reseñas",
 	  description: "14 reseñas pendientes requieren aprobación",
 	  linkText: "Moderar Reseñas",
@@ -65,8 +65,8 @@ import type { Order, Seller } from '../../types/dashboard/dataTable/DataTableTyp
 	},
 	{
 	  icon: Briefcase,
-	  iconBgColor: "bg-blue-50 dark:bg-blue-900",
-	  iconColor: "text-blue-600 dark:text-blue-400",
+	  iconBgColor: "bg-blue-50",
+	  iconColor: "text-blue-600",
 	  title: "Solicitudes de Vendedores",
 	  description: "3 solicitudes de verificación de vendedores",
 	  linkText: "Ver solicitudes",
@@ -74,8 +74,8 @@ import type { Order, Seller } from '../../types/dashboard/dataTable/DataTableTyp
 	},
 	{
 	  icon: MessageSquare,
-	  iconBgColor: "bg-purple-50 dark:bg-purple-900",
-	  iconColor: "text-purple-600 dark:text-purple-400",
+	  iconBgColor: "bg-purple-50",
+	  iconColor: "text-purple-600",
 	  title: "Customer Feedback",
 	  description: "8 comentarios para revisar",
 	  linkText: "Revisar Comentarios",
@@ -87,26 +87,26 @@ import type { Order, Seller } from '../../types/dashboard/dataTable/DataTableTyp
 	{
 	  icon: AlertTriangle,
 	  borderColor: "border-amber-500",
-	  bgColor: "bg-amber-50 dark:bg-amber-900/30",
+	  bgColor: "bg-amber-50",
 	  iconColor: "text-amber-500",
 	  title: "Alerta de Inventario Bajo",
 	  description: "15 productos tienen el inventario por debajo del umbral mínimo.",
 	  linkText: "Ver productos",
 	  linkTo: "/admin/products?lowStock=true",
-	  textColor: "text-amber-800 dark:text-amber-200",
-	  hoverTextColor: "text-amber-600 dark:hover:text-amber-100",
+	  textColor: "text-amber-800",
+	  hoverTextColor: "text-amber-600",
 	},
 	{
 	  icon: AlertTriangle,
 	  borderColor: "border-blue-500",
-	  bgColor: "bg-blue-50 dark:bg-blue-900/30",
+	  bgColor: "bg-blue-50/30",
 	  iconColor: "text-blue-500",
 	  title: "Mensaje del Desarrollador",
 	  description: "La nueva versión (1.0.1) está ya disponible con mejoras de seguridad.",
 	  linkText: "Ver detalles de la actualización",
 	  linkTo: "/admin/settings/updates",
-	  textColor: "text-blue-800 dark:text-blue-200",
-	  hoverTextColor: "text-blue-600 dark:hover:text-blue-100",
+	  textColor: "text-blue-800",
+	  hoverTextColor: "text-blue-600",
 	},
   ];
 
@@ -172,13 +172,13 @@ const AdminDashboard: React.FC = () => {
 
 	return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+      <h1 className="text-2xl font-bold text-gray-900">
         Dashboard Admin
       </h1>
       {/* Stats Cards */}
       <DashboardCardList cards={cards} />
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-        <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+      <div className="bg-white rounded-lg shadow-sm p-6">
+        <h2 className="text-lg font-medium text-gray-900 mb-4">
           Pending Moderation
         </h2>
         {/* Pending Moderation Section */}
@@ -202,10 +202,10 @@ const AdminDashboard: React.FC = () => {
         />
       </div>
       {/* System Alerts */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+      <div className="bg-white rounded-lg shadow-sm p-6">
         <div className="flex items-center mb-4">
           <AlertTriangle className="w-5 h-5 text-amber-500 mr-2" />
-          <h2 className="text-lg font-medium text-gray-900 dark:text-white">
+          <h2 className="text-lg font-medium text-gray-900">
             Alertas del Sistema
           </h2>
         </div>

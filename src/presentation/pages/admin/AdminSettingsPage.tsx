@@ -50,15 +50,15 @@ const Modal: React.FC<ModalProps> = ({
         <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" onClick={onClose}></div>
 
         {/* Modal */}
-        <div className={`inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle ${sizeClasses[size]} w-full`}>
-          <div className="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6">
+        <div className={`inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle ${sizeClasses[size]} w-full`}>
+          <div className="bg-white px-4 pt-5 pb-4 sm:p-6">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white" id="modal-title">
+              <h3 className="text-lg leading-6 font-medium text-gray-900" id="modal-title">
                 {title}
               </h3>
               <button
                 type="button"
-                className="bg-white dark:bg-gray-800 rounded-md text-gray-400 hover:text-gray-500 focus:outline-none"
+                className="bg-white rounded-md text-gray-400 hover:text-gray-500 focus:outline-none"
                 onClick={onClose}
               >
                 <span className="sr-only">Cerrar</span>
@@ -84,31 +84,31 @@ interface AlertProps {
 
 const Alert: React.FC<AlertProps> = ({ type, message, onClose }) => {
   const bgColors = {
-    success: "bg-green-50 dark:bg-green-900/30",
-    error: "bg-red-50 dark:bg-red-900/30",
-    warning: "bg-yellow-50 dark:bg-yellow-900/30",
-    info: "bg-blue-50 dark:bg-blue-900/30",
+    success: "bg-green-50",
+    error: "bg-red-50",
+    warning: "bg-yellow-50",
+    info: "bg-blue-50",
   };
 
   const textColors = {
-    success: "text-green-800 dark:text-green-300",
-    error: "text-red-800 dark:text-red-300",
-    warning: "text-yellow-800 dark:text-yellow-300",
-    info: "text-blue-800 dark:text-blue-300",
+    success: "text-green-800",
+    error: "text-red-800",
+    warning: "text-yellow-80",
+    info: "text-blue-800",
   };
 
   const borderColors = {
-    success: "border-green-400 dark:border-green-600",
-    error: "border-red-400 dark:border-red-600",
-    warning: "border-yellow-400 dark:border-yellow-600",
-    info: "border-blue-400 dark:border-blue-600",
+    success: "border-green-400",
+    error: "border-red-400",
+    warning: "border-yellow-400",
+    info: "border-blue-400",
   };
 
   const icons = {
-    success: <CheckCircle className="h-5 w-5 text-green-500 dark:text-green-400" />,
-    error: <AlertTriangle className="h-5 w-5 text-red-500 dark:text-red-400" />,
-    warning: <AlertTriangle className="h-5 w-5 text-yellow-500 dark:text-yellow-400" />,
-    info: <HelpCircle className="h-5 w-5 text-blue-500 dark:text-blue-400" />,
+    success: <CheckCircle className="h-5 w-5 text-green-500" />,
+    error: <AlertTriangle className="h-5 w-5 text-red-500" />,
+    warning: <AlertTriangle className="h-5 w-5 text-yellow-500" />,
+    info: <HelpCircle className="h-5 w-5 text-blue-500" />,
   };
 
   return (
@@ -123,7 +123,7 @@ const Alert: React.FC<AlertProps> = ({ type, message, onClose }) => {
         {onClose && (
           <button
             type="button"
-            className={`ml-auto -mx-1.5 -my-1.5 rounded-lg focus:ring-2 p-1.5 inline-flex h-8 w-8 ${textColors[type]} hover:bg-gray-200 dark:hover:bg-gray-700`}
+            className={`ml-auto -mx-1.5 -my-1.5 rounded-lg focus:ring-2 p-1.5 inline-flex h-8 w-8 ${textColors[type]} hover:bg-gray-200`}
             onClick={onClose}
             aria-label="Cerrar"
           >
@@ -513,7 +513,7 @@ const AdminSettingsPage: React.FC = () => {
 	return (
 		
 		<div><RatingConfiguration/>
-			<h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+			<h1 className="text-2xl font-bold text-gray-900 mb-6">
 				Configuración del Sistema
 			</h1>
 
@@ -528,14 +528,14 @@ const AdminSettingsPage: React.FC = () => {
 
 			{/* Tabs de navegación */}
 			<div className="mb-6">
-				<div className="border-b border-gray-200 dark:border-gray-700">
+				<div className="border-b border-gray-200">
 					<nav className="-mb-px flex space-x-4 overflow-x-auto sm:space-x-8">
 						<button
 							onClick={() => setActiveTab("general")}
 							className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
 								activeTab === "general"
-									? "border-primary-500 text-primary-600 dark:text-primary-400 dark:border-primary-400"
-									: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+									? "border-primary-500 text-primary-600"
+									: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
 							}`}
 						>
 							<Settings className="w-5 h-5 inline-block mr-1" />
@@ -545,8 +545,8 @@ const AdminSettingsPage: React.FC = () => {
 							onClick={() => setActiveTab("email")}
 							className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
 								activeTab === "email"
-									? "border-primary-500 text-primary-600 dark:text-primary-400 dark:border-primary-400"
-									: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+									? "border-primary-500 text-primary-600"
+									: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
 							}`}
 						>
 							<Mail className="w-5 h-5 inline-block mr-1" />
@@ -556,8 +556,8 @@ const AdminSettingsPage: React.FC = () => {
 							onClick={() => setActiveTab("security")}
 							className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
 								activeTab === "security"
-									? "border-primary-500 text-primary-600 dark:text-primary-400 dark:border-primary-400"
-									: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+									? "border-primary-500 text-primary-600"
+									: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
 							}`}
 						>
 							<Shield className="w-5 h-5 inline-block mr-1" />
@@ -567,8 +567,8 @@ const AdminSettingsPage: React.FC = () => {
 							onClick={() => setActiveTab("payment")}
 							className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
 								activeTab === "payment"
-									? "border-primary-500 text-primary-600 dark:text-primary-400 dark:border-primary-400"
-									: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+									? "border-primary-500 text-primary-600"
+									: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
 							}`}
 						>
 							<CreditCard className="w-5 h-5 inline-block mr-1" />
@@ -578,8 +578,8 @@ const AdminSettingsPage: React.FC = () => {
 							onClick={() => setActiveTab("integrations")}
 							className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
 								activeTab === "integrations"
-									? "border-primary-500 text-primary-600 dark:text-primary-400 dark:border-primary-400"
-									: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+									? "border-primary-500 text-primary-600"
+									: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
 							}`}
 						>
 							<Globe className="w-5 h-5 inline-block mr-1" />
@@ -589,8 +589,8 @@ const AdminSettingsPage: React.FC = () => {
 							onClick={() => setActiveTab("notifications")}
 							className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
 								activeTab === "notifications"
-									? "border-primary-500 text-primary-600 dark:text-primary-400 dark:border-primary-400"
-									: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+									? "border-primary-500 text-primary-600"
+									: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
 							}`}
 						>
 							<Bell className="w-5 h-5 inline-block mr-1" />
@@ -600,8 +600,8 @@ const AdminSettingsPage: React.FC = () => {
 							onClick={() => setActiveTab("backup")}
 							className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
 								activeTab === "backup"
-									? "border-primary-500 text-primary-600 dark:text-primary-400 dark:border-primary-400"
-									: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+									? "border-primary-500 text-primary-600"
+									: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
 							}`}
 						>
 							<Database className="w-5 h-5 inline-block mr-1" />
@@ -614,16 +614,16 @@ const AdminSettingsPage: React.FC = () => {
 			{/* Contenido del formulario */}
 			<form
 				onSubmit={handleSubmit}
-				className="bg-white dark:bg-gray-800 rounded-lg shadow-sm"
+				className="bg-white rounded-lg shadow-sm"
 			>
 				{/* Sección General */}
 				{activeTab === "general" && (
 					<div className="p-6">
 						<div className="mb-6">
-							<h2 className="text-lg font-medium text-gray-900 dark:text-white">
+							<h2 className="text-lg font-medium text-gray-900">
 								Configuración General
 							</h2>
-							<p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+							<p className="mt-1 text-sm text-gray-500">
 								Configure los ajustes básicos de su tienda en línea.
 							</p>
 						</div>
@@ -632,7 +632,7 @@ const AdminSettingsPage: React.FC = () => {
 							<div>
 								<label
 									htmlFor="siteName"
-									className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+									className="block text-sm font-medium text-gray-700"
 								>
 									Nombre del Sitio
 								</label>
@@ -642,10 +642,10 @@ const AdminSettingsPage: React.FC = () => {
 									name="siteName"
 									value={generalSettings.siteName}
 									onChange={handleGeneralChange}
-									className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+									className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
 									required
 								/>
-								<p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+								<p className="mt-1 text-xs text-gray-500">
 									Nombre que aparecerá en el título de la página y correos
 									electrónicos.
 								</p>
@@ -654,7 +654,7 @@ const AdminSettingsPage: React.FC = () => {
 							<div>
 								<label
 									htmlFor="defaultLanguage"
-									className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+									className="block text-sm font-medium text-gray-700"
 								>
 									Idioma Predeterminado
 								</label>
@@ -663,7 +663,7 @@ const AdminSettingsPage: React.FC = () => {
 									name="defaultLanguage"
 									value={generalSettings.defaultLanguage}
 									onChange={handleGeneralChange}
-									className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+									className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
 								>
 									<option value="es">Español</option>
 									<option value="en">Inglés</option>
@@ -675,7 +675,7 @@ const AdminSettingsPage: React.FC = () => {
 							<div>
 								<label
 									htmlFor="defaultCurrency"
-									className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+									className="block text-sm font-medium text-gray-700"
 								>
 									Moneda Predeterminada
 								</label>
@@ -684,7 +684,7 @@ const AdminSettingsPage: React.FC = () => {
 									name="defaultCurrency"
 									value={generalSettings.defaultCurrency}
 									onChange={handleGeneralChange}
-									className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+									className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
 								>
 									<option value="USD">Dólar americano (USD)</option>
 									<option value="EUR">Euro (EUR)</option>
@@ -697,7 +697,7 @@ const AdminSettingsPage: React.FC = () => {
 							<div>
 								<label
 									htmlFor="timeZone"
-									className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+									className="block text-sm font-medium text-gray-700"
 								>
 									Zona Horaria
 								</label>
@@ -706,7 +706,7 @@ const AdminSettingsPage: React.FC = () => {
 									name="timeZone"
 									value={generalSettings.timeZone}
 									onChange={handleGeneralChange}
-									className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+									className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
 								>
 									<option value="America/Guayaquil">Ecuador (GMT-5)</option>
 									<option value="America/Bogota">Colombia (GMT-5)</option>
@@ -723,7 +723,7 @@ const AdminSettingsPage: React.FC = () => {
 						<div className="mt-6">
 							<label
 								htmlFor="siteDescription"
-								className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+								className="block text-sm font-medium text-gray-700"
 							>
 								Descripción del Sitio
 							</label>
@@ -733,9 +733,9 @@ const AdminSettingsPage: React.FC = () => {
 								value={generalSettings.siteDescription}
 								onChange={handleGeneralChange}
 								rows={3}
-								className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+								className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
 							></textarea>
-							<p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+							<p className="mt-1 text-xs text-gray-500">
 								Breve descripción para SEO y compartir en redes sociales.
 							</p>
 						</div>
@@ -744,7 +744,7 @@ const AdminSettingsPage: React.FC = () => {
 							<div>
 								<label
 									htmlFor="contactEmail"
-									className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+									className="block text-sm font-medium text-gray-700"
 								>
 									Correo de Contacto
 								</label>
@@ -754,10 +754,10 @@ const AdminSettingsPage: React.FC = () => {
 									name="contactEmail"
 									value={generalSettings.contactEmail}
 									onChange={handleGeneralChange}
-									className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+									className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
 									required
 								/>
-								<p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+								<p className="mt-1 text-xs text-gray-500">
 									Se muestra a los clientes para soporte y contacto.
 								</p>
 							</div>
@@ -765,7 +765,7 @@ const AdminSettingsPage: React.FC = () => {
 							<div>
 								<label
 									htmlFor="adminEmail"
-									className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+									className="block text-sm font-medium text-gray-700"
 								>
 									Correo de Administración
 								</label>
@@ -775,10 +775,10 @@ const AdminSettingsPage: React.FC = () => {
 									name="adminEmail"
 									value={generalSettings.adminEmail}
 									onChange={handleGeneralChange}
-									className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+									className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
 									required
 								/>
-								<p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+								<p className="mt-1 text-xs text-gray-500">
 									Recibe notificaciones administrativas y alertas.
 								</p>
 							</div>
@@ -786,7 +786,7 @@ const AdminSettingsPage: React.FC = () => {
 							<div>
 								<label
 									htmlFor="itemsPerPage"
-									className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+									className="block text-sm font-medium text-gray-700"
 								>
 									Elementos por Página
 								</label>
@@ -798,9 +798,9 @@ const AdminSettingsPage: React.FC = () => {
 									onChange={handleGeneralChange}
 									min="1"
 									max="100"
-									className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+									className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
 								/>
-								<p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+								<p className="mt-1 text-xs text-gray-500">
 									Número de productos a mostrar por página en las listas.
 								</p>
 							</div>
@@ -815,17 +815,17 @@ const AdminSettingsPage: React.FC = () => {
 										type="checkbox"
 										checked={generalSettings.enableRegistration}
 										onChange={handleGeneralChange}
-										className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
+										className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
 									/>
 								</div>
 								<div className="ml-3 text-sm">
 									<label
 										htmlFor="enableRegistration"
-										className="font-medium text-gray-700 dark:text-gray-300"
+										className="font-medium text-gray-700"
 									>
 										Permitir Registro de Usuarios
 									</label>
-									<p className="text-gray-500 dark:text-gray-400">
+									<p className="text-gray-500">
 										Los usuarios pueden crear nuevas cuentas en el sitio.
 									</p>
 								</div>
@@ -841,17 +841,17 @@ const AdminSettingsPage: React.FC = () => {
 										type="checkbox"
 										checked={generalSettings.maintenanceMode}
 										onChange={handleGeneralChange}
-										className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
+										className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
 									/>
 								</div>
 								<div className="ml-3 text-sm">
 									<label
 										htmlFor="maintenanceMode"
-										className="font-medium text-gray-700 dark:text-gray-300"
+										className="font-medium text-gray-700"
 									>
 										Modo Mantenimiento
 									</label>
-									<p className="text-gray-500 dark:text-gray-400">
+									<p className="text-gray-500">
 										Cuando está activado, solo los administradores pueden
 										acceder al sitio.
 									</p>
@@ -866,10 +866,10 @@ const AdminSettingsPage: React.FC = () => {
 					<div className="p-6">
 						<div className="mb-6 flex justify-between items-start">
 							<div>
-								<h2 className="text-lg font-medium text-gray-900 dark:text-white">
+								<h2 className="text-lg font-medium text-gray-900">
 									Configuración de Correo
 								</h2>
-								<p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+								<p className="mt-1 text-sm text-gray-500">
 									Configure los ajustes para enviar correos electrónicos desde
 									su tienda.
 								</p>
@@ -877,7 +877,7 @@ const AdminSettingsPage: React.FC = () => {
 							<button
 								type="button"
 								onClick={() => setIsTestEmailModalOpen(true)}
-								className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 dark:bg-primary-700 dark:hover:bg-primary-800 focus:outline-none"
+								className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none"
 							>
 								<Mail className="w-4 h-4 mr-2" /> Enviar correo de prueba
 							</button>
@@ -887,7 +887,7 @@ const AdminSettingsPage: React.FC = () => {
 							<div>
 								<label
 									htmlFor="smtpHost"
-									className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+									className="block text-sm font-medium text-gray-700"
 								>
 									Servidor SMTP
 								</label>
@@ -897,7 +897,7 @@ const AdminSettingsPage: React.FC = () => {
 									name="smtpHost"
 									value={emailSettings.smtpHost}
 									onChange={handleEmailChange}
-									className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+									className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
 									required
 								/>
 							</div>
@@ -905,7 +905,7 @@ const AdminSettingsPage: React.FC = () => {
 							<div>
 								<label
 									htmlFor="smtpPort"
-									className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+									className="block text-sm font-medium text-gray-700"
 								>
 									Puerto SMTP
 								</label>
@@ -915,7 +915,7 @@ const AdminSettingsPage: React.FC = () => {
 									name="smtpPort"
 									value={emailSettings.smtpPort}
 									onChange={handleEmailChange}
-									className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+									className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
 									required
 								/>
 							</div>
@@ -923,7 +923,7 @@ const AdminSettingsPage: React.FC = () => {
 							<div>
 								<label
 									htmlFor="smtpUsername"
-									className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+									className="block text-sm font-medium text-gray-700"
 								>
 									Usuario SMTP
 								</label>
@@ -933,7 +933,7 @@ const AdminSettingsPage: React.FC = () => {
 									name="smtpUsername"
 									value={emailSettings.smtpUsername}
 									onChange={handleEmailChange}
-									className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+									className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
 									required
 								/>
 							</div>
@@ -941,7 +941,7 @@ const AdminSettingsPage: React.FC = () => {
 							<div>
 								<label
 									htmlFor="smtpPassword"
-									className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+									className="block text-sm font-medium text-gray-700"
 								>
 									Contraseña SMTP
 								</label>
@@ -951,7 +951,7 @@ const AdminSettingsPage: React.FC = () => {
 									name="smtpPassword"
 									value={emailSettings.smtpPassword}
 									onChange={handleEmailChange}
-									className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+									className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
 									required
 								/>
 							</div>
@@ -959,7 +959,7 @@ const AdminSettingsPage: React.FC = () => {
 							<div>
 								<label
 									htmlFor="smtpEncryption"
-									className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+									className="block text-sm font-medium text-gray-700"
 								>
 									Cifrado SMTP
 								</label>
@@ -968,7 +968,7 @@ const AdminSettingsPage: React.FC = () => {
 									name="smtpEncryption"
 									value={emailSettings.smtpEncryption}
 									onChange={handleEmailChange}
-									className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+									className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
 								>
 									<option value="tls">TLS</option>
 									<option value="ssl">SSL</option>
@@ -977,8 +977,8 @@ const AdminSettingsPage: React.FC = () => {
 							</div>
 						</div>
 
-						<div className="border-t border-gray-200 dark:border-gray-700 mt-6 pt-6">
-							<h3 className="text-base font-medium text-gray-900 dark:text-white mb-4">
+						<div className="border-t border-gray-200 mt-6 pt-6">
+							<h3 className="text-base font-medium text-gray-900 mb-4">
 								Configuración de Remitente
 							</h3>
 
@@ -986,7 +986,7 @@ const AdminSettingsPage: React.FC = () => {
 								<div>
 									<label
 										htmlFor="senderName"
-										className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+										className="block text-sm font-medium text-gray-700"
 									>
 										Nombre del Remitente
 									</label>
@@ -996,10 +996,10 @@ const AdminSettingsPage: React.FC = () => {
 										name="senderName"
 										value={emailSettings.senderName}
 										onChange={handleEmailChange}
-										className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+										className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
 										required
 									/>
-									<p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+									<p className="mt-1 text-xs text-gray-500">
 										Nombre que aparecerá como remitente de correos.
 									</p>
 								</div>
@@ -1007,7 +1007,7 @@ const AdminSettingsPage: React.FC = () => {
 								<div>
 									<label
 										htmlFor="senderEmail"
-										className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+										className="block text-sm font-medium text-gray-700"
 									>
 										Correo del Remitente
 									</label>
@@ -1017,18 +1017,18 @@ const AdminSettingsPage: React.FC = () => {
 										name="senderEmail"
 										value={emailSettings.senderEmail}
 										onChange={handleEmailChange}
-										className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+										className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
 										required
 									/>
-									<p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+									<p className="mt-1 text-xs text-gray-500">
 										Dirección desde la que se enviarán los correos.
 									</p>
 								</div>
 							</div>
 						</div>
 
-						<div className="border-t border-gray-200 dark:border-gray-700 mt-6 pt-6">
-							<h3 className="text-base font-medium text-gray-900 dark:text-white mb-4">
+						<div className="border-t border-gray-200 mt-6 pt-6">
+							<h3 className="text-base font-medium text-gray-900 mb-4">
 								Plantillas de Correo
 							</h3>
 
@@ -1041,13 +1041,13 @@ const AdminSettingsPage: React.FC = () => {
 											type="checkbox"
 											checked={emailSettings.welcomeEmail}
 											onChange={handleEmailChange}
-											className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
+											className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
 										/>
 									</div>
 									<div className="ml-3 text-sm">
 										<label
 											htmlFor="welcomeEmail"
-											className="font-medium text-gray-700 dark:text-gray-300"
+											className="font-medium text-gray-700"
 										>
 											Bienvenida a Nuevos Usuarios
 										</label>
@@ -1062,13 +1062,13 @@ const AdminSettingsPage: React.FC = () => {
 											type="checkbox"
 											checked={emailSettings.orderConfirmationEmail}
 											onChange={handleEmailChange}
-											className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
+											className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
 										/>
 									</div>
 									<div className="ml-3 text-sm">
 										<label
 											htmlFor="orderConfirmationEmail"
-											className="font-medium text-gray-700 dark:text-gray-300"
+											className="font-medium text-gray-700"
 										>
 											Confirmación de Pedidos
 										</label>
@@ -1083,13 +1083,13 @@ const AdminSettingsPage: React.FC = () => {
 											type="checkbox"
 											checked={emailSettings.passwordResetEmail}
 											onChange={handleEmailChange}
-											className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
+											className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
 										/>
 									</div>
 									<div className="ml-3 text-sm">
 										<label
 											htmlFor="passwordResetEmail"
-											className="font-medium text-gray-700 dark:text-gray-300"
+											className="font-medium text-gray-700"
 										>
 											Restablecimiento de Contraseña
 										</label>
@@ -1104,13 +1104,13 @@ const AdminSettingsPage: React.FC = () => {
 											type="checkbox"
 											checked={emailSettings.notificationEmails}
 											onChange={handleEmailChange}
-											className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
+											className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
 										/>
 									</div>
 									<div className="ml-3 text-sm">
 										<label
 											htmlFor="notificationEmails"
-											className="font-medium text-gray-700 dark:text-gray-300"
+											className="font-medium text-gray-700"
 										>
 											Notificaciones del Sistema
 										</label>
@@ -1125,16 +1125,16 @@ const AdminSettingsPage: React.FC = () => {
 				{activeTab === "security" && (
 					<div className="p-6">
 						<div className="mb-6">
-							<h2 className="text-lg font-medium text-gray-900 dark:text-white">
+							<h2 className="text-lg font-medium text-gray-900">
 								Configuración de Seguridad
 							</h2>
-							<p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+							<p className="mt-1 text-sm text-gray-500">
 								Configure los ajustes de seguridad y protección de su tienda.
 							</p>
 						</div>
 
-						<div className="border-b border-gray-200 dark:border-gray-700 pb-6 mb-6">
-							<h3 className="text-base font-medium text-gray-900 dark:text-white mb-4">
+						<div className="border-b border-gray-200 pb-6 mb-6">
+							<h3 className="text-base font-medium text-gray-900 mb-4">
 								Gestión de Contraseñas
 							</h3>
 
@@ -1142,7 +1142,7 @@ const AdminSettingsPage: React.FC = () => {
 								<div>
 									<label
 										htmlFor="passwordMinLength"
-										className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+										className="block text-sm font-medium text-gray-700"
 									>
 										Longitud Mínima de Contraseña
 									</label>
@@ -1154,14 +1154,14 @@ const AdminSettingsPage: React.FC = () => {
 										onChange={handleSecurityChange}
 										min="6"
 										max="20"
-										className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+										className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
 									/>
 								</div>
 
 								<div>
 									<label
 										htmlFor="accountLockAttempts"
-										className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+										className="block text-sm font-medium text-gray-700"
 									>
 										Intentos antes de bloqueo
 									</label>
@@ -1173,7 +1173,7 @@ const AdminSettingsPage: React.FC = () => {
 										onChange={handleSecurityChange}
 										min="1"
 										max="10"
-										className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+										className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
 									/>
 								</div>
 							</div>
@@ -1187,13 +1187,13 @@ const AdminSettingsPage: React.FC = () => {
 											type="checkbox"
 											checked={securitySettings.passwordRequireUppercase}
 											onChange={handleSecurityChange}
-											className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
+											className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
 										/>
 									</div>
 									<div className="ml-3 text-sm">
 										<label
 											htmlFor="passwordRequireUppercase"
-											className="font-medium text-gray-700 dark:text-gray-300"
+											className="font-medium text-gray-700"
 										>
 											Requerir Mayúsculas
 										</label>
@@ -1208,13 +1208,13 @@ const AdminSettingsPage: React.FC = () => {
 											type="checkbox"
 											checked={securitySettings.passwordRequireNumbers}
 											onChange={handleSecurityChange}
-											className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
+											className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
 										/>
 									</div>
 									<div className="ml-3 text-sm">
 										<label
 											htmlFor="passwordRequireNumbers"
-											className="font-medium text-gray-700 dark:text-gray-300"
+											className="font-medium text-gray-700"
 										>
 											Requerir Números
 										</label>
@@ -1229,13 +1229,13 @@ const AdminSettingsPage: React.FC = () => {
 											type="checkbox"
 											checked={securitySettings.passwordRequireSpecial}
 											onChange={handleSecurityChange}
-											className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
+											className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
 										/>
 									</div>
 									<div className="ml-3 text-sm">
 										<label
 											htmlFor="passwordRequireSpecial"
-											className="font-medium text-gray-700 dark:text-gray-300"
+											className="font-medium text-gray-700"
 										>
 											Requerir Caracteres Especiales
 										</label>
@@ -1244,8 +1244,8 @@ const AdminSettingsPage: React.FC = () => {
 							</div>
 						</div>
 
-						<div className="border-b border-gray-200 dark:border-gray-700 pb-6 mb-6">
-							<h3 className="text-base font-medium text-gray-900 dark:text-white mb-4">
+						<div className="border-b border-gray-200 pb-6 mb-6">
+							<h3 className="text-base font-medium text-gray-900 mb-4">
 								Autenticación y Sesiones
 							</h3>
 
@@ -1253,7 +1253,7 @@ const AdminSettingsPage: React.FC = () => {
 								<div>
 									<label
 										htmlFor="sessionTimeout"
-										className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+										className="block text-sm font-medium text-gray-700"
 									>
 										Tiempo de Sesión (minutos)
 									</label>
@@ -1265,14 +1265,14 @@ const AdminSettingsPage: React.FC = () => {
 										onChange={handleSecurityChange}
 										min="5"
 										max="1440"
-										className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+										className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
 									/>
 								</div>
 
 								<div>
 									<label
 										htmlFor="adminIpRestriction"
-										className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+										className="block text-sm font-medium text-gray-700"
 									>
 										Restringir acceso de administrador a IPs
 									</label>
@@ -1283,9 +1283,9 @@ const AdminSettingsPage: React.FC = () => {
 										value={securitySettings.adminIpRestriction}
 										onChange={handleSecurityChange}
 										placeholder="192.168.1.1, 10.0.0.1"
-										className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+										className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
 									/>
-									<p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+									<p className="mt-1 text-xs text-gray-500">
 										Deje en blanco para permitir todas las IPs. Use comas para
 										separar múltiples IPs.
 									</p>
@@ -1301,17 +1301,17 @@ const AdminSettingsPage: React.FC = () => {
 											type="checkbox"
 											checked={securitySettings.enableTwoFactor}
 											onChange={handleSecurityChange}
-											className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
+											className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
 										/>
 									</div>
 									<div className="ml-3 text-sm">
 										<label
 											htmlFor="enableTwoFactor"
-											className="font-medium text-gray-700 dark:text-gray-300"
+											className="font-medium text-gray-700"
 										>
 											Habilitar Autenticación de Dos Factores
 										</label>
-										<p className="text-gray-500 dark:text-gray-400">
+										<p className="text-gray-500">
 											Los usuarios podrán activar 2FA en sus cuentas.
 										</p>
 									</div>
@@ -1325,17 +1325,17 @@ const AdminSettingsPage: React.FC = () => {
 											type="checkbox"
 											checked={securitySettings.requireEmailVerification}
 											onChange={handleSecurityChange}
-											className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
+											className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
 										/>
 									</div>
 									<div className="ml-3 text-sm">
 										<label
 											htmlFor="requireEmailVerification"
-											className="font-medium text-gray-700 dark:text-gray-300"
+											className="font-medium text-gray-700"
 										>
 											Requerir verificación de correo
 										</label>
-										<p className="text-gray-500 dark:text-gray-400">
+										<p className="text-gray-500">
 											Los usuarios deben verificar su correo al registrarse.
 										</p>
 									</div>
@@ -1344,7 +1344,7 @@ const AdminSettingsPage: React.FC = () => {
 						</div>
 
 						<div>
-							<h3 className="text-base font-medium text-gray-900 dark:text-white mb-4">
+							<h3 className="text-base font-medium text-gray-900 mb-4">
 								Protección contra Spam
 							</h3>
 
@@ -1356,32 +1356,32 @@ const AdminSettingsPage: React.FC = () => {
 										type="checkbox"
 										checked={securitySettings.enableCaptcha}
 										onChange={handleSecurityChange}
-										className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
+										className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
 									/>
 								</div>
 								<div className="ml-3 text-sm">
 									<label
 										htmlFor="enableCaptcha"
-										className="font-medium text-gray-700 dark:text-gray-300"
+										className="font-medium text-gray-700"
 									>
 										Habilitar CAPTCHA en formularios
 									</label>
-									<p className="text-gray-500 dark:text-gray-400">
+									<p className="text-gray-500">
 										Protege los formularios de registro y contacto contra bots.
 									</p>
 								</div>
 							</div>
 
-							<div className="mt-4 bg-yellow-50 dark:bg-yellow-900/30 border-l-4 border-yellow-400 dark:border-yellow-600 p-4 rounded-r">
+							<div className="mt-4 bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r">
 								<div className="flex">
 									<div className="flex-shrink-0">
 										<AlertTriangle className="h-5 w-5 text-yellow-500" />
 									</div>
 									<div className="ml-3">
-										<h3 className="text-sm font-medium text-yellow-800 dark:text-yellow-300">
+										<h3 className="text-sm font-medium text-yellow-80">
 											Aviso de seguridad
 										</h3>
-										<div className="mt-2 text-sm text-yellow-700 dark:text-yellow-400">
+										<div className="mt-2 text-sm text-yellow-700">
 											<p>
 												Si habilita la restricción de IP para administradores,
 												asegúrese de incluir su IP actual para evitar quedarse
@@ -1399,17 +1399,17 @@ const AdminSettingsPage: React.FC = () => {
 				{activeTab === "payment" && (
 					<div className="p-6">
 						<div className="mb-6">
-							<h2 className="text-lg font-medium text-gray-900 dark:text-white">
+							<h2 className="text-lg font-medium text-gray-900">
 								Configuración de Pagos
 							</h2>
-							<p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+							<p className="mt-1 text-sm text-gray-500">
 								Configure los métodos de pago y ajustes relacionados con
 								transacciones.
 							</p>
 						</div>
 
-						<div className="border-b border-gray-200 dark:border-gray-700 pb-6 mb-6">
-							<h3 className="text-base font-medium text-gray-900 dark:text-white mb-4">
+						<div className="border-b border-gray-200 pb-6 mb-6">
+							<h3 className="text-base font-medium text-gray-900 mb-4">
 								Configuración General
 							</h3>
 
@@ -1417,7 +1417,7 @@ const AdminSettingsPage: React.FC = () => {
 								<div>
 									<label
 										htmlFor="currencySymbol"
-										className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+										className="block text-sm font-medium text-gray-700"
 									>
 										Símbolo de Moneda
 									</label>
@@ -1427,7 +1427,7 @@ const AdminSettingsPage: React.FC = () => {
 										name="currencySymbol"
 										value={paymentSettings.currencySymbol}
 										onChange={handlePaymentChange}
-										className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+										className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
 										maxLength={3}
 										required
 									/>
@@ -1436,7 +1436,7 @@ const AdminSettingsPage: React.FC = () => {
 								<div>
 									<label
 										htmlFor="currencyCode"
-										className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+										className="block text-sm font-medium text-gray-700"
 									>
 										Código de Moneda
 									</label>
@@ -1446,7 +1446,7 @@ const AdminSettingsPage: React.FC = () => {
 										name="currencyCode"
 										value={paymentSettings.currencyCode}
 										onChange={handlePaymentChange}
-										className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+										className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
 										maxLength={3}
 										required
 									/>
@@ -1455,7 +1455,7 @@ const AdminSettingsPage: React.FC = () => {
 								<div>
 									<label
 										htmlFor="taxRate"
-										className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+										className="block text-sm font-medium text-gray-700"
 									>
 										Tasa de Impuesto (%)
 									</label>
@@ -1468,15 +1468,15 @@ const AdminSettingsPage: React.FC = () => {
 										min="0"
 										max="100"
 										step="0.01"
-										className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+										className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
 										required
 									/>
 								</div>
 							</div>
 						</div>
 
-						<div className="border-b border-gray-200 dark:border-gray-700 pb-6 mb-6">
-							<h3 className="text-base font-medium text-gray-900 dark:text-white mb-4">
+						<div className="border-b border-gray-200 pb-6 mb-6">
+							<h3 className="text-base font-medium text-gray-900 mb-4">
 								PayPal
 							</h3>
 
@@ -1488,13 +1488,13 @@ const AdminSettingsPage: React.FC = () => {
 										type="checkbox"
 										checked={paymentSettings.enablePayPal}
 										onChange={handlePaymentChange}
-										className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
+										className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
 									/>
 								</div>
 								<div className="ml-3 text-sm">
 									<label
 										htmlFor="enablePayPal"
-										className="font-medium text-gray-700 dark:text-gray-300"
+										className="font-medium text-gray-700"
 									>
 										Habilitar PayPal
 									</label>
@@ -1507,7 +1507,7 @@ const AdminSettingsPage: React.FC = () => {
 										<div>
 											<label
 												htmlFor="payPalClientId"
-												className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+												className="block text-sm font-medium text-gray-700"
 											>
 												Cliente ID de PayPal
 											</label>
@@ -1517,7 +1517,7 @@ const AdminSettingsPage: React.FC = () => {
 												name="payPalClientId"
 												value={paymentSettings.payPalClientId}
 												onChange={handlePaymentChange}
-												className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+												className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
 												required
 											/>
 										</div>
@@ -1525,7 +1525,7 @@ const AdminSettingsPage: React.FC = () => {
 										<div>
 											<label
 												htmlFor="payPalClientSecret"
-												className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+												className="block text-sm font-medium text-gray-700"
 											>
 												Cliente Secret de PayPal
 											</label>
@@ -1535,7 +1535,7 @@ const AdminSettingsPage: React.FC = () => {
 												name="payPalClientSecret"
 												value={paymentSettings.payPalClientSecret}
 												onChange={handlePaymentChange}
-												className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+												className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
 												required
 											/>
 										</div>
@@ -1550,17 +1550,17 @@ const AdminSettingsPage: React.FC = () => {
 													type="checkbox"
 													checked={paymentSettings.payPalSandboxMode}
 													onChange={handlePaymentChange}
-													className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
+													className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
 												/>
 											</div>
 											<div className="ml-3 text-sm">
 												<label
 													htmlFor="payPalSandboxMode"
-													className="font-medium text-gray-700 dark:text-gray-300"
+													className="font-medium text-gray-700"
 												>
 													Modo Sandbox (pruebas)
 												</label>
-												<p className="text-gray-500 dark:text-gray-400">
+												<p className="text-gray-500">
 													Las transacciones no serán reales en este modo.
 												</p>
 											</div>
@@ -1570,8 +1570,8 @@ const AdminSettingsPage: React.FC = () => {
 							)}
 						</div>
 
-						<div className="border-b border-gray-200 dark:border-gray-700 pb-6 mb-6">
-							<h3 className="text-base font-medium text-gray-900 dark:text-white mb-4">
+						<div className="border-b border-gray-200 pb-6 mb-6">
+							<h3 className="text-base font-medium text-gray-900 mb-4">
 								Tarjeta de Crédito (Stripe)
 							</h3>
 
@@ -1583,13 +1583,13 @@ const AdminSettingsPage: React.FC = () => {
 										type="checkbox"
 										checked={paymentSettings.enableCreditCard}
 										onChange={handlePaymentChange}
-										className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
+										className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
 									/>
 								</div>
 								<div className="ml-3 text-sm">
 									<label
 										htmlFor="enableCreditCard"
-										className="font-medium text-gray-700 dark:text-gray-300"
+										className="font-medium text-gray-700"
 									>
 										Habilitar Pagos con Tarjeta
 									</label>
@@ -1602,7 +1602,7 @@ const AdminSettingsPage: React.FC = () => {
 										<div>
 											<label
 												htmlFor="stripePublicKey"
-												className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+												className="block text-sm font-medium text-gray-700"
 											>
 												Clave Pública de Stripe
 											</label>
@@ -1612,7 +1612,7 @@ const AdminSettingsPage: React.FC = () => {
 												name="stripePublicKey"
 												value={paymentSettings.stripePublicKey}
 												onChange={handlePaymentChange}
-												className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+												className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
 												required
 											/>
 										</div>
@@ -1620,7 +1620,7 @@ const AdminSettingsPage: React.FC = () => {
 										<div>
 											<label
 												htmlFor="stripeSecretKey"
-												className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+												className="block text-sm font-medium text-gray-700"
 											>
 												Clave Secreta de Stripe
 											</label>
@@ -1630,7 +1630,7 @@ const AdminSettingsPage: React.FC = () => {
 												name="stripeSecretKey"
 												value={paymentSettings.stripeSecretKey}
 												onChange={handlePaymentChange}
-												className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+												className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
 												required
 											/>
 										</div>
@@ -1645,17 +1645,17 @@ const AdminSettingsPage: React.FC = () => {
 													type="checkbox"
 													checked={paymentSettings.stripeSandboxMode}
 													onChange={handlePaymentChange}
-													className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
+													className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
 												/>
 											</div>
 											<div className="ml-3 text-sm">
 												<label
 													htmlFor="stripeSandboxMode"
-													className="font-medium text-gray-700 dark:text-gray-300"
+													className="font-medium text-gray-700"
 												>
 													Modo de Prueba
 												</label>
-												<p className="text-gray-500 dark:text-gray-400">
+												<p className="text-gray-500">
 													Usar el entorno de pruebas de Stripe.
 												</p>
 											</div>
@@ -1666,7 +1666,7 @@ const AdminSettingsPage: React.FC = () => {
 						</div>
 
 						<div>
-							<h3 className="text-base font-medium text-gray-900 dark:text-white mb-4">
+							<h3 className="text-base font-medium text-gray-900 mb-4">
 								Otros Métodos de Pago
 							</h3>
 
@@ -1678,17 +1678,17 @@ const AdminSettingsPage: React.FC = () => {
 										type="checkbox"
 										checked={paymentSettings.enableLocalPayments}
 										onChange={handlePaymentChange}
-										className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
+										className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
 									/>
 								</div>
 								<div className="ml-3 text-sm">
 									<label
 										htmlFor="enableLocalPayments"
-										className="font-medium text-gray-700 dark:text-gray-300"
+										className="font-medium text-gray-700"
 									>
 										Habilitar transferencia bancaria / pago contra entrega
 									</label>
-									<p className="text-gray-500 dark:text-gray-400">
+									<p className="text-gray-500">
 										Permite a los clientes pagar mediante transferencia o al
 										recibir los productos.
 									</p>
@@ -1702,16 +1702,16 @@ const AdminSettingsPage: React.FC = () => {
 				{activeTab === "integrations" && (
 					<div className="p-6">
 						<div className="mb-6">
-							<h2 className="text-lg font-medium text-gray-900 dark:text-white">
+							<h2 className="text-lg font-medium text-gray-900">
 								Integraciones
 							</h2>
-							<p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+							<p className="mt-1 text-sm text-gray-500">
 								Configure integraciones con servicios de terceros.
 							</p>
 						</div>
 
-						<div className="border-b border-gray-200 dark:border-gray-700 pb-6 mb-6">
-							<h3 className="text-base font-medium text-gray-900 dark:text-white mb-4">
+						<div className="border-b border-gray-200 pb-6 mb-6">
+							<h3 className="text-base font-medium text-gray-900 mb-4">
 								Google Analytics
 							</h3>
 
@@ -1723,13 +1723,13 @@ const AdminSettingsPage: React.FC = () => {
 										type="checkbox"
 										checked={integrationSettings.enableGoogleAnalytics}
 										onChange={handleIntegrationChange}
-										className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
+										className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
 									/>
 								</div>
 								<div className="ml-3 text-sm">
 									<label
 										htmlFor="enableGoogleAnalytics"
-										className="font-medium text-gray-700 dark:text-gray-300"
+										className="font-medium text-gray-700"
 									>
 										Habilitar Google Analytics
 									</label>
@@ -1740,7 +1740,7 @@ const AdminSettingsPage: React.FC = () => {
 								<div>
 									<label
 										htmlFor="googleAnalyticsId"
-										className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+										className="block text-sm font-medium text-gray-700"
 									>
 										ID de Medición (GA4)
 									</label>
@@ -1751,14 +1751,14 @@ const AdminSettingsPage: React.FC = () => {
 										value={integrationSettings.googleAnalyticsId}
 										onChange={handleIntegrationChange}
 										placeholder="G-XXXXXXXXXX o UA-XXXXXXXX-X"
-										className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+										className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
 									/>
 								</div>
 							)}
 						</div>
 
-						<div className="border-b border-gray-200 dark:border-gray-700 pb-6 mb-6">
-							<h3 className="text-base font-medium text-gray-900 dark:text-white mb-4">
+						<div className="border-b border-gray-200 pb-6 mb-6">
+							<h3 className="text-base font-medium text-gray-900 mb-4">
 								Facebook Pixel
 							</h3>
 
@@ -1770,13 +1770,13 @@ const AdminSettingsPage: React.FC = () => {
 										type="checkbox"
 										checked={integrationSettings.enableFacebookPixel}
 										onChange={handleIntegrationChange}
-										className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
+										className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
 									/>
 								</div>
 								<div className="ml-3 text-sm">
 									<label
 										htmlFor="enableFacebookPixel"
-										className="font-medium text-gray-700 dark:text-gray-300"
+										className="font-medium text-gray-700"
 									>
 										Habilitar Facebook Pixel
 									</label>
@@ -1787,7 +1787,7 @@ const AdminSettingsPage: React.FC = () => {
 								<div>
 									<label
 										htmlFor="facebookPixelId"
-										className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+										className="block text-sm font-medium text-gray-700"
 									>
 										ID de Facebook Pixel
 									</label>
@@ -1798,14 +1798,14 @@ const AdminSettingsPage: React.FC = () => {
 										value={integrationSettings.facebookPixelId}
 										onChange={handleIntegrationChange}
 										placeholder="XXXXXXXXXXXXXXXXXX"
-										className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+										className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
 									/>
 								</div>
 							)}
 						</div>
 
-						<div className="border-b border-gray-200 dark:border-gray-700 pb-6 mb-6">
-							<h3 className="text-base font-medium text-gray-900 dark:text-white mb-4">
+						<div className="border-b border-gray-200 pb-6 mb-6">
+							<h3 className="text-base font-medium text-gray-900 mb-4">
 								Google reCAPTCHA
 							</h3>
 
@@ -1813,7 +1813,7 @@ const AdminSettingsPage: React.FC = () => {
 								<div>
 									<label
 										htmlFor="recaptchaSiteKey"
-										className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+										className="block text-sm font-medium text-gray-700"
 									>
 										Site Key
 									</label>
@@ -1823,14 +1823,14 @@ const AdminSettingsPage: React.FC = () => {
 										name="recaptchaSiteKey"
 										value={integrationSettings.recaptchaSiteKey}
 										onChange={handleIntegrationChange}
-										className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+										className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
 									/>
 								</div>
 
 								<div>
 									<label
 										htmlFor="recaptchaSecretKey"
-										className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+										className="block text-sm font-medium text-gray-700"
 									>
 										Secret Key
 									</label>
@@ -1840,14 +1840,14 @@ const AdminSettingsPage: React.FC = () => {
 										name="recaptchaSecretKey"
 										value={integrationSettings.recaptchaSecretKey}
 										onChange={handleIntegrationChange}
-										className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+										className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
 									/>
 								</div>
 							</div>
 						</div>
 
 						<div>
-							<h3 className="text-base font-medium text-gray-900 dark:text-white mb-4">
+							<h3 className="text-base font-medium text-gray-900 mb-4">
 								Otras Integraciones
 							</h3>
 
@@ -1861,13 +1861,13 @@ const AdminSettingsPage: React.FC = () => {
 												type="checkbox"
 												checked={integrationSettings.enableHotjar}
 												onChange={handleIntegrationChange}
-												className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
+												className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
 											/>
 										</div>
 										<div className="ml-3 text-sm">
 											<label
 												htmlFor="enableHotjar"
-												className="font-medium text-gray-700 dark:text-gray-300"
+												className="font-medium text-gray-700"
 											>
 												Habilitar Hotjar
 											</label>
@@ -1878,7 +1878,7 @@ const AdminSettingsPage: React.FC = () => {
 										<div>
 											<label
 												htmlFor="hotjarId"
-												className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+												className="block text-sm font-medium text-gray-700"
 											>
 												ID de Hotjar
 											</label>
@@ -1888,7 +1888,7 @@ const AdminSettingsPage: React.FC = () => {
 												name="hotjarId"
 												value={integrationSettings.hotjarId}
 												onChange={handleIntegrationChange}
-												className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+												className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
 											/>
 										</div>
 									)}
@@ -1903,13 +1903,13 @@ const AdminSettingsPage: React.FC = () => {
 												type="checkbox"
 												checked={integrationSettings.enableChatbot}
 												onChange={handleIntegrationChange}
-												className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
+												className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
 											/>
 										</div>
 										<div className="ml-3 text-sm">
 											<label
 												htmlFor="enableChatbot"
-												className="font-medium text-gray-700 dark:text-gray-300"
+												className="font-medium text-gray-700"
 											>
 												Habilitar Chat en vivo
 											</label>
@@ -1920,7 +1920,7 @@ const AdminSettingsPage: React.FC = () => {
 										<div>
 											<label
 												htmlFor="chatbotScript"
-												className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+												className="block text-sm font-medium text-gray-700"
 											>
 												Script de Chat
 											</label>
@@ -1930,7 +1930,7 @@ const AdminSettingsPage: React.FC = () => {
 												value={integrationSettings.chatbotScript}
 												onChange={handleIntegrationChange}
 												rows={3}
-												className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+												className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
 												placeholder="Pegue aquí el script proporcionado por su proveedor de chat"
 											></textarea>
 										</div>
@@ -1945,17 +1945,17 @@ const AdminSettingsPage: React.FC = () => {
 				{activeTab === "notifications" && (
 					<div className="p-6">
 						<div className="mb-6">
-							<h2 className="text-lg font-medium text-gray-900 dark:text-white">
+							<h2 className="text-lg font-medium text-gray-900">
 								Configuración de Notificaciones
 							</h2>
-							<p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+							<p className="mt-1 text-sm text-gray-500">
 								Configure qué notificaciones se envían a administradores,
 								vendedores y usuarios.
 							</p>
 						</div>
 
-						<div className="border-b border-gray-200 dark:border-gray-700 pb-6 mb-6">
-							<h3 className="text-base font-medium text-gray-900 dark:text-white mb-4">
+						<div className="border-b border-gray-200 pb-6 mb-6">
+							<h3 className="text-base font-medium text-gray-900 mb-4">
 								Notificaciones para Administradores
 							</h3>
 
@@ -1968,13 +1968,13 @@ const AdminSettingsPage: React.FC = () => {
 											type="checkbox"
 											checked={notificationSettings.adminNewOrder}
 											onChange={handleNotificationChange}
-											className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
+											className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
 										/>
 									</div>
 									<div className="ml-3 text-sm">
 										<label
 											htmlFor="adminNewOrder"
-											className="font-medium text-gray-700 dark:text-gray-300"
+											className="font-medium text-gray-700"
 										>
 											Nuevos Pedidos
 										</label>
@@ -1989,13 +1989,13 @@ const AdminSettingsPage: React.FC = () => {
 											type="checkbox"
 											checked={notificationSettings.adminNewUser}
 											onChange={handleNotificationChange}
-											className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
+											className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
 										/>
 									</div>
 									<div className="ml-3 text-sm">
 										<label
 											htmlFor="adminNewUser"
-											className="font-medium text-gray-700 dark:text-gray-300"
+											className="font-medium text-gray-700"
 										>
 											Nuevos Usuarios
 										</label>
@@ -2010,13 +2010,13 @@ const AdminSettingsPage: React.FC = () => {
 											type="checkbox"
 											checked={notificationSettings.adminLowStock}
 											onChange={handleNotificationChange}
-											className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
+											className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
 										/>
 									</div>
 									<div className="ml-3 text-sm">
 										<label
 											htmlFor="adminLowStock"
-											className="font-medium text-gray-700 dark:text-gray-300"
+											className="font-medium text-gray-700"
 										>
 											Stock Bajo
 										</label>
@@ -2031,13 +2031,13 @@ const AdminSettingsPage: React.FC = () => {
 											type="checkbox"
 											checked={notificationSettings.adminNewReview}
 											onChange={handleNotificationChange}
-											className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
+											className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
 										/>
 									</div>
 									<div className="ml-3 text-sm">
 										<label
 											htmlFor="adminNewReview"
-											className="font-medium text-gray-700 dark:text-gray-300"
+											className="font-medium text-gray-700"
 										>
 											Nuevas Valoraciones
 										</label>
@@ -2052,13 +2052,13 @@ const AdminSettingsPage: React.FC = () => {
 											type="checkbox"
 											checked={notificationSettings.adminFailedPayment}
 											onChange={handleNotificationChange}
-											className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
+											className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
 										/>
 									</div>
 									<div className="ml-3 text-sm">
 										<label
 											htmlFor="adminFailedPayment"
-											className="font-medium text-gray-700 dark:text-gray-300"
+											className="font-medium text-gray-700"
 										>
 											Pagos Fallidos
 										</label>
@@ -2067,8 +2067,8 @@ const AdminSettingsPage: React.FC = () => {
 							</div>
 						</div>
 
-						<div className="border-b border-gray-200 dark:border-gray-700 pb-6 mb-6">
-							<h3 className="text-base font-medium text-gray-900 dark:text-white mb-4">
+						<div className="border-b border-gray-200 pb-6 mb-6">
+							<h3 className="text-base font-medium text-gray-900 mb-4">
 								Notificaciones para Vendedores
 							</h3>
 
@@ -2081,13 +2081,13 @@ const AdminSettingsPage: React.FC = () => {
 											type="checkbox"
 											checked={notificationSettings.sellerNewOrder}
 											onChange={handleNotificationChange}
-											className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
+											className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
 										/>
 									</div>
 									<div className="ml-3 text-sm">
 										<label
 											htmlFor="sellerNewOrder"
-											className="font-medium text-gray-700 dark:text-gray-300"
+											className="font-medium text-gray-700"
 										>
 											Nuevos Pedidos
 										</label>
@@ -2102,13 +2102,13 @@ const AdminSettingsPage: React.FC = () => {
 											type="checkbox"
 											checked={notificationSettings.sellerLowStock}
 											onChange={handleNotificationChange}
-											className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
+											className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
 										/>
 									</div>
 									<div className="ml-3 text-sm">
 										<label
 											htmlFor="sellerLowStock"
-											className="font-medium text-gray-700 dark:text-gray-300"
+											className="font-medium text-gray-700"
 										>
 											Stock Bajo
 										</label>
@@ -2123,13 +2123,13 @@ const AdminSettingsPage: React.FC = () => {
 											type="checkbox"
 											checked={notificationSettings.sellerProductReview}
 											onChange={handleNotificationChange}
-											className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
+											className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
 										/>
 									</div>
 									<div className="ml-3 text-sm">
 										<label
 											htmlFor="sellerProductReview"
-											className="font-medium text-gray-700 dark:text-gray-300"
+											className="font-medium text-gray-700"
 										>
 											Valoraciones de Productos
 										</label>
@@ -2144,13 +2144,13 @@ const AdminSettingsPage: React.FC = () => {
 											type="checkbox"
 											checked={notificationSettings.sellerMessageReceived}
 											onChange={handleNotificationChange}
-											className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
+											className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
 										/>
 									</div>
 									<div className="ml-3 text-sm">
 										<label
 											htmlFor="sellerMessageReceived"
-											className="font-medium text-gray-700 dark:text-gray-300"
+											className="font-medium text-gray-700"
 										>
 											Mensajes Recibidos
 										</label>
@@ -2165,13 +2165,13 @@ const AdminSettingsPage: React.FC = () => {
 											type="checkbox"
 											checked={notificationSettings.sellerReturnRequest}
 											onChange={handleNotificationChange}
-											className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
+											className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
 										/>
 									</div>
 									<div className="ml-3 text-sm">
 										<label
 											htmlFor="sellerReturnRequest"
-											className="font-medium text-gray-700 dark:text-gray-300"
+											className="font-medium text-gray-700"
 										>
 											Solicitudes de Devolución
 										</label>
@@ -2181,7 +2181,7 @@ const AdminSettingsPage: React.FC = () => {
 						</div>
 
 						<div>
-							<h3 className="text-base font-medium text-gray-900 dark:text-white mb-4">
+							<h3 className="text-base font-medium text-gray-900 mb-4">
 								Notificaciones para Usuarios
 							</h3>
 
@@ -2194,13 +2194,13 @@ const AdminSettingsPage: React.FC = () => {
 											type="checkbox"
 											checked={notificationSettings.userOrderStatus}
 											onChange={handleNotificationChange}
-											className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
+											className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
 										/>
 									</div>
 									<div className="ml-3 text-sm">
 										<label
 											htmlFor="userOrderStatus"
-											className="font-medium text-gray-700 dark:text-gray-300"
+											className="font-medium text-gray-700"
 										>
 											Estado de Pedidos
 										</label>
@@ -2214,13 +2214,13 @@ const AdminSettingsPage: React.FC = () => {
 											type="checkbox"
 											checked={notificationSettings.userDeliveryUpdates}
 											onChange={handleNotificationChange}
-											className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
+											className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
 										/>
 									</div>
 									<div className="ml-3 text-sm">
 										<label
 											htmlFor="userDeliveryUpdates"
-											className="font-medium text-gray-700 dark:text-gray-300"
+											className="font-medium text-gray-700"
 										>
 											Actualizaciones de pedidos
 										</label>
@@ -2234,13 +2234,13 @@ const AdminSettingsPage: React.FC = () => {
 											type="checkbox"
 											checked={notificationSettings.userPromotions}
 											onChange={handleNotificationChange}
-											className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
+											className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
 										/>
 									</div>
 									<div className="ml-3 text-sm">
 										<label
 											htmlFor="userPromotions"
-											className="font-medium text-gray-700 dark:text-gray-300"
+											className="font-medium text-gray-700"
 										>
 											Promociones y Ofertas
 										</label>
@@ -2254,13 +2254,13 @@ const AdminSettingsPage: React.FC = () => {
 											type="checkbox"
 											checked={notificationSettings.userAccountChanges}
 											onChange={handleNotificationChange}
-											className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
+											className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
 										/>
 									</div>
 									<div className="ml-3 text-sm">
 										<label
 											htmlFor="userAccountChanges"
-											className="font-medium text-gray-700 dark:text-gray-300"
+											className="font-medium text-gray-700"
 										>
 											Cambios en la Cuenta
 										</label>
@@ -2274,13 +2274,13 @@ const AdminSettingsPage: React.FC = () => {
 											type="checkbox"
 											checked={notificationSettings.userPasswordChanges}
 											onChange={handleNotificationChange}
-											className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
+											className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
 										/>
 									</div>
 									<div className="ml-3 text-sm">
 										<label
 											htmlFor="userPasswordChanges"
-											className="font-medium text-gray-700 dark:text-gray-300"
+											className="font-medium text-gray-700"
 										>
 											Cambios de Contraseña
 										</label>
@@ -2296,10 +2296,10 @@ const AdminSettingsPage: React.FC = () => {
 					<div className="p-6">
 						<div className="mb-6 flex justify-between items-start">
 							<div>
-								<h2 className="text-lg font-medium text-gray-900 dark:text-white">
+								<h2 className="text-lg font-medium text-gray-900">
 									Respaldo y Restauración
 								</h2>
-								<p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+								<p className="mt-1 text-sm text-gray-500">
 									Configure respaldos automáticos y restaure su sistema desde
 									copias de seguridad.
 								</p>
@@ -2308,22 +2308,22 @@ const AdminSettingsPage: React.FC = () => {
 								<button
 									type="button"
 									onClick={() => setIsBackupNowModalOpen(true)}
-									className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 dark:bg-primary-700 dark:hover:bg-primary-800 focus:outline-none"
+									className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-primary-600 hover:bg-primary-700 focus:outline-none"
 								>
 									<Database className="w-4 h-4 mr-2" /> Respaldar ahora
 								</button>
 								<button
 									type="button"
 									onClick={() => setIsRestoreBackupModalOpen(true)}
-									className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md shadow-sm text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none"
+									className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
 								>
 									<RefreshCw className="w-4 h-4 mr-2" /> Restaurar
 								</button>
 							</div>
 						</div>
 
-						<div className="border-b border-gray-200 dark:border-gray-700 pb-6 mb-6">
-							<h3 className="text-base font-medium text-gray-900 dark:text-white mb-4">
+						<div className="border-b border-gray-200 pb-6 mb-6">
+							<h3 className="text-base font-medium text-gray-900 mb-4">
 								Configuración de Respaldo Automático
 							</h3>
 
@@ -2335,17 +2335,17 @@ const AdminSettingsPage: React.FC = () => {
 										type="checkbox"
 										checked={backupSettings.automaticBackups}
 										onChange={handleBackupChange}
-										className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
+										className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
 									/>
 								</div>
 								<div className="ml-3 text-sm">
 									<label
 										htmlFor="automaticBackups"
-										className="font-medium text-gray-700 dark:text-gray-300"
+										className="font-medium text-gray-700"
 									>
 										Habilitar respaldos automáticos
 									</label>
-									<p className="text-gray-500 dark:text-gray-400">
+									<p className="text-gray-500">
 										El sistema realizará respaldos automáticamente según la
 										programación.
 									</p>
@@ -2357,7 +2357,7 @@ const AdminSettingsPage: React.FC = () => {
 									<div>
 										<label
 											htmlFor="backupFrequency"
-											className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+											className="block text-sm font-medium text-gray-700"
 										>
 											Frecuencia de Respaldo
 										</label>
@@ -2366,7 +2366,7 @@ const AdminSettingsPage: React.FC = () => {
 											name="backupFrequency"
 											value={backupSettings.backupFrequency}
 											onChange={handleBackupChange}
-											className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+											className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
 										>
 											<option value="hourly">Cada hora</option>
 											<option value="daily">Diario</option>
@@ -2378,7 +2378,7 @@ const AdminSettingsPage: React.FC = () => {
 									<div>
 										<label
 											htmlFor="backupTime"
-											className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+											className="block text-sm font-medium text-gray-700"
 										>
 											Hora del Respaldo
 										</label>
@@ -2388,9 +2388,9 @@ const AdminSettingsPage: React.FC = () => {
 											name="backupTime"
 											value={backupSettings.backupTime}
 											onChange={handleBackupChange}
-											className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+											className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
 										/>
-										<p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+										<p className="mt-1 text-xs text-gray-500">
 											Hora del día para realizar el respaldo (zona horaria del
 											servidor).
 										</p>
@@ -2399,7 +2399,7 @@ const AdminSettingsPage: React.FC = () => {
 									<div>
 										<label
 											htmlFor="backupRetention"
-											className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+											className="block text-sm font-medium text-gray-700"
 										>
 											Días de Retención
 										</label>
@@ -2411,9 +2411,9 @@ const AdminSettingsPage: React.FC = () => {
 											onChange={handleBackupChange}
 											min="1"
 											max="365"
-											className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+											className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
 										/>
-										<p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+										<p className="mt-1 text-xs text-gray-500">
 											Número de días que se conservarán los respaldos antes de
 											eliminarlos.
 										</p>
@@ -2427,17 +2427,17 @@ const AdminSettingsPage: React.FC = () => {
 												type="checkbox"
 												checked={backupSettings.includeMedia}
 												onChange={handleBackupChange}
-												className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
+												className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
 											/>
 										</div>
 										<div className="ml-3 text-sm">
 											<label
 												htmlFor="includeMedia"
-												className="font-medium text-gray-700 dark:text-gray-300"
+												className="font-medium text-gray-700"
 											>
 												Incluir archivos multimedia
 											</label>
-											<p className="text-gray-500 dark:text-gray-400">
+											<p className="text-gray-500">
 												Incluir imágenes y otros archivos en el respaldo
 												(aumenta el tamaño).
 											</p>
@@ -2447,8 +2447,8 @@ const AdminSettingsPage: React.FC = () => {
 							)}
 						</div>
 
-						<div className="border-b border-gray-200 dark:border-gray-700 pb-6 mb-6">
-							<h3 className="text-base font-medium text-gray-900 dark:text-white mb-4">
+						<div className="border-b border-gray-200 pb-6 mb-6">
+							<h3 className="text-base font-medium text-gray-900 mb-4">
 								Almacenamiento en la Nube
 							</h3>
 
@@ -2460,17 +2460,17 @@ const AdminSettingsPage: React.FC = () => {
 										type="checkbox"
 										checked={backupSettings.backupToCloud}
 										onChange={handleBackupChange}
-										className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
+										className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
 									/>
 								</div>
 								<div className="ml-3 text-sm">
 									<label
 										htmlFor="backupToCloud"
-										className="font-medium text-gray-700 dark:text-gray-300"
+										className="font-medium text-gray-700"
 									>
 										Respaldar a almacenamiento en la nube
 									</label>
-									<p className="text-gray-500 dark:text-gray-400">
+									<p className="text-gray-500">
 										Almacena las copias de seguridad en un proveedor de nube
 										para mayor seguridad.
 									</p>
@@ -2482,7 +2482,7 @@ const AdminSettingsPage: React.FC = () => {
 									<div>
 										<label
 											htmlFor="cloudProvider"
-											className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+											className="block text-sm font-medium text-gray-700"
 										>
 											Proveedor de Nube
 										</label>
@@ -2491,7 +2491,7 @@ const AdminSettingsPage: React.FC = () => {
 											name="cloudProvider"
 											value={backupSettings.cloudProvider}
 											onChange={handleBackupChange}
-											className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+											className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
 										>
 											<option value="none">Seleccione un proveedor</option>
 											<option value="aws">Amazon S3</option>
@@ -2506,7 +2506,7 @@ const AdminSettingsPage: React.FC = () => {
 											<div>
 												<label
 													htmlFor="cloudBucket"
-													className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+													className="block text-sm font-medium text-gray-700"
 												>
 													Bucket / Contenedor
 												</label>
@@ -2516,14 +2516,14 @@ const AdminSettingsPage: React.FC = () => {
 													name="cloudBucket"
 													value={backupSettings.cloudBucket}
 													onChange={handleBackupChange}
-													className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+													className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
 												/>
 											</div>
 
 											<div>
 												<label
 													htmlFor="cloudApiKey"
-													className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+													className="block text-sm font-medium text-gray-700"
 												>
 													API Key / Access Key
 												</label>
@@ -2533,14 +2533,14 @@ const AdminSettingsPage: React.FC = () => {
 													name="cloudApiKey"
 													value={backupSettings.cloudApiKey}
 													onChange={handleBackupChange}
-													className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+													className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
 												/>
 											</div>
 
 											<div>
 												<label
 													htmlFor="cloudSecret"
-													className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+													className="block text-sm font-medium text-gray-700"
 												>
 													Secret Key / Access Secret
 												</label>
@@ -2550,7 +2550,7 @@ const AdminSettingsPage: React.FC = () => {
 													name="cloudSecret"
 													value={backupSettings.cloudSecret}
 													onChange={handleBackupChange}
-													className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+													className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
 												/>
 											</div>
 										</>
@@ -2560,26 +2560,26 @@ const AdminSettingsPage: React.FC = () => {
 						</div>
 
 						<div>
-							<h3 className="text-base font-medium text-gray-900 dark:text-white mb-4">
+							<h3 className="text-base font-medium text-gray-900 mb-4">
 								Estado del Respaldo
 							</h3>
 
-							<div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+							<div className="bg-gray-50 p-4 rounded-lg">
 								<div className="flex items-center justify-between mb-2">
-									<span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+									<span className="text-sm font-medium text-gray-700">
 										Último respaldo:
 									</span>
-									<span className="text-sm text-gray-600 dark:text-gray-400 flex items-center">
+									<span className="text-sm text-gray-600 flex items-center">
 										<Clock className="w-4 h-4 mr-1" />
 										{backupSettings.lastBackupDate || "No hay respaldos"}
 									</span>
 								</div>
 
 								<div className="flex items-center justify-between">
-									<span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+									<span className="text-sm font-medium text-gray-700">
 										Próximo respaldo:
 									</span>
-									<span className="text-sm text-gray-600 dark:text-gray-400">
+									<span className="text-sm text-gray-600">
 										{backupSettings.automaticBackups
 											? backupSettings.backupFrequency === "daily"
 												? `Hoy a las ${backupSettings.backupTime}`
@@ -2597,11 +2597,11 @@ const AdminSettingsPage: React.FC = () => {
 				)}
 
 				{/* Botones de acción del formulario */}
-				<div className="px-6 py-4 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
+				<div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
 					<button
 						type="button"
 						onClick={() => setIsResetSettingsModalOpen(true)}
-						className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none"
+						className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
 					>
 						<RefreshCw className="w-4 h-4 mr-2" />
 						Restaurar valores predeterminados
@@ -2609,7 +2609,7 @@ const AdminSettingsPage: React.FC = () => {
 					<div className="flex space-x-3">
 						<button
 							type="button"
-							className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none"
+							className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
 						>
 							Cancelar
 						</button>
@@ -2660,13 +2660,13 @@ const AdminSettingsPage: React.FC = () => {
 				title="Enviar correo de prueba"
 			>
 				<div className="space-y-4">
-					<p className="text-sm text-gray-500 dark:text-gray-400">
+					<p className="text-sm text-gray-500">
 						Enviar un correo de prueba para verificar la configuración SMTP.
 					</p>
 					<div>
 						<label
 							htmlFor="testEmailAddress"
-							className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+							className="block text-sm font-medium text-gray-700"
 						>
 							Dirección de correo
 						</label>
@@ -2675,16 +2675,16 @@ const AdminSettingsPage: React.FC = () => {
 							id="testEmailAddress"
 							value={testEmailAddress}
 							onChange={(e) => setTestEmailAddress(e.target.value)}
-							className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+							className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
 							placeholder="correo@ejemplo.com"
 							required
 						/>
 					</div>
-					<div className="pt-4 flex justify-end space-x-3 border-t border-gray-200 dark:border-gray-700">
+					<div className="pt-4 flex justify-end space-x-3 border-t border-gray-200">
 						<button
 							type="button"
 							onClick={() => setIsTestEmailModalOpen(false)}
-							className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none"
+							className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
 						>
 							Cancelar
 						</button>
@@ -2741,20 +2741,20 @@ const AdminSettingsPage: React.FC = () => {
 							<AlertTriangle className="h-6 w-6 text-yellow-500" />
 						</div>
 						<div className="ml-3">
-							<h3 className="text-base font-medium text-gray-900 dark:text-white">
+							<h3 className="text-base font-medium text-gray-900">
 								¿Está seguro de que desea restablecer la configuración?
 							</h3>
-							<p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+							<p className="mt-2 text-sm text-gray-500">
 								Esta acción restablecerá todos los ajustes a sus valores
 								predeterminados. Esta operación no se puede deshacer.
 							</p>
 						</div>
 					</div>
-					<div className="pt-4 flex justify-end space-x-3 border-t border-gray-200 dark:border-gray-700">
+					<div className="pt-4 flex justify-end space-x-3 border-t border-gray-200">
 						<button
 							type="button"
 							onClick={() => setIsResetSettingsModalOpen(false)}
-							className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none"
+							className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
 						>
 							Cancelar
 						</button>
@@ -2806,16 +2806,16 @@ const AdminSettingsPage: React.FC = () => {
 				title="Crear respaldo ahora"
 			>
 				<div className="space-y-4">
-					<p className="text-sm text-gray-500 dark:text-gray-400">
+					<p className="text-sm text-gray-500">
 						Se creará una copia de seguridad completa de su sistema. Este
 						proceso puede tardar varios minutos dependiendo del tamaño de su
 						base de datos.
 					</p>
-					<div className="pt-4 flex justify-end space-x-3 border-t border-gray-200 dark:border-gray-700">
+					<div className="pt-4 flex justify-end space-x-3 border-t border-gray-200">
 						<button
 							type="button"
 							onClick={() => setIsBackupNowModalOpen(false)}
-							className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none"
+							className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
 						>
 							Cancelar
 						</button>
@@ -2872,10 +2872,10 @@ const AdminSettingsPage: React.FC = () => {
 							<AlertTriangle className="h-6 w-6 text-yellow-500" />
 						</div>
 						<div className="ml-3">
-							<h3 className="text-base font-medium text-gray-900 dark:text-white">
+							<h3 className="text-base font-medium text-gray-900">
 								Advertencia: Restauración de sistema
 							</h3>
-							<p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+							<p className="mt-2 text-sm text-gray-500">
 								La restauración sobrescribirá datos actuales. Asegúrese de tener
 								un respaldo reciente antes de continuar.
 							</p>
@@ -2883,10 +2883,10 @@ const AdminSettingsPage: React.FC = () => {
 					</div>
 
 					<div className="mt-4">
-						<label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+						<label className="block text-sm font-medium text-gray-700">
 							Archivo de respaldo
 						</label>
-						<div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-md">
+						<div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md">
 							<div className="space-y-1 text-center">
 								<svg
 									className="mx-auto h-12 w-12 text-gray-400"
@@ -2902,10 +2902,10 @@ const AdminSettingsPage: React.FC = () => {
 										strokeLinejoin="round"
 									/>
 								</svg>
-								<div className="flex text-sm text-gray-600 dark:text-gray-400">
+								<div className="flex text-sm text-gray-600">
 									<label
 										htmlFor="file-upload"
-										className="relative cursor-pointer bg-white dark:bg-gray-800 rounded-md font-medium text-primary-600 dark:text-primary-400 hover:text-primary-500 focus-within:outline-none"
+										className="relative cursor-pointer bg-white rounded-md font-medium text-primary-600 hover:text-primary-500 focus-within:outline-none"
 									>
 										<span>Subir archivo</span>
 										<input
@@ -2919,24 +2919,24 @@ const AdminSettingsPage: React.FC = () => {
 									</label>
 									<p className="pl-1">o arrastrar y soltar</p>
 								</div>
-								<p className="text-xs text-gray-500 dark:text-gray-400">
+								<p className="text-xs text-gray-500">
 									SQL, ZIP o GZ hasta 50MB
 								</p>
 							</div>
 						</div>
 						{restoreFile && (
-							<div className="mt-2 flex items-center text-sm text-primary-600 dark:text-primary-400">
+							<div className="mt-2 flex items-center text-sm text-primary-600">
 								<FileCheck className="w-4 h-4 mr-1" />
 								Archivo seleccionado: {restoreFile.name}
 							</div>
 						)}
 					</div>
 
-					<div className="pt-4 flex justify-end space-x-3 border-t border-gray-200 dark:border-gray-700">
+					<div className="pt-4 flex justify-end space-x-3 border-t border-gray-200">
 						<button
 							type="button"
 							onClick={() => setIsRestoreBackupModalOpen(false)}
-							className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none"
+							className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
 						>
 							Cancelar
 						</button>

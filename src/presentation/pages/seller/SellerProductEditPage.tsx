@@ -669,19 +669,19 @@ const SellerProductEditPage: React.FC = () => {
 		icon: React.ElementType;
 	}) => (
 		<div
-			className="flex items-center justify-between cursor-pointer py-3 border-b border-gray-200 dark:border-gray-700"
+			className="flex items-center justify-between cursor-pointer py-3 border-b border-gray-200"
 			onClick={() => toggleSection(section)}
 		>
 			<div className="flex items-center">
-				<Icon className="w-5 h-5 text-primary-600 dark:text-primary-400 mr-2" />
-				<h3 className="text-lg font-medium text-gray-900 dark:text-white">
+				<Icon className="w-5 h-5 text-primary-600 mr-2" />
+				<h3 className="text-lg font-medium text-gray-900">
 					{title}
 				</h3>
 			</div>
 			{expandedSections[section] ? (
-				<ChevronUp className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+				<ChevronUp className="w-5 h-5 text-gray-500" />
 			) : (
-				<ChevronDown className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+				<ChevronDown className="w-5 h-5 text-gray-500" />
 			)}
 		</div>
 	);
@@ -691,7 +691,7 @@ const SellerProductEditPage: React.FC = () => {
 		return (
 			<div className="flex flex-col items-center justify-center h-64">
 				<Loader className="w-12 h-12 text-primary-600 animate-spin mb-4" />
-				<p className="text-gray-600 dark:text-gray-400 text-lg">
+				<p className="text-gray-600 text-lg">
 					Cargando datos del producto...
 				</p>
 			</div>
@@ -701,14 +701,14 @@ const SellerProductEditPage: React.FC = () => {
 	return (
 		<div className="space-y-6">
 			<div className="flex justify-between items-center">
-				<h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+				<h1 className="text-2xl font-bold text-gray-900">
 					Editar Producto: {formData.name}
 				</h1>
 				<div className="flex space-x-2">
 					<button
 						type="button"
 						onClick={() => navigate("/seller/products")}
-						className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+						className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
 					>
 						<X size={18} className="inline mr-1" /> Cancelar
 					</button>
@@ -735,7 +735,7 @@ const SellerProductEditPage: React.FC = () => {
 			{/* Formulario de edición */}
 			<form onSubmit={handleSubmit} className="space-y-6">
 				{/* Información básica */}
-				<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+				<div className="bg-white rounded-lg shadow-sm p-6">
 					<SectionHeader
 						title="Información Básica"
 						section="basic"
@@ -748,7 +748,7 @@ const SellerProductEditPage: React.FC = () => {
 							<div className="md:col-span-2">
 								<label
 									htmlFor="name"
-									className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+									className="block text-sm font-medium text-gray-700 mb-1"
 								>
 									Nombre del Producto <span className="text-red-500">*</span>
 								</label>
@@ -761,8 +761,8 @@ const SellerProductEditPage: React.FC = () => {
 									className={`w-full px-3 py-2 border ${
 										validationErrors.name
 											? "border-red-500"
-											: "border-gray-300 dark:border-gray-600"
-									} rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white`}
+											: "border-gray-300"
+									} rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500`}
 								/>
 								{validationErrors.name && (
 									<p className="mt-1 text-sm text-red-500">
@@ -775,7 +775,7 @@ const SellerProductEditPage: React.FC = () => {
 							<div className="md:col-span-2">
 								<label
 									htmlFor="short_description"
-									className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+									className="block text-sm font-medium text-gray-700 mb-1"
 								>
 									Descripción Corta
 								</label>
@@ -786,7 +786,7 @@ const SellerProductEditPage: React.FC = () => {
 									value={formData.short_description}
 									onChange={handleInputChange}
 									placeholder="Resumen breve del producto (para listados y búsquedas)"
-									className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+									className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
 								/>
 							</div>
 
@@ -794,7 +794,7 @@ const SellerProductEditPage: React.FC = () => {
 							<div className="md:col-span-2">
 								<label
 									htmlFor="description"
-									className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+									className="block text-sm font-medium text-gray-700 mb-1"
 								>
 									Descripción Completa <span className="text-red-500">*</span>
 								</label>
@@ -807,8 +807,8 @@ const SellerProductEditPage: React.FC = () => {
 									className={`w-full px-3 py-2 border ${
 										validationErrors.description
 											? "border-red-500"
-											: "border-gray-300 dark:border-gray-600"
-									} rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white`}
+											: "border-gray-300"
+									} rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500`}
 								/>
 								{validationErrors.description && (
 									<p className="mt-1 text-sm text-red-500">
@@ -821,7 +821,7 @@ const SellerProductEditPage: React.FC = () => {
 				</div>
 
 				{/* Precios y Stock */}
-				<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+				<div className="bg-white rounded-lg shadow-sm p-6">
 					<SectionHeader
 						title="Precios y Stock"
 						section="pricing"
@@ -834,7 +834,7 @@ const SellerProductEditPage: React.FC = () => {
 							<div>
 								<label
 									htmlFor="price"
-									className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+									className="block text-sm font-medium text-gray-700 mb-1"
 								>
 									Precio ($) <span className="text-red-500">*</span>
 								</label>
@@ -849,8 +849,8 @@ const SellerProductEditPage: React.FC = () => {
 									className={`w-full px-3 py-2 border ${
 										validationErrors.price
 											? "border-red-500"
-											: "border-gray-300 dark:border-gray-600"
-									} rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white`}
+											: "border-gray-300"
+									} rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500`}
 								/>
 								{validationErrors.price && (
 									<p className="mt-1 text-sm text-red-500">
@@ -863,7 +863,7 @@ const SellerProductEditPage: React.FC = () => {
 							<div>
 								<label
 									htmlFor="discount_percentage"
-									className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+									className="block text-sm font-medium text-gray-700 mb-1"
 								>
 									Descuento (%)
 								</label>
@@ -879,8 +879,8 @@ const SellerProductEditPage: React.FC = () => {
 									className={`w-full px-3 py-2 border ${
 										validationErrors.discount_percentage
 											? "border-red-500"
-											: "border-gray-300 dark:border-gray-600"
-									} rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white`}
+											: "border-gray-300"
+									} rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500`}
 								/>
 								{validationErrors.discount_percentage && (
 									<p className="mt-1 text-sm text-red-500">
@@ -893,7 +893,7 @@ const SellerProductEditPage: React.FC = () => {
 							<div>
 								<label
 									htmlFor="stock"
-									className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+									className="block text-sm font-medium text-gray-700 mb-1"
 								>
 									Cantidad en Stock <span className="text-red-500">*</span>
 								</label>
@@ -907,8 +907,8 @@ const SellerProductEditPage: React.FC = () => {
 									className={`w-full px-3 py-2 border ${
 										validationErrors.stock
 											? "border-red-500"
-											: "border-gray-300 dark:border-gray-600"
-									} rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white`}
+											: "border-gray-300"
+									} rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500`}
 								/>
 								{validationErrors.stock && (
 									<p className="mt-1 text-sm text-red-500">
@@ -921,7 +921,7 @@ const SellerProductEditPage: React.FC = () => {
 							<div>
 								<label
 									htmlFor="status"
-									className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+									className="block text-sm font-medium text-gray-700 mb-1"
 								>
 									Estado del Producto
 								</label>
@@ -930,7 +930,7 @@ const SellerProductEditPage: React.FC = () => {
 									name="status"
 									value={formData.status}
 									onChange={handleInputChange}
-									className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+									className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
 								>
 									<option value="active">Activo</option>
 									<option value="inactive">Inactivo</option>
@@ -942,7 +942,7 @@ const SellerProductEditPage: React.FC = () => {
 				</div>
 
 				{/* Categorización */}
-				<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+				<div className="bg-white rounded-lg shadow-sm p-6">
 					<SectionHeader
 						title="Categorización"
 						section="categorization"
@@ -956,12 +956,12 @@ const SellerProductEditPage: React.FC = () => {
 								<div>
 									<label
 										htmlFor="parentCategory"
-										className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+										className="block text-sm font-medium text-gray-700 mb-1"
 									>
 										Categoría Principal <span className="text-red-500">*</span>
 									</label>
 									{loadingCategories ? (
-										<div className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500">
+										<div className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100 text-gray-400">
 											Cargando categorías...
 										</div>
 									) : (
@@ -973,8 +973,8 @@ const SellerProductEditPage: React.FC = () => {
 											className={`w-full px-3 py-2 border ${
 												validationErrors.parentCategory
 													? "border-red-500"
-													: "border-gray-300 dark:border-gray-600"
-											} rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white`}
+													: "border-gray-300"
+											} rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500`}
 										>
 											<option value="">Seleccionar Categoría Principal</option>
 											{parentCategoryOptions.map((option) => (
@@ -1001,7 +1001,7 @@ const SellerProductEditPage: React.FC = () => {
 								<div className={formData.parentCategory ? "" : "opacity-50"}>
 									<label
 										htmlFor="category"
-										className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+										className="block text-sm font-medium text-gray-700 mb-1"
 									>
 										Subcategoría <span className="text-red-500">*</span>
 									</label>
@@ -1014,8 +1014,8 @@ const SellerProductEditPage: React.FC = () => {
 										className={`w-full px-3 py-2 border ${
 											validationErrors.category
 												? "border-red-500"
-												: "border-gray-300 dark:border-gray-600"
-										} rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white disabled:bg-gray-100 disabled:cursor-not-allowed dark:disabled:bg-gray-700`}
+												: "border-gray-300"
+										} rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 disabled:bg-gray-100 disabled:cursor-not-allowed`}
 									>
 										{/* Eliminar la primera opción condicional complicada y usar esto: */}
 										{!formData.category && (
@@ -1052,7 +1052,7 @@ const SellerProductEditPage: React.FC = () => {
 
 							{/* Etiquetas (Tags) */}
 							<div>
-								<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+								<label className="block text-sm font-medium text-gray-700 mb-2">
 									Etiquetas (Tags)
 								</label>
 								<div className="flex">
@@ -1067,7 +1067,7 @@ const SellerProductEditPage: React.FC = () => {
 											}))
 										}
 										onKeyDown={handleTagKeyDown}
-										className="flex-grow px-3 py-2 border border-gray-300 rounded-l-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+										className="flex-grow px-3 py-2 border border-gray-300 rounded-l-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
 									/>
 									<button
 										type="button"
@@ -1081,20 +1081,20 @@ const SellerProductEditPage: React.FC = () => {
 									{formData.tags.map((tag) => (
 										<div
 											key={tag}
-											className="bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 px-2 py-1 rounded-md flex items-center"
+											className="bg-gray-100 text-gray-800 px-2 py-1 rounded-md flex items-center"
 										>
 											<span>{tag}</span>
 											<button
 												type="button"
 												onClick={() => removeTag(tag)}
-												className="ml-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+												className="ml-1 text-gray-500 hover:text-gray-700"
 											>
 												<X size={14} />
 											</button>
 										</div>
 									))}
 									{formData.tags.length === 0 && (
-										<p className="text-sm text-gray-500 dark:text-gray-400">
+										<p className="text-sm text-gray-500">
 											Aún no se han añadido etiquetas
 										</p>
 									)}
@@ -1105,7 +1105,7 @@ const SellerProductEditPage: React.FC = () => {
 				</div>
 
 				{/* Características Físicas */}
-				<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+				<div className="bg-white rounded-lg shadow-sm p-6">
 					<SectionHeader
 						title="Características Físicas"
 						section="physical"
@@ -1118,7 +1118,7 @@ const SellerProductEditPage: React.FC = () => {
 							<div>
 								<label
 									htmlFor="weight"
-									className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+									className="block text-sm font-medium text-gray-700 mb-1"
 								>
 									Peso (kg)
 								</label>
@@ -1133,8 +1133,8 @@ const SellerProductEditPage: React.FC = () => {
 									className={`w-full px-3 py-2 border ${
 										validationErrors.weight
 											? "border-red-500"
-											: "border-gray-300 dark:border-gray-600"
-									} rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white`}
+											: "border-gray-300"
+									} rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500`}
 								/>
 								{validationErrors.weight && (
 									<p className="mt-1 text-sm text-red-500">
@@ -1147,7 +1147,7 @@ const SellerProductEditPage: React.FC = () => {
 							<div>
 								<label
 									htmlFor="width"
-									className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+									className="block text-sm font-medium text-gray-700 mb-1"
 								>
 									Ancho (cm)
 								</label>
@@ -1162,8 +1162,8 @@ const SellerProductEditPage: React.FC = () => {
 									className={`w-full px-3 py-2 border ${
 										validationErrors.width
 											? "border-red-500"
-											: "border-gray-300 dark:border-gray-600"
-									} rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white`}
+											: "border-gray-300"
+									} rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500`}
 								/>
 								{validationErrors.width && (
 									<p className="mt-1 text-sm text-red-500">
@@ -1176,7 +1176,7 @@ const SellerProductEditPage: React.FC = () => {
 							<div>
 								<label
 									htmlFor="height"
-									className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+									className="block text-sm font-medium text-gray-700 mb-1"
 								>
 									Alto (cm)
 								</label>
@@ -1191,8 +1191,8 @@ const SellerProductEditPage: React.FC = () => {
 									className={`w-full px-3 py-2 border ${
 										validationErrors.height
 											? "border-red-500"
-											: "border-gray-300 dark:border-gray-600"
-									} rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white`}
+											: "border-gray-300"
+									} rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500`}
 								/>
 								{validationErrors.height && (
 									<p className="mt-1 text-sm text-red-500">
@@ -1205,7 +1205,7 @@ const SellerProductEditPage: React.FC = () => {
 							<div>
 								<label
 									htmlFor="depth"
-									className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+									className="block text-sm font-medium text-gray-700 mb-1"
 								>
 									Profundidad (cm)
 								</label>
@@ -1220,8 +1220,8 @@ const SellerProductEditPage: React.FC = () => {
 									className={`w-full px-3 py-2 border ${
 										validationErrors.depth
 											? "border-red-500"
-											: "border-gray-300 dark:border-gray-600"
-									} rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white`}
+											: "border-gray-300"
+									} rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500`}
 								/>
 								{validationErrors.depth && (
 									<p className="mt-1 text-sm text-red-500">
@@ -1234,7 +1234,7 @@ const SellerProductEditPage: React.FC = () => {
 				</div>
 
 				{/* Variaciones */}
-				<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+				<div className="bg-white rounded-lg shadow-sm p-6">
 					<SectionHeader
 						title="Variaciones y Atributos"
 						section="variations"
@@ -1245,7 +1245,7 @@ const SellerProductEditPage: React.FC = () => {
 						<div className="mt-4 space-y-8">
 							{/* Colores */}
 							<div>
-								<h4 className="text-md font-medium text-gray-800 dark:text-gray-200 mb-2 flex items-center">
+								<h4 className="text-md font-medium text-gray-800 mb-2 flex items-center">
 									<Palette className="w-4 h-4 mr-1" /> Colores Disponibles
 								</h4>
 								<div className="flex">
@@ -1260,7 +1260,7 @@ const SellerProductEditPage: React.FC = () => {
 											}))
 										}
 										onKeyDown={handleColorKeyDown}
-										className="flex-grow px-3 py-2 border border-gray-300 rounded-l-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+										className="flex-grow px-3 py-2 border border-gray-300 rounded-l-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
 									/>
 									<button
 										type="button"
@@ -1274,20 +1274,20 @@ const SellerProductEditPage: React.FC = () => {
 									{formData.colors.map((color) => (
 										<div
 											key={color}
-											className="bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 px-2 py-1 rounded-md flex items-center"
+											className="bg-gray-100 text-gray-800 px-2 py-1 rounded-md flex items-center"
 										>
 											<span>{color}</span>
 											<button
 												type="button"
 												onClick={() => removeColor(color)}
-												className="ml-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+												className="ml-1 text-gray-500 hover:text-gray-700"
 											>
 												<X size={14} />
 											</button>
 										</div>
 									))}
 									{formData.colors.length === 0 && (
-										<p className="text-sm text-gray-500 dark:text-gray-400">
+										<p className="text-sm text-gray-500">
 											Aún no se han añadido colores
 										</p>
 									)}
@@ -1296,7 +1296,7 @@ const SellerProductEditPage: React.FC = () => {
 
 							{/* Tallas */}
 							<div>
-								<h4 className="text-md font-medium text-gray-800 dark:text-gray-200 mb-2 flex items-center">
+								<h4 className="text-md font-medium text-gray-800 mb-2 flex items-center">
 									<Ruler className="w-4 h-4 mr-1" /> Tallas Disponibles
 								</h4>
 								<div className="flex">
@@ -1311,7 +1311,7 @@ const SellerProductEditPage: React.FC = () => {
 											}))
 										}
 										onKeyDown={handleSizeKeyDown}
-										className="flex-grow px-3 py-2 border border-gray-300 rounded-l-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+										className="flex-grow px-3 py-2 border border-gray-300 rounded-l-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
 									/>
 									<button
 										type="button"
@@ -1325,20 +1325,20 @@ const SellerProductEditPage: React.FC = () => {
 									{formData.sizes.map((size) => (
 										<div
 											key={size}
-											className="bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 px-2 py-1 rounded-md flex items-center"
+											className="bg-gray-100 text-gray-800 px-2 py-1 rounded-md flex items-center"
 										>
 											<span>{size}</span>
 											<button
 												type="button"
 												onClick={() => removeSize(size)}
-												className="ml-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+												className="ml-1 text-gray-500 hover:text-gray-700"
 											>
 												<X size={14} />
 											</button>
 										</div>
 									))}
 									{formData.sizes.length === 0 && (
-										<p className="text-sm text-gray-500 dark:text-gray-400">
+										<p className="text-sm text-gray-500">
 											Aún no se han añadido tallas
 										</p>
 									)}
@@ -1347,7 +1347,7 @@ const SellerProductEditPage: React.FC = () => {
 
 							{/* Atributos personalizados */}
 							<div>
-								<h4 className="text-md font-medium text-gray-800 dark:text-gray-200 mb-2 flex items-center">
+								<h4 className="text-md font-medium text-gray-800 mb-2 flex items-center">
 									<Store className="w-4 h-4 mr-1" /> Atributos Personalizados
 								</h4>
 								<div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -1363,7 +1363,7 @@ const SellerProductEditPage: React.FC = () => {
 											}))
 										}
 										onKeyDown={handleAttributeKeyDown}
-										className="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+										className="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
 									/>
 									<div className="flex">
 										<input
@@ -1378,7 +1378,7 @@ const SellerProductEditPage: React.FC = () => {
 												}))
 											}
 											onKeyDown={handleAttributeValueKeyDown}
-											className="flex-grow px-3 py-2 border border-gray-300 rounded-l-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+											className="flex-grow px-3 py-2 border border-gray-300 rounded-l-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
 										/>
 										<button
 											type="button"
@@ -1393,35 +1393,35 @@ const SellerProductEditPage: React.FC = () => {
 								{/* Lista de atributos */}
 								<div className="mt-4">
 									{formData.attributes.length > 0 ? (
-										<div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-md">
-											<table className="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
+										<div className="bg-gray-50 p-4 rounded-md">
+											<table className="min-w-full divide-y divide-gray-200">
 												<thead>
 													<tr>
-														<th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+														<th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
 															Atributo
 														</th>
-														<th className="px-3 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+														<th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
 															Valor
 														</th>
-														<th className="px-3 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+														<th className="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
 															Acción
 														</th>
 													</tr>
 												</thead>
-												<tbody className="divide-y divide-gray-200 dark:divide-gray-600">
+												<tbody className="divide-y divide-gray-200">
 													{formData.attributes.map((attr, index) => (
 														<tr key={index}>
-															<td className="px-3 py-2 text-sm text-gray-800 dark:text-gray-200">
+															<td className="px-3 py-2 text-sm text-gray-800">
 																{attr.key}
 															</td>
-															<td className="px-3 py-2 text-sm text-gray-600 dark:text-gray-400">
+															<td className="px-3 py-2 text-sm text-gray-600">
 																{attr.value}
 															</td>
 															<td className="px-3 py-2 text-right">
 																<button
 																	type="button"
 																	onClick={() => removeAttribute(index)}
-																	className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+																	className="text-red-600 hover:text-red-800"
 																>
 																	<X size={16} />
 																</button>
@@ -1432,7 +1432,7 @@ const SellerProductEditPage: React.FC = () => {
 											</table>
 										</div>
 									) : (
-										<p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+										<p className="text-sm text-gray-500 mt-2">
 											Aún no se han añadido atributos personalizados
 										</p>
 									)}
@@ -1443,7 +1443,7 @@ const SellerProductEditPage: React.FC = () => {
 				</div>
 
 				{/* Imágenes */}
-				<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+				<div className="bg-white rounded-lg shadow-sm p-6">
 					<SectionHeader
 						title="Imágenes del Producto"
 						section="media"
@@ -1453,7 +1453,7 @@ const SellerProductEditPage: React.FC = () => {
 					{expandedSections.media && (
 						<div className="mt-4 space-y-4">
 							{/* Image Uploader */}
-							<div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center">
+							<div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
 								<input
 									type="file"
 									id="images"
@@ -1467,10 +1467,10 @@ const SellerProductEditPage: React.FC = () => {
 									className="cursor-pointer flex flex-col items-center justify-center"
 								>
 									<Upload className="h-12 w-12 text-gray-400 mb-2" />
-									<p className="text-gray-600 dark:text-gray-400 mb-1">
+									<p className="text-gray-600 mb-1">
 										Arrastra y suelta imágenes aquí o haz clic para subir
 									</p>
-									<p className="text-xs text-gray-500 dark:text-gray-500">
+									<p className="text-xs text-gray-500">
 										JPEG, PNG, WebP hasta 5MB
 									</p>
 								</label>
@@ -1479,7 +1479,7 @@ const SellerProductEditPage: React.FC = () => {
 							{/* Imágenes existentes */}
 							{formData.existingImages.length > 0 && (
 								<div>
-									<h4 className="text-md font-medium text-gray-800 dark:text-gray-200 mb-3">
+									<h4 className="text-md font-medium text-gray-800 mb-3">
 										Imágenes actuales
 									</h4>
 									<div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
@@ -1497,7 +1497,7 @@ const SellerProductEditPage: React.FC = () => {
 													key={`existing-${index}`}
 													className="relative group"
 												>
-													<div className="aspect-w-1 aspect-h-1 w-full overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-700">
+													<div className="aspect-w-1 aspect-h-1 w-full overflow-hidden rounded-lg bg-gray-100">
 														<img
 															src={imageUrl}
 															alt={
@@ -1528,13 +1528,13 @@ const SellerProductEditPage: React.FC = () => {
 							{/* Nuevas imágenes */}
 							{formData.images.length > 0 && (
 								<div>
-									<h4 className="text-md font-medium text-gray-800 dark:text-gray-200 mb-3">
+									<h4 className="text-md font-medium text-gray-800 mb-3">
 										Nuevas imágenes a agregar
 									</h4>
 									<div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
 										{formData.images.map((_, index) => (
 											<div key={`new-${index}`} className="relative group">
-												<div className="aspect-w-1 aspect-h-1 w-full overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-700">
+												<div className="aspect-w-1 aspect-h-1 w-full overflow-hidden rounded-lg bg-gray-100">
 													<img
 														src={formData.previewImages[index]}
 														alt={formData.name || `Nueva imagen ${index + 1}`}
@@ -1556,7 +1556,7 @@ const SellerProductEditPage: React.FC = () => {
 
 							{formData.existingImages.length === 0 &&
 								formData.images.length === 0 && (
-									<p className="text-sm text-gray-500 dark:text-gray-400 text-center mt-4">
+									<p className="text-sm text-gray-500 text-center mt-4">
 										No hay imágenes para este producto. Agrega al menos una
 										imagen.
 									</p>

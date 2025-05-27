@@ -361,7 +361,7 @@ const AdminProductsPage: React.FC = () => {
 			sortable: true,
 			render: (product: Product) => (
 				<div className="flex items-center">
-					<div className="flex-shrink-0 h-10 w-10 rounded-md bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden">
+					<div className="flex-shrink-0 h-10 w-10 rounded-md bg-gray-200 flex items-center justify-center overflow-hidden">
 						{product.images && product.images.length > 0 ? (
 							<img
 								src={product.images[0]}
@@ -373,11 +373,11 @@ const AdminProductsPage: React.FC = () => {
 								}}
 							/>
 						) : (
-							<Package className="h-6 w-6 text-gray-500 dark:text-gray-400" />
+							<Package className="h-6 w-6 text-gray-500" />
 						)}
 					</div>
 					<div className="ml-4">
-						<div className="text-sm font-medium text-gray-900 dark:text-white flex items-center">
+						<div className="text-sm font-medium text-gray-900 flex items-center">
 							{product.name}
 							{product.featured && (
 								<span className="ml-2">
@@ -385,7 +385,7 @@ const AdminProductsPage: React.FC = () => {
 								</span>
 							)}
 						</div>
-						<div className="text-xs text-gray-500 dark:text-gray-400">
+						<div className="text-xs text-gray-500">
 							ID: {product.id} - SKU: {product.sku || "N/A"}
 						</div>
 					</div>
@@ -399,7 +399,7 @@ const AdminProductsPage: React.FC = () => {
 			render: (product: Product) => {
 				const category = categories.find((c) => c.id === product.categoryId);
 				return (
-					<span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+					<span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
 						<Tag className="w-3 h-3 mr-1" />
 						{category ? category.name : "Sin categoría"}
 					</span>
@@ -414,16 +414,16 @@ const AdminProductsPage: React.FC = () => {
 				<div>
 					{product.discountPercentage ? (
 						<div>
-							<span className="text-gray-500 dark:text-gray-400 line-through text-xs mr-1">
+							<span className="text-gray-500 line-through text-xs mr-1">
 								{formatCurrency(product.price)}
 							</span>
-							<span className="font-semibold text-green-600 dark:text-green-400">
+							<span className="font-semibold text-green-600">
 								{formatCurrency(
 									product.finalPrice ||
 										product.price * (1 - product.discountPercentage / 100)
 								)}
 							</span>
-							<span className="ml-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-xs font-semibold px-1.5 py-0.5 rounded">
+							<span className="ml-1 bg-green-100 text-green-800 text-xs font-semibold px-1.5 py-0.5 rounded">
 								-{product.discountPercentage}%
 							</span>
 						</div>
@@ -442,15 +442,15 @@ const AdminProductsPage: React.FC = () => {
 			render: (product: Product) => (
 				<div>
 					{product.stock === 0 ? (
-						<span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+						<span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
 							Agotado
 						</span>
 					) : product.stock <= 10 ? (
-						<span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+						<span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
 							{product.stock} unidades
 						</span>
 					) : (
-						<span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+						<span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
 							{product.stock} unidades
 						</span>
 					)}
@@ -468,22 +468,22 @@ const AdminProductsPage: React.FC = () => {
 
 				if (!product.published) {
 					statusColor =
-						"bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
+						"bg-yellow-100 text-yellow-800";
 					statusText = "No publicado";
 					StatusIcon = Clock;
 				} else if (product.status === "draft") {
 					statusColor =
-						"bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200";
+						"bg-gray-100 text-gray-800";
 					statusText = "Borrador";
 					StatusIcon = Archive;
 				} else if (product.status === "active") {
 					statusColor =
-						"bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
+						"bg-green-100 text-green-800";
 					statusText = "Activo";
 					StatusIcon = CheckCircle;
 				} else {
 					statusColor =
-						"bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
+						"bg-red-100 text-red-800";
 					statusText = "Inactivo";
 					StatusIcon = Archive;
 				}
@@ -508,12 +508,12 @@ const AdminProductsPage: React.FC = () => {
 						<>
 							<Star className="h-4 w-4 text-yellow-500 mr-1" />
 							<span>{(product.rating ?? 0).toFixed(1)}</span>
-							<span className="text-xs text-gray-500 dark:text-gray-400 ml-1">
+							<span className="text-xs text-gray-500 ml-1">
 								({product.rating_count ?? 0})
 							</span>
 						</>
 					) : (
-						<span className="text-xs text-gray-500 dark:text-gray-400">
+						<span className="text-xs text-gray-500">
 							Sin valoraciones
 						</span>
 					)}
@@ -534,7 +534,7 @@ const AdminProductsPage: React.FC = () => {
 					{/* Botón para ver producto */}
 					<Link
 						to={`/admin/products/${product.id}`}
-						className="p-1 text-blue-600 hover:bg-blue-100 rounded-md dark:text-blue-400 dark:hover:bg-blue-900"
+						className="p-1 text-blue-600 hover:bg-blue-100 rounded-md"
 						title="Ver producto"
 					>
 						<Eye size={18} />
@@ -543,7 +543,7 @@ const AdminProductsPage: React.FC = () => {
 					{/* Botón para editar producto */}
 					<Link
 						to={`/admin/products/edit/${product.id}`}
-						className="p-1 text-yellow-600 hover:bg-yellow-100 rounded-md dark:text-yellow-400 dark:hover:bg-yellow-900"
+						className="p-1 text-yellow-600 hover:bg-yellow-100 rounded-md"
 						title="Editar producto"
 					>
 						<Edit size={18} />
@@ -554,8 +554,8 @@ const AdminProductsPage: React.FC = () => {
 						onClick={() => toggleFeatured(product.id || 0)}
 						className={`p-1 rounded-md ${
 							product.featured
-								? "text-yellow-600 hover:bg-yellow-100 dark:text-yellow-400 dark:hover:bg-yellow-900"
-								: "text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+								? "text-yellow-600 hover:bg-yellow-100"
+								: "text-gray-600 hover:bg-gray-100"
 						}`}
 						title={product.featured ? "Quitar destacado" : "Destacar producto"}
 					>
@@ -567,8 +567,8 @@ const AdminProductsPage: React.FC = () => {
 						onClick={() => togglePublished(product.id || 0)}
 						className={`p-1 rounded-md ${
 							product.published
-								? "text-green-600 hover:bg-green-100 dark:text-green-400 dark:hover:bg-green-900"
-								: "text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+								? "text-green-600 hover:bg-green-100"
+								: "text-gray-600 hover:bg-gray-100"
 						}`}
 						title={product.published ? "Despublicar" : "Publicar"}
 					>
@@ -578,7 +578,7 @@ const AdminProductsPage: React.FC = () => {
 					{/* Botón para eliminar */}
 					<button
 						onClick={() => deleteProduct(product.id || 0)}
-						className="p-1 text-red-600 hover:bg-red-100 rounded-md dark:text-red-400 dark:hover:bg-red-900"
+						className="p-1 text-red-600 hover:bg-red-100 rounded-md"
 						title="Eliminar producto"
 					>
 						<Trash2 size={18} />
@@ -591,7 +591,7 @@ const AdminProductsPage: React.FC = () => {
 	return (
 		<div className="space-y-6">
 			<div className="flex justify-between items-center">
-				<h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+				<h1 className="text-2xl font-bold text-gray-900">
 					Gestión de Productos
 				</h1>
 				<div className="flex space-x-2">
@@ -613,13 +613,13 @@ const AdminProductsPage: React.FC = () => {
 			</div>
 
 			{/* Filtros */}
-			<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+			<div className="bg-white rounded-lg shadow-sm p-4">
 				<div className="flex flex-col md:flex-row gap-4">
 					{/* Filtro de Categoría */}
 					<div className="flex items-center space-x-2">
-						<Filter className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+						<Filter className="h-5 w-5 text-gray-500" />
 						<select
-							className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+							className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 							value={categoryFilter}
 							onChange={(e) => setCategoryFilter(Number(e.target.value))}
 						>
@@ -634,7 +634,7 @@ const AdminProductsPage: React.FC = () => {
 					{/* Filtro de Estado */}
 					<div className="flex items-center space-x-2">
 						<select
-							className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+							className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 							value={statusFilter}
 							onChange={(e) => setStatusFilter(e.target.value)}
 						>
@@ -648,7 +648,7 @@ const AdminProductsPage: React.FC = () => {
 					{/* Filtro de Stock */}
 					<div className="flex items-center space-x-2">
 						<select
-							className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+							className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 							value={stockFilter}
 							onChange={(e) => setStockFilter(e.target.value)}
 						>

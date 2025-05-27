@@ -19,7 +19,7 @@ interface StatCardListProps {
 
 const StatCardList: FC<StatCardListProps> = ({ items }) => {
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+    <div className="bg-white rounded-lg shadow-sm p-4">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {items.map((item, index) => (
           <StatCard key={index} {...item} />

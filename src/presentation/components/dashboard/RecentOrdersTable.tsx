@@ -19,7 +19,7 @@ const getOrderColumns = (): Column<Order>[] => [
 		render: (value, row) => (
 			<Link
 				to={`/seller/orders/${row.id}`}
-				className="text-primary-600 dark:text-primary-400 hover:underline font-medium"
+				className="text-primary-600 hover:underline font-medium"
 			>
 				#{value}
 			</Link>
@@ -46,17 +46,17 @@ const getOrderColumns = (): Column<Order>[] => [
 				Completed: {
 					text: "Completado",
 					classes:
-						"bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+						"bg-green-100 text-green-800",
 				},
 				Shipped: {
 					text: "Enviado",
 					classes:
-						"bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+						"bg-blue-100 text-blue-800",
 				},
 				Processing: {
 					text: "En Proceso",
 					classes:
-						"bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
+						"bg-yellow-100 text-yellow-800",
 				},
 			};
 

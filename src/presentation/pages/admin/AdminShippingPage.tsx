@@ -33,57 +33,57 @@ const shippingStatusMap: Record<
 	pending: {
 		label: "Pendiente",
 		color:
-			"bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
+			"bg-yellow-100 text-yellow-800",
 		icon: <Clock className="w-3 h-3 mr-1" />,
 	},
 	processing: {
 		label: "En preparación",
-		color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+		color: "bg-blue-100 text-blue-800",
 		icon: <Package className="w-3 h-3 mr-1" />,
 	},
 	ready_to_ship: {
 		label: "Listo para enviar",
 		color:
-			"bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
+			"bg-purple-100 text-purple-800",
 		icon: <Package className="w-3 h-3 mr-1" />,
 	},
 	shipped: {
 		label: "Enviado",
 		color:
-			"bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200",
+			"bg-indigo-100 text-indigo-800",
 		icon: <Truck className="w-3 h-3 mr-1" />,
 	},
 	in_transit: {
 		label: "En tránsito",
 		color:
-			"bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200",
+			"bg-indigo-100 text-indigo-800",
 		icon: <Truck className="w-3 h-3 mr-1" />,
 	},
 	out_for_delivery: {
 		label: "En reparto",
-		color: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+		color: "bg-green-100 text-green-800",
 		icon: <Truck className="w-3 h-3 mr-1" />,
 	},
 	delivered: {
 		label: "Entregado",
 		color:
-			"bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200",
+			"bg-emerald-100 text-emerald-800",
 		icon: <CheckCircle className="w-3 h-3 mr-1" />,
 	},
 	failed_delivery: {
 		label: "Entrega fallida",
-		color: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+		color: "bg-red-100 text-red-800",
 		icon: <AlertTriangle className="w-3 h-3 mr-1" />,
 	},
 	returned: {
 		label: "Devuelto",
 		color:
-			"bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
+			"bg-orange-100 text-orange-800",
 		icon: <ArrowRight className="w-3 h-3 mr-1 transform rotate-180" />,
 	},
 	cancelled: {
 		label: "Cancelado",
-		color: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200",
+		color: "bg-gray-100 text-gray-800",
 		icon: <XCircle className="w-3 h-3 mr-1" />,
 	},
 };
@@ -171,14 +171,14 @@ const AdminShippingPage: React.FC = () => {
       sortable: true,
       render: (shipping: any) => (
         <div className="flex items-center">
-          <div className="flex-shrink-0 h-10 w-10 rounded-lg bg-indigo-100 dark:bg-indigo-800 flex items-center justify-center">
-            <Truck className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
+          <div className="flex-shrink-0 h-10 w-10 rounded-lg bg-indigo-100 flex items-center justify-center">
+            <Truck className="h-6 w-6 text-indigo-600" />
           </div>
           <div className="ml-4">
-            <div className="text-sm font-medium text-gray-900 dark:text-white">
+            <div className="text-sm font-medium text-gray-900">
               {shipping.trackingNumber}
             </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center">
+            <div className="text-xs text-gray-500 flex items-center">
               <Calendar className="w-3 h-3 mr-1" />
               {formatDate(shipping.createdAt)}
             </div>
@@ -192,10 +192,10 @@ const AdminShippingPage: React.FC = () => {
       sortable: true,
       render: (shipping: any) => (
         <div className="flex items-center">
-          <ShoppingBag className="h-4 w-4 text-gray-500 dark:text-gray-400 mr-1" />
+          <ShoppingBag className="h-4 w-4 text-gray-500 mr-1" />
           <Link
             to={`/admin/orders/${shipping.orderId}`}
-            className="text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300"
+            className="text-primary-600 hover:text-primary-800"
           >
             {shipping.orderNumber}
           </Link>
@@ -208,14 +208,14 @@ const AdminShippingPage: React.FC = () => {
       sortable: true,
       render: (shipping: any) => (
         <div className="flex items-center">
-          <div className="flex-shrink-0 h-8 w-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-            <User className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+          <div className="flex-shrink-0 h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">
+            <User className="h-4 w-4 text-gray-500" />
           </div>
           <div className="ml-3">
-            <div className="text-sm font-medium text-gray-900 dark:text-white">
+            <div className="text-sm font-medium text-gray-900">
               {shipping.customerName}
             </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">
+            <div className="text-xs text-gray-500">
               ID: {shipping.userId}
             </div>
           </div>
@@ -227,8 +227,8 @@ const AdminShippingPage: React.FC = () => {
       header: "Dirección",
       render: (shipping: any) => (
         <div className="flex items-start">
-          <MapPin className="h-4 w-4 text-gray-500 dark:text-gray-400 mr-1 mt-0.5 flex-shrink-0" />
-          <div className="text-xs text-gray-600 dark:text-gray-400">
+          <MapPin className="h-4 w-4 text-gray-500 mr-1 mt-0.5 flex-shrink-0" />
+          <div className="text-xs text-gray-600">
             <div>{shipping.address.street}</div>
             <div>
               {shipping.address.city}, {shipping.address.state}
@@ -256,7 +256,7 @@ const AdminShippingPage: React.FC = () => {
         const status = shippingStatusMap[shipping.status] || {
           label: shipping.status,
           color:
-            "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200",
+            "bg-gray-100 text-gray-800",
           icon: <AlertTriangle className="w-3 h-3 mr-1" />,
         };
 
@@ -274,7 +274,7 @@ const AdminShippingPage: React.FC = () => {
       key: "dates",
       header: "Fechas clave",
       render: (shipping: any) => (
-        <div className="text-xs text-gray-600 dark:text-gray-400">
+        <div className="text-xs text-gray-600">
           {shipping.shippedDate && (
             <div className="mb-1">
               <span className="font-medium">Envío:</span>{" "}
@@ -315,7 +315,7 @@ const AdminShippingPage: React.FC = () => {
             {/* Ver detalles */}
             <button
               onClick={() => openTrackingModal(shipping)}
-              className="p-1 text-blue-600 hover:bg-blue-100 rounded-md dark:text-blue-400 dark:hover:bg-blue-900"
+              className="p-1 text-blue-600 hover:bg-blue-100 rounded-md"
               title="Ver seguimiento"
             >
               <Eye size={18} />
@@ -324,7 +324,7 @@ const AdminShippingPage: React.FC = () => {
             {/* Ver pedido */}
             <Link
               to={`/admin/orders/${shipping.orderId}`}
-              className="p-1 text-purple-600 hover:bg-purple-100 rounded-md dark:text-purple-400 dark:hover:bg-purple-900"
+              className="p-1 text-purple-600 hover:bg-purple-100 rounded-md"
               title="Ver pedido"
             >
               <ShoppingBag size={18} />
@@ -333,7 +333,7 @@ const AdminShippingPage: React.FC = () => {
             {/* Enviar notificación */}
             <button
               onClick={() => sendAdminTrackingNotification(shipping.id)}
-              className="p-1 text-indigo-600 hover:bg-indigo-100 rounded-md dark:text-indigo-400 dark:hover:bg-indigo-900"
+              className="p-1 text-indigo-600 hover:bg-indigo-100 rounded-md"
               title="Enviar notificación"
             >
               <Share2 size={18} />
@@ -345,7 +345,7 @@ const AdminShippingPage: React.FC = () => {
                 onClick={() =>
                   advanceAdminShippingStatus(shipping.id, shipping.status)
                 }
-                className="p-1 text-green-600 hover:bg-green-100 rounded-md dark:text-green-400 dark:hover:bg-green-900"
+                className="p-1 text-green-600 hover:bg-green-100 rounded-md"
                 title={`Avanzar a ${shippingStatusMap[getNextStatus(shipping.status)]?.label || "siguiente estado"}`}
               >
                 <ArrowRight size={18} />
@@ -360,7 +360,7 @@ const AdminShippingPage: React.FC = () => {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+        <h1 className="text-2xl font-bold text-gray-900">
           Gestión de Envíos
         </h1>
         <div className="flex space-x-2">
@@ -382,17 +382,17 @@ const AdminShippingPage: React.FC = () => {
       )}
 
       {/* Filtros */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+      <div className="bg-white rounded-lg shadow-sm p-4">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Filtro de Estado */}
           <div className="flex flex-col space-y-1">
-            <label className="text-sm text-gray-600 dark:text-gray-400">
+            <label className="text-sm text-gray-600">
               Estado del envío
             </label>
             <div className="flex items-center">
-              <Filter className="h-5 w-5 text-gray-500 dark:text-gray-400 mr-2" />
+              <Filter className="h-5 w-5 text-gray-500 mr-2" />
               <select
-                className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
               >
@@ -408,11 +408,11 @@ const AdminShippingPage: React.FC = () => {
 
           {/* Filtro de Transportista */}
           <div className="flex flex-col space-y-1">
-            <label className="text-sm text-gray-600 dark:text-gray-400">
+            <label className="text-sm text-gray-600">
               Transportista
             </label>
             <select
-              className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
               value={carrierFilter}
               onChange={(e) => setCarrierFilter(e.target.value)}
             >
@@ -427,13 +427,13 @@ const AdminShippingPage: React.FC = () => {
 
           {/* Filtro de Rango de Fechas */}
           <div className="flex flex-col space-y-1 lg:col-span-2">
-            <label className="text-sm text-gray-600 dark:text-gray-400">
+            <label className="text-sm text-gray-600">
               Rango de fechas
             </label>
             <div className="grid grid-cols-2 gap-2">
               <input
                 type="date"
-                className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
                 value={dateRangeFilter.from}
                 onChange={(e) =>
                   setDateRangeFilter((prev) => ({
@@ -445,7 +445,7 @@ const AdminShippingPage: React.FC = () => {
               />
               <input
                 type="date"
-                className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+                className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
                 value={dateRangeFilter.to}
                 onChange={(e) =>
                   setDateRangeFilter((prev) => ({...prev, to: e.target.value}))
@@ -476,15 +476,15 @@ const AdminShippingPage: React.FC = () => {
       {/* Modal de Seguimiento */}
       {showTrackingModal && selectedAdminShipping && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                <h2 className="text-xl font-bold text-gray-900">
                   Seguimiento de Envío: {selectedAdminShipping.trackingNumber}
                 </h2>
                 <button
                   onClick={closeTrackingModal}
-                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                  className="text-gray-500 hover:text-gray-700"
                 >
                   <XCircle size={24} />
                 </button>
@@ -493,13 +493,13 @@ const AdminShippingPage: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 {/* Información del envío */}
                 <div>
-                  <h3 className="text-lg font-medium mb-2 text-gray-900 dark:text-white">
+                  <h3 className="text-lg font-medium mb-2 text-gray-900">
                     Información del envío
                   </h3>
-                  <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                  <div className="bg-gray-50 rounded-lg p-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        <p className="text-sm font-medium text-gray-500">
                           Pedido
                         </p>
                         <p className="text-white text-sm font-medium">
@@ -507,7 +507,7 @@ const AdminShippingPage: React.FC = () => {
                         </p>
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        <p className="text-sm font-medium text-gray-500">
                           Transportista
                         </p>
                         <p className="text-white text-sm font-medium">
@@ -515,7 +515,7 @@ const AdminShippingPage: React.FC = () => {
                         </p>
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        <p className="text-sm font-medium text-gray-500">
                           Estado
                         </p>
                         <span
@@ -527,7 +527,7 @@ const AdminShippingPage: React.FC = () => {
                         </span>
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        <p className="text-sm font-medium text-gray-500">
                           Fecha de creación
                         </p>
                         <p className="text-white text-sm font-medium">
@@ -535,7 +535,7 @@ const AdminShippingPage: React.FC = () => {
                         </p>
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        <p className="text-sm font-medium text-gray-500">
                           Peso
                         </p>
                         <p className="text-white text-sm font-medium">
@@ -543,7 +543,7 @@ const AdminShippingPage: React.FC = () => {
                         </p>
                       </div>
                       <div>
-                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        <p className="text-sm font-medium text-gray-500">
                           Dimensiones
                         </p>
                         <p className="text-white text-sm font-medium">
@@ -556,25 +556,25 @@ const AdminShippingPage: React.FC = () => {
 
                 {/* Dirección de entrega */}
                 <div>
-                  <h3 className="text-lg font-medium mb-2 text-gray-900 dark:text-white">
+                  <h3 className="text-lg font-medium mb-2 text-gray-900">
                     Dirección de entrega
                   </h3>
-                  <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                  <div className="bg-gray-50 rounded-lg p-4">
                     <p className="text-white text-sm font-medium mb-1">
                       {selectedAdminShipping.customerName}
                     </p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                    <p className="text-sm text-gray-600 mb-1">
                       {selectedAdminShipping.address.street}
                     </p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                    <p className="text-sm text-gray-600 mb-1">
                       {selectedAdminShipping.address.city},{" "}
                       {selectedAdminShipping.address.state}
                     </p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                    <p className="text-sm text-gray-600 mb-1">
                       {selectedAdminShipping.address.postalCode},{" "}
                       {selectedAdminShipping.address.country}
                     </p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                    <p className="text-sm text-gray-600">
                       Teléfono: {selectedAdminShipping.address.phone}
                     </p>
                   </div>
@@ -583,20 +583,20 @@ const AdminShippingPage: React.FC = () => {
 
               {/* Historial de seguimiento */}
               <div>
-                <h3 className="text-lg font-medium mb-4 text-gray-900 dark:text-white">
+                <h3 className="text-lg font-medium mb-4 text-gray-900">
                   Historial de seguimiento
                 </h3>
                 <div className="relative">
-                  <div className="absolute left-5 top-0 bottom-0 w-0.5 bg-gray-300 dark:bg-gray-700"></div>
+                  <div className="absolute left-5 top-0 bottom-0 w-0.5 bg-gray-300"></div>
                   <ul className="space-y-4">
                     {[...selectedAdminShipping.trackingHistory]
                       .reverse()
                       .map((event) => (
                         <li key={event.id} className="relative pl-12">
-                          <div className="absolute left-4 w-2 h-2 rounded-full bg-primary-600 dark:bg-primary-400 ring-4 ring-white dark:ring-gray-800 z-10"></div>
-                          <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                          <div className="absolute left-4 w-2 h-2 rounded-full bg-primary-600 ring-4 ring-white z-10"></div>
+                          <div className="bg-gray-50 rounded-lg p-4">
                             <div className="flex justify-between items-start mb-1">
-                              <p className="text-sm font-medium text-gray-900 dark:text-white">
+                              <p className="text-sm font-medium text-gray-900">
                                 {event.status === "shipped" && (
                                   <Truck className="inline w-4 h-4 mr-1" />
                                 )}
@@ -608,11 +608,11 @@ const AdminShippingPage: React.FC = () => {
                                 )}
                                 {event.description}
                               </p>
-                              <p className="text-xs text-gray-500 dark:text-gray-400">
+                              <p className="text-xs text-gray-500">
                                 {formatDate(event.timestamp)}
                               </p>
                             </div>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                            <p className="text-sm text-gray-600">
                               Ubicación: {event.location}
                             </p>
                           </div>
@@ -635,7 +635,7 @@ const AdminShippingPage: React.FC = () => {
                 </button>
                 <button
                   onClick={closeTrackingModal}
-                  className="px-4 py-2 bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                  className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
                 >
                   Cerrar
                 </button>

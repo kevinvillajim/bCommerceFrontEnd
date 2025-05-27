@@ -64,7 +64,7 @@ const OrderDetailClientPage: React.FC = () => {
 		return (
 			<div className="flex flex-col items-center justify-center min-h-screen p-4">
 				<div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-500"></div>
-				<p className="mt-4 text-gray-700 dark:text-gray-300">
+				<p className="mt-4 text-gray-700">
 					Cargando detalles del pedido...
 				</p>
 			</div>
@@ -73,13 +73,13 @@ const OrderDetailClientPage: React.FC = () => {
 
 	if (error || !order) {
 		return (
-			<div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 max-w-4xl mx-auto my-8">
+			<div className="bg-white rounded-lg shadow p-6 max-w-4xl mx-auto my-8">
 				<div className="text-center">
 					<div className="text-red-500 text-5xl mb-4">❌</div>
-					<h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+					<h2 className="text-2xl font-bold text-gray-900 mb-2">
 						Error al cargar el pedido
 					</h2>
-					<p className="text-gray-700 dark:text-gray-400 mb-6">
+					<p className="text-gray-700 mb-6">
 						{error || "No se pudo encontrar el pedido solicitado"}
 					</p>
 					<button
@@ -101,7 +101,7 @@ const OrderDetailClientPage: React.FC = () => {
 					<div>
 						<button
 							onClick={() => navigate("/orders")}
-							className="cursor-pointer flex items-center text-gray-600 hover:text-primary-600 dark:hover:text-primary-400 mb-2"
+							className="cursor-pointer flex items-center text-gray-600 hover:text-primary-600 mb-2"
 						>
 							<ArrowLeft size={16} className="mr-1" />
 							<span>Volver a mis pedidos</span>
@@ -130,19 +130,19 @@ const OrderDetailClientPage: React.FC = () => {
 					{/* Información general y estado */}
 					<div className="col-span-3 md:col-span-1 space-y-6">
 						{/* Tarjeta de estado */}
-						<div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-							<h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+						<div className="bg-white rounded-lg shadow p-6">
+							<h2 className="text-lg font-medium text-gray-900 mb-4">
 								Estado del pedido
 							</h2>
 							<div className="space-y-3">
 								<div className="flex justify-between items-center">
-									<span className="text-gray-600 dark:text-gray-400">
+									<span className="text-gray-600">
 										Estado:
 									</span>
 									<OrderStatusBadge status={order.status} />
 								</div>
 								<div className="flex justify-between items-center">
-									<span className="text-gray-600 dark:text-gray-400">
+									<span className="text-gray-600">
 										Pago:
 									</span>
 									<OrderStatusBadge
@@ -151,10 +151,10 @@ const OrderDetailClientPage: React.FC = () => {
 									/>
 								</div>
 								<div className="flex justify-between items-center">
-									<span className="text-gray-600 dark:text-gray-400">
+									<span className="text-gray-600">
 										Método de pago:
 									</span>
-									<span className="text-gray-900 dark:text-gray-100">
+									<span className="text-gray-900">
 										{order.payment_method === "credit_card" &&
 											"Tarjeta de crédito"}
 										{order.payment_method === "paypal" && "PayPal"}
@@ -164,10 +164,10 @@ const OrderDetailClientPage: React.FC = () => {
 									</span>
 								</div>
 								<div className="flex justify-between items-center">
-									<span className="text-gray-600 dark:text-gray-400">
+									<span className="text-gray-600">
 										Fecha:
 									</span>
-									<span className="text-gray-900 dark:text-gray-100">
+									<span className="text-gray-900">
 										{order.created_at
 											? formatDate(order.created_at)
 											: "Sin fecha"}
@@ -177,71 +177,71 @@ const OrderDetailClientPage: React.FC = () => {
 						</div>
 
 						{/* Información de envío */}
-						<div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-							<h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+						<div className="bg-white rounded-lg shadow p-6">
+							<h2 className="text-lg font-medium text-gray-900 mb-4">
 								Información de envío
 							</h2>
 							<div className="space-y-3">
 								{order.shipping_data ? (
 									<>
 										<div>
-											<span className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
+											<span className="block text-sm font-medium text-gray-600 mb-1">
 												Dirección de envío:
 											</span>
-											<p className="text-gray-900 dark:text-gray-100">
+											<p className="text-gray-900">
 												{order.shipping_data.address}
 											</p>
-											<p className="text-gray-900 dark:text-gray-100">
+											<p className="text-gray-900">
 												{order.shipping_data.city}, {order.shipping_data.state}
 											</p>
-											<p className="text-gray-900 dark:text-gray-100">
+											<p className="text-gray-900">
 												{order.shipping_data.country},{" "}
 												{order.shipping_data.postal_code}
 											</p>
 										</div>
 										{order.shipping_data.phone && (
 											<div>
-												<span className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+												<span className="block text-sm font-medium text-gray-600">
 													Teléfono:
 												</span>
-												<p className="text-gray-900 dark:text-gray-100">
+												<p className="text-gray-900">
 													{order.shipping_data.phone}
 												</p>
 											</div>
 										)}
 										{order.shipping_data.tracking_number && (
 											<div>
-												<span className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+												<span className="block text-sm font-medium text-gray-600">
 													Número de seguimiento:
 												</span>
-												<p className="text-primary-600 dark:text-primary-400 font-medium">
+												<p className="text-primary-600 font-medium">
 													{order.shipping_data.tracking_number}
 												</p>
 											</div>
 										)}
 										{order.shipping_data.shipping_company && (
 											<div>
-												<span className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+												<span className="block text-sm font-medium text-gray-600">
 													Empresa de transporte:
 												</span>
-												<p className="text-gray-900 dark:text-gray-100">
+												<p className="text-gray-900">
 													{order.shipping_data.shipping_company}
 												</p>
 											</div>
 										)}
 										{order.shipping_data.estimated_delivery && (
 											<div>
-												<span className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+												<span className="block text-sm font-medium text-gray-600">
 													Entrega estimada:
 												</span>
-												<p className="text-gray-900 dark:text-gray-100">
+												<p className="text-gray-900">
 													{formatDate(order.shipping_data.estimated_delivery)}
 												</p>
 											</div>
 										)}
 									</>
 								) : (
-									<p className="text-gray-600 dark:text-gray-400">
+									<p className="text-gray-600">
 										No hay información de envío disponible
 									</p>
 								)}
@@ -267,7 +267,7 @@ const OrderDetailClientPage: React.FC = () => {
 													: "Pendiente"}
 											</span>
 										</div>
-										<div className="flex-1 h-1 mx-2 bg-gray-200 dark:bg-gray-700"></div>
+										<div className="flex-1 h-1 mx-2 bg-gray-200"></div>
 										<div className="flex flex-col items-center">
 											<div
 												className={`w-10 h-10 rounded-full flex items-center justify-center ${
@@ -282,7 +282,7 @@ const OrderDetailClientPage: React.FC = () => {
 											</div>
 											<span className="text-xs mt-1">Enviado</span>
 										</div>
-										<div className="flex-1 h-1 mx-2 bg-gray-200 dark:bg-gray-700"></div>
+										<div className="flex-1 h-1 mx-2 bg-gray-200"></div>
 										<div className="flex flex-col items-center">
 											<div
 												className={`w-10 h-10 rounded-full flex items-center justify-center ${
@@ -305,29 +305,29 @@ const OrderDetailClientPage: React.FC = () => {
 					{/* Productos y resumen */}
 					<div className="col-span-3 md:col-span-2 space-y-6">
 						{/* Productos */}
-						<div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-							<h2 className="text-lg font-medium text-gray-900 dark:text-white p-6 pb-3">
+						<div className="bg-white rounded-lg shadow overflow-hidden">
+							<h2 className="text-lg font-medium text-gray-900 p-6 pb-3">
 								Productos
 							</h2>
 							<div className="overflow-x-auto">
-								<table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-									<thead className="bg-gray-50 dark:bg-gray-700">
+								<table className="min-w-full divide-y divide-gray-200">
+									<thead className="bg-gray-50">
 										<tr>
 											<th
 												scope="col"
-												className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+												className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
 											>
 												Producto
 											</th>
 											<th
 												scope="col"
-												className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+												className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
 											>
 												Subtotal
 											</th>
 										</tr>
 									</thead>
-									<tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+									<tbody className="bg-white divide-y divide-gray-200">
 										{order.items.map((item) => (
 											<tr key={item.id}>
 												<td className="px-6 py-4 whitespace-nowrap">
@@ -342,14 +342,14 @@ const OrderDetailClientPage: React.FC = () => {
 															</div>
 														)}
 														<div>
-															<div className="text-sm font-medium text-gray-900 dark:text-gray-100">
+															<div className="text-sm font-medium text-gray-900">
 																{item.product_name || "Producto"}
 															</div>
 															{/* Link al producto si es necesario */}
 															{item.product_id && (
 																<Link
 																	to={`/products/${item.product_id}`}
-																	className="text-xs text-primary-600 dark:text-primary-400 hover:underline"
+																	className="text-xs text-primary-600 hover:underline"
 																>
 																	Ver producto
 																</Link>
@@ -357,13 +357,13 @@ const OrderDetailClientPage: React.FC = () => {
 														</div>
 													</div>
 												</td>
-												<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 text-right">
+												<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
 													{formatCurrency(item.price)}
 												</td>
-												<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 text-right">
+												<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
 													{item.quantity}
 												</td>
-												<td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100 text-right">
+												<td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-right">
 													{formatCurrency(item.price * item.quantity)}
 												</td>
 											</tr>
@@ -374,33 +374,33 @@ const OrderDetailClientPage: React.FC = () => {
 						</div>
 
 						{/* Resumen de precios */}
-						<div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-							<h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+						<div className="bg-white rounded-lg shadow p-6">
+							<h2 className="text-lg font-medium text-gray-900 mb-4">
 								Resumen
 							</h2>
 							<div className="space-y-3">
 								<div className="flex justify-between items-center pb-2">
-									<span className="text-gray-600 dark:text-gray-400">
+									<span className="text-gray-600">
 										Subtotal:
 									</span>
-									<span className="text-gray-900 dark:text-gray-100">
+									<span className="text-gray-900">
 										{formatCurrency(calculateSubtotal())}
 									</span>
 								</div>
 								{/* Mostrar impuestos */}
 								<div className="flex justify-between items-center pb-2">
-									<span className="text-gray-600 dark:text-gray-400">
+									<span className="text-gray-600">
 										IVA (15%):
 									</span>
-									<span className="text-gray-900 dark:text-gray-100">
+									<span className="text-gray-900">
 										{formatCurrency(calculateTax())}
 									</span>
 								</div>
-								<div className="flex justify-between items-center pt-3 border-t border-gray-200 dark:border-gray-700 font-medium">
-									<span className="text-gray-900 dark:text-gray-100">
+								<div className="flex justify-between items-center pt-3 border-t border-gray-200 font-medium">
+									<span className="text-gray-900">
 										Total:
 									</span>
-									<span className="text-lg text-gray-900 dark:text-gray-100">
+									<span className="text-lg text-gray-900">
 										{formatCurrency(calculateTotal())}
 									</span>
 								</div>

@@ -299,7 +299,7 @@ const AdminCategoriesPage: React.FC = () => {
 			sortable: true,
 			render: (category: Category) => (
 				<div className="flex items-center">
-					<div className="flex-shrink-0 h-10 w-10 rounded-md bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden">
+					<div className="flex-shrink-0 h-10 w-10 rounded-md bg-gray-200 flex items-center justify-center overflow-hidden">
 						{category.image ? (
 							<img
 								src={`/images/categories/${category.image}`}
@@ -311,11 +311,11 @@ const AdminCategoriesPage: React.FC = () => {
 								}}
 							/>
 						) : (
-							<Folder className="h-6 w-6 text-gray-500 dark:text-gray-400" />
+							<Folder className="h-6 w-6 text-gray-500" />
 						)}
 					</div>
 					<div className="ml-4">
-						<div className="text-sm font-medium text-gray-900 dark:text-white flex items-center">
+						<div className="text-sm font-medium text-gray-900 flex items-center">
 							{category.name}
 							{category.featured && (
 								<span className="ml-2">
@@ -323,7 +323,7 @@ const AdminCategoriesPage: React.FC = () => {
 								</span>
 							)}
 						</div>
-						<div className="text-xs text-gray-500 dark:text-gray-400 flex items-center">
+						<div className="text-xs text-gray-500 flex items-center">
 							ID: {category.id}
 							{category.parent_id && (
 								<span className="ml-2">
@@ -342,7 +342,7 @@ const AdminCategoriesPage: React.FC = () => {
 			header: "Slug",
 			sortable: true,
 			render: (category: Category) => (
-				<div className="text-sm text-gray-500 dark:text-gray-400 font-mono">
+				<div className="text-sm text-gray-500 font-mono">
 					{category.slug}
 				</div>
 			),
@@ -352,7 +352,7 @@ const AdminCategoriesPage: React.FC = () => {
 			header: "Productos",
 			sortable: true,
 			render: (category: Category) => (
-				<div className="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+				<div className="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
 					{category.product_count || 0}
 				</div>
 			),
@@ -365,8 +365,8 @@ const AdminCategoriesPage: React.FC = () => {
 				<span
 					className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
 						category.is_active
-							? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-							: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+							? "bg-green-100 text-green-800"
+							: "bg-red-100 text-red-800"
 					}`}
 				>
 					{category.is_active ? (
@@ -392,13 +392,13 @@ const AdminCategoriesPage: React.FC = () => {
 						<Link
 							to="#"
 							onClick={() => setParentFilter(category.id || null)}
-							className="text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300 underline flex items-center"
+							className="text-primary-600 hover:text-primary-800 underline flex items-center"
 						>
 							<FolderTree className="h-4 w-4 mr-1" />
 							Ver subcategorías
 						</Link>
 					) : (
-						<span className="text-gray-500 dark:text-gray-400 text-sm">
+						<span className="text-gray-500 text-sm">
 							Sin subcategorías
 						</span>
 					)}
@@ -422,7 +422,7 @@ const AdminCategoriesPage: React.FC = () => {
 					<Link
 						to={`/categories/${category.slug}`}
 						target="_blank"
-						className="p-1 text-blue-600 hover:bg-blue-100 rounded-md dark:text-blue-400 dark:hover:bg-blue-900"
+						className="p-1 text-blue-600 hover:bg-blue-100 rounded-md"
 						title="Ver en tienda"
 					>
 						<ArrowUpRight size={18} />
@@ -431,7 +431,7 @@ const AdminCategoriesPage: React.FC = () => {
 					{/* Botón para editar categoría */}
 					<Link
 						to={`/admin/categories/edit/${category.id}`}
-						className="p-1 text-yellow-600 hover:bg-yellow-100 rounded-md dark:text-yellow-400 dark:hover:bg-yellow-900"
+						className="p-1 text-yellow-600 hover:bg-yellow-100 rounded-md"
 						title="Editar categoría"
 					>
 						<Edit size={18} />
@@ -442,8 +442,8 @@ const AdminCategoriesPage: React.FC = () => {
 						onClick={() => toggleFeatured(category.id || 0)}
 						className={`p-1 rounded-md ${
 							category.featured
-								? "text-yellow-600 hover:bg-yellow-100 dark:text-yellow-400 dark:hover:bg-yellow-900"
-								: "text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
+								? "text-yellow-600 hover:bg-yellow-100"
+								: "text-gray-600 hover:bg-gray-100"
 						}`}
 						title={
 							category.featured ? "Quitar destacado" : "Destacar categoría"
@@ -457,8 +457,8 @@ const AdminCategoriesPage: React.FC = () => {
 						onClick={() => toggleActive(category.id || 0)}
 						className={`p-1 rounded-md ${
 							category.is_active
-								? "text-green-600 hover:bg-green-100 dark:text-green-400 dark:hover:bg-green-900"
-								: "text-red-600 hover:bg-red-100 dark:text-red-400 dark:hover:bg-red-900"
+								? "text-green-600 hover:bg-green-100"
+								: "text-red-600 hover:bg-red-100"
 						}`}
 						title={category.is_active ? "Desactivar" : "Activar"}
 					>
@@ -468,7 +468,7 @@ const AdminCategoriesPage: React.FC = () => {
 					{/* Botón para añadir subcategoría */}
 					<Link
 						to={`/admin/categories/create?parent=${category.id}`}
-						className="p-1 text-green-600 hover:bg-green-100 rounded-md dark:text-green-400 dark:hover:bg-green-900"
+						className="p-1 text-green-600 hover:bg-green-100 rounded-md"
 						title="Añadir subcategoría"
 					>
 						<Plus size={18} />
@@ -477,7 +477,7 @@ const AdminCategoriesPage: React.FC = () => {
 					{/* Botón para eliminar */}
 					<button
 						onClick={() => deleteCategory(category.id || 0)}
-						className="p-1 text-red-600 hover:bg-red-100 rounded-md dark:text-red-400 dark:hover:bg-red-900"
+						className="p-1 text-red-600 hover:bg-red-100 rounded-md"
 						title="Eliminar categoría"
 					>
 						<Trash2 size={18} />
@@ -492,11 +492,11 @@ const AdminCategoriesPage: React.FC = () => {
 		if (viewMode === "tree") {
 			// En una implementación real, aquí renderizaríamos una vista de árbol
 			return (
-				<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+				<div className="bg-white rounded-lg shadow-sm p-4">
 					<h3 className="text-lg font-medium mb-4">
 						Vista de árbol de categorías
 					</h3>
-					<p className="text-gray-500 dark:text-gray-400">
+					<p className="text-gray-500">
 						Esta vista está en desarrollo. Por favor, utilice la vista de tabla.
 					</p>
 				</div>
@@ -525,7 +525,7 @@ const AdminCategoriesPage: React.FC = () => {
 	return (
 		<div className="space-y-6">
 			<div className="flex justify-between items-center">
-				<h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+				<h1 className="text-2xl font-bold text-gray-900">
 					Gestión de Categorías
 				</h1>
 				<div className="flex space-x-2">
@@ -547,13 +547,13 @@ const AdminCategoriesPage: React.FC = () => {
 			</div>
 
 			{/* Filtros */}
-			<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+			<div className="bg-white rounded-lg shadow-sm p-4">
 				<div className="flex flex-col md:flex-row gap-4">
 					{/* Filtro de Categoría Padre */}
 					<div className="flex items-center space-x-2">
-						<Filter className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+						<Filter className="h-5 w-5 text-gray-500" />
 						<select
-							className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+							className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 							value={parentFilter === null ? "null" : parentFilter}
 							onChange={(e) =>
 								setParentFilter(
@@ -574,7 +574,7 @@ const AdminCategoriesPage: React.FC = () => {
 					{/* Filtro de Estado */}
 					<div className="flex items-center space-x-2">
 						<select
-							className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+							className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 							value={statusFilter}
 							onChange={(e) => setStatusFilter(e.target.value)}
 						>
@@ -586,15 +586,15 @@ const AdminCategoriesPage: React.FC = () => {
 
 					{/* Selector de modo de vista */}
 					<div className="flex items-center space-x-2 ml-auto">
-						<span className="text-sm text-gray-600 dark:text-gray-400">
+						<span className="text-sm text-gray-600">
 							Vista:
 						</span>
-						<div className="flex border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
+						<div className="flex border border-gray-300 rounded-lg overflow-hidden">
 							<button
 								className={`px-3 py-1 text-sm ${
 									viewMode === "all"
 										? "bg-primary-600 text-white"
-										: "bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200"
+										: "bg-white text-gray-700"
 								}`}
 								onClick={() => setViewMode("all")}
 							>
@@ -604,7 +604,7 @@ const AdminCategoriesPage: React.FC = () => {
 								className={`px-3 py-1 text-sm ${
 									viewMode === "tree"
 										? "bg-primary-600 text-white"
-										: "bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200"
+										: "bg-white text-gray-700"
 								}`}
 								onClick={() => setViewMode("tree")}
 							>

@@ -138,18 +138,18 @@ const SellerRatingsPage: React.FC = () => {
 							}}
 						/>
 					) : (
-						<div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-md flex items-center justify-center">
-							<Package className="w-6 h-6 text-gray-500 dark:text-gray-400" />
+						<div className="w-12 h-12 bg-gray-200 rounded-md flex items-center justify-center">
+							<Package className="w-6 h-6 text-gray-500" />
 						</div>
 					)}
 					<div>
 						<Link
 							to={`/seller/products/${rating.product_id}`}
-							className="font-medium text-primary-600 dark:text-primary-400 hover:underline"
+							className="font-medium text-primary-600 hover:underline"
 						>
 							{rating.product?.name || `Producto #${rating.product_id}`}
 						</Link>
-						<div className="text-xs text-gray-500 dark:text-gray-400">
+						<div className="text-xs text-gray-500">
 							ID: {rating.product_id}
 						</div>
 					</div>
@@ -184,8 +184,8 @@ const SellerRatingsPage: React.FC = () => {
 							}}
 						/>
 					) : (
-						<div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center">
-							<span className="text-gray-500 dark:text-gray-400 text-sm font-medium">
+						<div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+							<span className="text-gray-500 text-sm font-medium">
 								{rating.user?.name
 									? rating.user.name.charAt(0).toUpperCase()
 									: "U"}
@@ -196,9 +196,9 @@ const SellerRatingsPage: React.FC = () => {
 						<div className="font-medium">
 							{rating.user?.name || `Usuario #${rating.user_id}`}
 						</div>
-						<div className="flex items-center text-xs text-gray-500 dark:text-gray-400">
+						<div className="flex items-center text-xs text-gray-500">
 							{rating.is_verified_purchase && (
-								<span className="flex items-center text-green-600 dark:text-green-400">
+								<span className="flex items-center text-green-600">
 									<CheckCircle size={12} className="mr-1" />
 									Compra verificada
 								</span>
@@ -214,16 +214,16 @@ const SellerRatingsPage: React.FC = () => {
 			render: (rating: ExtendedRating) => (
 				<div>
 					{rating.title && (
-						<div className="font-medium text-gray-900 dark:text-white">
+						<div className="font-medium text-gray-900">
 							{rating.title}
 						</div>
 					)}
 					{rating.comment && (
-						<div className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2">
+						<div className="text-sm text-gray-600 line-clamp-2">
 							{rating.comment}
 						</div>
 					)}
-					<div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+					<div className="text-xs text-gray-500 mt-1">
 						{formatDate(rating.created_at)}
 					</div>
 				</div>
@@ -237,7 +237,7 @@ const SellerRatingsPage: React.FC = () => {
 				let statusData = {
 					icon: Clock,
 					colorClass:
-						"bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
+						"bg-yellow-100 text-yellow-800",
 					text: "Pendiente",
 				};
 
@@ -245,14 +245,14 @@ const SellerRatingsPage: React.FC = () => {
 					statusData = {
 						icon: CheckCircle,
 						colorClass:
-							"bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+							"bg-green-100 text-green-800",
 						text: "Aprobada",
 					};
 				} else if (rating.status === "rejected") {
 					statusData = {
 						icon: XCircle,
 						colorClass:
-							"bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+							"bg-red-100 text-red-800",
 						text: "Rechazada",
 					};
 				}
@@ -275,14 +275,14 @@ const SellerRatingsPage: React.FC = () => {
 			render: (rating: ExtendedRating) => (
 				<div>
 					{rating.seller_response ? (
-						<div className="text-sm text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 p-2 rounded border border-gray-200 dark:border-gray-700">
+						<div className="text-sm text-gray-600 bg-gray-50 p-2 rounded border border-gray-200">
 							<div className="line-clamp-2">{rating.seller_response.text}</div>
-							<div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+							<div className="text-xs text-gray-500 mt-1">
 								{formatDate(rating.seller_response.created_at)}
 							</div>
 						</div>
 					) : (
-						<span className="text-gray-500 dark:text-gray-400 text-sm">
+						<span className="text-gray-500 text-sm">
 							Sin respuesta
 						</span>
 					)}
@@ -297,7 +297,7 @@ const SellerRatingsPage: React.FC = () => {
 					{/* Ver detalles */}
 					<Link
 						to={`/seller/products/${rating.product_id}`}
-						className="p-1 text-blue-600 hover:bg-blue-100 rounded-md dark:text-blue-400 dark:hover:bg-blue-900"
+						className="p-1 text-blue-600 hover:bg-blue-100 rounded-md"
 						title="Ver producto"
 					>
 						<Eye size={18} />
@@ -310,7 +310,7 @@ const SellerRatingsPage: React.FC = () => {
 								setReplyRatingId(rating.id || 0);
 								setReplyText("");
 							}}
-							className="p-1 text-green-600 hover:bg-green-100 rounded-md dark:text-green-400 dark:hover:bg-green-900"
+							className="p-1 text-green-600 hover:bg-green-100 rounded-md"
 							title="Responder a la valoración"
 						>
 							<MessageSquare size={18} />
@@ -323,7 +323,7 @@ const SellerRatingsPage: React.FC = () => {
 							setReportRatingId(rating.id || 0);
 							setReportReason("");
 						}}
-						className="p-1 text-orange-600 hover:bg-orange-100 rounded-md dark:text-orange-400 dark:hover:bg-orange-900"
+						className="p-1 text-orange-600 hover:bg-orange-100 rounded-md0"
 						title="Reportar valoración"
 					>
 						<Flag size={18} />
@@ -332,7 +332,7 @@ const SellerRatingsPage: React.FC = () => {
 					{/* Indicador de alerta para valoraciones negativas sin respuesta */}
 					{rating.rating <= 2 && !rating.seller_response && (
 						<span
-							className="p-1 text-red-600 dark:text-red-400"
+							className="p-1 text-red-600"
 							title="Valoración negativa sin respuesta"
 						>
 							<AlertTriangle size={18} />
@@ -346,7 +346,7 @@ const SellerRatingsPage: React.FC = () => {
 	return (
 		<div className="space-y-6">
 			<div className="flex justify-between items-center">
-				<h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+				<h1 className="text-2xl font-bold text-gray-900">
 					Valoraciones y Reseñas
 				</h1>
 				<div className="flex space-x-2">
@@ -373,14 +373,14 @@ const SellerRatingsPage: React.FC = () => {
 			)}
 
 			{/* Panel de filtros */}
-			<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+			<div className="bg-white rounded-lg shadow-sm p-4">
 				<div className="flex flex-col md:flex-row gap-4">
 					{/* Buscador */}
 					<div className="relative flex-grow">
 						<input
 							type="text"
 							placeholder="Buscar por producto, cliente, comentario..."
-							className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+							className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
 							value={searchTerm}
 							onChange={(e) => setSearchTerm(e.target.value)}
 						/>
@@ -389,9 +389,9 @@ const SellerRatingsPage: React.FC = () => {
 
 					{/* Filtro de Puntuación */}
 					<div className="flex items-center space-x-2">
-						<Filter className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+						<Filter className="h-5 w-5 text-gray-500" />
 						<select
-							className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+							className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 							value={ratingFilter}
 							onChange={(e) => setRatingFilter(e.target.value)}
 						>
@@ -407,7 +407,7 @@ const SellerRatingsPage: React.FC = () => {
 					{/* Filtro de Estado */}
 					<div className="flex items-center space-x-2">
 						<select
-							className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+							className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 							value={statusFilter}
 							onChange={(e) => setStatusFilter(e.target.value)}
 						>
@@ -422,7 +422,7 @@ const SellerRatingsPage: React.FC = () => {
 					{uniqueProducts.length > 0 && (
 						<div className="flex items-center space-x-2">
 							<select
-								className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+								className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 								value={productFilter}
 								onChange={(e) => setProductFilter(e.target.value)}
 							>
@@ -439,7 +439,7 @@ const SellerRatingsPage: React.FC = () => {
 					{/* Filtro de Compra Verificada */}
 					<div className="flex items-center space-x-2">
 						<select
-							className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+							className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 							value={verifiedFilter}
 							onChange={(e) => setVerifiedFilter(e.target.value)}
 						>
@@ -452,7 +452,7 @@ const SellerRatingsPage: React.FC = () => {
 					{/* Botón para limpiar filtros */}
 					<button
 						onClick={clearFilters}
-						className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+						className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300"
 					>
 						Limpiar filtros
 					</button>
@@ -467,50 +467,50 @@ const SellerRatingsPage: React.FC = () => {
 			/>
 
 			<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-				<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+				<div className="bg-white rounded-lg shadow-sm p-4">
 					<div className="flex justify-between items-start">
 						<div>
-							<h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
+							<h3 className="text-sm font-medium text-gray-500">
 								Pendientes
 							</h3>
-							<p className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
+							<p className="text-2xl font-bold text-yellow-600">
 								{stats.statusCounts.pending}
 							</p>
 						</div>
-						<div className="p-2 bg-yellow-50 dark:bg-yellow-900 rounded-lg">
-							<Clock className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+						<div className="p-2 bg-yellow-50 rounded-lg">
+							<Clock className="h-5 w-5 text-yellow-600" />
 						</div>
 					</div>
 				</div>
 
-				<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+				<div className="bg-white rounded-lg shadow-sm p-4">
 					<div className="flex justify-between items-start">
 						<div>
-							<h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
+							<h3 className="text-sm font-medium text-gray-500">
 								Aprobadas
 							</h3>
-							<p className="text-2xl font-bold text-green-600 dark:text-green-400">
+							<p className="text-2xl font-bold text-green-600">
 								{stats.statusCounts.approved}
 							</p>
 						</div>
-						<div className="p-2 bg-green-50 dark:bg-green-900 rounded-lg">
-							<CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
+						<div className="p-2 bg-green-50 rounded-lg">
+							<CheckCircle className="h-5 w-5 text-green-600" />
 						</div>
 					</div>
 				</div>
 
-				<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+				<div className="bg-white rounded-lg shadow-sm p-4">
 					<div className="flex justify-between items-start">
 						<div>
-							<h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
+							<h3 className="text-sm font-medium text-gray-500">
 								Respondidas
 							</h3>
-							<p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+							<p className="text-2xl font-bold text-blue-600">
 								{stats.respondedCount}
 							</p>
 						</div>
-						<div className="p-2 bg-blue-50 dark:bg-blue-900 rounded-lg">
-							<MessageSquare className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+						<div className="p-2 bg-blue-50 rounded-lg">
+							<MessageSquare className="h-5 w-5 text-blue-600" />
 						</div>
 					</div>
 				</div>
@@ -518,28 +518,28 @@ const SellerRatingsPage: React.FC = () => {
 
 			{/* Formulario para responder a una valoración */}
 			{replyRatingId && (
-				<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 border-l-4 border-green-500">
-					<h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+				<div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-green-500">
+					<h3 className="text-lg font-medium text-gray-900 mb-4">
 						Responder a la valoración
 					</h3>
 					<form onSubmit={handleReplySubmit} className="space-y-4">
 						<div>
 							<label
 								htmlFor="reply-text"
-								className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+								className="block text-sm font-medium text-gray-700 mb-2"
 							>
 								Tu respuesta
 							</label>
 							<textarea
 								id="reply-text"
 								rows={4}
-								className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+								className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
 								placeholder="Escribe tu respuesta a esta valoración..."
 								value={replyText}
 								onChange={(e) => setReplyText(e.target.value)}
 								required
 							></textarea>
-							<p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+							<p className="mt-1 text-sm text-gray-500">
 								Tu respuesta será visible públicamente para todos los usuarios.
 							</p>
 						</div>
@@ -547,7 +547,7 @@ const SellerRatingsPage: React.FC = () => {
 							<button
 								type="button"
 								onClick={handleCancelAction}
-								className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+								className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300"
 								disabled={isSubmitting}
 							>
 								Cancelar
@@ -566,28 +566,28 @@ const SellerRatingsPage: React.FC = () => {
 
 			{/* Formulario para reportar una valoración */}
 			{reportRatingId && (
-				<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 border-l-4 border-orange-500">
-					<h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+				<div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-orange-500">
+					<h3 className="text-lg font-medium text-gray-900 mb-4">
 						Reportar valoración
 					</h3>
 					<form onSubmit={handleReportSubmit} className="space-y-4">
 						<div>
 							<label
 								htmlFor="report-reason"
-								className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+								className="block text-sm font-medium text-gray-700 mb-2"
 							>
 								Motivo del reporte
 							</label>
 							<textarea
 								id="report-reason"
 								rows={4}
-								className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+								className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
 								placeholder="Describe por qué consideras que esta valoración debe ser revisada..."
 								value={reportReason}
 								onChange={(e) => setReportReason(e.target.value)}
 								required
 							></textarea>
-							<p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+							<p className="mt-1 text-sm text-gray-500">
 								Tu reporte será revisado por el equipo de moderación.
 							</p>
 						</div>
@@ -595,7 +595,7 @@ const SellerRatingsPage: React.FC = () => {
 							<button
 								type="button"
 								onClick={handleCancelAction}
-								className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+								className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300"
 								disabled={isSubmitting}
 							>
 								Cancelar

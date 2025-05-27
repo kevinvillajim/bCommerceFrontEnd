@@ -30,7 +30,7 @@ function CompactTable<T extends Record<string, any>>({
   };
 
   return (
-    <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-sm ${className}`}>
+    <div className={`bg-white rounded-lg shadow-sm ${className}`}>
       <TableHeader 
         title={title} 
         viewAllLink={viewAllLink} 
@@ -38,17 +38,17 @@ function CompactTable<T extends Record<string, any>>({
       />
       
       {/* Compact list */}
-      <div className="divide-y divide-gray-200 dark:divide-gray-700">
+      <div className="divide-y divide-gray-200">
         {data.map((row, rowIndex) => (
           <div 
             key={rowIndex}
-            className={`px-6 py-3 flex flex-wrap items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-700 ${onRowClick ? 'cursor-pointer' : ''}`}
+            className={`px-6 py-3 flex flex-wrap items-center gap-3 hover:bg-gray-50 ${onRowClick ? 'cursor-pointer' : ''}`}
             onClick={onRowClick ? () => onRowClick(row) : undefined}
           >
             {columns.map((column, colIndex) => (
               <div key={colIndex} className="flex items-center">
                 {column.showLabelInCompact && (
-                  <span className="text-xs text-gray-500 dark:text-gray-400 mr-1">
+                  <span className="text-xs text-gray-500 mr-1">
                     {column.header}:
                   </span>
                 )}

@@ -60,19 +60,19 @@ const Modal: React.FC<ModalProps> = ({
 
 				{/* Modal */}
 				<div
-					className={`inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle ${sizeClasses[size]} w-full`}
+					className={`inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle ${sizeClasses[size]} w-full`}
 				>
-					<div className="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6">
+					<div className="bg-white px-4 pt-5 pb-4 sm:p-6">
 						<div className="flex justify-between items-center mb-4">
 							<h3
-								className="text-lg leading-6 font-medium text-gray-900 dark:text-white"
+								className="text-lg leading-6 font-medium text-gray-900"
 								id="modal-title"
 							>
 								{title}
 							</h3>
 							<button
 								type="button"
-								className="bg-white dark:bg-gray-800 rounded-md text-gray-400 hover:text-gray-500 focus:outline-none"
+								className="bg-white rounded-md text-gray-400 hover:text-gray-500 focus:outline-none"
 								onClick={onClose}
 							>
 								<span className="sr-only">Cerrar</span>
@@ -527,7 +527,7 @@ const AdminAccountingPage: React.FC = () => {
 			key: "referenceNumber",
 			header: "Referencia",
 			render: (transaction: AccountingTransaction) => (
-				<span className="font-medium text-primary-600 dark:text-primary-400">
+				<span className="font-medium text-primary-600">
 					{transaction.referenceNumber}
 				</span>
 			),
@@ -556,12 +556,12 @@ const AdminAccountingPage: React.FC = () => {
 					className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
           ${
 						transaction.type === "Venta"
-							? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
+							? "bg-green-100 text-green-800"
 							: transaction.type === "Compra"
-								? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
+								? "bg-blue-100 text-blue-800"
 								: transaction.type === "Gasto"
-									? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
-									: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"
+									? "bg-red-100 text-red-800"
+									: "bg-gray-100 text-gray-800"
 					}`}
 				>
 					{transaction.type}
@@ -575,7 +575,7 @@ const AdminAccountingPage: React.FC = () => {
 			render: (transaction: AccountingTransaction) => (
 				<span
 					className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-          ${transaction.isPosted ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300" : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"}`}
+          ${transaction.isPosted ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}`}
 				>
 					{transaction.isPosted ? "Contabilizado" : "Pendiente"}
 				</span>
@@ -589,14 +589,14 @@ const AdminAccountingPage: React.FC = () => {
 				<div className="flex space-x-2">
 					<button
 						onClick={() => openTransactionDetail(transaction)}
-						className="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-200"
+						className="text-primary-600 hover:text-primary-900"
 						title="Ver detalles"
 					>
 						<Eye size={16} />
 					</button>
 					{!transaction.isPosted && (
 						<button
-							className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-200"
+							className="text-green-600 hover:text-green-900"
 							title="Contabilizar"
 						>
 							<Archive size={16} />
@@ -613,7 +613,7 @@ const AdminAccountingPage: React.FC = () => {
 			key: "code",
 			header: "Código",
 			render: (account: AccountingAccount) => (
-				<span className="font-medium text-primary-600 dark:text-primary-400">
+				<span className="font-medium text-primary-600">
 					{account.code}
 				</span>
 			),
@@ -632,16 +632,16 @@ const AdminAccountingPage: React.FC = () => {
 					className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
           ${
 						account.type === "Activo"
-							? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
+							? "bg-blue-100 text-blue-800"
 							: account.type === "Pasivo"
-								? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
+								? "bg-yellow-100 text-yellow-800"
 								: account.type === "Ingreso"
-									? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
+									? "bg-green-100 text-green-800"
 									: account.type === "Gasto"
-										? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
+										? "bg-red-100 text-red-800"
 										: account.type === "Costo"
-											? "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300"
-											: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"
+											? "bg-orange-100 text-orange-800"
+											: "bg-gray-100 text-gray-800"
 					}`}
 				>
 					{account.type}
@@ -657,7 +657,7 @@ const AdminAccountingPage: React.FC = () => {
 				const balance = account.balance ?? 0;
 				return (
 					<span
-						className={`font-medium ${balance >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
+						className={`font-medium ${balance >= 0 ? "text-green-600" : "text-red-600"}`}
 					>
 						{formatCurrency(balance)}
 					</span>
@@ -671,7 +671,7 @@ const AdminAccountingPage: React.FC = () => {
 			render: (account: AccountingAccount) => (
 				<span
 					className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-          ${account.isActive ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300" : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"}`}
+          ${account.isActive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}
 				>
 					{account.isActive ? "Activa" : "Inactiva"}
 				</span>
@@ -685,7 +685,7 @@ const AdminAccountingPage: React.FC = () => {
 				<div className="flex space-x-2">
 					<button
 						onClick={() => openAccountDetail(account)}
-						className="text-primary-600 hover:text-primary-900 dark:text-primary-400 dark:hover:text-primary-200"
+						className="text-primary-600 hover:text-primary-900"
 						title="Ver detalles"
 					>
 						<Eye size={16} />
@@ -740,38 +740,38 @@ const AdminAccountingPage: React.FC = () => {
 		  value: formatCurrency(financialSummary.income),
 		  change: 0,
 		  icon: DollarSign,
-		  iconBgColor: "bg-green-50 dark:bg-green-900",
-		  iconColor: "text-green-600 dark:text-green-400",
+		  iconBgColor: "bg-green-50",
+		  iconColor: "text-green-600",
 		},
 		{
 		  title: "Gastos Totales",
 		  value: formatCurrency(financialSummary.expenses),
 		  change: 0,
 		  icon: DollarSign,
-		  iconBgColor: "bg-red-50 dark:bg-red-900",
-		  iconColor: "text-red-600 dark:text-red-400",
+		  iconBgColor: "bg-red-50",
+		  iconColor: "text-red-600",
 		},
 		{
 		  title: "Balance",
 		  value: formatCurrency(financialSummary.balance),
 		  change: 0,
 		  icon: BarChart2,
-		  iconBgColor: "bg-blue-50 dark:bg-blue-900",
-		  iconColor: "text-blue-600 dark:text-blue-400",
+		  iconBgColor: "bg-blue-50",
+		  iconColor: "text-blue-600",
 		},
 		{
 		  title: "Beneficio Neto",
 		  value: formatCurrency(financialSummary.netProfit),
 		  change: financialSummary.netProfitPercentage,
 		  icon: DollarSign,
-		  iconBgColor: "bg-purple-50 dark:bg-purple-900",
-		  iconColor: "text-purple-600 dark:text-purple-400",
+		  iconBgColor: "bg-purple-50",
+		  iconColor: "text-purple-600",
 		},
 	  ];
 
 	return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+      <h1 className="text-2xl font-bold text-gray-900 mb-6">
         Gestión Contable
       </h1>
       <div className="mb-5">
@@ -780,14 +780,14 @@ const AdminAccountingPage: React.FC = () => {
       </div>
       {/* Pestañas */}
       <div className="mb-6">
-        <div className="border-b border-gray-200 dark:border-gray-700">
+        <div className="border-b border-gray-200">
           <nav className="-mb-px flex space-x-8">
             <button
               onClick={() => setActiveTab("transactions")}
               className={`py-4 px-1 border-b-2 font-medium text-sm ${
                 activeTab === "transactions"
-                  ? "border-primary-500 text-primary-600 dark:text-primary-400 dark:border-primary-400"
-                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+                  ? "border-primary-500 text-primary-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
               }`}
             >
               Transacciones
@@ -796,8 +796,8 @@ const AdminAccountingPage: React.FC = () => {
               onClick={() => setActiveTab("accounts")}
               className={`py-4 px-1 border-b-2 font-medium text-sm ${
                 activeTab === "accounts"
-                  ? "border-primary-500 text-primary-600 dark:text-primary-400 dark:border-primary-400"
-                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+                  ? "border-primary-500 text-primary-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
               }`}
             >
               Plan Contable
@@ -806,8 +806,8 @@ const AdminAccountingPage: React.FC = () => {
               onClick={() => setActiveTab("reports")}
               className={`py-4 px-1 border-b-2 font-medium text-sm ${
                 activeTab === "reports"
-                  ? "border-primary-500 text-primary-600 dark:text-primary-400 dark:border-primary-400"
-                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300"
+                  ? "border-primary-500 text-primary-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
               }`}
             >
               Reportes
@@ -818,18 +818,18 @@ const AdminAccountingPage: React.FC = () => {
 
       {/* Filtros */}
       {activeTab === "transactions" && (
-        <div className="mb-6 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+        <div className="mb-6 p-4 bg-white rounded-lg shadow-sm">
           <div className="flex flex-col md:flex-row md:items-center space-y-4 md:space-y-0 md:space-x-4">
             <div className="flex items-center">
               <Filter className="h-5 w-5 text-gray-400 mr-2" />
-              <span className="text-gray-700 dark:text-gray-300">Filtrar:</span>
+              <span className="text-gray-700">Filtrar:</span>
             </div>
 
             <div className="flex flex-wrap gap-4">
               <div>
                 <label
                   htmlFor="dateFrom"
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  className="block text-sm font-medium text-gray-700 mb-1"
                 >
                   Fecha desde
                 </label>
@@ -840,14 +840,14 @@ const AdminAccountingPage: React.FC = () => {
                   onChange={(e) =>
                     setDateRange({ ...dateRange, from: e.target.value })
                   }
-                  className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm dark:bg-gray-700 dark:text-white"
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm"
                 />
               </div>
 
               <div>
                 <label
                   htmlFor="dateTo"
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  className="block text-sm font-medium text-gray-700 mb-1"
                 >
                   Fecha hasta
                 </label>
@@ -858,14 +858,14 @@ const AdminAccountingPage: React.FC = () => {
                   onChange={(e) =>
                     setDateRange({ ...dateRange, to: e.target.value })
                   }
-                  className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm dark:bg-gray-700 dark:text-white"
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm"
                 />
               </div>
 
               <div>
                 <label
                   htmlFor="type"
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  className="block text-sm font-medium text-gray-700 mb-1"
                 >
                   Tipo
                 </label>
@@ -873,7 +873,7 @@ const AdminAccountingPage: React.FC = () => {
                   id="type"
                   value={filterType}
                   onChange={(e) => setFilterType(e.target.value)}
-                  className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm dark:bg-gray-700 dark:text-white"
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm"
                 >
                   <option value="all">Todos</option>
                   <option value="venta">Venta</option>
@@ -886,13 +886,13 @@ const AdminAccountingPage: React.FC = () => {
               <div>
                 <label
                   htmlFor="status"
-                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                  className="block text-sm font-medium text-gray-700 mb-1"
                 >
                   Estado
                 </label>
                 <select
                   id="status"
-                  className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm dark:bg-gray-700 dark:text-white"
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm"
                 >
                   <option value="all">Todos</option>
                   <option value="posted">Contabilizados</option>
@@ -905,7 +905,7 @@ const AdminAccountingPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsNewTransactionModalOpen(true)}
-                className="px-4 py-2 bg-primary-600 border border-transparent rounded-md font-medium text-white shadow-sm hover:bg-primary-700 dark:bg-primary-700 dark:hover:bg-primary-800"
+                className="px-4 py-2 bg-primary-600 border border-transparent rounded-md font-medium text-white shadow-sm hover:bg-primary-700"
               >
                 Nueva Transacción
               </button>
@@ -915,7 +915,7 @@ const AdminAccountingPage: React.FC = () => {
       )}
 
       {/* Contenido de pestañas */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+      <div className="bg-white rounded-lg shadow-sm">
         {activeTab === "transactions" && (
           <Table
             data={transactions}
@@ -935,14 +935,14 @@ const AdminAccountingPage: React.FC = () => {
 
         {activeTab === "accounts" && (
           <div>
-            <div className="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
-              <h2 className="text-lg font-medium text-gray-900 dark:text-white">
+            <div className="flex justify-between items-center p-4 border-b border-gray-200">
+              <h2 className="text-lg font-medium text-gray-900">
                 Plan de Cuentas
               </h2>
               <button
                 type="button"
                 onClick={() => setIsNewAccountModalOpen(true)}
-                className="px-4 py-2 bg-primary-600 border border-transparent rounded-md font-medium text-white shadow-sm hover:bg-primary-700 dark:bg-primary-700 dark:hover:bg-primary-800"
+                className="px-4 py-2 bg-primary-600 border border-transparent rounded-md font-medium text-white shadow-sm hover:bg-primary-700"
               >
                 Nueva Cuenta
               </button>
@@ -966,51 +966,51 @@ const AdminAccountingPage: React.FC = () => {
 
         {activeTab === "reports" && (
           <div className="p-6">
-            <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+            <h2 className="text-lg font-medium text-gray-900 mb-4">
               Informes Financieros
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-white dark:bg-gray-700 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-600">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+              <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">
                   Balance General
                 </h3>
-                <p className="text-gray-600 dark:text-gray-300 mb-4">
+                <p className="text-gray-600 mb-4">
                   Resumen de activos, pasivos y patrimonio de la empresa.
                 </p>
                 <button
                   type="button"
-                  className="px-4 py-2 bg-primary-600 border border-transparent rounded-md font-medium text-white shadow-sm hover:bg-primary-700 dark:bg-primary-700 dark:hover:bg-primary-800 w-full"
+                  className="px-4 py-2 bg-primary-600 border border-transparent rounded-md font-medium text-white shadow-sm hover:bg-primary-700 w-full"
                 >
                   Ver Balance General
                 </button>
               </div>
 
-              <div className="bg-white dark:bg-gray-700 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-600">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+              <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">
                   Estado de Resultados
                 </h3>
-                <p className="text-gray-600 dark:text-gray-300 mb-4">
+                <p className="text-gray-600 mb-4">
                   Informe detallado de ingresos, gastos y beneficios.
                 </p>
                 <button
                   type="button"
-                  className="px-4 py-2 bg-primary-600 border border-transparent rounded-md font-medium text-white shadow-sm hover:bg-primary-700 dark:bg-primary-700 dark:hover:bg-primary-800 w-full"
+                  className="px-4 py-2 bg-primary-600 border border-transparent rounded-md font-medium text-white shadow-sm hover:bg-primary-700 w-full"
                 >
                   Ver Estado de Resultados
                 </button>
               </div>
 
-              <div className="bg-white dark:bg-gray-700 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-600">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+              <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
+                <h3 className="text-lg font-medium text-gray-900 mb-4">
                   Libro Mayor
                 </h3>
-                <p className="text-gray-600 dark:text-gray-300 mb-4">
+                <p className="text-gray-600 mb-4">
                   Registro detallado de movimientos por cuenta.
                 </p>
                 <button
                   type="button"
-                  className="px-4 py-2 bg-primary-600 border border-transparent rounded-md font-medium text-white shadow-sm hover:bg-primary-700 dark:bg-primary-700 dark:hover:bg-primary-800 w-full"
+                  className="px-4 py-2 bg-primary-600 border border-transparent rounded-md font-medium text-white shadow-sm hover:bg-primary-700 w-full"
                 >
                   Ver Libro Mayor
                 </button>
@@ -1018,22 +1018,22 @@ const AdminAccountingPage: React.FC = () => {
             </div>
 
             <div className="mt-8">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">
                 Generar Informes Personalizados
               </h3>
 
-              <div className="bg-white dark:bg-gray-700 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-600">
+              <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                   <div>
                     <label
                       htmlFor="reportType"
-                      className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                      className="block text-sm font-medium text-gray-700 mb-1"
                     >
                       Tipo de Informe
                     </label>
                     <select
                       id="reportType"
-                      className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm dark:bg-gray-600 dark:text-white"
+                      className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm"
                     >
                       <option value="balance">Balance General</option>
                       <option value="income">Estado de Resultados</option>
@@ -1045,41 +1045,41 @@ const AdminAccountingPage: React.FC = () => {
                   <div>
                     <label
                       htmlFor="reportDateFrom"
-                      className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                      className="block text-sm font-medium text-gray-700 mb-1"
                     >
                       Fecha desde
                     </label>
                     <input
                       type="date"
                       id="reportDateFrom"
-                      className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm dark:bg-gray-600 dark:text-white"
+                      className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm"
                     />
                   </div>
 
                   <div>
                     <label
                       htmlFor="reportDateTo"
-                      className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                      className="block text-sm font-medium text-gray-700 mb-1"
                     >
                       Fecha hasta
                     </label>
                     <input
                       type="date"
                       id="reportDateTo"
-                      className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm dark:bg-gray-600 dark:text-white"
+                      className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm"
                     />
                   </div>
 
                   <div>
                     <label
                       htmlFor="reportFormat"
-                      className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+                      className="block text-sm font-medium text-gray-700 mb-1"
                     >
                       Formato
                     </label>
                     <select
                       id="reportFormat"
-                      className="block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm dark:bg-gray-600 dark:text-white"
+                      className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm"
                     >
                       <option value="pdf">PDF</option>
                       <option value="excel">Excel</option>
@@ -1091,7 +1091,7 @@ const AdminAccountingPage: React.FC = () => {
                 <div className="flex justify-end">
                   <button
                     type="button"
-                    className="px-4 py-2 bg-primary-600 border border-transparent rounded-md font-medium text-white shadow-sm hover:bg-primary-700 dark:bg-primary-700 dark:hover:bg-primary-800"
+                    className="px-4 py-2 bg-primary-600 border border-transparent rounded-md font-medium text-white shadow-sm hover:bg-primary-700"
                   >
                     Generar Informe
                   </button>
@@ -1114,7 +1114,7 @@ const AdminAccountingPage: React.FC = () => {
             <div>
               <label
                 htmlFor="referenceNumber"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                className="block text-sm font-medium text-gray-700"
               >
                 Número de Referencia
               </label>
@@ -1124,7 +1124,7 @@ const AdminAccountingPage: React.FC = () => {
                 name="referenceNumber"
                 value={newTransaction.referenceNumber}
                 onChange={handleTransactionChange}
-                className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                 placeholder="TRANS-XXX"
                 required
               />
@@ -1132,7 +1132,7 @@ const AdminAccountingPage: React.FC = () => {
             <div>
               <label
                 htmlFor="transactionDate"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                className="block text-sm font-medium text-gray-700"
               >
                 Fecha de Transacción
               </label>
@@ -1142,7 +1142,7 @@ const AdminAccountingPage: React.FC = () => {
                 name="transactionDate"
                 value={newTransaction.transactionDate}
                 onChange={handleTransactionChange}
-                className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                 required
               />
             </div>
@@ -1152,7 +1152,7 @@ const AdminAccountingPage: React.FC = () => {
             <div>
               <label
                 htmlFor="type"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                className="block text-sm font-medium text-gray-700"
               >
                 Tipo de Transacción
               </label>
@@ -1161,7 +1161,7 @@ const AdminAccountingPage: React.FC = () => {
                 name="type"
                 value={newTransaction.type}
                 onChange={handleTransactionChange}
-                className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                 required
               >
                 <option value="Venta">Venta</option>
@@ -1174,7 +1174,7 @@ const AdminAccountingPage: React.FC = () => {
             <div>
               <label
                 htmlFor="description"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                className="block text-sm font-medium text-gray-700"
               >
                 Descripción
               </label>
@@ -1184,7 +1184,7 @@ const AdminAccountingPage: React.FC = () => {
                 name="description"
                 value={newTransaction.description}
                 onChange={handleTransactionChange}
-                className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                 placeholder="Descripción de la transacción"
                 required
               />
@@ -1193,13 +1193,13 @@ const AdminAccountingPage: React.FC = () => {
 
           <div>
             <div className="flex justify-between items-center mb-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label className="block text-sm font-medium text-gray-700">
                 Entradas Contables
               </label>
               <button
                 type="button"
                 onClick={addTransactionEntry}
-                className="text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 flex items-center text-sm font-medium"
+                className="text-primary-600 hover:text-primary-700 flex items-center text-sm font-medium"
               >
                 <Plus
                   size={16}
@@ -1209,28 +1209,28 @@ const AdminAccountingPage: React.FC = () => {
               </button>
             </div>
 
-            <div className="overflow-x-auto border border-gray-300 dark:border-gray-600 rounded-md shadow-sm">
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead className="bg-gray-50 dark:bg-gray-800">
+            <div className="overflow-x-auto border border-gray-300 rounded-md shadow-sm">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Cuenta
                     </th>
-                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Debe
                     </th>
-                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Haber
                     </th>
-                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Notas
                     </th>
-                    <th className="px-3 py-2 text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    <th className="px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Acción
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                <tbody className="bg-white divide-y divide-gray-200">
                   {newTransaction.entries.map((entry, index) => (
                     <tr key={index}>
                       <td className="px-3 py-2 whitespace-nowrap">
@@ -1243,7 +1243,7 @@ const AdminAccountingPage: React.FC = () => {
                               e.target.value
                             )
                           }
-                          className="block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-1 px-2 text-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                          className="block w-full border border-gray-300 rounded-md shadow-sm py-1 px-2 text-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                           required
                         >
                           <option value="">Seleccionar cuenta</option>
@@ -1270,7 +1270,7 @@ const AdminAccountingPage: React.FC = () => {
                           }
                           step="0.01"
                           min="0"
-                          className="block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-1 px-2 text-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                          className="block w-full border border-gray-300 rounded-md shadow-sm py-1 px-2 text-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                         />
                       </td>
                       <td className="px-3 py-2 whitespace-nowrap">
@@ -1286,7 +1286,7 @@ const AdminAccountingPage: React.FC = () => {
                           }
                           step="0.01"
                           min="0"
-                          className="block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-1 px-2 text-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                          className="block w-full border border-gray-300 rounded-md shadow-sm py-1 px-2 text-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                         />
                       </td>
                       <td className="px-3 py-2 whitespace-nowrap">
@@ -1296,7 +1296,7 @@ const AdminAccountingPage: React.FC = () => {
                           onChange={(e) =>
                             handleEntryChange(index, "notes", e.target.value)
                           }
-                          className="block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-1 px-2 text-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                          className="block w-full border border-gray-300 rounded-md shadow-sm py-1 px-2 text-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                           placeholder="Notas"
                         />
                       </td>
@@ -1304,21 +1304,21 @@ const AdminAccountingPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => removeTransactionEntry(index)}
-                          className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                          className="text-red-600 hover:text-red-900"
                         >
                           <X size={16} />
                         </button>
                       </td>
                     </tr>
                   ))}
-                  <tr className="bg-gray-50 dark:bg-gray-700">
-                    <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                  <tr className="bg-gray-50">
+                    <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
                       Totales
                     </td>
-                    <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                    <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
                       {formatCurrency(totals.totalDebit)}
                     </td>
-                    <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                    <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900">
                       {formatCurrency(totals.totalCredit)}
                     </td>
                     <td
@@ -1326,7 +1326,7 @@ const AdminAccountingPage: React.FC = () => {
                       className="px-3 py-2 whitespace-nowrap text-sm font-medium"
                     >
                       <span
-                        className={`${totals.difference === 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
+                        className={`${totals.difference === 0 ? "text-green-600" : "text-red-600"}`}
                       >
                         {totals.difference === 0
                           ? "Transacción balanceada"
@@ -1343,14 +1343,14 @@ const AdminAccountingPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsNewTransactionModalOpen(false)}
-              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+              className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
             >
               Cancelar
             </button>
             <button
               type="button"
               onClick={saveTransaction}
-              className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 dark:bg-primary-700 dark:hover:bg-primary-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 flex items-center"
+              className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 flex items-center"
             >
               <Save
                 size={16}
@@ -1373,7 +1373,7 @@ const AdminAccountingPage: React.FC = () => {
             <div>
               <label
                 htmlFor="code"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                className="block text-sm font-medium text-gray-700"
               >
                 Código de Cuenta
               </label>
@@ -1383,7 +1383,7 @@ const AdminAccountingPage: React.FC = () => {
                 name="code"
                 value={newAccount.code}
                 onChange={handleAccountChange}
-                className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                 placeholder="Ej. 1000"
                 required
               />
@@ -1391,7 +1391,7 @@ const AdminAccountingPage: React.FC = () => {
             <div>
               <label
                 htmlFor="name"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                className="block text-sm font-medium text-gray-700"
               >
                 Nombre de Cuenta
               </label>
@@ -1401,7 +1401,7 @@ const AdminAccountingPage: React.FC = () => {
                 name="name"
                 value={newAccount.name}
                 onChange={handleAccountChange}
-                className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                 placeholder="Ej. Efectivo"
                 required
               />
@@ -1412,7 +1412,7 @@ const AdminAccountingPage: React.FC = () => {
             <div>
               <label
                 htmlFor="accountType"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+                className="block text-sm font-medium text-gray-700"
               >
                 Tipo de Cuenta
               </label>
@@ -1421,7 +1421,7 @@ const AdminAccountingPage: React.FC = () => {
                 name="type"
                 value={newAccount.type}
                 onChange={handleAccountChange}
-                className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
                 required
               >
                 <option value="Activo">Activo</option>
@@ -1435,7 +1435,7 @@ const AdminAccountingPage: React.FC = () => {
             <div>
               <label
                 htmlFor="isActive"
-                className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 mt-6"
+                className="flex items-center text-sm font-medium text-gray-700 mt-6"
               >
                 <input
                   type="checkbox"
@@ -1443,7 +1443,7 @@ const AdminAccountingPage: React.FC = () => {
                   name="isActive"
                   checked={newAccount.isActive}
                   onChange={handleAccountChange}
-                  className="h-4 w-4 text-primary-600 dark:text-primary-500 focus:ring-primary-500 border-gray-300 dark:border-gray-600 rounded"
+                  className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
                 />
                 <span className="ml-2">Cuenta Activa</span>
               </label>
@@ -1453,7 +1453,7 @@ const AdminAccountingPage: React.FC = () => {
           <div>
             <label
               htmlFor="description"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+              className="block text-sm font-medium text-gray-700"
             >
               Descripción
             </label>
@@ -1463,7 +1463,7 @@ const AdminAccountingPage: React.FC = () => {
               value={newAccount.description}
               onChange={handleAccountChange}
               rows={3}
-              className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
               placeholder="Descripción detallada de la cuenta"
             ></textarea>
           </div>
@@ -1472,14 +1472,14 @@ const AdminAccountingPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsNewAccountModalOpen(false)}
-              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+              className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
             >
               Cancelar
             </button>
             <button
               type="button"
               onClick={saveAccount}
-              className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 dark:bg-primary-700 dark:hover:bg-primary-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 flex items-center"
+              className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 flex items-center"
             >
               <Save
                 size={16}
@@ -1500,28 +1500,28 @@ const AdminAccountingPage: React.FC = () => {
       >
         {selectedTransaction && (
           <div className="space-y-6">
-            <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+            <div className="bg-gray-50 p-4 rounded-lg">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                  <h4 className="text-xs font-medium text-gray-500 uppercase">
                     Referencia
                   </h4>
-                  <p className="mt-1 text-sm font-medium text-gray-900 dark:text-white">
+                  <p className="mt-1 text-sm font-medium text-gray-900">
                     {selectedTransaction.referenceNumber}
                   </p>
                 </div>
                 <div>
-                  <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                  <h4 className="text-xs font-medium text-gray-500 uppercase">
                     Fecha
                   </h4>
-                  <p className="mt-1 text-sm text-gray-900 dark:text-white">
+                  <p className="mt-1 text-sm text-gray-900">
                     {new Date(
                       selectedTransaction.transactionDate
                     ).toLocaleDateString("es-ES")}
                   </p>
                 </div>
                 <div>
-                  <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                  <h4 className="text-xs font-medium text-gray-500 uppercase">
                     Tipo
                   </h4>
                   <p className="mt-1">
@@ -1529,12 +1529,12 @@ const AdminAccountingPage: React.FC = () => {
                       className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
                       ${
                         selectedTransaction.type === "Venta"
-                          ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
+                          ? "bg-green-100 text-green-800"
                           : selectedTransaction.type === "Compra"
-                            ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
+                            ? "bg-blue-100 text-blue-800"
                             : selectedTransaction.type === "Gasto"
-                              ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
-                              : "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"
+                              ? "bg-red-100 text-red-800"
+                              : "bg-gray-100 text-gray-800"
                       }`}
                     >
                       {selectedTransaction.type}
@@ -1543,21 +1543,21 @@ const AdminAccountingPage: React.FC = () => {
                 </div>
               </div>
               <div className="mt-4">
-                <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                <h4 className="text-xs font-medium text-gray-500 uppercase">
                   Descripción
                 </h4>
-                <p className="mt-1 text-sm text-gray-900 dark:text-white">
+                <p className="mt-1 text-sm text-gray-900">
                   {selectedTransaction.description}
                 </p>
               </div>
               <div className="mt-4">
-                <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                <h4 className="text-xs font-medium text-gray-500 uppercase">
                   Estado
                 </h4>
                 <p className="mt-1">
                   <span
                     className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                    ${selectedTransaction.isPosted ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300" : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"}`}
+                    ${selectedTransaction.isPosted ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}`}
                   >
                     {selectedTransaction.isPosted
                       ? "Contabilizado"
@@ -1567,10 +1567,10 @@ const AdminAccountingPage: React.FC = () => {
               </div>
               {selectedTransaction.orderId && (
                 <div className="mt-4">
-                  <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                  <h4 className="text-xs font-medium text-gray-500 uppercase">
                     Orden relacionada
                   </h4>
-                  <p className="mt-1 text-sm text-primary-600 dark:text-primary-400 font-medium">
+                  <p className="mt-1 text-sm text-primary-600 font-medium">
                     #{selectedTransaction.orderId}
                   </p>
                 </div>
@@ -1578,28 +1578,28 @@ const AdminAccountingPage: React.FC = () => {
             </div>
 
             <div>
-              <h3 className="text-base font-medium text-gray-900 dark:text-white mb-3">
+              <h3 className="text-base font-medium text-gray-900 mb-3">
                 Entradas Contables
               </h3>
-              <div className="overflow-x-auto border border-gray-300 dark:border-gray-600 rounded-md shadow-sm">
-                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                  <thead className="bg-gray-50 dark:bg-gray-800">
+              <div className="overflow-x-auto border border-gray-300 rounded-md shadow-sm">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Cuenta
                       </th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Debe
                       </th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Haber
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Notas
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                  <tbody className="bg-white divide-y divide-gray-200">
                     {selectedTransaction.entries.map((entry) => {
                       // Encontrar la cuenta correspondiente
                       const account = accounts.find(
@@ -1608,22 +1608,22 @@ const AdminAccountingPage: React.FC = () => {
 
                       return (
                         <tr key={entry.id}>
-                          <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">
+                          <td className="px-4 py-3 text-sm text-gray-900">
                             {account
                               ? `${account.code} - ${account.name}`
                               : `Cuenta ID: ${entry.accountId}`}
                           </td>
-                          <td className="px-4 py-3 text-sm text-right text-gray-900 dark:text-white">
+                          <td className="px-4 py-3 text-sm text-right text-gray-900">
                             {entry.debitAmount > 0
                               ? formatCurrency(entry.debitAmount)
                               : ""}
                           </td>
-                          <td className="px-4 py-3 text-sm text-right text-gray-900 dark:text-white">
+                          <td className="px-4 py-3 text-sm text-right text-gray-900">
                             {entry.creditAmount > 0
                               ? formatCurrency(entry.creditAmount)
                               : ""}
                           </td>
-                          <td className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+                          <td className="px-4 py-3 text-sm text-gray-500">
                             {entry.notes}
                           </td>
                         </tr>
@@ -1631,11 +1631,11 @@ const AdminAccountingPage: React.FC = () => {
                     })}
 
                     {/* Fila de totales */}
-                    <tr className="bg-gray-50 dark:bg-gray-700 font-medium">
-                      <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">
+                    <tr className="bg-gray-50 font-medium">
+                      <td className="px-4 py-3 text-sm text-gray-900">
                         Totales
                       </td>
-                      <td className="px-4 py-3 text-sm text-right text-gray-900 dark:text-white">
+                      <td className="px-4 py-3 text-sm text-right text-gray-900">
                         {formatCurrency(
                           selectedTransaction.entries.reduce(
                             (sum, entry) => sum + entry.debitAmount,
@@ -1643,7 +1643,7 @@ const AdminAccountingPage: React.FC = () => {
                           )
                         )}
                       </td>
-                      <td className="px-4 py-3 text-sm text-right text-gray-900 dark:text-white">
+                      <td className="px-4 py-3 text-sm text-right text-gray-900">
                         {formatCurrency(
                           selectedTransaction.entries.reduce(
                             (sum, entry) => sum + entry.creditAmount,
@@ -1651,13 +1651,13 @@ const AdminAccountingPage: React.FC = () => {
                           )
                         )}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-900 dark:text-white">
+                      <td className="px-4 py-3 text-sm text-gray-900">
                         {selectedTransaction.isBalanced ? (
-                          <span className="text-green-600 dark:text-green-400">
+                          <span className="text-green-600">
                             Transacción balanceada
                           </span>
                         ) : (
-                          <span className="text-red-600 dark:text-red-400">
+                          <span className="text-red-600">
                             Transacción no balanceada
                           </span>
                         )}
@@ -1672,7 +1672,7 @@ const AdminAccountingPage: React.FC = () => {
               {!selectedTransaction.isPosted && (
                 <button
                   type="button"
-                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 flex items-center"
+                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 flex items-center"
                 >
                   <Archive
                     size={16}
@@ -1684,7 +1684,7 @@ const AdminAccountingPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsTransactionDetailModalOpen(false)}
-                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
               >
                 Cerrar
               </button>
@@ -1701,28 +1701,28 @@ const AdminAccountingPage: React.FC = () => {
       >
         {selectedAccount && (
           <div className="space-y-6">
-            <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+            <div className="bg-gray-50 p-4 rounded-lg">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                  <h4 className="text-xs font-medium text-gray-500 uppercase">
                     Código
                   </h4>
-                  <p className="mt-1 text-sm font-medium text-gray-900 dark:text-white">
+                  <p className="mt-1 text-sm font-medium text-gray-900">
                     {selectedAccount.code}
                   </p>
                 </div>
                 <div>
-                  <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                  <h4 className="text-xs font-medium text-gray-500 uppercase">
                     Nombre
                   </h4>
-                  <p className="mt-1 text-sm text-gray-900 dark:text-white">
+                  <p className="mt-1 text-sm text-gray-900">
                     {selectedAccount.name}
                   </p>
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                 <div>
-                  <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                  <h4 className="text-xs font-medium text-gray-500 uppercase">
                     Tipo
                   </h4>
                   <p className="mt-1">
@@ -1730,16 +1730,16 @@ const AdminAccountingPage: React.FC = () => {
                       className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
                       ${
                         selectedAccount.type === "Activo"
-                          ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
+                          ? "bg-blue-100 text-blue-800"
                           : selectedAccount.type === "Pasivo"
-                            ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
+                            ? "bg-yellow-100 text-yellow-800"
                             : selectedAccount.type === "Ingreso"
-                              ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
+                              ? "bg-green-100 text-green-800"
                               : selectedAccount.type === "Gasto"
-                                ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
+                                ? "bg-red-100 text-red-800"
                                 : selectedAccount.type === "Costo"
-                                  ? "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300"
-                                  : "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300"
+                                  ? "bg-orange-100 text-orange-800"
+                                  : "bg-gray-100 text-gray-800"
                       }`}
                     >
                       {selectedAccount.type}
@@ -1747,12 +1747,12 @@ const AdminAccountingPage: React.FC = () => {
                   </p>
                 </div>
                 <div>
-                  <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                  <h4 className="text-xs font-medium text-gray-500 uppercase">
                     Saldo
                   </h4>
-                  <p className="mt-1 text-sm text-gray-900 dark:text-white">
+                  <p className="mt-1 text-sm text-gray-900">
                     <span
-                      className={`font-medium ${selectedAccount.balance && selectedAccount.balance >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
+                      className={`font-medium ${selectedAccount.balance && selectedAccount.balance >= 0 ? "text-green-600" : "text-red-600"}`}
                     >
                       {formatCurrency(selectedAccount.balance || 0)}
                     </span>
@@ -1760,40 +1760,40 @@ const AdminAccountingPage: React.FC = () => {
                 </div>
               </div>
               <div className="mt-4">
-                <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                <h4 className="text-xs font-medium text-gray-500 uppercase">
                   Estado
                 </h4>
                 <p className="mt-1">
                   <span
                     className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                    ${selectedAccount.isActive ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300" : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"}`}
+                    ${selectedAccount.isActive ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}
                   >
                     {selectedAccount.isActive ? "Activa" : "Inactiva"}
                   </span>
                 </p>
               </div>
               <div className="mt-4">
-                <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                <h4 className="text-xs font-medium text-gray-500 uppercase">
                   Descripción
                 </h4>
-                <p className="mt-1 text-sm text-gray-900 dark:text-white">
+                <p className="mt-1 text-sm text-gray-900">
                   {selectedAccount.description || "Sin descripción"}
                 </p>
               </div>
             </div>
 
             <div>
-              <h3 className="text-base font-medium text-gray-900 dark:text-white mb-3">
+              <h3 className="text-base font-medium text-gray-900 mb-3">
                 Movimientos Recientes
               </h3>
-              <div className="border border-gray-300 dark:border-gray-600 rounded-md shadow-sm p-4 text-center text-gray-500 dark:text-gray-400">
+              <div className="border border-gray-300 rounded-md shadow-sm p-4 text-center text-gray-500">
                 <p>
                   Para ver los movimientos detallados de esta cuenta, genere un
                   informe de Libro Mayor.
                 </p>
                 <button
                   type="button"
-                  className="mt-3 px-4 py-2 bg-primary-600 border border-transparent rounded-md font-medium text-white shadow-sm hover:bg-primary-700 dark:bg-primary-700 dark:hover:bg-primary-800"
+                  className="mt-3 px-4 py-2 bg-primary-600 border border-transparent rounded-md font-medium text-white shadow-sm hover:bg-primary-700"
                 >
                   Ver Libro Mayor
                 </button>
@@ -1803,14 +1803,14 @@ const AdminAccountingPage: React.FC = () => {
             <div className="flex justify-end space-x-3">
               <button
                 type="button"
-                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
                 onClick={() => setIsAccountDetailModalOpen(false)}
               >
                 Cerrar
               </button>
               <button
                 type="button"
-                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 dark:bg-primary-700 dark:hover:bg-primary-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 flex items-center"
+                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 flex items-center"
               >
                 Editar Cuenta
               </button>

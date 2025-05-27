@@ -46,7 +46,7 @@ const RatingCard: React.FC<RatingCardProps> = ({
 }) => {
 	return (
 		<div
-			className={`bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 ${className}`}
+			className={`bg-white rounded-lg shadow-sm p-4 ${className}`}
 		>
 			{/* Encabezado con usuario y estrellas */}
 			<div className="flex justify-between items-start mb-3">
@@ -64,8 +64,8 @@ const RatingCard: React.FC<RatingCardProps> = ({
 							}}
 						/>
 					) : (
-						<div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center mr-3">
-							<span className="text-gray-600 dark:text-gray-300 font-semibold">
+						<div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center mr-3">
+							<span className="text-gray-600 font-semibold">
 								{userName.charAt(0).toUpperCase()}
 							</span>
 						</div>
@@ -73,13 +73,13 @@ const RatingCard: React.FC<RatingCardProps> = ({
 
 					{/* Información de usuario */}
 					<div>
-						<div className="font-medium text-gray-900 dark:text-white">
+						<div className="font-medium text-gray-900">
 							{userName}
 						</div>
-						<div className="text-xs text-gray-500 dark:text-gray-400">
+						<div className="text-xs text-gray-500">
 							{formatDate(date)}
 							{isVerifiedPurchase && (
-								<span className="flex items-center text-green-600 dark:text-green-400 ml-2 mt-1">
+								<span className="flex items-center text-green-600 ml-2 mt-1">
 									<CheckCircle size={12} className="mr-1" />
 									Compra verificada
 								</span>
@@ -94,25 +94,25 @@ const RatingCard: React.FC<RatingCardProps> = ({
 
 			{/* Contenido de la valoración */}
 			{title && (
-				<h3 className="font-medium text-gray-900 dark:text-white mb-1">
+				<h3 className="font-medium text-gray-900 mb-1">
 					{title}
 				</h3>
 			)}
 
 			{comment && (
-				<p className="text-gray-700 dark:text-gray-300 mb-3">{comment}</p>
+				<p className="text-gray-700 mb-3">{comment}</p>
 			)}
 
 			{/* Respuesta del vendedor */}
 			{sellerResponse && (
-				<div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-md mt-2 mb-2">
-					<div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+				<div className="bg-gray-50 p-3 rounded-md mt-2 mb-2">
+					<div className="text-sm font-medium text-gray-700 mb-1">
 						Respuesta del vendedor
 					</div>
-					<p className="text-gray-600 dark:text-gray-400 text-sm">
+					<p className="text-gray-600 text-sm">
 						{sellerResponse.text}
 					</p>
-					<div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+					<div className="text-xs text-gray-500 mt-1">
 						{formatDate(sellerResponse.date)}
 					</div>
 				</div>
@@ -120,7 +120,7 @@ const RatingCard: React.FC<RatingCardProps> = ({
 
 			{/* Razón de reporte */}
 			{reportReason && (
-				<div className="bg-red-50 dark:bg-red-900 text-red-800 dark:text-red-200 p-3 rounded-md mt-2 mb-2 text-sm">
+				<div className="bg-red-50 text-red-800 p-3 rounded-md mt-2 mb-2 text-sm">
 					<div className="font-medium mb-1">Reporte</div>
 					<p>{reportReason}</p>
 				</div>
@@ -132,7 +132,7 @@ const RatingCard: React.FC<RatingCardProps> = ({
 					{!sellerResponse && onReply && (
 						<button
 							onClick={() => onReply(id)}
-							className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+							className="text-sm text-blue-600 hover:text-blue-800"
 						>
 							Responder
 						</button>
@@ -141,7 +141,7 @@ const RatingCard: React.FC<RatingCardProps> = ({
 					{!reportReason && onReport && (
 						<button
 							onClick={() => onReport(id)}
-							className="text-sm text-orange-600 hover:text-orange-800 dark:text-orange-400 dark:hover:text-orange-300 flex items-center"
+							className="text-sm text-orange-600 hover:text-orange-800 flex items-center"
 						>
 							<Flag size={14} className="mr-1" />
 							Reportar

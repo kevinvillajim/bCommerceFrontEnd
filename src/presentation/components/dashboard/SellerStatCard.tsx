@@ -14,19 +14,19 @@ export const SellerStatCard = ({
 	color,
 }: SellerStatCardProps) => {
 	return (
-		<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 col-span-1">
+		<div className="bg-white rounded-lg shadow-sm p-4 col-span-1">
 			<div className="flex justify-between items-start">
 				<div>
-					<h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">
+					<h3 className="text-sm font-medium text-gray-500">
 						{label}
 					</h3>
 					<p
-						className={`text-2xl font-bold text-${color}-600 dark:text-${color}-400`}
+						className={`text-2xl font-bold text-${color}-600`}
 					>
 						{value}
 					</p>
 				</div>
-				<div className={`p-2 bg-${color}-50 dark:bg-${color}-900 rounded-lg`}>
+				<div className={`p-2 bg-${color}-50 rounded-lg`}>
 					{icon}
 				</div>
 			</div>

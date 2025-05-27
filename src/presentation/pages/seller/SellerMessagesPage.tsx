@@ -430,7 +430,7 @@ const SellerMessagesPage: React.FC = () => {
 			return (
 				<div className="flex flex-col justify-center items-center h-full">
 					<div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600 mb-4"></div>
-					<p className="text-gray-600 dark:text-gray-300">{loadingMessage}</p>
+					<p className="text-gray-600">{loadingMessage}</p>
 				</div>
 			);
 		}
@@ -474,13 +474,13 @@ const SellerMessagesPage: React.FC = () => {
 		// Si no hay chat seleccionado (mensaje de bienvenida)
 		return (
 			<div className="flex flex-col items-center justify-center h-full p-4 text-center">
-				<div className="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
-					<MessageSquare className="h-8 w-8 text-gray-500 dark:text-gray-400" />
+				<div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mb-4">
+					<MessageSquare className="h-8 w-8 text-gray-500" />
 				</div>
-				<h3 className="text-lg font-medium text-gray-900 dark:text-white">
+				<h3 className="text-lg font-medium text-gray-900">
 					Selecciona una conversación
 				</h3>
-				<p className="text-gray-500 dark:text-gray-400 mt-2 max-w-md">
+				<p className="text-gray-500 mt-2 max-w-md">
 					{chats.length > 0
 						? "Elige una conversación de la lista para ver los mensajes y responder a tus clientes"
 						: "No tienes conversaciones activas. Cuando los clientes inicien conversaciones sobre tus productos, aparecerán aquí."}
@@ -492,7 +492,7 @@ const SellerMessagesPage: React.FC = () => {
 	return (
 		<div className="container mx-auto p-4">
 			<div className="mb-4 flex justify-between items-center">
-				<h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
+				<h1 className="text-2xl font-bold text-gray-900 flex items-center">
 					<MessageSquare className="w-6 h-6 mr-2" />
 					Conversaciones con Clientes
 				</h1>
@@ -500,7 +500,7 @@ const SellerMessagesPage: React.FC = () => {
 					{isMobileView && selectedChat && !showChatList && (
 						<button
 							onClick={handleBackToList}
-							className="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 flex items-center"
+							className="px-3 py-2 bg-gray-200 text-gray-80 rounded-lg hover:bg-gray-300 flex items-center"
 						>
 							<ArrowLeft size={16} className="mr-1" />
 							Volver
@@ -534,12 +534,12 @@ const SellerMessagesPage: React.FC = () => {
 			)}
 
 			<div
-				className="bg-white dark:bg-gray-800 rounded-lg shadow-sm flex flex-col md:flex-row overflow-hidden"
+				className="bg-white rounded-lg shadow-sm flex flex-col md:flex-row overflow-hidden"
 				style={{minHeight: "70vh"}}
 			>
 				{/* Lista de chats (visible en escritorio o cuando está activa en móvil) */}
 				{(!isMobileView || showChatList) && (
-					<div className="w-full md:w-1/3 border-r border-gray-200 dark:border-gray-700 flex flex-col">
+					<div className="w-full md:w-1/3 border-r border-gray-200 flex flex-col">
 						<ChatList
 							chats={filteredChats}
 							selectedChatId={selectedChat?.id}

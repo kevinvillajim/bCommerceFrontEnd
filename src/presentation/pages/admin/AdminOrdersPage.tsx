@@ -99,52 +99,52 @@ const AdminOrdersPage: React.FC = () => {
 		pending: {
 			label: "Pendiente",
 			color:
-				"bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
+				"bg-yellow-100 text-yellow-800",
 			icon: <Clock className="w-3 h-3 mr-1" />,
 		},
 		processing: {
 			label: "En proceso",
-			color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+			color: "bg-blue-100 text-blue-800",
 			icon: <RefreshCw className="w-3 h-3 mr-1" />,
 		},
 		paid: {
 			label: "Pagado",
-			color: "bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200",
+			color: "bg-teal-100 text-teal-800",
 			icon: <CheckCircle className="w-3 h-3 mr-1" />,
 		},
 		shipped: {
 			label: "Enviado",
 			color:
-				"bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200",
+				"bg-indigo-100 text-indigo-800",
 			icon: <Truck className="w-3 h-3 mr-1" />,
 		},
 		delivered: {
 			label: "Entregado",
 			color:
-				"bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
+				"bg-purple-100 text-purple-800",
 			icon: <Package className="w-3 h-3 mr-1" />,
 		},
 		completed: {
 			label: "Completado",
 			color:
-				"bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200",
+				"bg-emerald-100 text-emerald-800",
 			icon: <CheckCircle className="w-3 h-3 mr-1" />,
 		},
 		cancelled: {
 			label: "Cancelado",
-			color: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+			color: "bg-red-100 text-red-800",
 			icon: <XCircle className="w-3 h-3 mr-1" />,
 		},
 		returned: {
 			label: "Devuelto",
 			color:
-				"bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
+				"bg-orange-100 text-orange-800",
 			icon: <RotateCcw className="w-3 h-3 mr-1" />,
 		},
 		ready_for_pickup: {
 			label: "Listo para recoger",
 			color:
-				"bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
+				"bg-purple-100 text-purple-800",
 			icon: <ShoppingBag className="w-3 h-3 mr-1" />,
 		},
 	};
@@ -154,25 +154,25 @@ const AdminOrdersPage: React.FC = () => {
 		paid: {
 			label: "Pagado",
 			color:
-				"bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+				"bg-green-100 text-green-800",
 		},
 		completed: {
 			label: "Completado",
 			color:
-				"bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+				"bg-green-100 text-green-800",
 		},
 		pending: {
 			label: "Pendiente",
 			color:
-				"bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
+				"bg-yellow-100 text-yellow-800",
 		},
 		refunded: {
 			label: "Reembolsado",
-			color: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+			color: "bg-red-100 text-red-800",
 		},
 		failed: {
 			label: "Fallido",
-			color: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200",
+			color: "bg-gray-100 text-gray-800",
 		},
 	};
 
@@ -343,14 +343,14 @@ const AdminOrdersPage: React.FC = () => {
 			sortable: true,
 			render: (order: AdminOrderUI) => (
 				<div className="flex items-center">
-					<div className="flex-shrink-0 h-10 w-10 rounded-lg bg-primary-100 dark:bg-primary-800 flex items-center justify-center">
-						<ShoppingBag className="h-6 w-6 text-primary-600 dark:text-primary-400" />
+					<div className="flex-shrink-0 h-10 w-10 rounded-lg bg-primary-100 flex items-center justify-center">
+						<ShoppingBag className="h-6 w-6 text-primary-600" />
 					</div>
 					<div className="ml-4">
-						<div className="text-sm font-medium text-gray-900 dark:text-white">
+						<div className="text-sm font-medium text-gray-900">
 							{order.orderNumber}
 						</div>
-						<div className="text-xs text-gray-500 dark:text-gray-400 flex items-center">
+						<div className="text-xs text-gray-500 flex items-center">
 							<Calendar className="w-3 h-3 mr-1" />
 							{formatDate(order.date)}
 						</div>
@@ -367,14 +367,14 @@ const AdminOrdersPage: React.FC = () => {
 					order.customer.name || `Usuario ${order.customer.id}`;
 				return (
 					<div className="flex items-center">
-						<div className="flex-shrink-0 h-8 w-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-							<User className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+						<div className="flex-shrink-0 h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">
+							<User className="h-4 w-4 text-gray-500" />
 						</div>
 						<div className="ml-3">
-							<div className="text-sm font-medium text-gray-900 dark:text-white">
+							<div className="text-sm font-medium text-gray-900">
 								{customerName}
 							</div>
-							<div className="text-xs text-gray-500 dark:text-gray-400">
+							<div className="text-xs text-gray-500">
 								ID: {order.customer.id}
 							</div>
 						</div>
@@ -389,7 +389,7 @@ const AdminOrdersPage: React.FC = () => {
 				<div className="text-sm">
 					<span className="font-medium">{order.items.length}</span> producto(s)
 					{order.items.length > 0 && (
-						<div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+						<div className="text-xs text-gray-500 mt-1">
 							{order.items.slice(0, 2).map((item) => (
 								<div key={item.id}>
 									{item.quantity}x {item.name || `Producto ${item.productId}`}
@@ -408,7 +408,7 @@ const AdminOrdersPage: React.FC = () => {
 			header: "Total",
 			sortable: true,
 			render: (order: AdminOrderUI) => (
-				<div className="font-medium text-gray-900 dark:text-white">
+				<div className="font-medium text-gray-900">
 					{formatCurrency(order.total)}
 				</div>
 			),
@@ -421,7 +421,7 @@ const AdminOrdersPage: React.FC = () => {
 				const status = orderStatusMap[order.status] || {
 					label: order.status,
 					color:
-						"bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200",
+						"bg-gray-100 text-gray-800",
 					icon: <AlertTriangle className="w-3 h-3 mr-1" />,
 				};
 
@@ -447,12 +447,12 @@ const AdminOrdersPage: React.FC = () => {
 				] || {
 					label: order.paymentStatus,
 					color:
-						"bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200",
+						"bg-gray-100 text-gray-800",
 				};
 
 				return (
 					<div>
-						<div className="text-sm text-gray-500 dark:text-gray-400">
+						<div className="text-sm text-gray-500">
 							{paymentMethod}
 						</div>
 						<span
@@ -481,7 +481,7 @@ const AdminOrdersPage: React.FC = () => {
 						{/* Ver detalles */}
 						<Link
 							to={`/admin/orders/${order.id}`}
-							className="p-1 text-blue-600 hover:bg-blue-100 rounded-md dark:text-blue-400 dark:hover:bg-blue-900"
+							className="p-1 text-blue-600 hover:bg-blue-100 rounded-md"
 							title="Ver detalles del pedido"
 						>
 							<Eye size={18} />
@@ -491,7 +491,7 @@ const AdminOrdersPage: React.FC = () => {
 						{["completed", "delivered"].includes(order.status) && (
 							<Link
 								to={`/admin/invoices?orderId=${order.id}`}
-								className="p-1 text-indigo-600 hover:bg-indigo-100 rounded-md dark:text-indigo-400 dark:hover:bg-indigo-900"
+								className="p-1 text-indigo-600 hover:bg-indigo-100 rounded-md"
 								title="Ver factura"
 							>
 								<FileText size={18} />
@@ -502,7 +502,7 @@ const AdminOrdersPage: React.FC = () => {
 						{canAdvance && (
 							<button
 								onClick={() => advanceOrderStatus(order.id, order.status)}
-								className="p-1 text-green-600 hover:bg-green-100 rounded-md dark:text-green-400 dark:hover:bg-green-900"
+								className="p-1 text-green-600 hover:bg-green-100 rounded-md"
 								title={`Avanzar a ${orderStatusMap[getNextStatus(order.status)]?.label || "siguiente estado"}`}
 							>
 								<CheckCircle size={18} />
@@ -513,7 +513,7 @@ const AdminOrdersPage: React.FC = () => {
 						{canCancel && (
 							<button
 								onClick={() => cancelOrder(order.id)}
-								className="p-1 text-red-600 hover:bg-red-100 rounded-md dark:text-red-400 dark:hover:bg-red-900"
+								className="p-1 text-red-600 hover:bg-red-100 rounded-md"
 								title="Cancelar pedido"
 							>
 								<XCircle size={18} />
@@ -528,7 +528,7 @@ const AdminOrdersPage: React.FC = () => {
 	return (
 		<div className="space-y-6">
 			<div className="flex justify-between items-center">
-				<h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+				<h1 className="text-2xl font-bold text-gray-900">
 					Gestión de Pedidos
 				</h1>
 				<div className="flex space-x-2">
@@ -543,17 +543,17 @@ const AdminOrdersPage: React.FC = () => {
 			</div>
 
 			{/* Filtros */}
-			<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+			<div className="bg-white rounded-lg shadow-sm p-4">
 				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
 					{/* Filtro de Estado */}
 					<div className="flex flex-col space-y-1">
-						<label className="text-sm text-gray-600 dark:text-gray-400">
+						<label className="text-sm text-gray-600">
 							Estado del pedido
 						</label>
 						<div className="flex items-center">
-							<Filter className="h-5 w-5 text-gray-500 dark:text-gray-400 mr-2" />
+							<Filter className="h-5 w-5 text-gray-500 mr-2" />
 							<select
-								className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+								className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 								value={filters.status}
 								onChange={(e) => handleFilterChange("status", e.target.value)}
 							>
@@ -569,11 +569,11 @@ const AdminOrdersPage: React.FC = () => {
 
 					{/* Filtro de Estado de Pago */}
 					<div className="flex flex-col space-y-1">
-						<label className="text-sm text-gray-600 dark:text-gray-400">
+						<label className="text-sm text-gray-600">
 							Estado de pago
 						</label>
 						<select
-							className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+							className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 							value={filters.paymentStatus}
 							onChange={(e) =>
 								handleFilterChange("paymentStatus", e.target.value)
@@ -590,11 +590,11 @@ const AdminOrdersPage: React.FC = () => {
 
 					{/* Filtro de Vendedor */}
 					<div className="flex flex-col space-y-1">
-						<label className="text-sm text-gray-600 dark:text-gray-400">
+						<label className="text-sm text-gray-600">
 							Vendedor
 						</label>
 						<select
-							className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+							className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 							value={filters.sellerId === null ? "null" : filters.sellerId}
 							onChange={(e) =>
 								handleFilterChange(
@@ -616,20 +616,20 @@ const AdminOrdersPage: React.FC = () => {
 
 					{/* Filtro de Rango de Fechas */}
 					<div className="flex flex-col space-y-1">
-						<label className="text-sm text-gray-600 dark:text-gray-400">
+						<label className="text-sm text-gray-600">
 							Rango de fechas
 						</label>
 						<div className="grid grid-cols-2 gap-2">
 							<input
 								type="date"
-								className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+								className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 								value={filters.dateFrom || ""}
 								onChange={(e) => handleFilterChange("dateFrom", e.target.value)}
 								placeholder="Desde"
 							/>
 							<input
 								type="date"
-								className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+								className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 								value={filters.dateTo || ""}
 								onChange={(e) => handleFilterChange("dateTo", e.target.value)}
 								placeholder="Hasta"
@@ -640,7 +640,7 @@ const AdminOrdersPage: React.FC = () => {
 				<div className="mt-4 flex justify-end">
 					<button
 						onClick={clearFilters}
-						className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+						className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
 					>
 						Limpiar filtros
 					</button>

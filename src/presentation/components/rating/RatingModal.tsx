@@ -162,19 +162,19 @@ const RatingModal: React.FC<RatingModalProps> = ({
 
 			{/* Contenido del modal */}
 			<div className="flex min-h-screen items-center justify-center p-4">
-				<div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md mx-auto">
+				<div className="relative bg-white rounded-lg shadow-xl w-full max-w-md mx-auto">
 					{/* Botón de cierre */}
 					<button
 						onClick={handleClose}
-						className="absolute top-3 right-3 text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+						className="absolute top-3 right-3 text-gray-400 hover:text-gray-500"
 						disabled={isSubmitting}
 					>
 						<X size={24} />
 					</button>
 
 					{/* Título del modal */}
-					<div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-						<h3 className="text-lg font-medium text-gray-900 dark:text-white flex items-center">
+					<div className="px-6 py-4 border-b border-gray-200">
+						<h3 className="text-lg font-medium text-gray-900 flex items-center">
 							{isReportMode ? (
 								<>
 									<AlertTriangle className="mr-2 text-orange-500" size={20} />
@@ -208,7 +208,7 @@ const RatingModal: React.FC<RatingModalProps> = ({
 									}}
 								/>
 							) : (
-								<div className="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-md flex items-center justify-center mr-4">
+								<div className="w-16 h-16 bg-gray-200 rounded-md flex items-center justify-center mr-4">
 									{type === "product" ? (
 										<Package size={24} className="text-gray-400" />
 									) : (
@@ -217,10 +217,10 @@ const RatingModal: React.FC<RatingModalProps> = ({
 								</div>
 							)}
 							<div>
-								<h4 className="font-medium text-gray-900 dark:text-white">
+								<h4 className="font-medium text-gray-900">
 									{entityName}
 								</h4>
-								<p className="text-sm text-gray-500 dark:text-gray-400">
+								<p className="text-sm text-gray-500">
 									Pedido: #{orderId}
 								</p>
 							</div>
@@ -230,7 +230,7 @@ const RatingModal: React.FC<RatingModalProps> = ({
 						{!isReportMode && !showConfirmation && (
 							<div className="space-y-4">
 								<div>
-									<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+									<label className="block text-sm font-medium text-gray-700 mb-1">
 										Tu valoración
 									</label>
 									<StarRating
@@ -247,14 +247,14 @@ const RatingModal: React.FC<RatingModalProps> = ({
 								<div>
 									<label
 										htmlFor="rating-title"
-										className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+										className="block text-sm font-medium text-gray-700 mb-1"
 									>
 										Título (opcional)
 									</label>
 									<input
 										id="rating-title"
 										type="text"
-										className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+										className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
 										placeholder="Resume tu experiencia"
 										value={title}
 										onChange={(e) => setTitle(e.target.value)}
@@ -265,13 +265,13 @@ const RatingModal: React.FC<RatingModalProps> = ({
 								<div>
 									<label
 										htmlFor="rating-comment"
-										className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+										className="block text-sm font-medium text-gray-700 mb-1"
 									>
 										Comentario (opcional)
 									</label>
 									<textarea
 										id="rating-comment"
-										className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+										className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
 										placeholder="Comparte tu experiencia con este producto"
 										value={comment}
 										onChange={(e) => setComment(e.target.value)}
@@ -288,13 +288,13 @@ const RatingModal: React.FC<RatingModalProps> = ({
 								<div>
 									<label
 										htmlFor="problem-type"
-										className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+										className="block text-sm font-medium text-gray-700 mb-1"
 									>
 										Tipo de problema
 									</label>
 									<select
 										id="problem-type"
-										className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-gray-700 dark:text-white"
+										className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white"
 										value={problemType}
 										onChange={(e) => setProblemType(e.target.value)}
 										required
@@ -331,13 +331,13 @@ const RatingModal: React.FC<RatingModalProps> = ({
 								<div>
 									<label
 										htmlFor="problem-description"
-										className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+										className="block text-sm font-medium text-gray-700 mb-1"
 									>
 										Descripción del problema
 									</label>
 									<textarea
 										id="problem-description"
-										className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+										className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
 										placeholder="Describe el problema en detalle"
 										value={problemDescription}
 										onChange={(e) => setProblemDescription(e.target.value)}
@@ -350,17 +350,17 @@ const RatingModal: React.FC<RatingModalProps> = ({
 
 						{/* Confirmación de valoración negativa */}
 						{showConfirmation && (
-							<div className="bg-yellow-50 dark:bg-yellow-900 p-4 rounded-md">
+							<div className="bg-yellow-50 p-4 rounded-md">
 								<div className="flex items-start">
 									<AlertTriangle
-										className="text-yellow-600 dark:text-yellow-400 mt-0.5 mr-3"
+										className="text-yellow-600 mt-0.5 mr-3"
 										size={20}
 									/>
 									<div>
-										<h4 className="font-medium text-yellow-800 dark:text-yellow-200">
+										<h4 className="font-medium text-yellow-800">
 											¿Estás seguro de enviar una valoración baja?
 										</h4>
-										<p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
+										<p className="text-sm text-yellow-700 mt-1">
 											Has calificado este{" "}
 											{type === "product" ? "producto" : "vendedor"} con{" "}
 											{rating} {rating === 1 ? "estrella" : "estrellas"}.
@@ -374,14 +374,14 @@ const RatingModal: React.FC<RatingModalProps> = ({
 					</div>
 
 					{/* Pie del modal con botones de acción */}
-					<div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex justify-between">
+					<div className="px-6 py-4 border-t border-gray-200 flex justify-between">
 						{/* Botón izquierdo (varía según el contexto) */}
 						<div>
 							{!showConfirmation && (
 								<button
 									type="button"
 									onClick={toggleReportMode}
-									className="text-sm text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 flex items-center"
+									className="text-sm text-gray-600 hover:text-gray-800 flex items-center"
 									disabled={isSubmitting}
 								>
 									{isReportMode ? (
@@ -402,7 +402,7 @@ const RatingModal: React.FC<RatingModalProps> = ({
 							<button
 								type="button"
 								onClick={handleClose}
-								className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+								className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300"
 								disabled={isSubmitting}
 							>
 								Cancelar

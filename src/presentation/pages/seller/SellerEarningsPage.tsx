@@ -145,25 +145,25 @@ const SellerEarningsPage: React.FC = () => {
 		return (
 			<div className="mt-4">
 				<div className="flex flex-col sm:flex-row items-start sm:items-center mb-4">
-					<h3 className="text-lg font-medium text-gray-900 dark:text-white">
+					<h3 className="text-lg font-medium text-gray-900">
 						Ventas Mensuales
 					</h3>
 					<div className="mt-2 sm:mt-0 sm:ml-4 flex flex-wrap gap-3">
 						<div className="flex items-center">
 							<div className="w-3 h-3 bg-blue-500 rounded-full mr-1"></div>
-							<span className="text-xs text-gray-500 dark:text-gray-400">
+							<span className="text-xs text-gray-500">
 								Ventas
 							</span>
 						</div>
 						<div className="flex items-center">
 							<div className="w-3 h-3 bg-red-500 rounded-full mr-1"></div>
-							<span className="text-xs text-gray-500 dark:text-gray-400">
+							<span className="text-xs text-gray-500">
 								Comisiones
 							</span>
 						</div>
 						<div className="flex items-center">
 							<div className="w-3 h-3 bg-green-500 rounded-full mr-1"></div>
-							<span className="text-xs text-gray-500 dark:text-gray-400">
+							<span className="text-xs text-gray-500">
 								Ganancias netas
 							</span>
 						</div>
@@ -185,11 +185,11 @@ const SellerEarningsPage: React.FC = () => {
 						<div className="flex-1 h-full">
 							{/* Líneas de referencia horizontales */}
 							<div className="h-full flex flex-col justify-between relative">
-								<div className="border-t border-gray-200 dark:border-gray-700 absolute top-0 w-full"></div>
-								<div className="border-t border-gray-200 dark:border-gray-700 absolute top-1/4 w-full"></div>
-								<div className="border-t border-gray-200 dark:border-gray-700 absolute top-2/4 w-full"></div>
-								<div className="border-t border-gray-200 dark:border-gray-700 absolute top-3/4 w-full"></div>
-								<div className="border-t border-gray-200 dark:border-gray-700 absolute bottom-0 w-full"></div>
+								<div className="border-t border-gray-200absolute top-0 w-full"></div>
+								<div className="border-t border-gray-200absolute top-1/4 w-full"></div>
+								<div className="border-t border-gray-200absolute top-2/4 w-full"></div>
+								<div className="border-t border-gray-200absolute top-3/4 w-full"></div>
+								<div className="border-t border-gray-200absolute bottom-0 w-full"></div>
 
 								{/* Barras agrupadas */}
 								<div className="absolute inset-0 flex items-end">
@@ -256,7 +256,7 @@ const SellerEarningsPage: React.FC = () => {
 							<div className="flex mt-2">
 								{data.map((item, index) => (
 									<div key={index} className="flex-1 text-center">
-										<div className="text-xs text-gray-500 dark:text-gray-400">
+										<div className="text-xs text-gray-500">
 											{item.month.substring(0, 3)}
 										</div>
 									</div>
@@ -274,7 +274,7 @@ const SellerEarningsPage: React.FC = () => {
 
 		return (
 			<div className="mt-4">
-				<h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+				<h3 className="text-lg font-medium text-gray-900 mb-4">
 					Ventas por Categoría
 				</h3>
 				<div className="flex flex-col md:flex-row">
@@ -288,7 +288,7 @@ const SellerEarningsPage: React.FC = () => {
 									cy="50"
 									r="40"
 									fill="#f3f4f6"
-									className="dark:fill-gray-700"
+									className=""
 								/>
 
 								{/* Renderizamos cada segmento del círculo */}
@@ -356,7 +356,7 @@ const SellerEarningsPage: React.FC = () => {
 								})}
 
 								{/* Circulo central opcional para hacer un donut chart */}
-								{/* <circle cx="50" cy="50" r="25" fill="white" className="dark:fill-gray-800" /> */}
+								{/* <circle cx="50" cy="50" r="25" fill="white" className="" /> */}
 							</svg>
 						</div>
 					</div>
@@ -369,13 +369,13 @@ const SellerEarningsPage: React.FC = () => {
 									<div
 										className={`w-4 h-4 ${item.color} rounded-sm mr-2`}
 									></div>
-									<span className="text-sm text-gray-700 dark:text-gray-300 flex-1">
+									<span className="text-sm text-gray-700 flex-1">
 										{item.category}
 									</span>
-									<span className="text-sm font-medium text-gray-900 dark:text-white">
+									<span className="text-sm font-medium text-gray-900">
 										{formatCurrency(item.amount)}
 									</span>
-									<span className="text-xs text-gray-500 dark:text-gray-400 ml-2 w-12 text-right">
+									<span className="text-xs text-gray-500 ml-2 w-12 text-right">
 										({item.percentage}%)
 									</span>
 								</div>
@@ -406,8 +406,8 @@ const SellerEarningsPage: React.FC = () => {
 			value: formatCurrency(statsE.totalEarnings),
 			change: 0,
 			icon: DollarSign,
-			iconBgColor: "bg-green-50 dark:bg-green-900",
-			iconColor: "text-green-600 dark:text-green-400",
+			iconBgColor: "bg-green-50",
+			iconColor: "text-green-600",
 		},
 		{
 			title: "Ventas este mes",
@@ -415,8 +415,8 @@ const SellerEarningsPage: React.FC = () => {
 			change: statsE.salesGrowth,
 			text: `${Math.abs(statsE.salesGrowth)}% respecto al mes anterior`,
 			icon: TrendingUp,
-			iconBgColor: "bg-blue-50 dark:bg-blue-900",
-			iconColor: "text-blue-600 dark:text-blue-400",
+			iconBgColor: "bg-blue-50",
+			iconColor: "text-blue-600",
 		},
 		{
 			title: "Comisiones este mes",
@@ -424,8 +424,8 @@ const SellerEarningsPage: React.FC = () => {
 			change: 0,
 			text: `${statsE.commissionsPercentage}% de comisión`,
 			icon: CreditCard,
-			iconBgColor: "bg-red-50 dark:bg-red-900",
-			iconColor: "text-red-600 dark:text-red-400",
+			iconBgColor: "bg-red-50",
+			iconColor: "text-red-600",
 		},
 		{
 			title: "Ganancias netas este mes",
@@ -433,15 +433,15 @@ const SellerEarningsPage: React.FC = () => {
 			change: statsE.earningsGrowth,
 			text: `${Math.abs(statsE.earningsGrowth)}% respecto al mes anterior`,
 			icon: Wallet,
-			iconBgColor: "bg-indigo-50 dark:bg-indigo-900",
-			iconColor: "text-indigo-600 dark:text-indigo-400",
+			iconBgColor: "bg-indigo-50",
+			iconColor: "text-indigo-600",
 		},
 	];
 
   return (
 		<div className="space-y-6">
 			<div className="flex justify-between items-center">
-				<h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center">
+				<h1 className="text-2xl font-bold text-gray-900 flex items-center">
 					<DollarSign className="w-6 h-6 mr-2" />
 					Ganancias
 				</h1>
@@ -459,7 +459,7 @@ const SellerEarningsPage: React.FC = () => {
 					</button>
 					<button
 						onClick={() => alert("Descargando reporte de ganancias...")}
-						className="px-4 py-2 bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors flex items-center"
+						className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors flex items-center"
 					>
 						<Download size={18} className="mr-2" />
 						Exportar
@@ -468,25 +468,25 @@ const SellerEarningsPage: React.FC = () => {
 			</div>
 
 			{/* Filtros de fecha */}
-			<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+			<div className="bg-white rounded-lg shadow-sm p-4">
 				<div className="flex flex-col md:flex-row md:items-center gap-4">
-					<div className="text-sm text-gray-700 dark:text-gray-300 font-medium">
+					<div className="text-sm text-gray-700 font-medium">
 						Rango de fechas:
 					</div>
 					<div className="flex items-center space-x-2">
-						<Calendar className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+						<Calendar className="h-5 w-5 text-gray-500" />
 						<input
 							type="date"
-							className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+							className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 							value={dateRange.start}
 							onChange={(e) =>
 								setDateRange((prev) => ({...prev, start: e.target.value}))
 							}
 						/>
-						<span className="text-gray-500 dark:text-gray-400">a</span>
+						<span className="text-gray-500">a</span>
 						<input
 							type="date"
-							className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+							className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 							value={dateRange.end}
 							onChange={(e) =>
 								setDateRange((prev) => ({...prev, end: e.target.value}))
@@ -516,21 +516,21 @@ const SellerEarningsPage: React.FC = () => {
 					{/* Contenedor principal con gráficos y pagos */}
 					<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 						{/* Sección de gráficos */}
-						<div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+						<div className="lg:col-span-2 bg-white rounded-lg shadow-sm p-6">
 							<div className="flex justify-between items-center mb-4">
-								<h2 className="text-lg font-medium text-gray-900 dark:text-white">
+								<h2 className="text-lg font-medium text-gray-900">
 									Análisis de Ventas
 								</h2>
-								<div className="flex border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden">
+								<div className="flex border border-gray-300 rounded-lg overflow-hidden">
 									<button
-										className={`px-3 py-1 text-sm ${selectedChart === "sales" ? "bg-primary-600 text-white" : "bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200"}`}
+										className={`px-3 py-1 text-sm ${selectedChart === "sales" ? "bg-primary-600 text-white" : "bg-white text-gray-700"}`}
 										onClick={() => setSelectedChart("sales")}
 									>
 										<BarChart2 size={16} className="inline mr-1" />
 										Ventas mensuales
 									</button>
 									<button
-										className={`px-3 py-1 text-sm ${selectedChart === "categories" ? "bg-primary-600 text-white" : "bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200"}`}
+										className={`px-3 py-1 text-sm ${selectedChart === "categories" ? "bg-primary-600 text-white" : "bg-white text-gray-700"}`}
 										onClick={() => setSelectedChart("categories")}
 									>
 										<PieChart size={16} className="inline mr-1" />
@@ -546,13 +546,13 @@ const SellerEarningsPage: React.FC = () => {
 						</div>
 
 						{/* Sección de pagos pendientes */}
-						<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+						<div className="bg-white rounded-lg shadow-sm p-6">
 							<div className="flex justify-between items-center mb-4">
-								<h2 className="text-lg font-medium text-gray-900 dark:text-white flex items-center">
+								<h2 className="text-lg font-medium text-gray-900 flex items-center">
 									<CreditCard className="w-5 h-5 mr-2" />
 									Pagos Pendientes
 								</h2>
-								<span className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 text-xs font-medium px-2.5 py-0.5 rounded-full">
+								<span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
 									{formatCurrency(stats.pendingPayments)}
 								</span>
 							</div>
@@ -562,17 +562,17 @@ const SellerEarningsPage: React.FC = () => {
 									{stats.pendingPaymentsList.map((payment, index) => (
 										<div
 											key={index}
-											className="border border-gray-200 dark:border-gray-700 rounded-lg p-4"
+											className="border border-gray-200rounded-lg p-4"
 										>
 											<div className="flex justify-between mb-2">
-												<span className="text-sm font-medium text-gray-900 dark:text-white">
+												<span className="text-sm font-medium text-gray-900">
 													{payment.id}
 												</span>
 												<span
 													className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${
 														payment.status === "processing"
-															? "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200"
-															: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+															? "bg-amber-100 text-amber-800"
+															: "bg-green-100 text-green-800"
 													}`}
 												>
 													{payment.status === "processing"
@@ -580,23 +580,23 @@ const SellerEarningsPage: React.FC = () => {
 														: "Programado"}
 												</span>
 											</div>
-											<div className="flex justify-between text-sm text-gray-500 dark:text-gray-400 mb-2">
+											<div className="flex justify-between text-sm text-gray-500 mb-2">
 												<span>Fecha:</span>
 												<span>{payment.date}</span>
 											</div>
 											{payment.estimatedArrival && (
-												<div className="flex justify-between text-sm text-gray-500 dark:text-gray-400 mb-2">
+												<div className="flex justify-between text-sm text-gray-500 mb-2">
 													<span>Llegada estimada:</span>
 													<span>{payment.estimatedArrival}</span>
 												</div>
 											)}
 											<div className="flex justify-between items-center mt-3">
-												<span className="text-sm font-bold text-gray-900 dark:text-white">
+												<span className="text-sm font-bold text-gray-900">
 													{formatCurrency(payment.amount)}
 												</span>
 												<a
 													href="#"
-													className="text-primary-600 dark:text-primary-400 text-sm hover:underline flex items-center"
+													className="text-primary-600 text-sm hover:underline flex items-center"
 												>
 													Detalles
 													<ArrowRight size={14} className="ml-1" />
@@ -607,28 +607,28 @@ const SellerEarningsPage: React.FC = () => {
 								</div>
 							) : (
 								<div className="text-center py-8">
-									<p className="text-gray-500 dark:text-gray-400">
+									<p className="text-gray-500">
 										No hay pagos pendientes
 									</p>
 								</div>
 							)}
 
 							<div className="mt-6">
-								<h3 className="text-md font-medium text-gray-900 dark:text-white mb-3">
+								<h3 className="text-md font-medium text-gray-900 mb-3">
 									Métodos de Pago Recibidos
 								</h3>
 								<div className="space-y-2">
 									{stats.paymentMethods.map((method, index) => (
 										<div key={index}>
 											<div className="flex justify-between text-sm">
-												<span className="text-gray-600 dark:text-gray-300">
+												<span className="text-gray-600">
 													{method.method}
 												</span>
-												<span className="text-gray-900 dark:text-white font-medium">
+												<span className="text-gray-900 font-medium">
 													{formatCurrency(method.amount)}
 												</span>
 											</div>
-											<div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mt-1">
+											<div className="w-full bg-gray-200 rounded-full h-2 mt-1">
 												<div
 													className={`${method.color} h-2 rounded-full`}
 													style={{width: `${method.percentage}%`}}
@@ -642,57 +642,57 @@ const SellerEarningsPage: React.FC = () => {
 					</div>
 
 					{/* Tabla de ventas mensuales */}
-					<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
-						<div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-							<h2 className="text-lg font-medium text-gray-900 dark:text-white">
+					<div className="bg-white rounded-lg shadow-sm overflow-hidden">
+						<div className="px-6 py-4 border-b border-gray-200aaborder-gray-700">
+							<h2 className="text-lg font-medium text-gray-900">
 								Desglose de Ventas Mensuales
 							</h2>
 						</div>
 						<div className="overflow-x-auto">
-							<table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-								<thead className="bg-gray-50 dark:bg-gray-700">
+							<table className="min-w-full divide-y divide-gray-200">
+								<thead className="bg-gray-50">
 									<tr>
 										<th
 											scope="col"
-											className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+											className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
 										>
 											Comisiones
 										</th>
 										<th
 											scope="col"
-											className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+											className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
 										>
 											Neto
 										</th>
 									</tr>
 								</thead>
-								<tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+								<tbody className="bg-white divide-y divide-gray-200">
 									{stats.monthlySales.map((month, index) => (
 										<tr
 											key={index}
-											className="hover:bg-gray-50 dark:hover:bg-gray-700"
+											className="hover:bg-gray-50"
 										>
-											<td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+											<td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
 												{month.month}
 											</td>
-											<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+											<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
 												{formatCurrency(month.sales)}
 											</td>
-											<td className="px-6 py-4 whitespace-nowrap text-sm text-red-600 dark:text-red-400">
+											<td className="px-6 py-4 whitespace-nowrap text-sm text-red-600">
 												{formatCurrency(month.commissions)}
 											</td>
-											<td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600 dark:text-green-400">
+											<td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
 												{formatCurrency(month.net)}
 											</td>
 										</tr>
 									))}
 								</tbody>
-								<tfoot className="bg-gray-50 dark:bg-gray-700">
+								<tfoot className="bg-gray-50">
 									<tr>
-										<td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+										<td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
 											Total
 										</td>
-										<td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+										<td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
 											{formatCurrency(
 												stats.monthlySales.reduce(
 													(sum, month) => sum + month.sales,
@@ -700,7 +700,7 @@ const SellerEarningsPage: React.FC = () => {
 												)
 											)}
 										</td>
-										<td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-red-600 dark:text-red-400">
+										<td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-red-600">
 											{formatCurrency(
 												stats.monthlySales.reduce(
 													(sum, month) => sum + month.commissions,
@@ -708,7 +708,7 @@ const SellerEarningsPage: React.FC = () => {
 												)
 											)}
 										</td>
-										<td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600 dark:text-green-400">
+										<td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
 											{formatCurrency(
 												stats.monthlySales.reduce(
 													(sum, month) => sum + month.net,
@@ -724,7 +724,7 @@ const SellerEarningsPage: React.FC = () => {
 				</>
 			) : (
 				<div className="text-center py-12">
-					<p className="text-gray-500 dark:text-gray-400">
+					<p className="text-gray-500">
 						No se pudieron cargar los datos de ganancias.
 					</p>
 					<button

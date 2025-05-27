@@ -109,17 +109,17 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
 	// Obtener el color del avatar basado en el rol
 	const getAvatarColor = () => {
 		return isAdmin
-			? "bg-red-100 dark:bg-red-900 text-red-600 dark:text-red-300"
-			: "bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-300";
+			? "bg-red-100 text-red-600"
+			: "bg-primary-100 text-primary-600";
 	};
 
 	return (
-		<header className="bg-white dark:bg-gray-800 shadow-sm z-20">
+		<header className="bg-white shadow-sm z-20">
 			<div className="flex items-center justify-between px-4 py-3">
 				<div className="flex items-center">
 					{visibleInMobile && (
 						<button
-							className="md:hidden text-gray-600 dark:text-gray-300 focus:outline-none mr-3"
+							className="md:hidden text-gray-600 focus:outline-none mr-3"
 							onClick={toggleSidebar}
 						>
 							<Menu size={24} />
@@ -138,7 +138,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
 						</div>
 					)}
 
-					<h1 className="text-lg font-medium text-gray-800 dark:text-white">
+					<h1 className="text-lg font-medium text-gray-800">
 						{currentPageTitle}
 					</h1>
 				</div>
@@ -153,7 +153,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
 							href="/"
 							target="_blank"
 							rel="noopener noreferrer"
-							className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hidden md:block"
+							className="text-gray-600 hover:text-gray-900 hidden md:block"
 						>
 							<span className="text-sm">Visitar Tienda</span>
 						</a>
@@ -162,7 +162,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
 					{/* Notifications */}
 					<div className="relative">
 						<button
-							className="notifications-button text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white p-1 rounded-full relative"
+							className="notifications-button text-gray-600 hover:text-gray-900 p-1 rounded-full relative"
 							onClick={toggleNotifications}
 						>
 							<Bell size={20} />
@@ -175,14 +175,14 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
 
 						{/* Dropdown de notificaciones */}
 						{isNotificationsOpen && (
-							<div className="notifications-menu absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg py-2 z-30 border border-gray-200 dark:border-gray-700">
-								<div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-									<h3 className="text-sm font-semibold text-gray-800 dark:text-white">
+							<div className="notifications-menu absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg py-2 z-30 border border-gray-200">
+								<div className="px-4 py-2 border-b border-gray-200 flex justify-between items-center">
+									<h3 className="text-sm font-semibold text-gray-800">
 										Notificaciones
 									</h3>
 									{unreadNotifications > 0 && (
 										<button
-											className="text-xs text-primary-600 dark:text-primary-400 hover:underline"
+											className="text-xs text-primary-600 hover:underline"
 											onClick={onReadAllNotifications}
 										>
 											Marcar todas como leídas
@@ -194,7 +194,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
 										notifications.map((notification) => (
 											<div
 												key={notification.id}
-												className={`px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 ${
+												className={`px-4 py-3 hover:bg-gray-50 ${
 													!notification.read && notification.type === "warning"
 														? "border-l-4 border-red-500"
 														: !notification.read
@@ -202,29 +202,29 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
 															: ""
 												}`}
 											>
-												<p className="text-sm text-gray-800 dark:text-white font-medium">
+												<p className="text-sm text-gray-800 font-medium">
 													{notification.title}
 												</p>
-												<p className="text-xs text-gray-500 dark:text-gray-400">
+												<p className="text-xs text-gray-500">
 													{notification.description}
 												</p>
-												<p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+												<p className="text-xs text-gray-400 mt-1">
 													{notification.time}
 												</p>
 											</div>
 										))
 									) : (
-										<div className="px-4 py-3 text-center text-gray-500 dark:text-gray-400">
+										<div className="px-4 py-3 text-center text-gray-500">
 											No hay notificaciones para mostrar
 										</div>
 									)}
 								</div>
-								<div className="px-4 py-2 border-t border-gray-200 dark:border-gray-700">
+								<div className="px-4 py-2 border-t border-gray-200">
 									<Link
 										to={
 											isAdmin ? "/admin/notifications" : "/seller/notifications"
 										}
-										className="text-sm text-primary-600 dark:text-primary-400 hover:underline block text-center"
+										className="text-sm text-primary-600 hover:underline block text-center"
 									>
 										Ver todas las notificaciones
 									</Link>
@@ -236,7 +236,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
 					{/* User Profile */}
 					<div className="relative">
 						<button
-							className="profile-button flex items-center space-x-2 text-gray-800 dark:text-white focus:outline-none"
+							className="profile-button flex items-center space-x-2 text-gray-800 focus:outline-none"
 							onClick={toggleProfileMenu}
 						>
 							<div
@@ -252,12 +252,12 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
 
 						{/* User Dropdown Menu */}
 						{isProfileMenuOpen && (
-							<div className="profile-menu absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg py-2 z-30 border border-gray-200 dark:border-gray-700">
-								<div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-									<p className="text-sm font-medium text-gray-800 dark:text-white">
+							<div className="profile-menu absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 z-30 border border-gray-200">
+								<div className="px-4 py-3 border-b border-gray-200">
+									<p className="text-sm font-medium text-gray-800">
 										{user?.name || (isAdmin ? "Admin" : "Usuario")}
 									</p>
-									<p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+									<p className="text-xs text-gray-500 truncate">
 										{user?.email ||
 											(isAdmin ? "admin@ejemplo.com" : "usuario@ejemplo.com")}
 									</p>
@@ -265,7 +265,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
 
 								<Link
 									to={isAdmin ? "/admin/profile" : "/seller/profile"}
-									className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+									className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
 									onClick={() => setIsProfileMenuOpen(false)}
 								>
 									<div className="flex items-center">
@@ -276,7 +276,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
 
 								<Link
 									to={isAdmin ? "/admin/settings" : "/seller/settings"}
-									className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+									className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
 									onClick={() => setIsProfileMenuOpen(false)}
 								>
 									<div className="flex items-center">
@@ -287,7 +287,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
 
 								<button
 									onClick={logout}
-									className="block w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+									className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
 								>
 									<div className="flex items-center">
 										<LogOut size={16} className="mr-2" />

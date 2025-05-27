@@ -32,16 +32,16 @@ const RatingsSummary: React.FC<RatingsSummaryProps> = ({
 
 	return (
 		<div
-			className={`bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 ${className}`}
+			className={`bg-white rounded-lg shadow-sm p-4 ${className}`}
 		>
 			<div className="flex flex-col md:flex-row items-start md:items-center">
 				{/* Valoración promedio */}
 				<div className="flex flex-col items-center mb-4 md:mb-0 md:mr-8">
-					<div className="text-3xl font-bold text-gray-900 dark:text-white">
+					<div className="text-3xl font-bold text-gray-900">
 						{averageRating.toFixed(1)}
 					</div>
 					<StarRating value={averageRating} readOnly size="small" />
-					<div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+					<div className="text-sm text-gray-500 mt-1">
 						({totalRatings} {totalRatings === 1 ? "valoración" : "valoraciones"}
 						)
 					</div>
@@ -55,13 +55,13 @@ const RatingsSummary: React.FC<RatingsSummaryProps> = ({
 
 						return (
 							<div key={stars} className="flex items-center mb-1">
-								<div className="flex items-center w-16 text-sm text-gray-600 dark:text-gray-300">
+								<div className="flex items-center w-16 text-sm text-gray-600">
 									<span>{stars}</span>
 									<Star size={12} className="ml-1 text-yellow-400" />
 								</div>
 
 								<div className="flex-grow mx-2">
-									<div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+									<div className="h-2 bg-gray-200 rounded-full overflow-hidden">
 										<div
 											className="h-full bg-yellow-400 rounded-full"
 											style={{width: `${percentage}%`}}
@@ -69,7 +69,7 @@ const RatingsSummary: React.FC<RatingsSummaryProps> = ({
 									</div>
 								</div>
 
-								<div className="w-12 text-right text-xs text-gray-500 dark:text-gray-400">
+								<div className="w-12 text-right text-xs text-gray-500">
 									{count} ({percentage.toFixed(0)}%)
 								</div>
 							</div>

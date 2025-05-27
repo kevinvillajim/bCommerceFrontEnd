@@ -64,7 +64,7 @@ const BaseDashboardLayout: React.FC<BaseDashboardLayoutProps> = ({
 
 
 	return (
-		<div className="flex h-screen bg-gray-100 dark:bg-gray-900">
+		<div className="flex h-screen bg-gray-100">
 			{/* Sidebar */}
 			<Sidebar
 				groups={sidebarGroups}
@@ -89,7 +89,7 @@ const BaseDashboardLayout: React.FC<BaseDashboardLayoutProps> = ({
 				{headerExtras && headerExtras}
 
 				{/* Main Content */}
-				<main className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900 p-4 md:p-6">
+				<main className="flex-1 overflow-y-auto bg-gray-50 p-4 md:p-6">
 					<Outlet />
 				</main>
 

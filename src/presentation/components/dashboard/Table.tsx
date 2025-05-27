@@ -96,7 +96,7 @@ function Table<T>({
 					<input
 						type="text"
 						placeholder="Buscar..."
-						className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+						className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
 						value={searchTerm}
 						onChange={(e) => setSearchTerm(e.target.value)}
 					/>
@@ -105,31 +105,31 @@ function Table<T>({
 			)}
 
 			{/* Tabla */}
-			<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
+			<div className="bg-white rounded-lg shadow-sm overflow-hidden">
 				{loading ? (
 					<div className="p-8 flex justify-center">
 						<div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
 					</div>
 				) : filteredAndSortedData.length === 0 ? (
 					<div className="p-8 text-center">
-						<h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+						<h3 className="text-lg font-medium text-gray-900 mb-2">
 							{emptyMessage}
 						</h3>
-						<p className="text-gray-500 dark:text-gray-400">
+						<p className="text-gray-500">
 							Intente ajustar su búsqueda para encontrar lo que está buscando.
 						</p>
 					</div>
 				) : (
 					<>
 						<div className="overflow-x-auto">
-							<table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-								<thead className="bg-gray-50 dark:bg-gray-700">
+							<table className="min-w-full divide-y divide-gray-200">
+								<thead className="bg-gray-50">
 									<tr>
 										{columns.map((column) => (
 											<th
 												key={column.key}
 												scope="col"
-												className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+												className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
 											>
 												<div className="flex items-center space-x-1">
 													<span>{column.header}</span>
@@ -160,16 +160,16 @@ function Table<T>({
 										))}
 									</tr>
 								</thead>
-								<tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+								<tbody className="bg-whitedivide-y divide-gray-200">
 									{filteredAndSortedData.map((item, index) => (
 										<tr
 											key={index}
-											className="hover:bg-gray-50 dark:hover:bg-gray-700"
+											className="hover:bg-gray-50"
 										>
 											{columns.map((column) => (
 												<td
 													key={column.key}
-													className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400"
+													className="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
 												>
 													{column.render
 														? column.render(item)
@@ -184,9 +184,9 @@ function Table<T>({
 
 						{/* Paginación */}
 						{pagination && (
-							<div className="px-6 py-3 flex justify-between items-center border-t border-gray-200 dark:border-gray-700">
+							<div className="px-6 py-3 flex justify-between items-center border-t border-gray-200">
 								<div>
-									<p className="text-sm text-gray-700 dark:text-gray-300">
+									<p className="text-sm text-gray-700">
 										Mostrando{" "}
 										<span className="font-medium">
 											{(pagination.currentPage - 1) * pagination.itemsPerPage +

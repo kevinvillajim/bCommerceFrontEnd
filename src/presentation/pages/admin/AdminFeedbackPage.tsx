@@ -179,17 +179,17 @@ const mockFeedback: Feedback[] = [
 const feedbackStatusMap: Record<string, { label: string, color: string, icon: React.ReactNode }> = {
   pending: { 
     label: "Pendiente", 
-    color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
+    color: "bg-yellow-100 text-yellow-800",
     icon: <Clock className="w-3 h-3 mr-1" />
   },
   approved: { 
     label: "Aprobado", 
-    color: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+    color: "bg-green-100 text-green-800",
     icon: <CheckCircle className="w-3 h-3 mr-1" />
   },
   rejected: { 
     label: "Rechazado", 
-    color: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+    color: "bg-red-100 text-red-800",
     icon: <XCircle className="w-3 h-3 mr-1" />
   }
 };
@@ -198,27 +198,27 @@ const feedbackStatusMap: Record<string, { label: string, color: string, icon: Re
 const feedbackTypeMap: Record<string, { label: string, color: string, icon: React.ReactNode }> = {
   improvement: { 
     label: "Mejora", 
-    color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
+    color: "bg-blue-100 text-blue-800",
     icon: <Tag className="w-3 h-3 mr-1" />
   },
   bug: { 
     label: "Error", 
-    color: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+    color: "bg-red-100 text-red-800",
     icon: <AlertTriangle className="w-3 h-3 mr-1" />
   },
   feature: { 
     label: "Función", 
-    color: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
+    color: "bg-purple-100 text-purple-800",
     icon: <Tag className="w-3 h-3 mr-1" />
   },
   complaint: { 
     label: "Queja", 
-    color: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
+    color: "bg-orange-100 text-orange-800",
     icon: <Flag className="w-3 h-3 mr-1" />
   },
   other: { 
     label: "Otro", 
-    color: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200",
+    color: "bg-gray-100 text-gray-800",
     icon: <MessageSquare className="w-3 h-3 mr-1" />
   }
 };
@@ -443,14 +443,14 @@ const AdminFeedbackPage: React.FC = () => {
 			sortable: true,
 			render: (feedback: Feedback) => (
 				<div className="flex items-center">
-					<div className="flex-shrink-0 h-8 w-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden">
-						<User className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+					<div className="flex-shrink-0 h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
+						<User className="h-4 w-4 text-gray-500" />
 					</div>
 					<div className="ml-3">
-						<div className="text-sm font-medium text-gray-900 dark:text-white">
+						<div className="text-sm font-medium text-gray-900">
 							{feedback.user?.name || `Usuario #${feedback.userId}`}
 						</div>
-						<div className="text-xs text-gray-500 dark:text-gray-400">
+						<div className="text-xs text-gray-500">
 							ID: {feedback.userId}
 						</div>
 					</div>
@@ -466,14 +466,14 @@ const AdminFeedbackPage: React.FC = () => {
 					return (
 						<Link
 							to={`/admin/sellers/${feedback.sellerId}`}
-							className="flex items-center text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300"
+							className="flex items-center text-primary-600 hover:text-primary-800"
 						>
 							<Store className="h-4 w-4 mr-1" />
 							{feedback.seller.storeName}
 						</Link>
 					);
 				}
-				return <span className="text-gray-500 dark:text-gray-400">N/A</span>;
+				return <span className="text-gray-500">N/A</span>;
 			},
 		},
 		{
@@ -484,7 +484,7 @@ const AdminFeedbackPage: React.FC = () => {
 				const type = feedbackTypeMap[feedback.type] || {
 					label: feedback.type,
 					color:
-						"bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200",
+						"bg-gray-100 text-gray-800",
 					icon: <AlertTriangle className="w-3 h-3 mr-1" />,
 				};
 
@@ -503,7 +503,7 @@ const AdminFeedbackPage: React.FC = () => {
 			header: "Título",
 			sortable: true,
 			render: (feedback: Feedback) => (
-				<div className="text-sm font-medium text-gray-900 dark:text-white line-clamp-2">
+				<div className="text-sm font-medium text-gray-900 line-clamp-2">
 					{feedback.title}
 				</div>
 			),
@@ -513,7 +513,7 @@ const AdminFeedbackPage: React.FC = () => {
 			header: "Fecha",
 			sortable: true,
 			render: (feedback: Feedback) => (
-				<div className="text-xs text-gray-500 dark:text-gray-400">
+				<div className="text-xs text-gray-500">
 					{formatDate(feedback.createdAt)}
 					{feedback.reviewedAt && (
 						<div>Revisado: {formatDate(feedback.reviewedAt)}</div>
@@ -529,7 +529,7 @@ const AdminFeedbackPage: React.FC = () => {
 				const status = feedbackStatusMap[feedback.status] || {
 					label: feedback.status,
 					color:
-						"bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200",
+						"bg-gray-100 text-gray-800",
 					icon: <AlertTriangle className="w-3 h-3 mr-1" />,
 				};
 
@@ -552,7 +552,7 @@ const AdminFeedbackPage: React.FC = () => {
 						{/* Ver detalles */}
 						<button
 							onClick={() => openFeedbackModal(feedback)}
-							className="p-1 text-blue-600 hover:bg-blue-100 rounded-md dark:text-blue-400 dark:hover:bg-blue-900"
+							className="p-1 text-blue-600 hover:bg-blue-100 rounded-md"
 							title="Ver detalles"
 						>
 							<Eye size={18} />
@@ -562,7 +562,7 @@ const AdminFeedbackPage: React.FC = () => {
 						{feedback.status === "pending" && (
 							<button
 								onClick={() => approveFeedback(feedback.id || 0)}
-								className="p-1 text-green-600 hover:bg-green-100 rounded-md dark:text-green-400 dark:hover:bg-green-900"
+								className="p-1 text-green-600 hover:bg-green-100 rounded-md"
 								title="Aprobar feedback"
 							>
 								<CheckCircle size={18} />
@@ -573,7 +573,7 @@ const AdminFeedbackPage: React.FC = () => {
 						{feedback.status === "pending" && (
 							<button
 								onClick={() => rejectFeedback(feedback.id || 0)}
-								className="p-1 text-red-600 hover:bg-red-100 rounded-md dark:text-red-400 dark:hover:bg-red-900"
+								className="p-1 text-red-600 hover:bg-red-100 rounded-md"
 								title="Rechazar feedback"
 							>
 								<XCircle size={18} />
@@ -583,7 +583,7 @@ const AdminFeedbackPage: React.FC = () => {
 						{/* Reportar feedback */}
 						<button
 							onClick={() => reportFeedback(feedback.id || 0)}
-							className="p-1 text-orange-600 hover:bg-orange-100 rounded-md dark:text-orange-400 dark:hover:bg-orange-900"
+							className="p-1 text-orange-600 hover:bg-orange-100 rounded-md"
 							title="Reportar feedback"
 						>
 							<Flag size={18} />
@@ -600,51 +600,51 @@ const AdminFeedbackPage: React.FC = () => {
 		  value: feedback.length,
 		  description: "Comentarios y sugerencias",
 		  icon: MessageSquare,
-		  bgColor: "bg-blue-50 dark:bg-blue-900/20",
-		  textColor: "text-blue-800 dark:text-blue-200",
-		  valueColor: "text-blue-900 dark:text-blue-100",
-		  descriptionColor: "text-blue-700 dark:text-blue-300",
-		  iconColor: "text-blue-600 dark:text-blue-400",
+		  bgColor: "bg-blue-50/20",
+		  textColor: "text-blue-800",
+		  valueColor: "text-blue-900",
+		  descriptionColor: "text-blue-700",
+		  iconColor: "text-blue-600",
 		},
 		{
 		  title: "Pendientes",
 		  value: feedback.filter((f) => f.status === "pending").length,
 		  description: "Esperando revisión",
 		  icon: Clock,
-		  bgColor: "bg-yellow-50 dark:bg-yellow-900/20",
-		  textColor: "text-yellow-800 dark:text-yellow-200",
-		  valueColor: "text-yellow-900 dark:text-yellow-100",
-		  descriptionColor: "text-yellow-700 dark:text-yellow-300",
-		  iconColor: "text-yellow-600 dark:text-yellow-400",
+		  bgColor: "bg-yellow-50/20",
+		  textColor: "text-yellow-800",
+		  valueColor: "text-yellow-900",
+		  descriptionColor: "text-yellow-700",
+		  iconColor: "text-yellow-600",
 		},
 		{
 		  title: "Aprobados",
 		  value: feedback.filter((f) => f.status === "approved").length,
 		  description: "Implementados o en proceso",
 		  icon: CheckCircle,
-		  bgColor: "bg-green-50 dark:bg-green-900/20",
-		  textColor: "text-green-800 dark:text-green-200",
-		  valueColor: "text-green-900 dark:text-green-100",
-		  descriptionColor: "text-green-700 dark:text-green-300",
-		  iconColor: "text-green-600 dark:text-green-400",
+		  bgColor: "bg-green-50/20",
+		  textColor: "text-green-800",
+		  valueColor: "text-green-900",
+		  descriptionColor: "text-green-700",
+		  iconColor: "text-green-600",
 		},
 		{
 		  title: "Rechazados",
 		  value: feedback.filter((f) => f.status === "rejected").length,
 		  description: "No considerados",
 		  icon: XCircle,
-		  bgColor: "bg-red-50 dark:bg-red-900/20",
-		  textColor: "text-red-800 dark:text-red-200",
-		  valueColor: "text-red-900 dark:text-red-100",
-		  descriptionColor: "text-red-700 dark:text-red-300",
-		  iconColor: "text-red-600 dark:text-red-400",
+		  bgColor: "bg-red-50/20",
+		  textColor: "text-red-800",
+		  valueColor: "text-red-900",
+		  descriptionColor: "text-red-700",
+		  iconColor: "text-red-600",
 		},
 	  ];
 
 	return (
 		<div className="space-y-6">
 			<div className="flex justify-between items-center">
-				<h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+				<h1 className="text-2xl font-bold text-gray-900">
 					Gestión de Feedback y Comentarios
 				</h1>
 				<div className="flex space-x-2">
@@ -667,13 +667,13 @@ const AdminFeedbackPage: React.FC = () => {
 			{/* StatCards */}
 			<StatCardList items={statItems} />
 			{/* Filtros */}
-			<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+			<div className="bg-white rounded-lg shadow-sm p-4">
 				<div className="flex flex-col md:flex-row gap-4">
 					{/* Filtro de Estado */}
 					<div className="flex items-center space-x-2">
-						<Filter className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+						<Filter className="h-5 w-5 text-gray-500" />
 						<select
-							className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+							className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 							value={statusFilter}
 							onChange={(e) => setStatusFilter(e.target.value)}
 						>
@@ -687,7 +687,7 @@ const AdminFeedbackPage: React.FC = () => {
 					{/* Filtro de Tipo */}
 					<div className="flex items-center space-x-2">
 						<select
-							className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+							className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 							value={typeFilter}
 							onChange={(e) => setTypeFilter(e.target.value)}
 						>
@@ -702,10 +702,10 @@ const AdminFeedbackPage: React.FC = () => {
 
 					{/* Filtro de Fecha */}
 					<div className="flex items-center space-x-2">
-						<Calendar className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+						<Calendar className="h-5 w-5 text-gray-500" />
 						<input
 							type="date"
-							className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+							className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 							value={dateRangeFilter.from}
 							onChange={(e) =>
 								setDateRangeFilter({...dateRangeFilter, from: e.target.value})
@@ -714,7 +714,7 @@ const AdminFeedbackPage: React.FC = () => {
 						/>
 						<input
 							type="date"
-							className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+							className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 							value={dateRangeFilter.to}
 							onChange={(e) =>
 								setDateRangeFilter({...dateRangeFilter, to: e.target.value})
@@ -744,14 +744,14 @@ const AdminFeedbackPage: React.FC = () => {
 			{/* Modal de Detalle de Feedback */}
 			{showFeedbackModal && selectedFeedback && (
 				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-					<div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-						<div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-							<h3 className="text-lg font-medium text-gray-900 dark:text-white">
+					<div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+						<div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+							<h3 className="text-lg font-medium text-gray-900">
 								Detalles de Feedback
 							</h3>
 							<button
 								onClick={closeFeedbackModal}
-								className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+								className="text-gray-400 hover:text-gray-500"
 							>
 								<XCircle className="h-5 w-5" />
 							</button>
@@ -759,19 +759,19 @@ const AdminFeedbackPage: React.FC = () => {
 						<div className="p-6">
 							{/* Información de Usuario */}
 							<div className="mb-6">
-								<h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
+								<h4 className="text-sm font-medium text-gray-500 mb-2">
 									Usuario
 								</h4>
 								<div className="flex items-center">
-									<div className="flex-shrink-0 h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden">
-										<User className="h-6 w-6 text-gray-500 dark:text-gray-400" />
+									<div className="flex-shrink-0 h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
+										<User className="h-6 w-6 text-gray-500" />
 									</div>
 									<div className="ml-4">
-										<div className="text-sm font-medium text-gray-900 dark:text-white">
+										<div className="text-sm font-medium text-gray-900">
 											{selectedFeedback.user?.name ||
 												`Usuario #${selectedFeedback.userId}`}
 										</div>
-										<div className="text-xs text-gray-500 dark:text-gray-400">
+										<div className="text-xs text-gray-500">
 											ID: {selectedFeedback.userId}
 										</div>
 									</div>
@@ -781,7 +781,7 @@ const AdminFeedbackPage: React.FC = () => {
 							{/* Información del Feedback */}
 							<div className="mb-6">
 								<div className="flex justify-between items-start mb-2">
-									<h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">
+									<h4 className="text-sm font-medium text-gray-500">
 										Detalles
 									</h4>
 									<div>
@@ -789,7 +789,7 @@ const AdminFeedbackPage: React.FC = () => {
 											const type = feedbackTypeMap[selectedFeedback.type] || {
 												label: selectedFeedback.type,
 												color:
-													"bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200",
+													"bg-gray-100 text-gray-800",
 												icon: <AlertTriangle className="w-4 h-4 mr-1" />,
 											};
 
@@ -804,13 +804,13 @@ const AdminFeedbackPage: React.FC = () => {
 										})()}
 									</div>
 								</div>
-								<div className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+								<div className="text-lg font-medium text-gray-900 mb-2">
 									{selectedFeedback.title}
 								</div>
-								<div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg text-gray-800 dark:text-gray-200 mb-2 whitespace-pre-wrap">
+								<div className="bg-gray-50 p-4 rounded-lg text-gray-800 mb-2 whitespace-pre-wrap">
 									{selectedFeedback.description}
 								</div>
-								<div className="text-sm text-gray-500 dark:text-gray-400">
+								<div className="text-sm text-gray-500">
 									<div>Enviado: {formatDate(selectedFeedback.createdAt)}</div>
 									{selectedFeedback.updatedAt !==
 										selectedFeedback.createdAt && (
@@ -824,14 +824,14 @@ const AdminFeedbackPage: React.FC = () => {
 							{/* Si es una queja sobre un vendedor, mostrar información del vendedor */}
 							{selectedFeedback.sellerId && selectedFeedback.seller && (
 								<div className="mb-6">
-									<h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
+									<h4 className="text-sm font-medium text-gray-500 mb-2">
 										Vendedor Relacionado
 									</h4>
 									<div className="flex items-center">
-										<Store className="h-5 w-5 text-gray-500 dark:text-gray-400 mr-2" />
+										<Store className="h-5 w-5 text-gray-500 mr-2" />
 										<Link
 											to={`/admin/sellers/${selectedFeedback.sellerId}`}
-											className="text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300"
+											className="text-primary-600 hover:text-primary-800"
 										>
 											{selectedFeedback.seller.storeName}
 										</Link>
@@ -841,7 +841,7 @@ const AdminFeedbackPage: React.FC = () => {
 
 							{/* Estado Actual */}
 							<div className="mb-6">
-								<h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
+								<h4 className="text-sm font-medium text-gray-500 mb-2">
 									Estado Actual
 								</h4>
 								<div className="flex items-center">
@@ -851,7 +851,7 @@ const AdminFeedbackPage: React.FC = () => {
 										] || {
 											label: selectedFeedback.status,
 											color:
-												"bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200",
+												"bg-gray-100 text-gray-800",
 											icon: <AlertTriangle className="w-4 h-4 mr-1" />,
 										};
 
@@ -870,13 +870,13 @@ const AdminFeedbackPage: React.FC = () => {
 							{/* Notas de Administración existentes */}
 							{selectedFeedback.adminNotes && (
 								<div className="mb-6">
-									<h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
+									<h4 className="text-sm font-medium text-gray-500 mb-2">
 										Notas de Administración
 									</h4>
-									<div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg text-gray-800 dark:text-gray-200 mb-2">
+									<div className="bg-gray-50 p-3 rounded-lg text-gray-800 mb-2">
 										{selectedFeedback.adminNotes}
 									</div>
-									<div className="text-sm text-gray-500 dark:text-gray-400">
+									<div className="text-sm text-gray-500">
 										{selectedFeedback.admin && (
 											<span>Por: {selectedFeedback.admin.name}</span>
 										)}
@@ -892,21 +892,21 @@ const AdminFeedbackPage: React.FC = () => {
 							{/* Acciones de Administración */}
 							{selectedFeedback.status === "pending" && (
 								<div className="mb-6">
-									<h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
+									<h4 className="text-sm font-medium text-gray-500 mb-2">
 										Revisión de Administrador
 									</h4>
 
 									<div className="mb-4">
 										<label
 											htmlFor="adminNote"
-											className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+											className="block text-sm font-medium text-gray-700 mb-1"
 										>
 											Nota de Administrador (obligatoria)
 										</label>
 										<textarea
 											id="adminNote"
 											rows={3}
-											className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+											className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 											placeholder="Notas adicionales o respuesta al usuario..."
 											value={adminNote}
 											onChange={(e) => setAdminNote(e.target.value)}
@@ -927,7 +927,7 @@ const AdminFeedbackPage: React.FC = () => {
 											/>
 											<label
 												htmlFor="generateDiscount"
-												className="ml-2 block text-sm text-gray-700 dark:text-gray-300"
+												className="ml-2 block text-sm text-gray-700"
 											>
 												Generar código de descuento para el usuario
 											</label>
@@ -937,7 +937,7 @@ const AdminFeedbackPage: React.FC = () => {
 											<div className="ml-6">
 												<label
 													htmlFor="discountPercentage"
-													className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+													className="block text-sm font-medium text-gray-700 mb-1"
 												>
 													Porcentaje de descuento
 												</label>
@@ -954,7 +954,7 @@ const AdminFeedbackPage: React.FC = () => {
 														}
 														className="mr-3 w-40"
 													/>
-													<span className="text-sm font-medium text-gray-700 dark:text-gray-300 w-10">
+													<span className="text-sm font-medium text-gray-700 w-10">
 														{discountPercentage}%
 													</span>
 												</div>
@@ -985,14 +985,14 @@ const AdminFeedbackPage: React.FC = () => {
 
 							{/* Enlaces rápidos (según el tipo de feedback) */}
 							<div>
-								<h4 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
+								<h4 className="text-sm font-medium text-gray-500 mb-2">
 									Enlaces Rápidos
 								</h4>
 								<div className="flex flex-wrap gap-2">
 									{selectedFeedback.sellerId && (
 										<Link
 											to={`/admin/sellers/${selectedFeedback.sellerId}`}
-											className="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded-full text-sm"
+											className="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
 										>
 											<Store className="w-4 h-4 mr-1" />
 											Perfil del Vendedor
@@ -1001,7 +1001,7 @@ const AdminFeedbackPage: React.FC = () => {
 
 									<Link
 										to={`/admin/users/${selectedFeedback.userId}`}
-										className="inline-flex items-center px-3 py-1 bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 rounded-full text-sm"
+										className="inline-flex items-center px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm"
 									>
 										<User className="w-4 h-4 mr-1" />
 										Ver Usuario
@@ -1010,7 +1010,7 @@ const AdminFeedbackPage: React.FC = () => {
 									{selectedFeedback.type === "bug" && (
 										<Link
 											to="/admin/bugs"
-											className="inline-flex items-center px-3 py-1 bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 rounded-full text-sm"
+											className="inline-flex items-center px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm"
 										>
 											<AlertTriangle className="w-4 h-4 mr-1" />
 											Lista de Errores
@@ -1020,7 +1020,7 @@ const AdminFeedbackPage: React.FC = () => {
 									{selectedFeedback.type === "feature" && (
 										<Link
 											to="/admin/roadmap"
-											className="inline-flex items-center px-3 py-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded-full text-sm"
+											className="inline-flex items-center px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm"
 										>
 											<Tag className="w-4 h-4 mr-1" />
 											Roadmap de Funciones

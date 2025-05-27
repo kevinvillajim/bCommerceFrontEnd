@@ -280,20 +280,20 @@ const SellerShippingPage: React.FC = () => {
 	const getStatusClass = (status: ShippingItem["status"]): string => {
 		switch (status) {
 			case "pending":
-				return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
+				return "bg-yellow-100 text-yellow-800";
 			case "ready_to_ship":
-				return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
+				return "bg-blue-100 text-blue-800";
 			case "in_transit":
 			case "shipped": // Añadido para manejar el nuevo estado
-				return "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200";
+				return "bg-indigo-100 text-indigo-800";
 			case "delivered":
-				return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
+				return "bg-green-100 text-green-800";
 			case "failed":
-				return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
+				return "bg-red-100 text-red-800";
 			case "returned":
-				return "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200";
+				return "bg-orange-100 text-orange-800";
 			default:
-				return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200";
+				return "bg-gray-100 text-gray-800";
 		}
 	};
 
@@ -306,7 +306,7 @@ const SellerShippingPage: React.FC = () => {
 			render: (item: ShippingItem) => (
 				<Link
 					to={`/seller/orders/${item.orderId}`}
-					className="font-medium text-primary-600 dark:text-primary-400 hover:underline"
+					className="font-medium text-primary-600 hover:underline"
 				>
 					{item.orderNumber}
 				</Link>
@@ -324,7 +324,7 @@ const SellerShippingPage: React.FC = () => {
 							{item.carrier && (
 								<a
 									href="#"
-									className="ml-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+									className="ml-2 text-blue-600 hover:text-blue-800"
 									title={`Rastrear con ${item.carrier}`}
 									onClick={(e) => {
 										e.preventDefault();
@@ -339,7 +339,7 @@ const SellerShippingPage: React.FC = () => {
 							)}
 						</div>
 					) : (
-						<span className="text-gray-500 dark:text-gray-400 text-sm">
+						<span className="text-gray-500 text-sm">
 							No asignado
 						</span>
 					)}
@@ -364,7 +364,7 @@ const SellerShippingPage: React.FC = () => {
 			render: (item: ShippingItem) => (
 				<div>
 					<div className="font-medium text-sm">{item.customer.name}</div>
-					<div className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[150px]">
+					<div className="text-xs text-gray-500 truncate max-w-[150px]">
 						{item.shippingAddress}
 					</div>
 				</div>
@@ -412,7 +412,7 @@ const SellerShippingPage: React.FC = () => {
 					{/* Ver detalles del envío */}
 					<Link
 						to={`/seller/shipping/${item.id}`}
-						className="p-1 text-blue-600 hover:bg-blue-100 rounded-md dark:text-blue-400 dark:hover:bg-blue-900"
+						className="p-1 text-blue-600 hover:bg-blue-100 rounded-md"
 						title="Ver detalles"
 					>
 						<ClipboardList size={18} />
@@ -423,7 +423,7 @@ const SellerShippingPage: React.FC = () => {
 						!item.trackingNumber && (
 							<button
 								onClick={() => assignTrackingNumber(item.id)}
-								className="p-1 text-green-600 hover:bg-green-100 rounded-md dark:text-green-400 dark:hover:bg-green-900"
+								className="p-1 text-green-600 hover:bg-green-100 rounded-md"
 								title="Asignar número de seguimiento"
 								disabled={isUpdating}
 							>
@@ -436,7 +436,7 @@ const SellerShippingPage: React.FC = () => {
 						item.trackingNumber && (
 							<button
 								onClick={() => updateShippingStatus(item.id, "shipped")}
-								className="p-1 text-indigo-600 hover:bg-indigo-100 rounded-md dark:text-indigo-400 dark:hover:bg-indigo-900"
+								className="p-1 text-indigo-600 hover:bg-indigo-100 rounded-md"
 								title="Marcar como enviado"
 								disabled={isUpdating}
 							>
@@ -451,7 +451,7 @@ const SellerShippingPage: React.FC = () => {
 								onClick={() =>
 									alert(`Imprimiendo etiqueta para ${item.trackingNumber}`)
 								}
-								className="p-1 text-gray-600 hover:bg-gray-100 rounded-md dark:text-gray-400 dark:hover:bg-gray-800"
+								className="p-1 text-gray-600 hover:bg-gray-100 rounded-md"
 								title="Imprimir etiqueta"
 								disabled={isUpdating}
 							>
@@ -463,7 +463,7 @@ const SellerShippingPage: React.FC = () => {
 					{(item.status === "in_transit" || item.status === "shipped") && (
 						<button
 							onClick={() => updateShippingStatus(item.id, "delivered")}
-							className="p-1 text-green-600 hover:bg-green-100 rounded-md dark:text-green-400 dark:hover:bg-green-900"
+							className="p-1 text-green-600 hover:bg-green-100 rounded-md"
 							title="Marcar como entregado"
 							disabled={isUpdating}
 						>
@@ -478,7 +478,7 @@ const SellerShippingPage: React.FC = () => {
 						item.status === "pending") && (
 						<button
 							onClick={() => updateShippingStatus(item.id, "failed")}
-							className="p-1 text-red-600 hover:bg-red-100 rounded-md dark:text-red-400 dark:hover:bg-red-900"
+							className="p-1 text-red-600 hover:bg-red-100 rounded-md"
 							title="Marcar como fallido"
 							disabled={isUpdating}
 						>
@@ -517,21 +517,21 @@ const SellerShippingPage: React.FC = () => {
 				label: "Pendientes",
 				value: stats.pending,
 				icon: (
-					<Package className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+					<Package className="h-5 w-5 text-yellow-600" />
 				),
 				color: "yellow",
 			},
 			{
 				label: "Listos",
 				value: stats.readyToShip,
-				icon: <Package className="h-5 w-5 text-blue-600 dark:text-blue-400" />,
+				icon: <Package className="h-5 w-5 text-blue-600" />,
 				color: "blue",
 			},
 			{
 				label: "En Tránsito",
 				value: stats.inTransit,
 				icon: (
-					<Truck className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+					<Truck className="h-5 w-5 text-indigo-600" />
 				),
 				color: "indigo",
 			},
@@ -539,7 +539,7 @@ const SellerShippingPage: React.FC = () => {
 				label: "Entregados",
 				value: stats.delivered,
 				icon: (
-					<PackageCheck className="h-5 w-5 text-green-600 dark:text-green-400" />
+					<PackageCheck className="h-5 w-5 text-green-600" />
 				),
 				color: "green",
 			},
@@ -547,7 +547,7 @@ const SellerShippingPage: React.FC = () => {
 				label: "Fallidos",
 				value: stats.failed,
 				icon: (
-					<AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
+					<AlertTriangle className="h-5 w-5 text-red-600" />
 				),
 				color: "red",
 			},
@@ -555,7 +555,7 @@ const SellerShippingPage: React.FC = () => {
 				label: "Devueltos",
 				value: stats.returned,
 				icon: (
-					<MapPin className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+					<MapPin className="h-5 w-5 text-orange-600" />
 				),
 				color: "orange",
 			},
@@ -563,7 +563,7 @@ const SellerShippingPage: React.FC = () => {
 				label: "Coste Envíos",
 				value: formatCurrency(stats.totalShippingCost),
 				icon: (
-					<BarChart2 className="h-5 w-5 text-primary-600 dark:text-primary-400" />
+					<BarChart2 className="h-5 w-5 text-primary-600" />
 				),
 				color: "primary",
 			},
@@ -582,7 +582,7 @@ const SellerShippingPage: React.FC = () => {
 			/>
 
 			<div className="flex justify-between items-center">
-				<h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+				<h1 className="text-2xl font-bold text-gray-900">
 					Gestión de Envíos
 				</h1>
 				<div className="flex space-x-2">
@@ -626,14 +626,14 @@ const SellerShippingPage: React.FC = () => {
 			)}
 
 			{/* Panel de filtros */}
-			<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+			<div className="bg-white rounded-lg shadow-sm p-4">
 				<div className="flex flex-col md:flex-row gap-4">
 					{/* Buscador */}
 					<div className="relative flex-grow">
 						<input
 							type="text"
 							placeholder="Buscar por número de pedido, seguimiento, cliente..."
-							className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white"
+							className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
 							value={searchTerm}
 							onChange={(e) => setSearchTerm(e.target.value)}
 						/>
@@ -642,9 +642,9 @@ const SellerShippingPage: React.FC = () => {
 
 					{/* Filtro de Estado */}
 					<div className="flex items-center space-x-2">
-						<Filter className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+						<Filter className="h-5 w-5 text-gray-500" />
 						<select
-							className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+							className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 							value={statusFilter}
 							onChange={(e) => setStatusFilter(e.target.value)}
 						>
@@ -661,7 +661,7 @@ const SellerShippingPage: React.FC = () => {
 					{/* Filtro de Transportista */}
 					<div className="flex items-center space-x-2">
 						<select
-							className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+							className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 							value={carrierFilter}
 							onChange={(e) => setCarrierFilter(e.target.value)}
 						>
@@ -678,7 +678,7 @@ const SellerShippingPage: React.FC = () => {
 					{/* Filtro de Fecha */}
 					<div className="flex items-center space-x-2">
 						<select
-							className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+							className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 							value={dateFilter}
 							onChange={(e) => setDateFilter(e.target.value)}
 						>
@@ -692,16 +692,16 @@ const SellerShippingPage: React.FC = () => {
 							<div className="flex items-center space-x-2">
 								<input
 									type="date"
-									className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+									className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 									value={dateRange.from}
 									onChange={(e) =>
 										setDateRange({...dateRange, from: e.target.value})
 									}
 								/>
-								<span className="text-gray-500 dark:text-gray-400">a</span>
+								<span className="text-gray-500">a</span>
 								<input
 									type="date"
-									className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+									className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 									value={dateRange.to}
 									onChange={(e) =>
 										setDateRange({...dateRange, to: e.target.value})
@@ -720,7 +720,7 @@ const SellerShippingPage: React.FC = () => {
 							setSearchTerm("");
 							setDateRange({from: "", to: ""});
 						}}
-						className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+						className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300"
 					>
 						Limpiar filtros
 					</button>

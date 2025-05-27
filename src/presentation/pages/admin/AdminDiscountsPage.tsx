@@ -354,14 +354,14 @@ const AdminDiscountsPage: React.FC = () => {
 			sortable: true,
 			render: (discount: DiscountCode) => (
 				<div className="flex items-center">
-					<div className="flex-shrink-0 h-8 w-8 bg-primary-100 dark:bg-primary-900 rounded-md flex items-center justify-center">
-						<Tag className="h-4 w-4 text-primary-600 dark:text-primary-300" />
+					<div className="flex-shrink-0 h-8 w-8 bg-primary-100 rounded-md flex items-center justify-center">
+						<Tag className="h-4 w-4 text-primary-600" />
 					</div>
 					<div className="ml-3">
-						<div className="text-sm font-medium text-gray-900 dark:text-white">
+						<div className="text-sm font-medium text-gray-900">
 							{discount.code}
 						</div>
-						<div className="text-xs text-gray-500 dark:text-gray-400">
+						<div className="text-xs text-gray-500">
 							ID: {discount.id}
 						</div>
 					</div>
@@ -374,10 +374,10 @@ const AdminDiscountsPage: React.FC = () => {
 			sortable: true,
 			render: (discount: DiscountCode) => (
 				<div className="flex items-center">
-					<div className="flex-shrink-0 h-8 w-8 bg-green-100 dark:bg-green-900 rounded-md flex items-center justify-center">
-						<Percent className="h-4 w-4 text-green-600 dark:text-green-300" />
+					<div className="flex-shrink-0 h-8 w-8 bg-green-100 rounded-md flex items-center justify-center">
+						<Percent className="h-4 w-4 text-green-600" />
 					</div>
-					<div className="ml-3 text-lg font-semibold text-gray-900 dark:text-white">
+					<div className="ml-3 text-lg font-semibold text-gray-900">
 						{discount.discountPercentage}%
 					</div>
 				</div>
@@ -394,22 +394,22 @@ const AdminDiscountsPage: React.FC = () => {
 				return (
 					<div>
 						{isExpired ? (
-							<span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+							<span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
 								<XCircle className="w-3 h-3 mr-1" />
 								Expirado
 							</span>
 						) : (
-							<span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+							<span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
 								<CheckCircle className="w-3 h-3 mr-1" />
 								Válido
 							</span>
 						)}
-						<div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+						<div className="text-xs text-gray-500 mt-1">
 							{isExpired
 								? `Expiró hace ${Math.abs(daysRemaining)} día${Math.abs(daysRemaining) !== 1 ? "s" : ""}`
 								: `Expira en ${daysRemaining} día${daysRemaining !== 1 ? "s" : ""}`}
 						</div>
-						<div className="text-xs text-gray-500 dark:text-gray-400">
+						<div className="text-xs text-gray-500">
 							{formatDate(discount.expiresAt)}
 						</div>
 					</div>
@@ -424,23 +424,23 @@ const AdminDiscountsPage: React.FC = () => {
 				return (
 					<div>
 						{discount.isUsed ? (
-							<span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+							<span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
 								<Check className="w-3 h-3 mr-1" />
 								Utilizado
 							</span>
 						) : (
-							<span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+							<span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
 								<Clock className="w-3 h-3 mr-1" />
 								Sin usar
 							</span>
 						)}
 						{discount.isUsed && discount.usedBy && (
-							<div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+							<div className="text-xs text-gray-500 mt-1">
 								Por: Usuario #{discount.usedBy}
 							</div>
 						)}
 						{discount.isUsed && discount.usedAt && (
-							<div className="text-xs text-gray-500 dark:text-gray-400">
+							<div className="text-xs text-gray-500">
 								{formatDate(discount.usedAt)}
 							</div>
 						)}
@@ -457,14 +457,14 @@ const AdminDiscountsPage: React.FC = () => {
 					return (
 						<Link
 							to={`/admin/feedback/${discount.feedbackId}`}
-							className="text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300 text-sm"
+							className="text-primary-600 hover:text-primary-800 text-sm"
 						>
 							Ver feedback #{discount.feedbackId}
 						</Link>
 					);
 				}
 				return (
-					<span className="text-gray-500 dark:text-gray-400 text-sm">N/A</span>
+					<span className="text-gray-500 text-sm">N/A</span>
 				);
 			},
 		},
@@ -473,7 +473,7 @@ const AdminDiscountsPage: React.FC = () => {
 			header: "Creado",
 			sortable: true,
 			render: (discount: DiscountCode) => (
-				<div className="text-sm text-gray-500 dark:text-gray-400">
+				<div className="text-sm text-gray-500">
 					{formatDate(discount.createdAt)}
 				</div>
 			),
@@ -487,7 +487,7 @@ const AdminDiscountsPage: React.FC = () => {
 						{/* Ver detalles / Editar */}
 						<button
 							onClick={() => openDiscountModal(discount)}
-							className="p-1 text-blue-600 hover:bg-blue-100 rounded-md dark:text-blue-400 dark:hover:bg-blue-900"
+							className="p-1 text-blue-600 hover:bg-blue-100 rounded-md"
 							title="Ver/Editar código"
 						>
 							<Eye size={18} />
@@ -499,7 +499,7 @@ const AdminDiscountsPage: React.FC = () => {
 								setSelectedDiscount(discount);
 								setShowDeleteConfirmation(true);
 							}}
-							className="p-1 text-red-600 hover:bg-red-100 rounded-md dark:text-red-400 dark:hover:bg-red-900"
+							className="p-1 text-red-600 hover:bg-red-100 rounded-md"
 							title="Eliminar código"
 						>
 							<Trash2 size={18} />
@@ -516,51 +516,51 @@ const AdminDiscountsPage: React.FC = () => {
 		  value: discounts.length, 
 		  description: "Códigos de descuento", 
 		  icon: Tag, 
-		  bgColor: "bg-blue-50 dark:bg-blue-900/20", 
-		  textColor: "text-blue-800 dark:text-blue-200", 
-		  valueColor: "text-blue-900 dark:text-blue-100", 
-		  descriptionColor: "text-blue-700 dark:text-blue-300", 
-		  iconColor: "text-blue-600 dark:text-blue-400", 
+		  bgColor: "bg-blue-50/20", 
+		  textColor: "text-blue-800", 
+		  valueColor: "text-blue-900", 
+		  descriptionColor: "text-blue-700", 
+		  iconColor: "text-blue-600", 
 		},
 		{ 
 		  title: "Activos", 
 		  value: discounts.filter((d) => !isDateExpired(d.expiresAt) && !d.isUsed).length, 
 		  description: "Disponibles para uso", 
 		  icon: CheckCircle, 
-		  bgColor: "bg-green-50 dark:bg-green-900/20", 
-		  textColor: "text-green-800 dark:text-green-200", 
-		  valueColor: "text-green-900 dark:text-green-100", 
-		  descriptionColor: "text-green-700 dark:text-green-300", 
-		  iconColor: "text-green-600 dark:text-green-400", 
+		  bgColor: "bg-green-50/20", 
+		  textColor: "text-green-800", 
+		  valueColor: "text-green-900", 
+		  descriptionColor: "text-green-700", 
+		  iconColor: "text-green-600", 
 		},
 		{ 
 		  title: "Utilizados", 
 		  value: discounts.filter((d) => d.isUsed).length, 
 		  description: "Ya redimidos", 
 		  icon: Check, 
-		  bgColor: "bg-yellow-50 dark:bg-yellow-900/20", 
-		  textColor: "text-yellow-800 dark:text-yellow-200", 
-		  valueColor: "text-yellow-900 dark:text-yellow-100", 
-		  descriptionColor: "text-yellow-700 dark:text-yellow-300", 
-		  iconColor: "text-yellow-600 dark:text-yellow-400", 
+		  bgColor: "bg-yellow-50", 
+		  textColor: "text-yellow-800", 
+		  valueColor: "text-yellow-900", 
+		  descriptionColor: "text-yellow-700", 
+		  iconColor: "text-yellow-600", 
 		},
 		{ 
 		  title: "Expirados", 
 		  value: discounts.filter((d) => isDateExpired(d.expiresAt) && !d.isUsed).length, 
 		  description: "Ya no válidos", 
 		  icon: XCircle, 
-		  bgColor: "bg-red-50 dark:bg-red-900/20", 
-		  textColor: "text-red-800 dark:text-red-200", 
-		  valueColor: "text-red-900 dark:text-red-100", 
-		  descriptionColor: "text-red-700 dark:text-red-300", 
-		  iconColor: "text-red-600 dark:text-red-400", 
+		  bgColor: "bg-red-50/20", 
+		  textColor: "text-red-800", 
+		  valueColor: "text-red-900", 
+		  descriptionColor: "text-red-700", 
+		  iconColor: "text-red-600", 
 		}
 	  ];
 
 	return (
 		<div className="space-y-6">
 			<div className="flex justify-between items-center">
-				<h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+				<h1 className="text-2xl font-bold text-gray-900">
 					Gestión de Códigos de Descuento
 				</h1>
 				<div className="flex space-x-2">
@@ -585,13 +585,13 @@ const AdminDiscountsPage: React.FC = () => {
 			<StatCardList items={statItems} />
 
 			{/* Filtros */}
-			<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+			<div className="bg-white rounded-lg shadow-sm p-4">
 				<div className="flex flex-col md:flex-row gap-4">
 					{/* Filtro de Validez */}
 					<div className="flex items-center space-x-2">
-						<Filter className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+						<Filter className="h-5 w-5 text-gray-500" />
 						<select
-							className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+							className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 							value={validityFilter}
 							onChange={(e) => setValidityFilter(e.target.value)}
 						>
@@ -604,7 +604,7 @@ const AdminDiscountsPage: React.FC = () => {
 					{/* Filtro de Uso */}
 					<div className="flex items-center space-x-2">
 						<select
-							className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+							className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 							value={usageFilter}
 							onChange={(e) => setUsageFilter(e.target.value)}
 						>
@@ -616,9 +616,9 @@ const AdminDiscountsPage: React.FC = () => {
 
 					{/* Filtro de Porcentaje */}
 					<div className="flex items-center space-x-2">
-						<Percent className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+						<Percent className="h-5 w-5 text-gray-500" />
 						<select
-							className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+							className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 							value={percentageFilter}
 							onChange={(e) => setPercentageFilter(e.target.value)}
 						>
@@ -651,16 +651,16 @@ const AdminDiscountsPage: React.FC = () => {
 			{/* Modal para Crear/Editar Descuento */}
 			{showDiscountModal && (
 				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-					<div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full">
-						<div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-							<h3 className="text-lg font-medium text-gray-900 dark:text-white">
+					<div className="bg-white rounded-lg shadow-xl max-w-2xl w-full">
+						<div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+							<h3 className="text-lg font-medium text-gray-900">
 								{selectedDiscount
 									? "Editar Código de Descuento"
 									: "Crear Nuevo Código de Descuento"}
 							</h3>
 							<button
 								onClick={closeDiscountModal}
-								className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+								className="text-gray-400 hover:text-gray-500"
 							>
 								<XCircle className="h-5 w-5" />
 							</button>
@@ -670,10 +670,10 @@ const AdminDiscountsPage: React.FC = () => {
 							{showDeleteConfirmation ? (
 								<div className="text-center">
 									<AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-									<h4 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+									<h4 className="text-lg font-medium text-gray-900 mb-2">
 										¿Estás seguro de eliminar este código?
 									</h4>
-									<p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+									<p className="text-sm text-gray-500 mb-6">
 										Esta acción no se puede deshacer y el código{" "}
 										<span className="font-bold">{selectedDiscount?.code}</span>{" "}
 										será eliminado permanentemente.
@@ -681,7 +681,7 @@ const AdminDiscountsPage: React.FC = () => {
 									<div className="flex justify-center space-x-3">
 										<button
 											onClick={() => setShowDeleteConfirmation(false)}
-											className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+											className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
 										>
 											Cancelar
 										</button>
@@ -698,12 +698,12 @@ const AdminDiscountsPage: React.FC = () => {
 									{/* Detalles del código */}
 									<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 										<div>
-											<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+											<label className="block text-sm font-medium text-gray-700 mb-1">
 												Código
 											</label>
 											<input
 												type="text"
-												className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+												className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 												value={selectedDiscount.code}
 												onChange={(e) =>
 													setSelectedDiscount({
@@ -714,7 +714,7 @@ const AdminDiscountsPage: React.FC = () => {
 											/>
 										</div>
 										<div>
-											<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+											<label className="block text-sm font-medium text-gray-700 mb-1">
 												Porcentaje de Descuento
 											</label>
 											<div className="flex items-center">
@@ -732,7 +732,7 @@ const AdminDiscountsPage: React.FC = () => {
 													}
 													className="w-full mr-3"
 												/>
-												<span className="text-lg font-semibold text-gray-900 dark:text-white min-w-[50px] text-center">
+												<span className="text-lg font-semibold text-gray-900 min-w-[50px] text-center">
 													{selectedDiscount.discountPercentage}%
 												</span>
 											</div>
@@ -742,12 +742,12 @@ const AdminDiscountsPage: React.FC = () => {
 									{/* Campos de expiración y feedback relacionado */}
 									<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 										<div>
-											<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+											<label className="block text-sm font-medium text-gray-700 mb-1">
 												Fecha de Expiración
 											</label>
 											<input
 												type="date"
-												className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+												className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 												value={
 													selectedDiscount.expiresAt
 														? new Date(selectedDiscount.expiresAt)
@@ -766,11 +766,11 @@ const AdminDiscountsPage: React.FC = () => {
 											/>
 										</div>
 										<div>
-											<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+											<label className="block text-sm font-medium text-gray-700 mb-1">
 												Feedback Relacionado
 											</label>
 											<div className="flex items-center">
-												<span className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 w-full">
+												<span className="border border-gray-300 rounded-lg px-3 py-2 bg-gray-100 text-gray-600 w-full">
 													{selectedDiscount.feedbackId
 														? `Feedback #${selectedDiscount.feedbackId}`
 														: "Sin feedback relacionado"}
@@ -778,7 +778,7 @@ const AdminDiscountsPage: React.FC = () => {
 												{selectedDiscount.feedbackId && (
 													<Link
 														to={`/admin/feedback/${selectedDiscount.feedbackId}`}
-														className="ml-2 p-2 text-primary-600 hover:bg-primary-100 rounded-md dark:text-primary-400 dark:hover:bg-primary-900"
+														className="ml-2 p-2 text-primary-600 hover:bg-primary-100 rounded-md"
 														title="Ver feedback"
 													>
 														<Eye size={18} />
@@ -789,18 +789,18 @@ const AdminDiscountsPage: React.FC = () => {
 									</div>
 
 									{/* Estado de uso */}
-									<div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-										<h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+									<div className="bg-gray-50 p-4 rounded-lg">
+										<h4 className="text-sm font-medium text-gray-700 mb-2">
 											Estado de Uso
 										</h4>
 										<div className="flex items-center mb-2">
 											{selectedDiscount.isUsed ? (
-												<span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+												<span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
 													<Check className="w-4 h-4 mr-1" />
 													Utilizado
 												</span>
 											) : (
-												<span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+												<span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
 													<Clock className="w-4 h-4 mr-1" />
 													Sin Usar
 												</span>
@@ -810,12 +810,12 @@ const AdminDiscountsPage: React.FC = () => {
 											<div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
 												{selectedDiscount.usedBy && (
 													<div>
-														<span className="text-sm text-gray-600 dark:text-gray-400">
+														<span className="text-sm text-gray-600">
 															Usado por:
 														</span>
 														<Link
 															to={`/admin/users/${selectedDiscount.usedBy}`}
-															className="ml-2 text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300"
+															className="ml-2 text-primary-600 hover:text-primary-800"
 														>
 															Usuario #{selectedDiscount.usedBy}
 														</Link>
@@ -823,22 +823,22 @@ const AdminDiscountsPage: React.FC = () => {
 												)}
 												{selectedDiscount.usedAt && (
 													<div>
-														<span className="text-sm text-gray-600 dark:text-gray-400">
+														<span className="text-sm text-gray-600">
 															Fecha de uso:
 														</span>
-														<span className="ml-2 text-gray-900 dark:text-gray-200">
+														<span className="ml-2 text-gray-900">
 															{formatDate(selectedDiscount.usedAt)}
 														</span>
 													</div>
 												)}
 												{selectedDiscount.usedOnProductId && (
 													<div className="col-span-2">
-														<span className="text-sm text-gray-600 dark:text-gray-400">
+														<span className="text-sm text-gray-600">
 															Aplicado en:
 														</span>
 														<Link
 															to={`/admin/products/${selectedDiscount.usedOnProductId}`}
-															className="ml-2 text-primary-600 hover:text-primary-800 dark:text-primary-400 dark:hover:text-primary-300"
+															className="ml-2 text-primary-600 hover:text-primary-800"
 														>
 															Producto #{selectedDiscount.usedOnProductId}
 														</Link>
@@ -852,7 +852,7 @@ const AdminDiscountsPage: React.FC = () => {
 									<div className="flex justify-end space-x-2 mt-6">
 										<button
 											onClick={closeDiscountModal}
-											className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+											className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
 										>
 											Cancelar
 										</button>
@@ -869,13 +869,13 @@ const AdminDiscountsPage: React.FC = () => {
 									{/* Crear nuevo código */}
 									<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 										<div>
-											<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+											<label className="block text-sm font-medium text-gray-700 mb-1">
 												Código
 											</label>
 											<div className="flex">
 												<input
 													type="text"
-													className="flex-1 border border-gray-300 dark:border-gray-600 rounded-l-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+													className="flex-1 border border-gray-300 rounded-l-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 													value={newDiscount.code}
 													onChange={(e) =>
 														setNewDiscount({
@@ -892,7 +892,7 @@ const AdminDiscountsPage: React.FC = () => {
 															code: generateRandomCode(),
 														})
 													}
-													className="bg-gray-200 text-gray-800 hover:bg-gray-300 px-3 py-2 rounded-r-lg dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+													className="bg-gray-200 text-gray-800 hover:bg-gray-300 px-3 py-2 rounded-r-lg"
 													title="Generar código aleatorio"
 												>
 													<RefreshCw size={16} />
@@ -900,7 +900,7 @@ const AdminDiscountsPage: React.FC = () => {
 											</div>
 										</div>
 										<div>
-											<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+											<label className="block text-sm font-medium text-gray-700 mb-1">
 												Porcentaje de Descuento
 											</label>
 											<div className="flex items-center">
@@ -918,7 +918,7 @@ const AdminDiscountsPage: React.FC = () => {
 													}
 													className="w-full mr-3"
 												/>
-												<span className="text-lg font-semibold text-gray-900 dark:text-white min-w-[50px] text-center">
+												<span className="text-lg font-semibold text-gray-900 min-w-[50px] text-center">
 													{newDiscount.discountPercentage}%
 												</span>
 											</div>
@@ -928,14 +928,14 @@ const AdminDiscountsPage: React.FC = () => {
 									{/* Duración y relación con feedback */}
 									<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 										<div>
-											<label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+											<label className="block text-sm font-medium text-gray-700 mb-1">
 												Duración (días)
 											</label>
 											<input
 												type="number"
 												min="1"
 												max="365"
-												className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+												className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 												value={newDiscount.expirationDays}
 												onChange={(e) =>
 													setNewDiscount({
@@ -944,7 +944,7 @@ const AdminDiscountsPage: React.FC = () => {
 													})
 												}
 											/>
-											<p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+											<p className="text-xs text-gray-500 mt-1">
 												El código expirará después de{" "}
 												{newDiscount.expirationDays} días.
 											</p>
@@ -965,7 +965,7 @@ const AdminDiscountsPage: React.FC = () => {
 												/>
 												<label
 													htmlFor="isForFeedback"
-													className="ml-2 block text-sm text-gray-700 dark:text-gray-300"
+													className="ml-2 block text-sm text-gray-700"
 												>
 													Asociar a un feedback
 												</label>
@@ -974,7 +974,7 @@ const AdminDiscountsPage: React.FC = () => {
 												<div>
 													<input
 														type="text"
-														className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+														className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 														value={newDiscount.feedbackId}
 														onChange={(e) =>
 															setNewDiscount({
@@ -990,11 +990,11 @@ const AdminDiscountsPage: React.FC = () => {
 									</div>
 
 									{/* Resumen */}
-									<div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg mt-4">
-										<h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+									<div className="bg-gray-50 p-4 rounded-lg mt-4">
+										<h4 className="text-sm font-medium text-gray-700 mb-2">
 											Resumen
 										</h4>
-										<div className="text-sm text-gray-900 dark:text-gray-200">
+										<div className="text-sm text-gray-900">
 											<p>
 												Se creará un código de descuento{" "}
 												<span className="font-semibold">
@@ -1028,7 +1028,7 @@ const AdminDiscountsPage: React.FC = () => {
 									<div className="flex justify-end space-x-2 mt-6">
 										<button
 											onClick={closeDiscountModal}
-											className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+											className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
 										>
 											Cancelar
 										</button>
@@ -1049,13 +1049,13 @@ const AdminDiscountsPage: React.FC = () => {
 			{/* Modal Confirmación de Eliminación */}
 			{showDeleteConfirmation && selectedDiscount && (
 				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-					<div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
+					<div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
 						<div className="text-center">
 							<AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-							<h4 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+							<h4 className="text-lg font-medium text-gray-900 mb-2">
 								¿Estás seguro de eliminar este código?
 							</h4>
-							<p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+							<p className="text-sm text-gray-500 mb-6">
 								Esta acción no se puede deshacer y el código{" "}
 								<span className="font-bold">{selectedDiscount?.code}</span> será
 								eliminado permanentemente.
@@ -1063,7 +1063,7 @@ const AdminDiscountsPage: React.FC = () => {
 							<div className="flex justify-center space-x-3">
 								<button
 									onClick={() => setShowDeleteConfirmation(false)}
-									className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+									className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
 								>
 									Cancelar
 								</button>

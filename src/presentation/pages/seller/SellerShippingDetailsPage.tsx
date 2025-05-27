@@ -193,20 +193,20 @@ const SellerShippingDetailsPage: React.FC = () => {
 	const getStatusClass = (status: ShippingItem["status"]): string => {
 		switch (status) {
 			case "pending":
-				return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200";
+				return "bg-yellow-100 text-yellow-800";
 			case "ready_to_ship":
-				return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200";
+				return "bg-blue-100 text-blue-800";
 			case "in_transit":
 			case "shipped": // Añadido para compatibilidad
-				return "bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200";
+				return "bg-indigo-100 text-indigo-800";
 			case "delivered":
-				return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200";
+				return "bg-green-100 text-green-800";
 			case "failed":
-				return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200";
+				return "bg-red-100 text-red-800";
 			case "returned":
-				return "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200";
+				return "bg-orange-100 text-orange-800";
 			default:
-				return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200";
+				return "bg-gray-100 text-gray-800";
 		}
 	};
 
@@ -215,29 +215,29 @@ const SellerShippingDetailsPage: React.FC = () => {
 		switch (status) {
 			case "pending":
 				return (
-					<Package className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+					<Package className="h-5 w-5 text-yellow-600" />
 				);
 			case "ready_to_ship":
-				return <Package className="h-5 w-5 text-blue-600 dark:text-blue-400" />;
+				return <Package className="h-5 w-5 text-blue-600" />;
 			case "in_transit":
 			case "shipped": // Añadido para compatibilidad
 				return (
-					<Truck className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+					<Truck className="h-5 w-5 text-indigo-600" />
 				);
 			case "delivered":
 				return (
-					<PackageCheck className="h-5 w-5 text-green-600 dark:text-green-400" />
+					<PackageCheck className="h-5 w-5 text-green-600" />
 				);
 			case "failed":
 				return (
-					<AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" />
+					<AlertTriangle className="h-5 w-5 text-red-600" />
 				);
 			case "returned":
 				return (
-					<MapPin className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+					<MapPin className="h-5 w-5 text-orange-600" />
 				);
 			default:
-				return <Clock className="h-5 w-5 text-gray-500 dark:text-gray-400" />;
+				return <Clock className="h-5 w-5 text-gray-500" />;
 		}
 	};
 
@@ -261,7 +261,7 @@ const SellerShippingDetailsPage: React.FC = () => {
 		return (
 			<div className="flex flex-col items-center justify-center min-h-screen p-4">
 				<div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-500"></div>
-				<p className="mt-4 text-gray-700 dark:text-gray-300">
+				<p className="mt-4 text-gray-700">
 					Cargando detalles del envío...
 				</p>
 			</div>
@@ -270,15 +270,15 @@ const SellerShippingDetailsPage: React.FC = () => {
 
 	if (error || !shipping) {
 		return (
-			<div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 max-w-4xl mx-auto my-8">
+			<div className="bg-white rounded-lg shadow p-6 max-w-4xl mx-auto my-8">
 				<div className="text-center">
 					<div className="text-red-500 text-5xl mb-4">
 						<X className="h-16 w-16 mx-auto" />
 					</div>
-					<h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+					<h2 className="text-2xl font-bold text-gray-900 mb-2">
 						Error al cargar el envío
 					</h2>
-					<p className="text-gray-600 dark:text-gray-400 mb-6">
+					<p className="text-gray-600 mb-6">
 						{error || "No se pudo encontrar el envío solicitado"}
 					</p>
 					<button
@@ -299,12 +299,12 @@ const SellerShippingDetailsPage: React.FC = () => {
 				<div>
 					<button
 						onClick={() => navigate(-1)}
-						className="flex items-center text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 mb-2"
+						className="flex items-center text-gray-600 hover:text-primary-600 mb-2"
 					>
 						<ArrowLeft size={16} className="mr-1" />
 						<span>Volver a envíos</span>
 					</button>
-					<h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+					<h1 className="text-2xl font-bold text-gray-900">
 						Envío para Pedido #{shipping.orderNumber}
 					</h1>
 				</div>
@@ -418,13 +418,13 @@ const SellerShippingDetailsPage: React.FC = () => {
 				{/* Información general y estado */}
 				<div className="col-span-3 md:col-span-1 space-y-6">
 					{/* Tarjeta de estado */}
-					<div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-						<h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+					<div className="bg-white rounded-lg shadow p-6">
+						<h2 className="text-lg font-medium text-gray-900 mb-4">
 							Estado del envío
 						</h2>
 						<div className="space-y-3">
 							<div className="flex justify-between items-center">
-								<span className="text-gray-600 dark:text-gray-400">
+								<span className="text-gray-600">
 									Estado:
 								</span>
 								<span
@@ -434,26 +434,26 @@ const SellerShippingDetailsPage: React.FC = () => {
 								</span>
 							</div>
 							<div className="flex justify-between items-center">
-								<span className="text-gray-600 dark:text-gray-400">
+								<span className="text-gray-600">
 									Transportista:
 								</span>
-								<span className="text-gray-900 dark:text-gray-100">
+								<span className="text-gray-900">
 									{shipping.carrier || "No asignado"}
 								</span>
 							</div>
 							{shipping.trackingNumber && (
 								<div className="flex justify-between items-center">
-									<span className="text-gray-600 dark:text-gray-400">
+									<span className="text-gray-600">
 										Nº Seguimiento:
 									</span>
 									<div className="flex items-center">
-										<span className="text-gray-900 dark:text-gray-100 font-mono">
+										<span className="text-gray-900 font-mono">
 											{shipping.trackingNumber}
 										</span>
 										{shipping.carrier && (
 											<a
 												href="#"
-												className="ml-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+												className="ml-2 text-blue-600 hover:text-blue-800"
 												title={`Rastrear con ${shipping.carrier}`}
 												onClick={(e) => {
 													e.preventDefault();
@@ -471,10 +471,10 @@ const SellerShippingDetailsPage: React.FC = () => {
 							)}
 							{shipping.estimatedDelivery && (
 								<div className="flex justify-between items-center">
-									<span className="text-gray-600 dark:text-gray-400">
+									<span className="text-gray-600">
 										Entrega estimada:
 									</span>
-									<span className="text-gray-900 dark:text-gray-100">
+									<span className="text-gray-900">
 										{new Date(shipping.estimatedDelivery).toLocaleDateString(
 											"es-ES"
 										)}
@@ -482,19 +482,19 @@ const SellerShippingDetailsPage: React.FC = () => {
 								</div>
 							)}
 							<div className="flex justify-between items-center">
-								<span className="text-gray-600 dark:text-gray-400">
+								<span className="text-gray-600">
 									Fecha de pedido:
 								</span>
-								<span className="text-gray-900 dark:text-gray-100">
+								<span className="text-gray-900">
 									{new Date(shipping.date).toLocaleDateString("es-ES")}
 								</span>
 							</div>
 							{shipping.lastUpdate && (
 								<div className="flex justify-between items-center">
-									<span className="text-gray-600 dark:text-gray-400">
+									<span className="text-gray-600">
 										Última actualización:
 									</span>
-									<span className="text-gray-900 dark:text-gray-100">
+									<span className="text-gray-900">
 										{formatDate(shipping.lastUpdate)}
 									</span>
 								</div>
@@ -503,45 +503,45 @@ const SellerShippingDetailsPage: React.FC = () => {
 					</div>
 
 					{/* Información del cliente */}
-					<div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+					<div className="bg-white rounded-lg shadow p-6">
 						<div className="flex justify-between items-center mb-4">
-							<h2 className="text-lg font-medium text-gray-900 dark:text-white">
+							<h2 className="text-lg font-medium text-gray-900">
 								Cliente
 							</h2>
 						</div>
 						<div className="space-y-3">
 							<div>
-								<label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+								<label className="block text-sm font-medium text-gray-600">
 									Nombre:
 								</label>
-								<div className="mt-1 text-gray-900 dark:text-gray-100">
+								<div className="mt-1 text-gray-900">
 									{shipping.customer.name}
 								</div>
 							</div>
 							<div>
-								<label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+								<label className="block text-sm font-medium text-gray-600">
 									Email:
 								</label>
-								<div className="mt-1 text-gray-900 dark:text-gray-100">
+								<div className="mt-1 text-gray-900">
 									{shipping.customer.email}
 								</div>
 							</div>
 							<div>
 								{shipping.customer.phone && (
 									<div>
-										<label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+										<label className="block text-sm font-medium text-gray-600">
 											Teléfono:
 										</label>
-										<div className="mt-1 text-gray-900 dark:text-gray-100">
+										<div className="mt-1 text-gray-900">
 											{shipping.customer.phone}
 										</div>
 									</div>
 								)}
 								<div>
-									<label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+									<label className="block text-sm font-medium text-gray-600">
 										Dirección de envío:
 									</label>
-									<div className="mt-1 text-gray-900 dark:text-gray-100">
+									<div className="mt-1 text-gray-900">
 										{shipping.shippingAddress || "No disponible"}
 									</div>
 								</div>
@@ -550,51 +550,51 @@ const SellerShippingDetailsPage: React.FC = () => {
 					</div>
 
 					{/* Información del pedido */}
-					<div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+					<div className="bg-white rounded-lg shadow p-6">
 						<div className="flex justify-between items-center mb-4">
-							<h2 className="text-lg font-medium text-gray-900 dark:text-white">
+							<h2 className="text-lg font-medium text-gray-900">
 								Pedido
 							</h2>
 							<Link
 								to={`/seller/orders/${shipping.orderId}`}
-								className="text-sm text-primary-600 dark:text-primary-400 hover:underline"
+								className="text-sm text-primary-600 hover:underline"
 							>
 								Ver detalles
 							</Link>
 						</div>
 						<div className="space-y-3">
 							<div>
-								<label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+								<label className="block text-sm font-medium text-gray-600">
 									Número de pedido:
 								</label>
-								<div className="mt-1 text-gray-900 dark:text-gray-100">
+								<div className="mt-1 text-gray-900">
 									{shipping.orderNumber}
 								</div>
 							</div>
 							<div>
-								<label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+								<label className="block text-sm font-medium text-gray-600">
 									Método de envío:
 								</label>
-								<div className="mt-1 text-gray-900 dark:text-gray-100">
+								<div className="mt-1 text-gray-900">
 									{shipping.shippingMethod || "Estándar"}
 								</div>
 							</div>
 							{shipping.weight && (
 								<div>
-									<label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+									<label className="block text-sm font-medium text-gray-600">
 										Peso:
 									</label>
-									<div className="mt-1 text-gray-900 dark:text-gray-100">
+									<div className="mt-1 text-gray-900">
 										{shipping.weight} kg
 									</div>
 								</div>
 							)}
 							{shipping.shippingCost !== undefined && (
 								<div>
-									<label className="block text-sm font-medium text-gray-600 dark:text-gray-400">
+									<label className="block text-sm font-medium text-gray-600">
 										Coste de envío:
 									</label>
-									<div className="mt-1 text-gray-900 dark:text-gray-100">
+									<div className="mt-1 text-gray-900">
 										{new Intl.NumberFormat("es-ES", {
 											style: "currency",
 											currency: "EUR",
@@ -609,47 +609,47 @@ const SellerShippingDetailsPage: React.FC = () => {
 				{/* Historial y seguimiento */}
 				<div className="col-span-3 md:col-span-2 space-y-6">
 					{/* Historial de estados */}
-					<div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-						<h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+					<div className="bg-white rounded-lg shadow p-6">
+						<h2 className="text-lg font-medium text-gray-900 mb-4">
 							Historial de envío
 						</h2>
 
 						{shippingHistory.length === 0 ? (
 							<div className="text-center py-6">
-								<p className="text-gray-500 dark:text-gray-400">
+								<p className="text-gray-500">
 									No hay historial disponible para este envío.
 								</p>
 							</div>
 						) : (
 							<div className="relative">
 								{/* Línea de tiempo */}
-								<div className="absolute left-9 top-0 bottom-0 w-0.5 bg-gray-200 dark:bg-gray-700"></div>
+								<div className="absolute left-9 top-0 bottom-0 w-0.5 bg-gray-200"></div>
 
 								{/* Eventos */}
 								<ul className="space-y-6">
 									{shippingHistory.map((event, index) => (
 										<li key={index} className="relative">
 											<div className="flex items-start">
-												<div className="flex items-center justify-center h-9 w-9 rounded-full bg-white dark:bg-gray-800 border-2 border-primary-500 z-10">
+												<div className="flex items-center justify-center h-9 w-9 rounded-full bg-white border-2 border-primary-500 z-10">
 													{getStatusIcon(event.status)}
 												</div>
 												<div className="ml-4">
 													<div className="flex items-center">
-														<h3 className="text-md font-medium text-gray-900 dark:text-white">
+														<h3 className="text-md font-medium text-gray-900">
 															{getStatusText(
 																event.status as ShippingItem["status"]
 															)}
 														</h3>
-														<span className="ml-2 text-sm text-gray-500 dark:text-gray-400 flex items-center">
+														<span className="ml-2 text-sm text-gray-500 flex items-center">
 															<Calendar size={14} className="mr-1" />
 															{formatDate(event.date)}
 														</span>
 													</div>
-													<p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
+													<p className="mt-1 text-sm text-gray-600">
 														{event.description}
 													</p>
 													{event.location && (
-														<p className="mt-1 text-xs text-gray-500 dark:text-gray-400 flex items-center">
+														<p className="mt-1 text-xs text-gray-500 flex items-center">
 															<MapPin size={12} className="mr-1" />
 															{event.location}
 														</p>
@@ -665,25 +665,25 @@ const SellerShippingDetailsPage: React.FC = () => {
 
 					{/* Mapa de ruta (opcional) */}
 					{shippingRoute.length > 0 && (
-						<div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-							<h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+						<div className="bg-white rounded-lg shadow p-6">
+							<h2 className="text-lg font-medium text-gray-900 mb-4">
 								Ruta de envío
 							</h2>
-							<div className="h-64 bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden flex items-center justify-center">
+							<div className="h-64 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
 								{/* Aquí iría el componente de mapa */}
 								<div className="text-center">
 									<MapPin size={32} className="mx-auto mb-2 text-primary-500" />
-									<p className="text-gray-600 dark:text-gray-300">
+									<p className="text-gray-600">
 										Mapa de seguimiento disponible
 									</p>
-									<p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+									<p className="text-xs text-gray-500 mt-1">
 										{shippingRoute.length} puntos de seguimiento disponibles
 									</p>
 								</div>
 							</div>
 							{/* Lista de ubicaciones */}
 							<div className="mt-4">
-								<h3 className="text-md font-medium text-gray-900 dark:text-white mb-2">
+								<h3 className="text-md font-medium text-gray-900 mb-2">
 									Puntos de seguimiento:
 								</h3>
 								<ul className="space-y-2">
@@ -695,14 +695,14 @@ const SellerShippingDetailsPage: React.FC = () => {
 											/>
 											<div>
 												<div className="flex items-center">
-													<span className="text-sm font-medium text-gray-900 dark:text-white">
+													<span className="text-sm font-medium text-gray-900">
 														{point.location}
 													</span>
-													<span className="ml-2 text-xs text-gray-500 dark:text-gray-400">
+													<span className="ml-2 text-xs text-gray-500">
 														{new Date(point.date).toLocaleDateString("es-ES")}
 													</span>
 												</div>
-												<p className="text-xs text-gray-600 dark:text-gray-300">
+												<p className="text-xs text-gray-600">
 													{getStatusText(
 														point.status as ShippingItem["status"]
 													)}

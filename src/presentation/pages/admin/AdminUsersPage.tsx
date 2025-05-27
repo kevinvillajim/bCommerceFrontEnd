@@ -175,14 +175,14 @@ const AdminUsersPage: React.FC = () => {
 			sortable: true,
 			render: (user: AdminUserData) => (
 				<div className="flex items-center">
-					<div className="flex-shrink-0 h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden">
-						<User className="h-6 w-6 text-gray-500 dark:text-gray-400" />
+					<div className="flex-shrink-0 h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
+						<User className="h-6 w-6 text-gray-500" />
 					</div>
 					<div className="ml-4">
-						<div className="text-sm font-medium text-gray-900 dark:text-white">
+						<div className="text-sm font-medium text-gray-900">
 							{user.name}
 						</div>
-						<div className="text-sm text-gray-500 dark:text-gray-400">
+						<div className="text-sm text-gray-500">
 							{user.email}
 						</div>
 					</div>
@@ -197,10 +197,10 @@ const AdminUsersPage: React.FC = () => {
 				<span
 					className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
 						user.role === "admin"
-							? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+							? "bg-red-100 text-red-800"
 							: user.role === "seller"
-								? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
-								: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+								? "bg-blue-100 text-blue-800"
+								: "bg-green-100 text-green-800"
 					}`}
 				>
 					{user.role === "admin" && "Administrador"}
@@ -217,8 +217,8 @@ const AdminUsersPage: React.FC = () => {
 				<span
 					className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
 						user.status === "active"
-							? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-							: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+							? "bg-green-100 text-green-800"
+							: "bg-red-100 text-red-800"
 					}`}
 				>
 					{user.status === "active" ? "Activo" : "Bloqueado"}
@@ -249,8 +249,8 @@ const AdminUsersPage: React.FC = () => {
 						onClick={() => handleToggleUserStatus(user.id, user.status)}
 						className={`p-1 rounded-md ${
 							user.status === "active"
-								? "text-red-600 hover:bg-red-100 dark:text-red-400 dark:hover:bg-red-900"
-								: "text-green-600 hover:bg-green-100 dark:text-green-400 dark:hover:bg-green-900"
+								? "text-red-600 hover:bg-red-100"
+								: "text-green-600 hover:bg-green-100"
 						}`}
 						title={
 							user.status === "active"
@@ -266,7 +266,7 @@ const AdminUsersPage: React.FC = () => {
 					</button>
 					<button
 						onClick={() => handleSendPasswordReset(user.id)}
-						className="p-1 text-blue-600 hover:bg-blue-100 rounded-md dark:text-blue-400 dark:hover:bg-blue-900"
+						className="p-1 text-blue-600 hover:bg-blue-100 rounded-md"
 						title="Enviar Restablecimiento de Contraseña"
 					>
 						<Mail size={18} />
@@ -274,7 +274,7 @@ const AdminUsersPage: React.FC = () => {
 					{user.role !== "seller" && (
 						<button
 							onClick={() => handleShowMakeSellerModal(user.id)}
-							className="p-1 text-green-600 hover:bg-green-100 rounded-md dark:text-green-400 dark:hover:bg-green-900"
+							className="p-1 text-green-600 hover:bg-green-100 rounded-md"
 							title="Convertir en Vendedor"
 						>
 							<Store size={18} />
@@ -283,7 +283,7 @@ const AdminUsersPage: React.FC = () => {
 					{user.role !== "admin" && (
 						<button
 							onClick={() => handleMakeAdmin(user.id)}
-							className="p-1 text-purple-600 hover:bg-purple-100 rounded-md dark:text-purple-400 dark:hover:bg-purple-900"
+							className="p-1 text-purple-600 hover:bg-purple-100 rounded-md"
 							title="Hacer Administrador"
 						>
 							<Shield size={18} />
@@ -297,7 +297,7 @@ const AdminUsersPage: React.FC = () => {
 	return (
 		<div className="space-y-6">
 			<div className="flex justify-between items-center">
-				<h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+				<h1 className="text-2xl font-bold text-gray-900">
 					Gestión de Usuarios
 				</h1>
 				<div className="flex space-x-2">
@@ -332,13 +332,13 @@ const AdminUsersPage: React.FC = () => {
 			)}
 
 			{/* Filtros */}
-			<div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
+			<div className="bg-white0 rounded-lg shadow-sm p-4">
 				<div className="flex flex-col md:flex-row gap-4">
 					{/* Filtro de Rol */}
 					<div className="flex items-center space-x-2">
-						<Filter className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+						<Filter className="h-5 w-5 text-gray-500" />
 						<select
-							className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+							className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 							value={roleFilter}
 							onChange={(e) => setRoleFilter(e.target.value)}
 						>
@@ -352,7 +352,7 @@ const AdminUsersPage: React.FC = () => {
 					{/* Filtro de Estado */}
 					<div className="flex items-center space-x-2">
 						<select
-							className="border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+							className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 							value={statusFilter}
 							onChange={(e) => setStatusFilter(e.target.value)}
 						>
@@ -367,7 +367,7 @@ const AdminUsersPage: React.FC = () => {
 						<input
 							type="text"
 							placeholder="Buscar por nombre o email..."
-							className="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white"
+							className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 							value={searchTerm}
 							onChange={(e) => setSearchTerm(e.target.value)}
 						/>
@@ -398,14 +398,14 @@ const AdminUsersPage: React.FC = () => {
 						className="fixed inset-0 bg-black bg-opacity-50"
 						onClick={handleCloseSellerModal}
 					></div>
-					<div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md relative z-10">
+					<div className="bg-white0 rounded-lg p-6 w-full max-w-md relative z-10">
 						<div className="flex justify-between items-center mb-4">
-							<h2 className="text-xl font-bold text-gray-900 dark:text-white">
+							<h2 className="text-xl font-bold text-gray-900">
 								Convertir en Vendedor
 							</h2>
 							<button
 								onClick={handleCloseSellerModal}
-								className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+								className="text-gray-500 hover:text-gray-700"
 							>
 								<X size={20} />
 							</button>
@@ -415,14 +415,14 @@ const AdminUsersPage: React.FC = () => {
 							<div>
 								<label
 									htmlFor="store_name"
-									className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+									className="block text-sm font-medium text-gray-700 mb-1"
 								>
 									Nombre de la Tienda *
 								</label>
 								<input
 									type="text"
 									id="store_name"
-									className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white dark:border-gray-600 ${
+									className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
 										validationErrors.storeName
 											? "border-red-500"
 											: "border-gray-300"
@@ -440,13 +440,13 @@ const AdminUsersPage: React.FC = () => {
 							<div>
 								<label
 									htmlFor="description"
-									className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+									className="block text-sm font-medium text-gray-700 mb-1"
 								>
 									Descripción
 								</label>
 								<textarea
 									id="description"
-									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 dark:bg-gray-700 dark:text-white dark:border-gray-600"
+									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
 									value={storeDescription}
 									onChange={(e) => setStoreDescription(e.target.value)}
 									rows={4}
@@ -456,7 +456,7 @@ const AdminUsersPage: React.FC = () => {
 							<div className="flex justify-end space-x-3 mt-6">
 								<button
 									onClick={handleCloseSellerModal}
-									className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+									className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100"
 								>
 									Cancelar
 								</button>
