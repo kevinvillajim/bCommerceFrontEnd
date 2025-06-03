@@ -14,7 +14,6 @@ export interface DatafastCheckoutRequest {
 		surname?: string;
 		phone?: string;
 		doc_id?: string;
-		email?: string;
 	};
 }
 
@@ -28,7 +27,6 @@ export interface DatafastCheckoutResponse {
 	};
 	message: string;
 	error_code?: string;
-	debug_data?: any; // Para debugging
 }
 
 export interface DatafastVerifyPaymentRequest {
@@ -49,91 +47,24 @@ export interface DatafastVerifyPaymentResponse {
 	result_code?: string;
 }
 
-export class DatafastService {
-	private isProduction: boolean;
-	private baseUrl: string;
-
-	constructor() {
-		this.isProduction = process.env.NODE_ENV === "production";
-		this.baseUrl = this.isProduction
-			? "https://eu-prod.oppwa.com"
-			: "https://eu-test.oppwa.com";
-	}
-
-	/**
-	 * Validar datos del checkout antes de enviar
-	 */
-	private validateCheckoutData(checkoutData: DatafastCheckoutRequest): void {
-		// Validar datos de envío requeridos
-		if (!checkoutData.shipping) {
-			throw new Error("Los datos de envío son requeridos");
-		}
-
-		const requiredShippingFields = ["address", "city", "country"];
-		for (const field of requiredShippingFields) {
-			if (!checkoutData.shipping[field as keyof typeof checkoutData.shipping]) {
-				throw new Error(`El campo de envío '${field}' es requerido`);
-			}
-		}
-
-		// Validar formato del país (2 caracteres)
-		if (checkoutData.shipping.country.length !== 2) {
-			checkoutData.shipping.country = checkoutData.shipping.country
-				.substring(0, 2)
-				.toUpperCase();
-		}
-
-		// Validar datos del cliente si están presentes
-		if (checkoutData.customer) {
-			// Validar email si está presente
-			if (checkoutData.customer.email) {
-				const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-				if (!emailRegex.test(checkoutData.customer.email)) {
-					throw new Error("El formato del email no es válido");
-				}
-			}
-
-			// Validar longitud de campos
-			const fieldLimits = {
-				given_name: 48,
-				middle_name: 50,
-				surname: 48,
-				phone: 25,
-				doc_id: 10,
+// Declarar tipos para las opciones del widget
+declare global {
+	interface Window {
+		wpwlOptions?: {
+			onReady?: () => void;
+			onError?: (error: any) => void;
+			style?: string;
+			locale?: string;
+			labels?: {
+				cvv?: string;
+				cardHolder?: string;
 			};
-
-			for (const [field, limit] of Object.entries(fieldLimits)) {
-				const value =
-					checkoutData.customer[field as keyof typeof checkoutData.customer];
-				if (value && value.length > limit) {
-					console.warn(
-						`Campo '${field}' excede la longitud máxima de ${limit} caracteres. Será truncado.`
-					);
-				}
-			}
-
-			// Limpiar y formatear documento de identidad
-			if (checkoutData.customer.doc_id) {
-				// Remover caracteres no numéricos
-				checkoutData.customer.doc_id = checkoutData.customer.doc_id.replace(
-					/\D/g,
-					""
-				);
-				// Truncar a 10 caracteres máximo
-				if (checkoutData.customer.doc_id.length > 10) {
-					checkoutData.customer.doc_id = checkoutData.customer.doc_id.substring(
-						0,
-						10
-					);
-				}
-				// Rellenar con ceros a la izquierda
-				checkoutData.customer.doc_id = checkoutData.customer.doc_id.padStart(
-					10,
-					"0"
-				);
-			}
-		}
+		};
 	}
+}
+
+export class DatafastService {
+	private currentCheckoutId: string | null = null;
 
 	/**
 	 * Crear un checkout de Datafast
@@ -142,11 +73,6 @@ export class DatafastService {
 		checkoutData: DatafastCheckoutRequest
 	): Promise<DatafastCheckoutResponse> {
 		try {
-			console.log("DatafastService: Validando datos de checkout", checkoutData);
-
-			// Validar datos antes de enviar
-			this.validateCheckoutData(checkoutData);
-
 			console.log("DatafastService: Creando checkout", checkoutData);
 
 			const response = await ApiClient.post<DatafastCheckoutResponse>(
@@ -156,20 +82,9 @@ export class DatafastService {
 
 			console.log("DatafastService: Respuesta de checkout", response);
 
-			// Si hay error en la respuesta, loggearlo para debugging
-			if (!response.success && response.error_code) {
-				console.error("DatafastService: Error en checkout", {
-					error_code: response.error_code,
-					message: response.message,
-					debug_data: response.debug_data,
-				});
-
-				// Proporcionar mensajes más específicos según el código de error
-				if (response.error_code === "200.300.404") {
-					throw new Error(
-						"Parámetro inválido o faltante. Revisa que todos los campos requeridos estén completos y en el formato correcto."
-					);
-				}
+			// Guardar el checkout ID para uso posterior
+			if (response.success && response.data) {
+				this.currentCheckoutId = response.data.checkout_id;
 			}
 
 			return response;
@@ -193,14 +108,6 @@ export class DatafastService {
 	): Promise<DatafastVerifyPaymentResponse> {
 		try {
 			console.log("DatafastService: Verificando pago", verifyData);
-
-			// Validar resourcePath
-			if (
-				!verifyData.resource_path ||
-				!verifyData.resource_path.includes("/payment")
-			) {
-				throw new Error("El resource_path no es válido");
-			}
 
 			const response = await ApiClient.post<DatafastVerifyPaymentResponse>(
 				API_ENDPOINTS.DATAFAST.VERIFY_PAYMENT,
@@ -228,17 +135,35 @@ export class DatafastService {
 	loadWidget(checkoutId: string, containerId: string): Promise<void> {
 		return new Promise((resolve, reject) => {
 			try {
-				// Validar parámetros
-				if (!checkoutId || !containerId) {
-					throw new Error("checkoutId y containerId son requeridos");
-				}
-
 				// Remover widget existente si existe
 				this.removeWidget();
 
-				const widgetUrl = `${this.baseUrl}/v1/paymentWidgets.js?checkoutId=${checkoutId}`;
+				// Guardar checkout ID
+				this.currentCheckoutId = checkoutId;
+
+				// URL del widget según la documentación
+				const widgetUrl = `https://eu-test.oppwa.com/v1/paymentWidgets.js?checkoutId=${checkoutId}`;
 
 				console.log("DatafastService: Cargando widget desde", widgetUrl);
+
+				// Configurar opciones del widget ANTES de cargar el script
+				window.wpwlOptions = {
+					onReady: () => {
+						console.log("DatafastService: Widget listo");
+						this.setupFormAfterLoad(containerId);
+						resolve();
+					},
+					onError: (error: any) => {
+						console.error("DatafastService: Error en widget", error);
+						reject(new Error("Error en el widget de Datafast"));
+					},
+					style: "card",
+					locale: "es",
+					labels: {
+						cvv: "CVV",
+						cardHolder: "Nombre (igual que en la tarjeta)",
+					},
+				};
 
 				// Crear script para cargar el widget
 				const script = document.createElement("script");
@@ -247,23 +172,13 @@ export class DatafastService {
 				script.id = "datafast-widget-script";
 
 				script.onload = () => {
-					console.log("DatafastService: Widget cargado exitosamente");
-
-					// Verificar que el container existe
-					const container = document.getElementById(containerId);
-					if (!container) {
-						reject(
-							new Error(`Container con ID '${containerId}' no encontrado`)
-						);
-						return;
-					}
-
-					resolve();
+					console.log("DatafastService: Script del widget cargado");
+					// El evento onReady del wpwlOptions manejará el resolve
 				};
 
-				script.onerror = (error) => {
-					console.error("DatafastService: Error al cargar widget", error);
-					reject(new Error("Error al cargar el widget de Datafast"));
+				script.onerror = () => {
+					console.error("DatafastService: Error al cargar script del widget");
+					reject(new Error("Error al cargar el script del widget de Datafast"));
 				};
 
 				document.head.appendChild(script);
@@ -275,6 +190,35 @@ export class DatafastService {
 	}
 
 	/**
+	 * Configurar el formulario después de que el widget se carga
+	 */
+	private setupFormAfterLoad(containerId: string): void {
+		try {
+			const container = document.getElementById(containerId);
+			if (!container) {
+				console.error("DatafastService: Container no encontrado", containerId);
+				return;
+			}
+
+			// URL de retorno para procesar la respuesta
+			const shopperResultURL = `${window.location.origin}/datafast-result`;
+
+			// Limpiar container y crear formulario
+			container.innerHTML = `
+				<form action="${shopperResultURL}" class="paymentWidgets" data-brands="VISA MASTER AMEX DINERS DISCOVER">
+				</form>
+			`;
+
+			console.log(
+				"DatafastService: Formulario configurado con URL de retorno:",
+				shopperResultURL
+			);
+		} catch (error) {
+			console.error("DatafastService: Error al configurar formulario:", error);
+		}
+	}
+
+	/**
 	 * Remover el widget de Datafast
 	 */
 	removeWidget(): void {
@@ -283,17 +227,17 @@ export class DatafastService {
 			const existingScript = document.getElementById("datafast-widget-script");
 			if (existingScript) {
 				existingScript.remove();
-				console.log("DatafastService: Script del widget removido");
+				console.log("DatafastService: Script removido");
 			}
 
 			// Limpiar variables globales del widget si existen
-			const windowObj = window as any;
-			if (windowObj.wpwlOptions) {
-				delete windowObj.wpwlOptions;
+			if (window.wpwlOptions) {
+				delete window.wpwlOptions;
+				console.log("DatafastService: wpwlOptions limpiado");
 			}
-			if (windowObj.wpwl) {
-				delete windowObj.wpwl;
-			}
+
+			// Limpiar checkout ID
+			this.currentCheckoutId = null;
 		} catch (error) {
 			console.warn("DatafastService: Error al remover widget:", error);
 		}
@@ -304,17 +248,8 @@ export class DatafastService {
 	 */
 	extractResourcePath(url: string): string | null {
 		try {
-			const urlObj = new URL(url);
-			const resourcePath = urlObj.searchParams.get("resourcePath");
-
-			if (!resourcePath) {
-				console.error(
-					"DatafastService: No se encontró resourcePath en la URL:",
-					url
-				);
-				return null;
-			}
-
+			const urlParams = new URLSearchParams(url.split("?")[1]);
+			const resourcePath = urlParams.get("resourcePath");
 			console.log("DatafastService: ResourcePath extraído:", resourcePath);
 			return resourcePath;
 		} catch (error) {
@@ -324,14 +259,35 @@ export class DatafastService {
 	}
 
 	/**
-	 * Obtener información de debugging
+	 * Obtener el checkout ID actual
 	 */
-	getDebugInfo(): object {
-		return {
-			isProduction: this.isProduction,
-			baseUrl: this.baseUrl,
-			timestamp: new Date().toISOString(),
-			userAgent: navigator.userAgent,
-		};
+	getCurrentCheckoutId(): string | null {
+		return this.currentCheckoutId;
+	}
+
+	/**
+	 * Simular una transacción exitosa para pruebas
+	 * (En producción, esto no debe usarse)
+	 */
+	async simulateSuccessfulPayment(
+		transactionId: string
+	): Promise<DatafastVerifyPaymentResponse> {
+		if (!this.currentCheckoutId) {
+			throw new Error("No hay checkout ID disponible");
+		}
+
+		// Simular el resourcePath que normalmente viene del widget
+		const mockResourcePath = `/v1/checkouts/${this.currentCheckoutId}/payment`;
+
+		console.log(
+			"DatafastService: Simulando pago exitoso con resourcePath:",
+			mockResourcePath
+		);
+
+		// Llamar al endpoint de verificación con el resourcePath simulado
+		return await this.verifyPayment({
+			resource_path: mockResourcePath,
+			transaction_id: transactionId,
+		});
 	}
 }

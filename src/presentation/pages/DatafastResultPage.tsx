@@ -4,12 +4,24 @@ import {DatafastService} from "../../core/services/DatafastService";
 import {useCart} from "../hooks/useCart";
 import {NotificationType} from "../contexts/CartContext";
 
+interface ProcessingResult {
+	success: boolean;
+	data?: {
+		order_id: string;
+		order_number: string;
+		total: number;
+		payment_status: string;
+		payment_id: string;
+	};
+	message: string;
+}
+
 const DatafastResultPage: React.FC = () => {
 	const navigate = useNavigate();
 	const [searchParams] = useSearchParams();
 	const {clearCart, showNotification} = useCart();
 	const [isProcessing, setIsProcessing] = useState(true);
-	const [result, setResult] = useState<any>(null);
+	const [result, setResult] = useState<ProcessingResult | null>(null);
 	const [error, setError] = useState<string | null>(null);
 
 	const datafastService = new DatafastService();
@@ -21,7 +33,7 @@ const DatafastResultPage: React.FC = () => {
 				const resourcePath = searchParams.get("resourcePath");
 
 				if (!resourcePath) {
-					throw new Error("No se encontró resourcePath en la respuesta");
+					throw new Error("No se encontró resourcePath en la respuesta de Datafast");
 				}
 
 				console.log("Procesando resultado de Datafast:", {
@@ -29,11 +41,22 @@ const DatafastResultPage: React.FC = () => {
 					allParams: Object.fromEntries(searchParams.entries()),
 				});
 
-				// Obtener transaction_id del localStorage o de algún otro lugar
-				// En un caso real, esto debería venir del flujo anterior
-				const transactionId =
-					localStorage.getItem("datafast_transaction_id") ||
-					`ORDER_${Date.now()}_1`;
+				// Obtener transaction_id del localStorage o generar uno de respaldo
+				let transactionId = localStorage.getItem("datafast_transaction_id");
+				
+				if (!transactionId) {
+					// Si no hay transaction_id guardado, generar uno basado en el resourcePath
+					const checkoutIdMatch = resourcePath.match(/\/checkouts\/([^\/]+)/);
+					const checkoutId = checkoutIdMatch ? checkoutIdMatch[1] : Date.now().toString();
+					transactionId = `ORDER_${Date.now()}_${checkoutId}`;
+					
+					console.warn("No se encontró transaction_id en localStorage, usando:", transactionId);
+				}
+
+				console.log("Verificando pago con:", {
+					resourcePath,
+					transactionId
+				});
 
 				// Verificar el pago
 				const verifyResponse = await datafastService.verifyPayment({
@@ -41,9 +64,16 @@ const DatafastResultPage: React.FC = () => {
 					transaction_id: transactionId,
 				});
 
+				console.log("Respuesta de verificación:", verifyResponse);
+
 				if (verifyResponse.success && verifyResponse.data) {
 					// Pago exitoso
-					setResult(verifyResponse.data);
+					setResult({
+						success: true,
+						data: verifyResponse.data,
+						message: "Pago procesado exitosamente"
+					});
+
 					clearCart();
 
 					showNotification(
@@ -54,28 +84,45 @@ const DatafastResultPage: React.FC = () => {
 					// Limpiar datos temporales
 					localStorage.removeItem("datafast_transaction_id");
 
-					// Redirigir después de 3 segundos
+					// Redirigir después de 5 segundos
 					setTimeout(() => {
 						navigate("/orders");
-					}, 3000);
+					}, 5000);
+
 				} else {
-					throw new Error(
-						verifyResponse.message || "El pago no fue completado"
-					);
+					// Pago fallido o pendiente
+					const message = verifyResponse.message || "El pago no fue completado";
+					const resultCode = verifyResponse.result_code;
+
+					console.warn("Pago no exitoso:", {
+						message,
+						resultCode,
+						fullResponse: verifyResponse
+					});
+
+					// Mensajes específicos según el código de resultado
+					let userMessage = message;
+					if (resultCode === "000.200.100") {
+						userMessage = "El checkout fue creado pero el pago no se completó. Por favor, intente nuevamente.";
+					} else if (resultCode && resultCode.startsWith("800")) {
+						userMessage = "El pago fue rechazado por el banco. Verifique sus datos e intente nuevamente.";
+					}
+
+					throw new Error(userMessage);
 				}
 			} catch (error) {
 				console.error("Error al procesar resultado de Datafast:", error);
 
 				const errorMessage =
-					error instanceof Error ? error.message : "Error desconocido";
+					error instanceof Error ? error.message : "Error desconocido al procesar el pago";
 				setError(errorMessage);
 
 				showNotification(NotificationType.ERROR, errorMessage);
 
-				// Redirigir al carrito después de 5 segundos
+				// Redirigir al carrito después de 8 segundos
 				setTimeout(() => {
 					navigate("/cart");
-				}, 5000);
+				}, 8000);
 			} finally {
 				setIsProcessing(false);
 			}
@@ -96,6 +143,9 @@ const DatafastResultPage: React.FC = () => {
 						<p className="text-gray-600">
 							Estamos verificando tu pago con Datafast. Por favor espera.
 						</p>
+						<div className="mt-4 text-sm text-gray-500">
+							<p>Este proceso puede tomar unos segundos.</p>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -127,6 +177,10 @@ const DatafastResultPage: React.FC = () => {
 						</h2>
 						<p className="text-gray-600 mb-6">{error}</p>
 
+						<div className="text-sm text-gray-500 mb-6">
+							<p>Serás redirigido al carrito en unos segundos...</p>
+						</div>
+
 						<div className="flex flex-col sm:flex-row gap-3">
 							<button
 								onClick={() => navigate("/cart")}
@@ -147,7 +201,7 @@ const DatafastResultPage: React.FC = () => {
 		);
 	}
 
-	if (result) {
+	if (result && result.success && result.data) {
 		return (
 			<div className="min-h-screen flex items-center justify-center bg-gray-50">
 				<div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full mx-4">
@@ -174,61 +228,3 @@ const DatafastResultPage: React.FC = () => {
 
 						<p className="text-gray-600 mb-6">
 							Tu pago ha sido procesado correctamente con Datafast.
-						</p>
-
-						<div className="bg-gray-50 rounded-lg p-4 mb-6 text-left">
-							<h3 className="font-semibold text-gray-800 mb-2">
-								Detalles de la orden:
-							</h3>
-							<div className="space-y-1 text-sm">
-								<div className="flex justify-between">
-									<span className="text-gray-600">Número de orden:</span>
-									<span className="font-medium">{result.order_number}</span>
-								</div>
-								<div className="flex justify-between">
-									<span className="text-gray-600">Total:</span>
-									<span className="font-medium">${result.total}</span>
-								</div>
-								<div className="flex justify-between">
-									<span className="text-gray-600">Estado del pago:</span>
-									<span className="text-green-600 font-medium">
-										{result.payment_status}
-									</span>
-								</div>
-								<div className="flex justify-between">
-									<span className="text-gray-600">ID de pago:</span>
-									<span className="font-medium text-xs">
-										{result.payment_id}
-									</span>
-								</div>
-							</div>
-						</div>
-
-						<div className="text-sm text-gray-500 mb-6">
-							Serás redirigido a tus pedidos en unos segundos...
-						</div>
-
-						<div className="flex flex-col sm:flex-row gap-3">
-							<button
-								onClick={() => navigate("/orders")}
-								className="flex-1 bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-md transition-colors"
-							>
-								Ver mis pedidos
-							</button>
-							<button
-								onClick={() => navigate("/")}
-								className="flex-1 border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium py-2 px-4 rounded-md transition-colors"
-							>
-								Seguir comprando
-							</button>
-						</div>
-					</div>
-				</div>
-			</div>
-		);
-	}
-
-	return null;
-};
-
-export default DatafastResultPage;

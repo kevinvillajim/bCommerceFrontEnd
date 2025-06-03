@@ -10,6 +10,17 @@ interface DatafastPaymentButtonProps {
 	onError?: (error: string) => void;
 }
 
+interface FormData {
+	address: string;
+	city: string;
+	country: string;
+	given_name: string;
+	middle_name: string;
+	surname: string;
+	phone: string;
+	doc_id: string;
+}
+
 const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 	onSuccess,
 	onError,
@@ -20,9 +31,10 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 	const [showWidget, setShowWidget] = useState(false);
 	const [checkoutData, setCheckoutData] = useState<any>(null);
 	const [showForm, setShowForm] = useState(false);
+	const [widgetLoaded, setWidgetLoaded] = useState(false);
 
 	// Datos del formulario básico
-	const [formData, setFormData] = useState({
+	const [formData, setFormData] = useState<FormData>({
 		address: "Av. Test 123",
 		city: "Quito",
 		country: "EC",
@@ -44,14 +56,61 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 	}, []);
 
 	// Manejar cambios en el formulario
-	const handleInputChange = (field: string, value: string) => {
+	const handleInputChange = (field: keyof FormData, value: string) => {
 		setFormData((prev) => ({...prev, [field]: value}));
+	};
+
+	// Validar datos del formulario
+	const validateFormData = (): boolean => {
+		const requiredFields: (keyof FormData)[] = [
+			"address",
+			"city",
+			"country",
+			"given_name",
+			"surname",
+			"phone",
+			"doc_id",
+		];
+
+		for (const field of requiredFields) {
+			if (!formData[field] || formData[field].trim() === "") {
+				showNotification(
+					NotificationType.ERROR,
+					`El campo ${field.replace("_", " ")} es obligatorio`
+				);
+				return false;
+			}
+		}
+
+		// Validar formato de cédula (10 dígitos)
+		if (formData.doc_id.length !== 10 || !/^\d+$/.test(formData.doc_id)) {
+			showNotification(
+				NotificationType.ERROR,
+				"La cédula debe tener exactamente 10 dígitos"
+			);
+			return false;
+		}
+
+		// Validar formato de teléfono
+		if (formData.phone.length < 7 || formData.phone.length > 25) {
+			showNotification(
+				NotificationType.ERROR,
+				"El teléfono debe tener entre 7 y 25 caracteres"
+			);
+			return false;
+		}
+
+		return true;
 	};
 
 	// Iniciar proceso de pago con Datafast
 	const handleStartPayment = async () => {
 		if (!cart || cart.items.length === 0) {
 			showNotification(NotificationType.ERROR, "El carrito está vacío");
+			return;
+		}
+
+		if (!validateFormData()) {
 			return;
 		}
 
@@ -62,7 +121,7 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 				shipping: {
 					address: formData.address,
 					city: formData.city,
-					country: formData.country,
+					country: formData.country.toUpperCase(),
 				},
 				customer: {
 					given_name: formData.given_name,
@@ -82,22 +141,25 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 				setCheckoutData(response.data);
 				setShowForm(false);
 				setShowWidget(true);
+				setWidgetLoaded(false);
 
 				// Cargar widget de Datafast
-				await datafastService.loadWidget(
-					response.data.checkout_id,
-					"datafast-widget-container"
-				);
+				try {
+					await datafastService.loadWidget(
+						response.data.checkout_id,
+						"datafast-widget-container"
+					);
 
-				// Configurar el formulario de pago
-				setTimeout(() => {
-					setupDatafastForm(response.data!);
-				}, 1000);
+					setWidgetLoaded(true);
 
-				showNotification(
-					NotificationType.SUCCESS,
-					"Checkout creado. Complete el pago en el formulario."
-				);
+					showNotification(
+						NotificationType.SUCCESS,
+						"Formulario de pago cargado. Complete sus datos de tarjeta."
+					);
+				} catch (widgetError) {
+					console.error("Error al cargar widget:", widgetError);
+					throw new Error("Error al cargar el formulario de pago");
+				}
 			} else {
 				throw new Error(response.message || "Error al crear checkout");
 			}
@@ -112,37 +174,8 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 		}
 	};
 
-	// Configurar el formulario de Datafast
-	const setupDatafastForm = (checkoutData: any) => {
-		try {
-			// URL de retorno para procesar la respuesta
-			const shopperResultURL = `${window.location.origin}/datafast-result`;
-
-			// Crear el formulario dinámicamente
-			const form = document.createElement("form");
-			form.action = shopperResultURL;
-			form.className = "paymentWidgets";
-			form.setAttribute("data-brands", "VISA MASTER AMEX DINERS DISCOVER");
-
-			// Insertar formulario en el container
-			const container = document.getElementById("datafast-widget-container");
-			if (container) {
-				container.innerHTML = "";
-				container.appendChild(form);
-			}
-
-			console.log("Formulario de Datafast configurado:", {
-				checkout_id: checkoutData.checkout_id,
-				amount: checkoutData.amount,
-				transaction_id: checkoutData.transaction_id,
-			});
-		} catch (error) {
-			console.error("Error al configurar formulario de Datafast:", error);
-		}
-	};
-
-	// Verificar pago después del proceso
-	const handleVerifyPayment = async (resourcePath: string) => {
+	// Verificar pago después del proceso (simulación para pruebas)
+	const handleSimulatePaymentResult = async () => {
 		if (!checkoutData) {
 			showNotification(NotificationType.ERROR, "No hay datos de checkout");
 			return;
@@ -150,12 +183,14 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 
 		setIsLoading(true);
 		try {
-			console.log("Verificando pago con resourcePath:", resourcePath);
+			console.log("Simulando pago exitoso...");
 
-			const verifyResponse = await datafastService.verifyPayment({
-				resource_path: resourcePath,
-				transaction_id: checkoutData.transaction_id,
-			});
+			// Usar la nueva función de simulación
+			const verifyResponse = await datafastService.simulateSuccessfulPayment(
+				checkoutData.transaction_id
+			);
+
+			console.log("Respuesta de verificación:", verifyResponse);
 
 			if (verifyResponse.success && verifyResponse.data) {
 				// Pago exitoso
@@ -185,12 +220,12 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 		}
 	};
 
-	// Manejar resultado de Datafast (simulado para pruebas)
-	const handleSimulatePaymentResult = () => {
-		// Simular resourcePath para pruebas
-		const mockResourcePath =
-			"/v1/checkouts/" + (checkoutData?.checkout_id || "test") + "/payment";
-		handleVerifyPayment(mockResourcePath);
+	// Procesar pago real (cuando el usuario complete el formulario)
+	const handleRealPayment = () => {
+		showNotification(
+			NotificationType.INFO,
+			"Complete los datos de su tarjeta en el formulario y haga clic en 'Pagar'. Luego será redirigido automáticamente."
+		);
 	};
 
 	if (showWidget) {
@@ -213,19 +248,53 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 						ref={widgetContainerRef}
 						className="min-h-[400px] border border-gray-200 rounded-lg p-4"
 					>
-						<div className="flex items-center justify-center h-full">
-							<div className="text-center">
-								<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-2"></div>
-								<p className="text-gray-600">Cargando formulario de pago...</p>
+						{!widgetLoaded && (
+							<div className="flex items-center justify-center h-full">
+								<div className="text-center">
+									<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-2"></div>
+									<p className="text-gray-600">
+										Cargando formulario de pago...
+									</p>
+								</div>
 							</div>
+						)}
+					</div>
+
+					{/* Información de prueba */}
+					<div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+						<h4 className="font-semibold text-yellow-800 mb-2">
+							Datos de prueba para usar:
+						</h4>
+						<div className="text-sm text-yellow-700 space-y-1">
+							<p>
+								<strong>Tarjeta:</strong> 4200 0000 0000 0000
+							</p>
+							<p>
+								<strong>Fecha:</strong> 12/25
+							</p>
+							<p>
+								<strong>CVV:</strong> 123
+							</p>
+							<p>
+								<strong>Titular:</strong> {formData.given_name}{" "}
+								{formData.surname}
+							</p>
 						</div>
 					</div>
 
 					{/* Botones de control */}
 					<div className="mt-6 flex gap-4">
 						<button
+							onClick={handleRealPayment}
+							disabled={!widgetLoaded}
+							className="flex-1 bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-md transition-colors disabled:opacity-50"
+						>
+							Instrucciones para Pago Real
+						</button>
+
+						<button
 							onClick={handleSimulatePaymentResult}
-							disabled={isLoading}
+							disabled={isLoading || !widgetLoaded}
 							className="flex-1 bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-md transition-colors disabled:opacity-50"
 						>
 							{isLoading ? "Verificando..." : "Simular Pago Exitoso"}
@@ -235,6 +304,7 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 							onClick={() => {
 								setShowWidget(false);
 								setShowForm(true);
+								setWidgetLoaded(false);
 								datafastService.removeWidget();
 							}}
 							disabled={isLoading}
@@ -242,16 +312,6 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 						>
 							Cancelar
 						</button>
-					</div>
-
-					<div className="mt-4 text-sm text-gray-500">
-						<p>
-							<strong>Para pruebas, usar estos datos:</strong>
-						</p>
-						<p>Tarjeta: 4200 0000 0000 0000</p>
-						<p>Fecha: 12/22</p>
-						<p>CVV: 123</p>
-						<p>Titular: Su Empresa</p>
 					</div>
 				</div>
 			</div>
@@ -267,7 +327,7 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 					<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 						<div>
 							<label className="block text-sm font-medium text-gray-700 mb-1">
-								Nombre
+								Nombre *
 							</label>
 							<input
 								type="text"
@@ -281,7 +341,21 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 
 						<div>
 							<label className="block text-sm font-medium text-gray-700 mb-1">
-								Apellido
+								Segundo Nombre
+							</label>
+							<input
+								type="text"
+								value={formData.middle_name}
+								onChange={(e) =>
+									handleInputChange("middle_name", e.target.value)
+								}
+								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+							/>
+						</div>
+
+						<div>
+							<label className="block text-sm font-medium text-gray-700 mb-1">
+								Apellido *
 							</label>
 							<input
 								type="text"
@@ -293,31 +367,38 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 
 						<div>
 							<label className="block text-sm font-medium text-gray-700 mb-1">
-								Teléfono
+								Teléfono *
 							</label>
 							<input
 								type="text"
 								value={formData.phone}
 								onChange={(e) => handleInputChange("phone", e.target.value)}
 								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+								placeholder="0999999999"
 							/>
 						</div>
 
 						<div>
 							<label className="block text-sm font-medium text-gray-700 mb-1">
-								Cédula/ID
+								Cédula/ID * (10 dígitos)
 							</label>
 							<input
 								type="text"
 								value={formData.doc_id}
-								onChange={(e) => handleInputChange("doc_id", e.target.value)}
+								onChange={(e) => {
+									// Solo permitir números y máximo 10 caracteres
+									const value = e.target.value.replace(/\D/g, "").slice(0, 10);
+									handleInputChange("doc_id", value);
+								}}
 								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+								placeholder="1234567890"
+								maxLength={10}
 							/>
 						</div>
 
 						<div className="md:col-span-2">
 							<label className="block text-sm font-medium text-gray-700 mb-1">
-								Dirección
+								Dirección *
 							</label>
 							<input
 								type="text"
@@ -329,7 +410,7 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 
 						<div>
 							<label className="block text-sm font-medium text-gray-700 mb-1">
-								Ciudad
+								Ciudad *
 							</label>
 							<input
 								type="text"
@@ -341,14 +422,18 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 
 						<div>
 							<label className="block text-sm font-medium text-gray-700 mb-1">
-								País
+								País *
 							</label>
-							<input
-								type="text"
+							<select
 								value={formData.country}
 								onChange={(e) => handleInputChange("country", e.target.value)}
 								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
-							/>
+							>
+								<option value="EC">Ecuador</option>
+								<option value="CO">Colombia</option>
+								<option value="PE">Perú</option>
+								<option value="US">Estados Unidos</option>
+							</select>
 						</div>
 					</div>
 
