@@ -15,7 +15,8 @@ import QRPaymentForm from "../components/checkout/QRPaymentForm";
 import OrderSummary from "../components/checkout/OrderSummary";
 import ShippingForm from "../components/checkout/ShippingForm";
 import TestCheckoutButton from "../components/checkout/TestCheckoutButton";
-import {extractErrorMessage} from "../../utils/errorHandler";
+import { extractErrorMessage } from "../../utils/errorHandler";
+import DatafastPaymentButton from "../components/checkout/DatafastPaymentButtonProps";
 
 const CheckoutPage: React.FC = () => {
 	const navigate = useNavigate();
@@ -44,6 +45,14 @@ const CheckoutPage: React.FC = () => {
 	const [orderDetails, setOrderDetails] = useState<any>(null);
 
 	const checkoutService = new CheckoutService();
+
+	const handleSuccess = (orderData: any) => {
+		console.log("Pago exitoso:", orderData);
+	};
+
+	const handleError = (error: string) => {
+		console.error("Error:", error);
+	};
 
 	// Verificar si el carrito está vacío
 	useEffect(() => {
@@ -282,6 +291,11 @@ const CheckoutPage: React.FC = () => {
 					{/* Métodos de pago */}
 					<div className="bg-white rounded-lg shadow-lg p-6 mb-6">
 						<h2 className="text-xl font-bold mb-4">Método de pago</h2>
+
+						<DatafastPaymentButton
+							onSuccess={handleSuccess}
+							onError={handleError}
+						/>
 
 						{/* Opciones de pago */}
 						<div className="flex flex-wrap gap-4 mb-6">

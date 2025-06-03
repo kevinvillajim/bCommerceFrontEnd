@@ -135,6 +135,10 @@ const UserChatPage = lazy(
 	() => import("../presentation/pages/UserChatPage")
 );
 
+const DatafastResultPage = lazy(
+	() => import("../presentation/pages/DatafastResultPage")
+);
+
 //Route Guards
 import PrivateRoute from "./PrivateRoute";
 import PublicRoute from "./PublicRoute";
@@ -294,6 +298,16 @@ const appRoutes: RouteObject[] = [
 				element: (
 					<PrivateRoute>
 						<PendingRatingsPage />
+					</PrivateRoute>
+				),
+			},
+
+			//Datafast
+			{
+				path: "datafast-result",
+				element: (
+					<PrivateRoute>
+						<DatafastResultPage />
 					</PrivateRoute>
 				),
 			},

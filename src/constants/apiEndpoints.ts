@@ -292,6 +292,12 @@ export const API_ENDPOINTS = {
 		BY_USER_ID: (userId: number) => `/sellers/by-user/${userId}`,
 		ACTIVE: "/sellers/active",
 	},
+
+	DATAFAST: {
+		CREATE_CHECKOUT: "/datafast/create-checkout",
+		VERIFY_PAYMENT: "/datafast/verify-payment",
+		WEBHOOK: "/datafast/webhook",
+	},
 };
 
 export default API_ENDPOINTS;
