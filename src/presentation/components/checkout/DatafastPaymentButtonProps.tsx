@@ -45,13 +45,16 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 		doc_id: "1234567890",
 	});
 
-	const widgetContainerRef = useRef<HTMLDivElement>(null);
 	const datafastService = new DatafastService();
 
-	// Limpiar widget al desmontar componente
+	// Limpiar al desmontar componente
 	useEffect(() => {
 		return () => {
-			datafastService.removeWidget();
+			// Limpiar scripts de Datafast al desmontar
+			const script = document.getElementById("datafast-widget-script");
+			if (script) {
+				script.remove();
+			}
 		};
 	}, []);
 
@@ -91,15 +94,6 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 			return false;
 		}
 
-		// Validar formato de teléfono
-		if (formData.phone.length < 7 || formData.phone.length > 25) {
-			showNotification(
-				NotificationType.ERROR,
-				"El teléfono debe tener entre 7 y 25 caracteres"
-			);
-			return false;
-		}
-
 		return true;
 	};
 
@@ -115,6 +109,7 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 		}
 
 		setIsLoading(true);
+
 		try {
 			// Preparar datos para Datafast
 			const requestData: DatafastCheckoutRequest = {
@@ -136,30 +131,32 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 
 			// Crear checkout en backend
 			const response = await datafastService.createCheckout(requestData);
+			console.log("Respuesta del checkout:", response);
 
 			if (response.success && response.data) {
 				setCheckoutData(response.data);
 				setShowForm(false);
 				setShowWidget(true);
-				setWidgetLoaded(false);
 
-				// Cargar widget de Datafast
-				try {
-					await datafastService.loadWidget(
-						response.data.checkout_id,
-						"datafast-widget-container"
-					);
+				// Guardar transaction_id en localStorage para el resultado
+				localStorage.setItem(
+					"datafast_transaction_id",
+					response.data.transaction_id
+				);
 
-					setWidgetLoaded(true);
+				showNotification(
+					NotificationType.SUCCESS,
+					"Checkout creado. Preparando formulario de pago..."
+				);
 
-					showNotification(
-						NotificationType.SUCCESS,
-						"Formulario de pago cargado. Complete sus datos de tarjeta."
-					);
-				} catch (widgetError) {
-					console.error("Error al cargar widget:", widgetError);
-					throw new Error("Error al cargar el formulario de pago");
-				}
+				// Cargar widget después de que el DOM esté listo
+				setTimeout(() => {
+					if (response.data) {
+						loadDatafastWidget(response.data.checkout_id);
+					} else {
+						showNotification(NotificationType.ERROR, "Datos de checkout no disponibles");
+					}
+				}, 100);
 			} else {
 				throw new Error(response.message || "Error al crear checkout");
 			}
@@ -174,7 +171,64 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 		}
 	};
 
-	// Verificar pago después del proceso (simulación para pruebas)
+	// Cargar widget de Datafast de forma más simple
+	const loadDatafastWidget = (checkoutId: string) => {
+		try {
+			console.log("Cargando widget de Datafast...", checkoutId);
+
+			// Remover script anterior si existe
+			const existingScript = document.getElementById("datafast-widget-script");
+			if (existingScript) {
+				existingScript.remove();
+			}
+
+			// Configurar opciones globales ANTES de cargar el script
+			(window as any).wpwlOptions = {
+				onReady: function () {
+					console.log("Widget de Datafast listo!");
+					setWidgetLoaded(true);
+					showNotification(
+						NotificationType.SUCCESS,
+						"Formulario de pago cargado correctamente."
+					);
+				},
+				style: "card",
+				locale: "es",
+				labels: {
+					cvv: "CVV",
+					cardHolder: "Nombre (igual que en la tarjeta)",
+				},
+			};
+
+			// Crear y cargar script
+			const script = document.createElement("script");
+			script.id = "datafast-widget-script";
+			script.src = `https://eu-test.oppwa.com/v1/paymentWidgets.js?checkoutId=${checkoutId}`;
+			script.async = true;
+
+			script.onload = () => {
+				console.log("Script de widget cargado");
+			};
+
+			script.onerror = () => {
+				console.error("Error al cargar script del widget");
+				showNotification(
+					NotificationType.ERROR,
+					"Error al cargar el formulario de pago"
+				);
+			};
+
+			document.head.appendChild(script);
+		} catch (error) {
+			console.error("Error al configurar widget:", error);
+			showNotification(
+				NotificationType.ERROR,
+				"Error al configurar el formulario de pago"
+			);
+		}
+	};
+
+	// Verificar pago (simulación para pruebas)
 	const handleSimulatePaymentResult = async () => {
 		if (!checkoutData) {
 			showNotification(NotificationType.ERROR, "No hay datos de checkout");
@@ -185,7 +239,7 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 		try {
 			console.log("Simulando pago exitoso...");
 
-			// Usar la nueva función de simulación
+			// Simular verificación de pago
 			const verifyResponse = await datafastService.simulateSuccessfulPayment(
 				checkoutData.transaction_id
 			);
@@ -193,7 +247,6 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 			console.log("Respuesta de verificación:", verifyResponse);
 
 			if (verifyResponse.success && verifyResponse.data) {
-				// Pago exitoso
 				clearCart();
 				setShowWidget(false);
 
@@ -203,8 +256,6 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 				);
 
 				onSuccess?.(verifyResponse.data);
-
-				// Navegar a página de éxito
 				navigate("/orders");
 			} else {
 				throw new Error(verifyResponse.message || "Pago no completado");
@@ -224,8 +275,59 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 	const handleRealPayment = () => {
 		showNotification(
 			NotificationType.INFO,
-			"Complete los datos de su tarjeta en el formulario y haga clic en 'Pagar'. Luego será redirigido automáticamente."
+			"Complete los datos de su tarjeta en el formulario y haga clic en 'Pagar'. Nota: En Fase 1, las transacciones son simuladas."
 		);
+	};
+
+	// Manejar resultado real del widget (cuando viene un resourcePath real)
+	const handleWidgetResult = async (resourcePath: string) => {
+		if (!checkoutData) {
+			showNotification(NotificationType.ERROR, "No hay datos de checkout");
+			return;
+		}
+
+		setIsLoading(true);
+		try {
+			console.log("Procesando resultado real del widget...");
+
+			const verifyResponse = await datafastService.handleDatafastResult(
+				resourcePath,
+				checkoutData.transaction_id
+			);
+
+			console.log("Respuesta de verificación real:", verifyResponse);
+
+			if (verifyResponse.success && verifyResponse.data) {
+				// Pago exitoso
+				clearCart();
+				setShowWidget(false);
+
+				showNotification(
+					NotificationType.SUCCESS,
+					"¡Pago completado exitosamente!"
+				);
+
+				onSuccess?.(verifyResponse.data);
+				navigate("/orders");
+			} else if (verifyResponse.is_phase_1_error) {
+				// Error típico de Fase 1 - mostrar mensaje informativo
+				showNotification(
+					NotificationType.INFO,
+					verifyResponse.message ||
+						"No se completó un pago real. Use 'Simular Pago Exitoso' para probar el flujo."
+				);
+			} else {
+				throw new Error(verifyResponse.message || "Pago no completado");
+			}
+		} catch (error) {
+			console.error("Error al procesar resultado del widget:", error);
+			const errorMessage =
+				error instanceof Error ? error.message : "Error al verificar pago";
+			showNotification(NotificationType.ERROR, errorMessage);
+			onError?.(errorMessage);
+		} finally {
+			setIsLoading(false);
+		}
 	};
 
 	if (showWidget) {
@@ -242,22 +344,25 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 						<p className="text-blue-700">ID: {checkoutData?.transaction_id}</p>
 					</div>
 
-					{/* Container para el widget de Datafast */}
-					<div
-						id="datafast-widget-container"
-						ref={widgetContainerRef}
-						className="min-h-[400px] border border-gray-200 rounded-lg p-4"
-					>
-						{!widgetLoaded && (
-							<div className="flex items-center justify-center h-full">
-								<div className="text-center">
-									<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-2"></div>
-									<p className="text-gray-600">
-										Cargando formulario de pago...
-									</p>
+					{/* Container para el widget - MUY SIMPLE */}
+					<div className="min-h-[400px] border border-gray-200 rounded-lg p-4">
+						{/* El formulario de Datafast aparecerá aquí automáticamente */}
+						<form
+							action={`${window.location.origin}/datafast-result`}
+							className="paymentWidgets"
+							data-brands="VISA MASTER AMEX DINERS DISCOVER"
+						>
+							{!widgetLoaded && (
+								<div className="flex items-center justify-center h-64">
+									<div className="text-center">
+										<div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-2"></div>
+										<p className="text-gray-600">
+											Cargando formulario de pago...
+										</p>
+									</div>
 								</div>
-							</div>
-						)}
+							)}
+						</form>
 					</div>
 
 					{/* Información de prueba */}
@@ -289,12 +394,12 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 							disabled={!widgetLoaded}
 							className="flex-1 bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-md transition-colors disabled:opacity-50"
 						>
-							Instrucciones para Pago Real
+							Pago Real
 						</button>
 
 						<button
 							onClick={handleSimulatePaymentResult}
-							disabled={isLoading || !widgetLoaded}
+							disabled={isLoading}
 							className="flex-1 bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-md transition-colors disabled:opacity-50"
 						>
 							{isLoading ? "Verificando..." : "Simular Pago Exitoso"}
@@ -305,12 +410,16 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 								setShowWidget(false);
 								setShowForm(true);
 								setWidgetLoaded(false);
-								datafastService.removeWidget();
+								// Limpiar script
+								const script = document.getElementById(
+									"datafast-widget-script"
+								);
+								if (script) script.remove();
 							}}
 							disabled={isLoading}
 							className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
 						>
-							Cancelar
+							Volver
 						</button>
 					</div>
 				</div>
@@ -386,7 +495,6 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 								type="text"
 								value={formData.doc_id}
 								onChange={(e) => {
-									// Solo permitir números y máximo 10 caracteres
 									const value = e.target.value.replace(/\D/g, "").slice(0, 10);
 									handleInputChange("doc_id", value);
 								}}

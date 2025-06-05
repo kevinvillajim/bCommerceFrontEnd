@@ -45,22 +45,7 @@ export interface DatafastVerifyPaymentResponse {
 	};
 	message: string;
 	result_code?: string;
-}
-
-// Declarar tipos para las opciones del widget
-declare global {
-	interface Window {
-		wpwlOptions?: {
-			onReady?: () => void;
-			onError?: (error: any) => void;
-			style?: string;
-			locale?: string;
-			labels?: {
-				cvv?: string;
-				cardHolder?: string;
-			};
-		};
-	}
+	is_phase_1_error?: boolean; // Added property to fix the error
 }
 
 export class DatafastService {
@@ -130,135 +115,6 @@ export class DatafastService {
 	}
 
 	/**
-	 * Cargar el widget de Datafast en la página
-	 */
-	loadWidget(checkoutId: string, containerId: string): Promise<void> {
-		return new Promise((resolve, reject) => {
-			try {
-				// Remover widget existente si existe
-				this.removeWidget();
-
-				// Guardar checkout ID
-				this.currentCheckoutId = checkoutId;
-
-				// URL del widget según la documentación
-				const widgetUrl = `https://eu-test.oppwa.com/v1/paymentWidgets.js?checkoutId=${checkoutId}`;
-
-				console.log("DatafastService: Cargando widget desde", widgetUrl);
-
-				// Configurar opciones del widget ANTES de cargar el script
-				window.wpwlOptions = {
-					onReady: () => {
-						console.log("DatafastService: Widget listo");
-						this.setupFormAfterLoad(containerId);
-						resolve();
-					},
-					onError: (error: any) => {
-						console.error("DatafastService: Error en widget", error);
-						reject(new Error("Error en el widget de Datafast"));
-					},
-					style: "card",
-					locale: "es",
-					labels: {
-						cvv: "CVV",
-						cardHolder: "Nombre (igual que en la tarjeta)",
-					},
-				};
-
-				// Crear script para cargar el widget
-				const script = document.createElement("script");
-				script.src = widgetUrl;
-				script.async = true;
-				script.id = "datafast-widget-script";
-
-				script.onload = () => {
-					console.log("DatafastService: Script del widget cargado");
-					// El evento onReady del wpwlOptions manejará el resolve
-				};
-
-				script.onerror = () => {
-					console.error("DatafastService: Error al cargar script del widget");
-					reject(new Error("Error al cargar el script del widget de Datafast"));
-				};
-
-				document.head.appendChild(script);
-			} catch (error) {
-				console.error("DatafastService: Error al configurar widget:", error);
-				reject(error);
-			}
-		});
-	}
-
-	/**
-	 * Configurar el formulario después de que el widget se carga
-	 */
-	private setupFormAfterLoad(containerId: string): void {
-		try {
-			const container = document.getElementById(containerId);
-			if (!container) {
-				console.error("DatafastService: Container no encontrado", containerId);
-				return;
-			}
-
-			// URL de retorno para procesar la respuesta
-			const shopperResultURL = `${window.location.origin}/datafast-result`;
-
-			// Limpiar container y crear formulario
-			container.innerHTML = `
-				<form action="${shopperResultURL}" class="paymentWidgets" data-brands="VISA MASTER AMEX DINERS DISCOVER">
-				</form>
-			`;
-
-			console.log(
-				"DatafastService: Formulario configurado con URL de retorno:",
-				shopperResultURL
-			);
-		} catch (error) {
-			console.error("DatafastService: Error al configurar formulario:", error);
-		}
-	}
-
-	/**
-	 * Remover el widget de Datafast
-	 */
-	removeWidget(): void {
-		try {
-			// Remover script del widget
-			const existingScript = document.getElementById("datafast-widget-script");
-			if (existingScript) {
-				existingScript.remove();
-				console.log("DatafastService: Script removido");
-			}
-
-			// Limpiar variables globales del widget si existen
-			if (window.wpwlOptions) {
-				delete window.wpwlOptions;
-				console.log("DatafastService: wpwlOptions limpiado");
-			}
-
-			// Limpiar checkout ID
-			this.currentCheckoutId = null;
-		} catch (error) {
-			console.warn("DatafastService: Error al remover widget:", error);
-		}
-	}
-
-	/**
-	 * Extraer resourcePath de la URL de respuesta
-	 */
-	extractResourcePath(url: string): string | null {
-		try {
-			const urlParams = new URLSearchParams(url.split("?")[1]);
-			const resourcePath = urlParams.get("resourcePath");
-			console.log("DatafastService: ResourcePath extraído:", resourcePath);
-			return resourcePath;
-		} catch (error) {
-			console.error("DatafastService: Error al extraer resourcePath:", error);
-			return null;
-		}
-	}
-
-	/**
 	 * Obtener el checkout ID actual
 	 */
 	getCurrentCheckoutId(): string | null {
@@ -266,7 +122,7 @@ export class DatafastService {
 	}
 
 	/**
-	 * Simular una transacción exitosa para pruebas
+	 * Simular una transacción exitosa para pruebas en Fase 1
 	 * (En producción, esto no debe usarse)
 	 */
 	async simulateSuccessfulPayment(
@@ -284,10 +140,85 @@ export class DatafastService {
 			mockResourcePath
 		);
 
-		// Llamar al endpoint de verificación con el resourcePath simulado
-		return await this.verifyPayment({
-			resource_path: mockResourcePath,
-			transaction_id: transactionId,
-		});
+		try {
+			// Llamar al endpoint de verificación con el parámetro simulate_success
+			const response = await ApiClient.post<DatafastVerifyPaymentResponse>(
+				API_ENDPOINTS.DATAFAST.VERIFY_PAYMENT + "?simulate_success=true",
+				{
+					resource_path: mockResourcePath,
+					transaction_id: transactionId,
+				}
+			);
+
+			console.log("DatafastService: Respuesta de simulación:", response);
+
+			return response;
+		} catch (error) {
+			console.error("DatafastService: Error en simulación:", error);
+
+			const errorMessage = extractErrorMessage(
+				error,
+				"Error al simular el pago de Datafast"
+			);
+
+			throw new Error(errorMessage);
+		}
+	}
+
+	/**
+	 * Manejar el resultado real de Datafast (cuando viene del widget)
+	 */
+	async handleDatafastResult(
+		resourcePath: string,
+		transactionId: string
+	): Promise<DatafastVerifyPaymentResponse> {
+		try {
+			console.log("DatafastService: Manejando resultado real de Datafast", {
+				resourcePath,
+				transactionId,
+			});
+
+			const response = await this.verifyPayment({
+				resource_path: resourcePath,
+				transaction_id: transactionId,
+			});
+
+			// Si es el error típico de Fase 1, devolver un mensaje más claro
+			if (!response.success && response.result_code === "800.900.300") {
+				return {
+					success: false,
+					message:
+						'No se completó un pago real. Este es el comportamiento esperado en Fase 1 de pruebas. Use "Simular Pago Exitoso" para probar el flujo completo.',
+					result_code: response.result_code,
+					is_phase_1_error: true,
+				};
+			}
+
+			return response;
+		} catch (error) {
+			console.error("DatafastService: Error al manejar resultado:", error);
+
+			const errorMessage = extractErrorMessage(
+				error,
+				"Error al procesar el resultado de Datafast"
+			);
+
+			throw new Error(errorMessage);
+		}
+	}
+
+	/**
+	 * Extraer resourcePath de la URL de respuesta
+	 */
+	extractResourcePath(url: string): string | null {
+		try {
+			const urlParams = new URLSearchParams(url.split("?")[1]);
+			const resourcePath = urlParams.get("resourcePath");
+			console.log("DatafastService: ResourcePath extraído:", resourcePath);
+			return resourcePath;
+		} catch (error) {
+			console.error("DatafastService: Error al extraer resourcePath:", error);
+			return null;
+		}
 	}
 }
