@@ -45,12 +45,10 @@ export interface DatafastVerifyPaymentResponse {
 	};
 	message: string;
 	result_code?: string;
-	is_phase_1_error?: boolean; // Added property to fix the error
+	is_phase_1_error?: boolean;
 }
 
 export class DatafastService {
-	private currentCheckoutId: string | null = null;
-
 	/**
 	 * Crear un checkout de Datafast
 	 */
@@ -66,11 +64,6 @@ export class DatafastService {
 			);
 
 			console.log("DatafastService: Respuesta de checkout", response);
-
-			// Guardar el checkout ID para uso posterior
-			if (response.success && response.data) {
-				this.currentCheckoutId = response.data.checkout_id;
-			}
 
 			return response;
 		} catch (error) {
@@ -115,30 +108,29 @@ export class DatafastService {
 	}
 
 	/**
-	 * Obtener el checkout ID actual
-	 */
-	getCurrentCheckoutId(): string | null {
-		return this.currentCheckoutId;
-	}
-
-	/**
 	 * Simular una transacción exitosa para pruebas en Fase 1
 	 * (En producción, esto no debe usarse)
 	 */
 	async simulateSuccessfulPayment(
+		checkoutId: string,
 		transactionId: string
 	): Promise<DatafastVerifyPaymentResponse> {
-		if (!this.currentCheckoutId) {
-			throw new Error("No hay checkout ID disponible");
+		if (!checkoutId) {
+			throw new Error("checkout_id es requerido para simular el pago");
+		}
+
+		if (!transactionId) {
+			throw new Error("transaction_id es requerido para simular el pago");
 		}
 
 		// Simular el resourcePath que normalmente viene del widget
-		const mockResourcePath = `/v1/checkouts/${this.currentCheckoutId}/payment`;
+		const mockResourcePath = `/v1/checkouts/${checkoutId}/payment`;
 
-		console.log(
-			"DatafastService: Simulando pago exitoso con resourcePath:",
-			mockResourcePath
-		);
+		console.log("DatafastService: Simulando pago exitoso", {
+			checkoutId,
+			transactionId,
+			mockResourcePath,
+		});
 
 		try {
 			// Llamar al endpoint de verificación con el parámetro simulate_success

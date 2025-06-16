@@ -154,7 +154,10 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 					if (response.data) {
 						loadDatafastWidget(response.data.checkout_id);
 					} else {
-						showNotification(NotificationType.ERROR, "Datos de checkout no disponibles");
+						showNotification(
+							NotificationType.ERROR,
+							"Datos de checkout no disponibles"
+						);
 					}
 				}, 100);
 			} else {
@@ -239,8 +242,9 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 		try {
 			console.log("Simulando pago exitoso...");
 
-			// Simular verificación de pago
+			// Usar el método actualizado que recibe los parámetros directamente
 			const verifyResponse = await datafastService.simulateSuccessfulPayment(
+				checkoutData.checkout_id,
 				checkoutData.transaction_id
 			);
 
