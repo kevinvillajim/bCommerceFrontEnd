@@ -13,7 +13,7 @@ import {
 	Speaker,
 	Package,
 } from "lucide-react";
-import {useNavigate} from "react-router-dom";
+import type {Category} from "../../../core/domain/entities/Category";
 
 // Diccionario de iconos
 const CATEGORY_ICONS: {[key: string]: React.ElementType} = {
@@ -32,6 +32,8 @@ const CATEGORY_ICONS: {[key: string]: React.ElementType} = {
 	laptops: Laptop,
 	portátil: Laptop,
 	portatil: Laptop,
+	ordenador: Laptop,
+	computadora: Laptop,
 	monitor: Monitor,
 	monitores: Monitor,
 	pantalla: Monitor,
@@ -48,36 +50,66 @@ const CATEGORY_ICONS: {[key: string]: React.ElementType} = {
 	altavoz: Speaker,
 	altavoces: Speaker,
 	speaker: Speaker,
+	electrónica: Package,
+	electronica: Package,
+	informática: Laptop,
+	informatica: Laptop,
+	tecnología: Package,
+	tecnologia: Package,
+	moda: Package,
+	ropa: Package,
+	accesorios: Package,
 };
-
-interface Category {
-	id: number;
-	title: string;
-	iconName: string;
-	link: string;
-}
 
 interface CategoriesCarouselProps {
 	categories: Category[];
 	isLoading?: boolean;
+	onCategoryClick?: (category: Category) => void;
 }
 
 const CategoriesCarousel: React.FC<CategoriesCarouselProps> = ({
 	categories,
 	isLoading = false,
+	onCategoryClick,
 }) => {
 	// Estado para controlar la página actual
 	const [currentPage, setCurrentPage] = useState(0);
-	const navigate = useNavigate();
+
+	// Configuración responsiva de elementos por página
+	const getItemsPerPage = () => {
+		if (typeof window === 'undefined') return 8;
+		
+		const width = window.innerWidth;
+		if (width < 640) return 4; // sm: 2x2
+		if (width < 768) return 6; // md: 2x3  
+		if (width < 1024) return 8; // lg: 2x4
+		return 12; // xl: 3x4
+	};
+
+	const [itemsPerPage, setItemsPerPage] = useState(getItemsPerPage);
+
+	// Escuchar cambios de tamaño de pantalla
+	React.useEffect(() => {
+		const handleResize = () => {
+			setItemsPerPage(getItemsPerPage());
+			// Ajustar página actual si es necesario
+			const newTotalPages = Math.ceil(categories.length / getItemsPerPage());
+			if (currentPage >= newTotalPages && newTotalPages > 0) {
+				setCurrentPage(newTotalPages - 1);
+			}
+		};
+
+		window.addEventListener('resize', handleResize);
+		return () => window.removeEventListener('resize', handleResize);
+	}, [categories.length, currentPage]);
 
 	// Calcular el número de páginas
-	const maxItemsPerPage = 8; // 2 filas x 4 columnas
-	const totalPages = Math.ceil(categories.length / maxItemsPerPage);
+	const totalPages = Math.ceil(categories.length / itemsPerPage);
 
 	// Obtener las categorías para la página actual
 	const getCurrentPageCategories = () => {
-		const start = currentPage * maxItemsPerPage;
-		const end = start + maxItemsPerPage;
+		const start = currentPage * itemsPerPage;
+		const end = start + itemsPerPage;
 		return categories.slice(start, end);
 	};
 
@@ -98,18 +130,20 @@ const CategoriesCarousel: React.FC<CategoriesCarouselProps> = ({
 	// Manejar clic en categoría
 	const handleCategoryClick = (category: Category, event: React.MouseEvent) => {
 		event.preventDefault();
-		navigate(`/products?category=${encodeURIComponent(category.title)}`);
+		if (onCategoryClick) {
+			onCategoryClick(category);
+		}
 	};
 
 	// Función para determinar qué ícono mostrar basado en el nombre de la categoría
-	const renderIcon = (iconName: string) => {
-		// Si el iconName es un emoji, devolver el emoji directamente
-		if (iconName.match(/\p{Emoji}/u)) {
-			return <span className="text-xl">{iconName}</span>;
+	const renderIcon = (category: Category) => {
+		// Si hay un emoji en el campo icon, usarlo
+		if (category.icon && category.icon.match(/\p{Emoji}/u)) {
+			return <span className="text-xl">{category.icon}</span>;
 		}
 
 		// Buscar el nombre de la categoría en el diccionario de iconos
-		const lowerName = iconName.toLowerCase();
+		const lowerName = category.name.toLowerCase();
 		const categoryKey = Object.keys(CATEGORY_ICONS).find(
 			(key) => lowerName.includes(key) || key.includes(lowerName)
 		);
@@ -117,17 +151,17 @@ const CategoriesCarousel: React.FC<CategoriesCarouselProps> = ({
 		// Si se encuentra una coincidencia, usar el ícono correspondiente
 		if (categoryKey) {
 			const IconComponent = CATEGORY_ICONS[categoryKey];
-			return <IconComponent size={24} />;
+			return <IconComponent size={20} className="text-gray-600" />;
 		}
 
 		// Si no hay coincidencia, usar un ícono genérico
-		return <Package size={24} />;
+		return <Package size={20} className="text-gray-600" />;
 	};
 
 	// Renderizar spinner durante la carga
 	if (isLoading) {
 		return (
-			<div className="flex justify-center py-4">
+			<div className="flex justify-center py-8">
 				<div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600"></div>
 			</div>
 		);
@@ -136,62 +170,101 @@ const CategoriesCarousel: React.FC<CategoriesCarouselProps> = ({
 	// Si no hay categorías, mostrar mensaje
 	if (categories.length === 0) {
 		return (
-			<div className="p-4 bg-gray-50 text-gray-500 rounded-lg text-center">
-				No hay categorías disponibles
+			<div className="p-6 bg-gray-50 text-gray-500 rounded-lg text-center">
+				<Package size={32} className="mx-auto mb-2 text-gray-400" />
+				<p>No hay categorías disponibles</p>
 			</div>
 		);
 	}
 
 	return (
-		<div className="space-y-8">
-			<div className="relative">
-				<div className="flex items-center justify-end mb-4">
-					{totalPages > 1 && (
-						<div className="flex gap-2">
-							<button
-								onClick={goToPreviousPage}
-								disabled={currentPage === 0}
-								className={`p-1 rounded-full border ${
-									currentPage > 0
-										? "cursor-pointer text-gray-700 border-gray-300 hover:bg-gray-100"
-										: "text-gray-400 border-gray-200 cursor-not-allowed"
-								}`}
-							>
-								<ChevronLeft size={20} />
-							</button>
-							<button
-								onClick={goToNextPage}
-								disabled={currentPage === totalPages - 1}
-								className={`p-1 rounded-full border ${
-									currentPage < totalPages - 1
-										? "cursor-pointer text-gray-700 border-gray-300 hover:bg-gray-100"
-										: "text-gray-400 border-gray-200 cursor-not-allowed"
-								}`}
-							>
-								<ChevronRight size={20} />
-							</button>
-						</div>
-					)}
-				</div>
-
-				<div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 grid-rows-2 gap-3">
-					{getCurrentPageCategories().map((category) => (
-						<div
-							key={category.id}
-							className="block no-underline text-gray-800 cursor-pointer"
-							onClick={(e) => handleCategoryClick(category, e)}
+		<div className="space-y-4">
+			{/* Controles de navegación - Solo mostrar si hay múltiples páginas */}
+			{totalPages > 1 && (
+				<div className="flex items-center justify-between">
+					<div className="text-sm text-gray-500">
+						{categories.length} categorías
+					</div>
+					<div className="flex gap-2">
+						<button
+							onClick={goToPreviousPage}
+							disabled={currentPage === 0}
+							className={`p-2 rounded-full border transition-colors ${
+								currentPage > 0
+									? "cursor-pointer text-gray-700 border-gray-300 hover:bg-gray-100 hover:border-gray-400"
+									: "text-gray-400 border-gray-200 cursor-not-allowed"
+							}`}
+							aria-label="Página anterior"
 						>
-							<div className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 transition-colors duration-200 group">
-								<div className="flex items-center justify-center w-10 h-10 rounded-full bg-gray-100">
-									{renderIcon(category.title)}
-								</div>
-								<span className="text-sm font-medium">{category.title}</span>
-								<ChevronRightIcon className="w-4 h-4 ml-auto text-gray-400 group-hover:text-primary-700 transition-colors duration-200" />
-							</div>
+							<ChevronLeft size={18} />
+						</button>
+						
+						{/* Indicadores de página */}
+						<div className="flex items-center space-x-1">
+							{Array.from({length: totalPages}).map((_, index) => (
+								<button
+									key={index}
+									onClick={() => setCurrentPage(index)}
+									className={`w-2 h-2 rounded-full transition-colors ${
+										index === currentPage
+											? "bg-primary-600"
+											: "bg-gray-300 hover:bg-gray-400"
+									}`}
+									aria-label={`Ir a página ${index + 1}`}
+								/>
+							))}
 						</div>
-					))}
+
+						<button
+							onClick={goToNextPage}
+							disabled={currentPage === totalPages - 1}
+							className={`p-2 rounded-full border transition-colors ${
+								currentPage < totalPages - 1
+									? "cursor-pointer text-gray-700 border-gray-300 hover:bg-gray-100 hover:border-gray-400"
+									: "text-gray-400 border-gray-200 cursor-not-allowed"
+							}`}
+							aria-label="Página siguiente"
+						>
+							<ChevronRight size={18} />
+						</button>
+					</div>
 				</div>
+			)}
+
+			{/* Grid de categorías - Responsivo */}
+			<div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-6 gap-3">
+				{getCurrentPageCategories().map((category) => (
+					<div
+						key={category.id}
+						className="group block no-underline text-gray-800 cursor-pointer"
+						onClick={(e) => handleCategoryClick(category, e)}
+					>
+						<div className="flex flex-col items-center gap-3 p-4 rounded-lg border border-gray-100 hover:border-primary-200 hover:bg-primary-50 transition-all duration-200 hover:shadow-sm">
+							<div className="flex items-center justify-center w-12 h-12 rounded-full bg-gray-100 group-hover:bg-white group-hover:shadow-sm transition-all duration-200">
+								{renderIcon(category)}
+							</div>
+							<div className="text-center">
+								<span className="text-sm font-medium text-gray-800 group-hover:text-primary-700 transition-colors duration-200 line-clamp-2">
+									{category.name}
+								</span>
+								{category.product_count !== undefined && category.product_count > 0 && (
+									<span className="text-xs text-gray-500 mt-1 block">
+										{category.product_count} productos
+									</span>
+								)}
+							</div>
+							<ChevronRightIcon className="w-4 h-4 text-gray-400 group-hover:text-primary-600 transition-colors duration-200 opacity-0 group-hover:opacity-100" />
+						</div>
+					</div>
+				))}
 			</div>
+
+			{/* Información adicional */}
+			{totalPages > 1 && (
+				<div className="text-center text-sm text-gray-500">
+					Página {currentPage + 1} de {totalPages}
+				</div>
+			)}
 		</div>
 	);
 };

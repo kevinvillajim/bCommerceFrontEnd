@@ -1,80 +1,45 @@
-import {useState, useEffect, useCallback} from "react";
-import {useSearchParams} from "react-router-dom";
+import {useState, useCallback} from "react";
 
 export const useProductSearch = () => {
-	const [searchParams, setSearchParams] = useSearchParams();
 	const [searchTerm, setSearchTerm] = useState("");
 	const [isSearching, setIsSearching] = useState(false);
-	const [isInitialized, setIsInitialized] = useState(false);
 
-	// Inicializar desde URL
-	useEffect(() => {
-		const searchParam = searchParams.get("search");
-		if (searchParam) {
-			setSearchTerm(searchParam);
-		}
-		setIsInitialized(true);
-	}, [searchParams]);
-
-	// Manejar cambios en el campo de búsqueda (sin debounce)
+	// Manejar cambios en el campo de búsqueda (sin actualizar URL automáticamente)
 	const handleSearchChange = useCallback(
 		(e: React.ChangeEvent<HTMLInputElement>) => {
 			const value = e.target.value;
 			setSearchTerm(value);
-			// Ya no actualizamos la URL automáticamente
 		},
 		[]
 	);
 
-	// Actualizar la URL con el término de búsqueda
-	const updateSearchInUrl = useCallback(
-		(term: string) => {
+	// Función para establecer el término de búsqueda externamente (desde URL)
+	const setSearchTermExternal = useCallback((term: string) => {
+		setSearchTerm(term);
+	}, []);
+
+	// Función para manejar envío del formulario
+	const handleSearchSubmit = useCallback(
+		(onSearchSubmit: (searchTerm: string) => void) => (e: React.FormEvent) => {
+			e.preventDefault();
 			setIsSearching(true);
-
-			const newParams = new URLSearchParams(searchParams);
-
-			if (term) {
-				newParams.set("search", term);
-			} else {
-				newParams.delete("search");
-			}
-
-			// Resetear a la página 1 cuando se busca
-			newParams.delete("page");
-
-			setSearchParams(newParams, {replace: true});
-
-			// Dar tiempo para que la URL se actualice antes de permitir nuevas búsquedas
+			
+			// Llamar a la función proporcionada para manejar la búsqueda
+			onSearchSubmit(searchTerm);
+			
+			// Dar tiempo para que la búsqueda se procese
 			setTimeout(() => {
 				setIsSearching(false);
 			}, 300);
 		},
-		[searchParams, setSearchParams]
-	);
-
-	// Manejar envío del formulario (búsqueda inmediata)
-	const handleSearchSubmit = useCallback(
-		(e: React.FormEvent) => {
-			e.preventDefault();
-
-			// Solo actualizar si hay un término de búsqueda o si había uno antes (para borrarlo)
-			if (searchTerm || searchParams.has("search")) {
-				updateSearchInUrl(searchTerm);
-			}
-		},
-		[searchTerm, searchParams, updateSearchInUrl]
+		[searchTerm]
 	);
 
 	// Limpiar la búsqueda
-	const clearSearch = useCallback(() => {
+	const clearSearch = useCallback((onClearSearch: () => void) => {
 		setSearchTerm("");
-
-		const newParams = new URLSearchParams(searchParams);
-		if (newParams.has("search")) {
-			newParams.delete("search");
-			setSearchParams(newParams, {replace: true});
-		}
-	}, [searchParams, setSearchParams]);
+		onClearSearch();
+	}, []);
 
 	return {
 		searchTerm,
@@ -82,6 +47,7 @@ export const useProductSearch = () => {
 		handleSearchChange,
 		handleSearchSubmit,
 		clearSearch,
+		setSearchTermExternal,
 	};
 };
 

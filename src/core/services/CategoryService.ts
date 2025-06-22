@@ -21,33 +21,35 @@ export class CategoryService {
 		try {
 			console.log("Obteniendo categorías con parámetros:", params);
 
-			// Construir parámetros de API usando nuevos nombres
+			// Construir parámetros de API usando nombres correctos del backend
 			const apiParams: Record<string, any> = {};
 
 			if (params) {
 				if (params.parent_id !== undefined)
 					apiParams.parent_id = params.parent_id;
 				if (params.featured !== undefined) apiParams.featured = params.featured;
-				if (params.is_active !== undefined) apiParams.active = params.is_active; // Parámetro 'active' en lugar de 'is_active'
+				if (params.is_active !== undefined) apiParams.active = params.is_active;
 				if (params.term) apiParams.term = params.term;
 				if (params.limit !== undefined) apiParams.limit = params.limit;
 				if (params.offset !== undefined) apiParams.offset = params.offset;
 				if (params.sort_by) apiParams.sort_by = params.sort_by;
 				if (params.sort_dir) apiParams.sort_dir = params.sort_dir;
 				if (params.with_counts !== undefined)
-					apiParams.withCounts = params.with_counts; // Parámetro 'withCounts' en lugar de 'with_counts'
+					apiParams.withCounts = params.with_counts;
 				if (params.with_children !== undefined)
-					apiParams.withChildren = params.with_children; // Parámetro 'withChildren' en lugar de 'with_children'
+					apiParams.withChildren = params.with_children;
 			}
+
+			console.log("Parámetros de API finales:", apiParams);
 
 			const response = await ApiClient.get<any>(
 				API_ENDPOINTS.CATEGORIES.LIST,
 				apiParams
 			);
 
-			console.log("Respuesta de API de categorías:", response);
+			console.log("Respuesta raw de API de categorías:", response);
 
-			// Analizar la estructura de la respuesta
+			// Procesar la respuesta
 			let categoryData: Category[] = [];
 			let metaData = {
 				total: 0,
@@ -55,35 +57,38 @@ export class CategoryService {
 				featured_only: params?.featured || false,
 			};
 
-			// Estructura común: { data: [...], meta: {...} }
-			if (response && response.data && Array.isArray(response.data)) {
-				categoryData = response.data;
-				if (response.meta) {
-					metaData = {
-						...metaData,
-						...response.meta,
-					};
+			// Manejar diferentes estructuras de respuesta
+			if (response && response.data) {
+				if (Array.isArray(response.data)) {
+					// Estructura: { data: [...], meta: {...} }
+					categoryData = response.data;
+					if (response.meta) {
+						metaData = {
+							...metaData,
+							...response.meta,
+						};
+					}
+				} else if (response.data.data && Array.isArray(response.data.data)) {
+					// Estructura: { data: { data: [...], meta: {...} } }
+					categoryData = response.data.data;
+					if (response.data.meta) {
+						metaData = {
+							...metaData,
+							...response.data.meta,
+						};
+					}
 				}
-			}
-			// Estructura alternativa: { data: { data: [...], meta: {...} } }
-			else if (
-				response &&
-				response.data &&
-				response.data.data &&
-				Array.isArray(response.data.data)
-			) {
-				categoryData = response.data.data;
-				if (response.data.meta) {
-					metaData = {
-						...metaData,
-						...response.data.meta,
-					};
-				}
-			}
-			// Estructura directa: un array
-			else if (Array.isArray(response)) {
+			} else if (Array.isArray(response)) {
+				// Respuesta directa como array
 				categoryData = response;
+				metaData.total = response.length;
 			}
+
+			console.log("Categorías procesadas:", {
+				count: categoryData.length,
+				meta: metaData,
+				sample: categoryData.slice(0, 2)
+			});
 
 			return {
 				data: categoryData,
@@ -114,24 +119,28 @@ export class CategoryService {
 
 			const response = await ApiClient.get<any>(API_ENDPOINTS.CATEGORIES.MAIN, {
 				withCounts: withCounts,
+				active: true,
 			});
 
-			console.log("Respuesta de categorías principales:", response);
+			console.log("Respuesta raw de categorías principales:", response);
 
 			// Manejar diferentes estructuras de respuesta
 			let categoryData: Category[] = [];
 
-			if (response && Array.isArray(response)) {
+			if (response && response.data) {
+				if (Array.isArray(response.data)) {
+					categoryData = response.data;
+				} else if (response.data.data && Array.isArray(response.data.data)) {
+					categoryData = response.data.data;
+				}
+			} else if (Array.isArray(response)) {
 				categoryData = response;
-			} else if (response && Array.isArray(response.data)) {
-				categoryData = response.data;
-			} else if (
-				response &&
-				response.data &&
-				Array.isArray(response.data.data)
-			) {
-				categoryData = response.data.data;
 			}
+
+			console.log("Categorías principales procesadas:", {
+				count: categoryData.length,
+				sample: categoryData.slice(0, 2)
+			});
 
 			return categoryData;
 		} catch (error) {
@@ -147,30 +156,33 @@ export class CategoryService {
 		try {
 			console.log(`Obteniendo categorías destacadas (límite: ${limit})`);
 
-			// Como no hay un endpoint específico para categorías destacadas,
-			// usamos el endpoint general con filtro
+			// Usar el endpoint general con filtro de destacadas
 			const response = await ApiClient.get<any>(API_ENDPOINTS.CATEGORIES.LIST, {
 				featured: true,
 				limit: limit,
 				active: true,
+				withCounts: true,
 			});
 
-			console.log("Respuesta de categorías destacadas:", response);
+			console.log("Respuesta raw de categorías destacadas:", response);
 
 			// Manejar diferentes estructuras de respuesta
 			let categoryData: Category[] = [];
 
-			if (response && Array.isArray(response)) {
+			if (response && response.data) {
+				if (Array.isArray(response.data)) {
+					categoryData = response.data;
+				} else if (response.data.data && Array.isArray(response.data.data)) {
+					categoryData = response.data.data;
+				}
+			} else if (Array.isArray(response)) {
 				categoryData = response;
-			} else if (response && Array.isArray(response.data)) {
-				categoryData = response.data;
-			} else if (
-				response &&
-				response.data &&
-				Array.isArray(response.data.data)
-			) {
-				categoryData = response.data.data;
 			}
+
+			console.log("Categorías destacadas procesadas:", {
+				count: categoryData.length,
+				sample: categoryData.slice(0, 2)
+			});
 
 			return categoryData;
 		} catch (error) {
@@ -190,19 +202,17 @@ export class CategoryService {
 				API_ENDPOINTS.CATEGORIES.DETAILS(id)
 			);
 
-			console.log(`Respuesta de categoría ID ${id}:`, response);
+			console.log(`Respuesta raw de categoría ID ${id}:`, response);
 
 			// Manejar diferentes estructuras de respuesta
 			let categoryData = null;
 
-			if (response && typeof response === "object") {
+			if (response && response.data) {
+				if (typeof response.data === "object") {
+					categoryData = response.data;
+				}
+			} else if (response && typeof response === "object") {
 				categoryData = response;
-			} else if (
-				response &&
-				response.data &&
-				typeof response.data === "object"
-			) {
-				categoryData = response.data;
 			}
 
 			return categoryData;
@@ -233,19 +243,17 @@ export class CategoryService {
 				}
 			);
 
-			console.log(`Respuesta de categoría slug ${slug}:`, response);
+			console.log(`Respuesta raw de categoría slug ${slug}:`, response);
 
 			// Manejar diferentes estructuras de respuesta
 			let categoryData = null;
 
-			if (response && typeof response === "object") {
+			if (response && response.data) {
+				if (typeof response.data === "object") {
+					categoryData = response.data;
+				}
+			} else if (response && typeof response === "object") {
 				categoryData = response;
-			} else if (
-				response &&
-				response.data &&
-				typeof response.data === "object"
-			) {
-				categoryData = response.data;
 			}
 
 			return categoryData;
@@ -268,21 +276,19 @@ export class CategoryService {
 					API_ENDPOINTS.CATEGORIES.SUBCATEGORIES(categoryId)
 				);
 
-				console.log(`Respuesta de subcategorías para ${categoryId}:`, response);
+				console.log(`Respuesta raw de subcategorías para ${categoryId}:`, response);
 
 				// Manejar diferentes estructuras de respuesta
 				let categoryData: Category[] = [];
 
-				if (response && Array.isArray(response)) {
+				if (response && response.data) {
+					if (Array.isArray(response.data)) {
+						return response.data;
+					} else if (response.data.data && Array.isArray(response.data.data)) {
+						return response.data.data;
+					}
+				} else if (Array.isArray(response)) {
 					return response;
-				} else if (response && Array.isArray(response.data)) {
-					return response.data;
-				} else if (
-					response &&
-					response.data &&
-					Array.isArray(response.data.data)
-				) {
-					return response.data.data;
 				}
 
 				return categoryData;
@@ -301,16 +307,14 @@ export class CategoryService {
 				// Manejar diferentes estructuras de respuesta
 				let categoryData: Category[] = [];
 
-				if (response && Array.isArray(response)) {
+				if (response && response.data) {
+					if (Array.isArray(response.data)) {
+						return response.data;
+					} else if (response.data.data && Array.isArray(response.data.data)) {
+						return response.data.data;
+					}
+				} else if (Array.isArray(response)) {
 					return response;
-				} else if (response && Array.isArray(response.data)) {
-					return response.data;
-				} else if (
-					response &&
-					response.data &&
-					Array.isArray(response.data.data)
-				) {
-					return response.data.data;
 				}
 
 				return categoryData;
@@ -336,7 +340,7 @@ export class CategoryService {
 
 			// Añadir datos básicos
 			Object.entries(data).forEach(([key, value]) => {
-				if (key !== "image") {
+				if (key !== "image" && value !== undefined) {
 					formData.append(key, String(value));
 				}
 			});
@@ -351,19 +355,17 @@ export class CategoryService {
 				formData
 			);
 
-			console.log("Respuesta de creación de categoría:", response);
+			console.log("Respuesta raw de creación de categoría:", response);
 
 			// Manejar diferentes estructuras de respuesta
 			let categoryData = null;
 
-			if (response && typeof response === "object") {
+			if (response && response.data) {
+				if (typeof response.data === "object") {
+					categoryData = response.data;
+				}
+			} else if (response && typeof response === "object") {
 				categoryData = response;
-			} else if (
-				response &&
-				response.data &&
-				typeof response.data === "object"
-			) {
-				categoryData = response.data;
 			}
 
 			return categoryData;
@@ -388,7 +390,7 @@ export class CategoryService {
 
 			// Añadir datos básicos
 			Object.entries(data).forEach(([key, value]) => {
-				if (key !== "image" && key !== "id") {
+				if (key !== "image" && key !== "id" && value !== undefined) {
 					formData.append(key, String(value));
 				}
 			});
@@ -403,19 +405,17 @@ export class CategoryService {
 				formData
 			);
 
-			console.log(`Respuesta de actualización de categoría ${id}:`, response);
+			console.log(`Respuesta raw de actualización de categoría ${id}:`, response);
 
 			// Manejar diferentes estructuras de respuesta
 			let categoryData = null;
 
-			if (response && typeof response === "object") {
+			if (response && response.data) {
+				if (typeof response.data === "object") {
+					categoryData = response.data;
+				}
+			} else if (response && typeof response === "object") {
 				categoryData = response;
-			} else if (
-				response &&
-				response.data &&
-				typeof response.data === "object"
-			) {
-				categoryData = response.data;
 			}
 
 			return categoryData;
@@ -436,7 +436,7 @@ export class CategoryService {
 				API_ENDPOINTS.CATEGORIES.DELETE(id)
 			);
 
-			console.log(`Respuesta de eliminación de categoría ${id}:`, response);
+			console.log(`Respuesta raw de eliminación de categoría ${id}:`, response);
 
 			// Verificar resultado
 			const success =

@@ -23,9 +23,9 @@ import MobilePagination from "../components/product/MobilePagination";
 
 // Utilidades y configuración
 import {calculateProductCountByCategory} from "../../utils/categoryUtils";
-import CacheService from "../../infrastructure/services/CacheService";
 import appConfig from "../../config/appConfig";
 import environment from "../../config/environment";
+import type {Category} from "../../core/domain/entities/Category";
 
 // Constantes para filtros
 const priceRanges = [
@@ -44,22 +44,13 @@ const sortOptions = [
 	{id: "name-asc", label: "Nombre: A-Z"},
 	{id: "name-desc", label: "Nombre: Z-A"},
 	{id: "newest", label: "Más recientes"},
+	{id: "rating", label: "Mejor valorados"},
 ];
-
-const CATEGORY_OPTIONS_CACHE_KEY = "category_options_transformed";
 
 const ProductPage: React.FC = () => {
 	// Estado para UI
 	const [showMobileFilters, setShowMobileFilters] = useState(false);
 	const [isMobile, setIsMobile] = useState(false);
-	const [categoryOptions, setCategoryOptions] = useState<
-		Array<{
-			id: number;
-			title: string;
-			iconName: string;
-			link: string;
-		}>
-	>([]);
 
 	// Hooks para datos y funcionalidad
 	const {
@@ -75,6 +66,7 @@ const ProductPage: React.FC = () => {
 		handleSearchChange,
 		handleSearchSubmit,
 		clearSearch,
+		setSearchTermExternal,
 	} = useProductSearch();
 
 	const {
@@ -86,7 +78,9 @@ const ProductPage: React.FC = () => {
 		setDiscount,
 		setSortBy,
 		setPage,
+		setSearchTerm,
 		clearFilters,
+		toggleCategory,
 	} = useProductFilters(categoriesData);
 
 	const {
@@ -99,6 +93,11 @@ const ProductPage: React.FC = () => {
 
 	const {addToCart} = useCart();
 	const {toggleFavorite} = useFavorites();
+
+	// Sincronizar término de búsqueda entre hooks
+	useEffect(() => {
+		setSearchTermExternal(filters.searchTerm);
+	}, [filters.searchTerm, setSearchTermExternal]);
 
 	// Calcular contador de productos por categoría
 	const productCountByCategory = useMemo(() => {
@@ -121,99 +120,23 @@ const ProductPage: React.FC = () => {
 
 	// Cargar categorías al iniciar
 	useEffect(() => {
-		fetchCategories();
+		console.log("Cargando categorías...");
+		fetchCategories(true, false); // withCounts = true, forceRefresh = false
 	}, [fetchCategories]);
 
-	// Transformar categorías para el componente CategoriesCarousel
-	useEffect(() => {
-		if (categoriesData && categoriesData.length > 0) {
-			// Intentar obtener categorías transformadas de caché
-			const cachedOptions = CacheService.getItem(CATEGORY_OPTIONS_CACHE_KEY);
-
-			if (cachedOptions) {
-				setCategoryOptions(cachedOptions);
-				return;
-			}
-
-			// Si no hay caché, transformar las categorías
-			const options = categoriesData.map((category) => {
-				// Determinar ícono basado en el nombre de categoría
-				const categoryNameLower = category.name.toLowerCase();
-				let iconName = "📦"; // Emoji por defecto
-
-				// Asignar emojis según el nombre de la categoría
-				if (categoryNameLower.includes("smartphone")) iconName = "📱";
-				else if (categoryNameLower.includes("laptop")) iconName = "💻";
-				else if (categoryNameLower.includes("monitor")) iconName = "🖥️";
-				else if (categoryNameLower.includes("tv")) iconName = "📺";
-				else if (
-					categoryNameLower.includes("auricular") ||
-					categoryNameLower.includes("headphone")
-				)
-					iconName = "🎧";
-				else if (
-					categoryNameLower.includes("camara") ||
-					categoryNameLower.includes("camera")
-				)
-					iconName = "📷";
-				else if (
-					categoryNameLower.includes("reloj") ||
-					categoryNameLower.includes("watch")
-				)
-					iconName = "⌚";
-				else if (
-					categoryNameLower.includes("altavoz") ||
-					categoryNameLower.includes("speaker")
-				)
-					iconName = "🔊";
-
-				return {
-					id: category.id || 0,
-					title: category.name,
-					iconName: iconName,
-					link: `/products?category=${encodeURIComponent(category.name)}`,
-				};
-			});
-
-			// Ordenar por cantidad de productos (mayor a menor)
-			options.sort((a, b) => {
-				const categoryA = categoriesData.find((c) => c.id === a.id);
-				const categoryB = categoriesData.find((c) => c.id === b.id);
-
-				const countA = categoryA?.product_count || 0;
-				const countB = categoryB?.product_count || 0;
-
-				return countB - countA;
-			});
-
-			// Guardar en caché
-			CacheService.setItem(
-				CATEGORY_OPTIONS_CACHE_KEY,
-				options,
-				appConfig.cache.categoryCacheTime
-			);
-
-			setCategoryOptions(options);
-		}
-	}, [categoriesData]);
-
-	// Cargar productos cuando cambian los filtros o la búsqueda
+	// Cargar productos cuando cambian los filtros
 	useEffect(() => {
 		if (categoriesData.length > 0) {
+			console.log("Categorías cargadas, construyendo parámetros de filtro...");
 			const params = buildFilterParams();
-
-			if (searchTerm) {
-				params.term = searchTerm;
-			}
-
+			console.log("Cargando productos con parámetros:", params);
 			fetchProducts(params);
 		}
 	}, [
 		fetchProducts,
 		buildFilterParams,
 		categoriesData.length,
-		searchTerm,
-		filters,
+		filters, // Dependencia de todo el objeto filters
 	]);
 
 	// Manejadores para interacciones de usuario
@@ -222,6 +145,27 @@ const ProductPage: React.FC = () => {
 			setPriceRange(range);
 		},
 		[setPriceRange]
+	);
+
+	const handleSearchSubmitInternal = useCallback(
+		(searchTerm: string) => {
+			console.log("Manejando búsqueda:", searchTerm);
+			setSearchTerm(searchTerm);
+		},
+		[setSearchTerm]
+	);
+
+	const handleClearSearch = useCallback(() => {
+		console.log("Limpiando búsqueda");
+		setSearchTerm("");
+	}, [setSearchTerm]);
+
+	const handleCategoryClick = useCallback(
+		(category: Category) => {
+			console.log("Clic en categoría:", category.name);
+			toggleCategory(category.name);
+		},
+		[toggleCategory]
 	);
 
 	const handleAddToCart = useCallback(
@@ -250,7 +194,7 @@ const ProductPage: React.FC = () => {
 	);
 
 	const getImageUrl = useCallback((imagePath: string | undefined) => {
-		if (!imagePath) return "https://via.placeholder.com/300";
+		if (!imagePath) return "https://via.placeholder.com/300?text=Sin+imagen";
 
 		if (imagePath.startsWith("http")) {
 			return imagePath;
@@ -274,11 +218,23 @@ const ProductPage: React.FC = () => {
 		filters.rating !== null ||
 		filters.discount ||
 		filters.sortBy !== "featured" ||
-		searchTerm !== "";
+		filters.searchTerm !== "";
 
 	// Determinar si está cargando
 	const isLoading = productsLoading || categoriesLoading || isSearching;
 
+	// Preparar categorías para el carrusel
+	const categoriesForCarousel = useMemo(() => {
+		return categoriesData.filter(cat => cat.is_active).slice(0, 24); // Máximo 24 categorías
+	}, [categoriesData]);
+
+	console.log("Estado actual:", {
+		categoriesData: categoriesData.length,
+		productsData: productsData.length,
+		filters,
+		isLoading,
+		hasActiveFilters,
+	});
 
 	return (
 		<div className="container mx-auto px-4 py-8">
@@ -288,8 +244,8 @@ const ProductPage: React.FC = () => {
 			<SearchBar
 				searchTerm={searchTerm}
 				onSearchChange={handleSearchChange}
-				onSearch={handleSearchSubmit}
-				onClear={clearSearch}
+				onSearch={handleSearchSubmit(handleSearchSubmitInternal)}
+				onClear={() => clearSearch(handleClearSearch)}
 				isLoading={isSearching}
 			/>
 
@@ -297,15 +253,24 @@ const ProductPage: React.FC = () => {
 			<section className="mb-8">
 				<h2 className="text-xl font-bold mb-4">Categorías</h2>
 				{categoriesLoading ? (
-					<div className="flex justify-center py-4">
+					<div className="flex justify-center py-8">
 						<div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600"></div>
 					</div>
 				) : categoriesError ? (
 					<div className="p-4 bg-red-50 text-red-700 rounded-lg">
-						Error al cargar categorías. Por favor, intenta nuevamente.
+						<p>Error al cargar categorías: {categoriesError}</p>
+						<button
+							onClick={() => fetchCategories(true, true)}
+							className="mt-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 text-sm"
+						>
+							Reintentar
+						</button>
 					</div>
-				) : categoryOptions.length > 0 ? (
-					<CategoriesCarousel categories={categoryOptions} />
+				) : categoriesForCarousel.length > 0 ? (
+					<CategoriesCarousel 
+						categories={categoriesForCarousel} 
+						onCategoryClick={handleCategoryClick}
+					/>
 				) : (
 					<div className="p-4 bg-gray-50 text-gray-500 rounded-lg text-center">
 						No hay categorías disponibles
@@ -320,21 +285,20 @@ const ProductPage: React.FC = () => {
 					selectedCategories={filters.categories}
 					selectedPriceRange={filters.priceRange}
 					selectedRating={filters.rating}
-					searchTerm={searchTerm}
+					searchTerm={filters.searchTerm}
 					showingDiscounted={filters.discount}
 					onRemoveCategory={(category) => {
 						setCategories(filters.categories.filter((c) => c !== category));
 					}}
 					onClearPriceRange={() => setPriceRange(null)}
 					onClearRating={() => setRating(null)}
-					onClearSearch={clearSearch}
+					onClearSearch={handleClearSearch}
 					onToggleDiscount={() => setDiscount(!filters.discount)}
 					onClearAllFilters={clearFilters}
 					onToggleFilters={() => setShowMobileFilters(true)}
 				/>
 
 				{/* Sort Dropdown Component */}
-				
 				<SortDropdown
 					options={sortOptions}
 					selectedOption={filters.sortBy}
@@ -348,7 +312,7 @@ const ProductPage: React.FC = () => {
 				<div className="hidden md:block md:w-72 flex-shrink-0">
 					<ProductFilters
 						categories={categoriesData.map((cat) => cat.name)}
-						priceRange={{min: 0, max: 100}}
+						priceRange={{min: 0, max: 10000}}
 						onCategoryChange={setCategories}
 						onPriceRangeChange={handlePriceRangeChange}
 						onRatingChange={setRating}
@@ -399,12 +363,10 @@ const ProductPage: React.FC = () => {
 						categories={categoriesData}
 						isLoading={isLoading}
 						error={productsError || null}
-						onRetry={() =>
-							fetchProducts({
-								limit: appConfig.pagination.defaultPageSize,
-								offset: 0,
-							})
-						}
+						onRetry={() => {
+							const params = buildFilterParams();
+							fetchProducts(params);
+						}}
 						onAddToCart={handleAddToCart}
 						onAddToWishlist={handleAddToWishlist}
 						getImageUrl={getImageUrl}
@@ -439,19 +401,40 @@ const ProductPage: React.FC = () => {
 							)}
 						</>
 					)}
+
 					{/* Mensaje cuando no hay productos con los filtros actuales */}
 					{!isLoading &&
 						!productsError &&
 						productsData.length === 0 &&
 						hasActiveFilters && (
-							<div className="mt-4 p-4 bg-yellow-50 text-yellow-800 rounded-lg text-center">
-								No se encontraron productos con los filtros seleccionados.
+							<div className="mt-8 p-6 bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-lg text-center">
+								<h3 className="text-lg font-medium mb-2">
+									No se encontraron productos
+								</h3>
+								<p className="mb-4">
+									No hay productos que coincidan con los filtros seleccionados.
+								</p>
 								<button
 									onClick={clearFilters}
-									className="ml-2 underline font-medium hover:text-yellow-900"
+									className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors"
 								>
-									Limpiar filtros
+									Limpiar todos los filtros
 								</button>
+							</div>
+						)}
+
+					{/* Mensaje cuando no hay productos sin filtros */}
+					{!isLoading &&
+						!productsError &&
+						productsData.length === 0 &&
+						!hasActiveFilters && (
+							<div className="mt-8 p-6 bg-gray-50 border border-gray-200 text-gray-600 rounded-lg text-center">
+								<h3 className="text-lg font-medium mb-2">
+									No hay productos disponibles
+								</h3>
+								<p>
+									Actualmente no hay productos en el catálogo. Por favor, inténtalo más tarde.
+								</p>
 							</div>
 						)}
 				</div>

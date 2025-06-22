@@ -14,6 +14,95 @@ import ApiClient from "../../infrastructure/api/apiClient";
  * Implementación del servicio de productos
  */
 export class ProductService implements IProductService {
+	
+	/**
+	 * Construye los parámetros de API para el endpoint de productos
+	 */
+	private buildApiParams(filterParams?: ProductFilterParams): Record<string, any> {
+		const apiParams: Record<string, any> = {};
+
+		if (filterParams) {
+			// Paginación
+			if (filterParams.limit !== undefined) apiParams.limit = filterParams.limit;
+			if (filterParams.offset !== undefined) apiParams.offset = filterParams.offset;
+			if (filterParams.page !== undefined) apiParams.page = filterParams.page;
+
+			// Búsqueda por término
+			if (filterParams.term) apiParams.term = filterParams.term;
+
+			// Filtro por categorías - manejar múltiples categorías
+			if (filterParams.categoryIds && filterParams.categoryIds.length > 0) {
+				// Convertir array de IDs a string separado por comas
+				apiParams.category_ids = filterParams.categoryIds.join(',');
+				// Especificar operador (AND/OR)
+				if (filterParams.categoryOperator) {
+					apiParams.category_operator = filterParams.categoryOperator;
+				}
+			} else if (filterParams.categoryId) {
+				// Mantener compatibilidad con categoría única
+				apiParams.category_id = filterParams.categoryId;
+			}
+
+			// Filtros de precio
+			if (filterParams.minPrice !== undefined) apiParams.min_price = filterParams.minPrice;
+			if (filterParams.maxPrice !== undefined) apiParams.max_price = filterParams.maxPrice;
+
+			// Filtro de rating
+			if (filterParams.rating !== undefined) apiParams.rating = filterParams.rating;
+
+			// Filtros de descuento
+			if (filterParams.minDiscount !== undefined) apiParams.min_discount = filterParams.minDiscount;
+			if (filterParams.hasDiscount !== undefined) apiParams.has_discount = filterParams.hasDiscount;
+
+			// Filtros booleanos
+			if (filterParams.featured !== undefined) apiParams.featured = filterParams.featured;
+			if (filterParams.published !== undefined) apiParams.published = filterParams.published;
+			if (filterParams.inStock !== undefined) apiParams.in_stock = filterParams.inStock;
+
+			// Filtro de vendedor
+			if (filterParams.sellerId !== undefined) apiParams.seller_id = filterParams.sellerId;
+
+			// Filtros de estado
+			if (filterParams.status) apiParams.status = filterParams.status;
+
+			// Filtros de atributos - manejar correctamente string | string[]
+			if (filterParams.tags) {
+				if (Array.isArray(filterParams.tags)) {
+					apiParams.tags = filterParams.tags.join(',');
+				} else {
+					apiParams.tags = filterParams.tags;
+				}
+			}
+
+			if (filterParams.colors) {
+				if (Array.isArray(filterParams.colors)) {
+					apiParams.colors = filterParams.colors.join(',');
+				} else {
+					apiParams.colors = filterParams.colors;
+				}
+			}
+
+			if (filterParams.sizes) {
+				if (Array.isArray(filterParams.sizes)) {
+					apiParams.sizes = filterParams.sizes.join(',');
+				} else {
+					apiParams.sizes = filterParams.sizes;
+				}
+			}
+
+			// Ordenamiento
+			if (filterParams.sortBy) {
+				apiParams.sort_by = filterParams.sortBy;
+				if (filterParams.sortDir) {
+					apiParams.sort_dir = filterParams.sortDir;
+				}
+			}
+		}
+
+		console.log("Parámetros de API construidos:", apiParams);
+		return apiParams;
+	}
+
 	/**
 	 * Obtiene una lista de productos con filtros opcionales
 	 */
@@ -22,7 +111,8 @@ export class ProductService implements IProductService {
 	): Promise<ProductListResponse> {
 		try {
 			console.log("Obteniendo productos con parámetros:", filterParams);
-// Si hay un sellerId, usar el endpoint específico de productos por vendedor
+
+			// Si hay un sellerId, usar el endpoint específico de productos por vendedor
 			if (filterParams?.sellerId) {
 				const response = await ApiClient.get<any>(
 					API_ENDPOINTS.PRODUCTS.BY_SELLER(filterParams.sellerId),
@@ -48,59 +138,8 @@ export class ProductService implements IProductService {
 				};
 			}
 
-			// Adaptamos los nombres de los parámetros para la API
-			const apiParams: Record<string, any> = {};
-
-			if (filterParams) {
-				// Mapeamos los parámetros de nuestra aplicación a los que espera la API
-				if (filterParams.limit !== undefined)
-					apiParams.limit = filterParams.limit;
-				if (filterParams.offset !== undefined)
-					apiParams.offset = filterParams.offset;
-				if (filterParams.term) apiParams.term = filterParams.term;
-
-				// Para filtros de categoría, usamos categoryId o categoryIds según corresponda
-				if (filterParams.categoryIds && filterParams.categoryIds.length > 0) {
-					// La API espera category_id como string separado por comas
-					apiParams.category_id = filterParams.categoryIds.join(",");
-				} else if (filterParams.categoryId) {
-					apiParams.category_id = filterParams.categoryId;
-				}
-
-				if (filterParams.minPrice !== undefined)
-					apiParams.min_price = filterParams.minPrice;
-				if (filterParams.maxPrice !== undefined)
-					apiParams.max_price = filterParams.maxPrice;
-				if (filterParams.rating !== undefined)
-					apiParams.rating = filterParams.rating;
-				if (filterParams.featured !== undefined)
-					apiParams.featured = filterParams.featured;
-				if (filterParams.sellerId !== undefined)
-					apiParams.seller_id = filterParams.sellerId;
-				if (filterParams.status) apiParams.status = filterParams.status;
-				if (filterParams.tags)
-					apiParams.tags = Array.isArray(filterParams.tags)
-						? filterParams.tags.join(",")
-						: filterParams.tags;
-				if (filterParams.colors)
-					apiParams.colors = Array.isArray(filterParams.colors)
-						? filterParams.colors.join(",")
-						: filterParams.colors;
-				if (filterParams.sizes)
-					apiParams.sizes = Array.isArray(filterParams.sizes)
-						? filterParams.sizes.join(",")
-						: filterParams.sizes;
-				if (filterParams.inStock !== undefined)
-					apiParams.in_stock = filterParams.inStock;
-
-				// Añadir parámetros de ordenamiento
-				if (filterParams.sortBy) {
-					apiParams.sort_by = filterParams.sortBy;
-					if (filterParams.sortDir) {
-						apiParams.sort_dir = filterParams.sortDir;
-					}
-				}
-			}
+			// Usar el método buildApiParams para construir los parámetros
+			const apiParams = this.buildApiParams(filterParams);
 
 			console.log("Parámetros de API:", apiParams);
 

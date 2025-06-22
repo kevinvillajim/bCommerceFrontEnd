@@ -3,7 +3,6 @@ import {useState, useCallback, useEffect} from "react";
 import CacheService from "../../infrastructure/services/CacheService";
 import appConfig from "../../config/appConfig";
 import {CategoryService} from "../../core/services/CategoryService";
-import ApiResponseInspector from "../../utils/apiResponseInspector";
 import type {
 	Category,
 	CategoryListResponse,
@@ -32,7 +31,7 @@ export const useCategories = () => {
 			return {} as Category;
 		}
 
-		// Mapeo de propiedades, respetando snake_case
+		// Mapeo de propiedades, respetando snake_case del backend
 		return {
 			id: apiCategory.id,
 			name: apiCategory.name || "",
@@ -42,17 +41,17 @@ export const useCategories = () => {
 			icon: apiCategory.icon,
 			image: apiCategory.image,
 			order: apiCategory.order,
-			is_active: Boolean(apiCategory.is_active),
-			featured: Boolean(apiCategory.featured),
+			is_active: Boolean(apiCategory.is_active ?? true),
+			featured: Boolean(apiCategory.featured ?? false),
 			created_at: apiCategory.created_at,
 			updated_at: apiCategory.updated_at,
 			// API response specific fields
 			subcategories: Array.isArray(apiCategory.subcategories)
 				? apiCategory.subcategories.map((sub: any) => adaptCategory(sub))
 				: undefined,
-			product_count: apiCategory.product_count,
+			product_count: apiCategory.product_count || 0,
 			full_path: apiCategory.full_path,
-			has_children: apiCategory.has_children,
+			has_children: Boolean(apiCategory.has_children),
 			url: apiCategory.url,
 			parent: apiCategory.parent
 				? adaptCategory(apiCategory.parent)
@@ -67,7 +66,7 @@ export const useCategories = () => {
 		if (!isInitialized) {
 			// Verificar si hay categorías en caché
 			const cachedCategories = CacheService.getItem("categories_all");
-			if (cachedCategories) {
+			if (cachedCategories && cachedCategories.data) {
 				setCategories(cachedCategories.data || []);
 			}
 
@@ -93,42 +92,41 @@ export const useCategories = () => {
 	 * Obtener todas las categorías
 	 */
 	const fetchCategories = useCallback(
-		async (withCounts: boolean = true) => {
+		async (withCounts: boolean = true, forceRefresh: boolean = false) => {
 			setLoading(true);
 			setError(null);
 
 			const cacheKey = `categories_all_${withCounts ? "with_counts" : "no_counts"}`;
 
 			try {
-				// Intentar obtener datos de la caché primero
-				const cachedData = CacheService.getItem(cacheKey);
-
-				if (cachedData) {
-					console.log("Usando categorías en caché");
-					setCategories(cachedData.data || []);
-					setLoading(false);
-					return cachedData;
+				// Intentar obtener datos de la caché primero si no se fuerza refresh
+				if (!forceRefresh) {
+					const cachedData = CacheService.getItem(cacheKey);
+					if (cachedData && cachedData.data) {
+						console.log("Usando categorías en caché");
+						setCategories(cachedData.data || []);
+						setLoading(false);
+						return cachedData;
+					}
 				}
 
-				// Si no hay caché, hacer la petición a la API
+				console.log("Obteniendo categorías desde API con withCounts:", withCounts);
+				
+				// Hacer la petición a la API
 				const response = await categoryService.getCategories({
 					with_counts: withCounts,
+					is_active: true
 				});
 
-				console.log("Respuesta de categorías:", response);
-				// Usar la herramienta de inspección para analizar la estructura
-				ApiResponseInspector.inspectResponse(
-					response,
-					"Respuesta de categorías"
-				);
+				console.log("Respuesta de categorías desde API:", response);
 
-				if (response && response.data) {
-					// Adaptar datos si es necesario
+				if (response && response.data && Array.isArray(response.data)) {
+					// Adaptar datos
 					const adaptedCategories = response.data.map(adaptCategory);
 
 					const result = {
 						data: adaptedCategories,
-						meta: response.meta,
+						meta: response.meta || {total: adaptedCategories.length},
 					};
 
 					// Guardar en caché
@@ -140,10 +138,11 @@ export const useCategories = () => {
 
 					setCategories(adaptedCategories);
 					return result;
+				} else {
+					console.warn("Respuesta de categorías no tiene el formato esperado:", response);
+					setCategories([]);
+					return {data: [], meta: {total: 0}};
 				}
-
-				setCategories([]);
-				return {data: [], meta: {total: 0}};
 			} catch (err) {
 				const errorMessage =
 					err instanceof Error ? err.message : "Error al obtener categorías";
@@ -162,29 +161,32 @@ export const useCategories = () => {
 	 * Obtener categorías principales
 	 */
 	const fetchMainCategories = useCallback(
-		async (withChildren: boolean = true) => {
+		async (withCounts: boolean = true, forceRefresh: boolean = false) => {
 			setLoading(true);
 			setError(null);
 
-			const cacheKey = `categories_main_${withChildren ? "with_children" : "no_children"}`;
+			const cacheKey = `categories_main_${withCounts ? "with_counts" : "no_counts"}`;
 
 			try {
 				// Intentar obtener datos de la caché primero
-				const cachedData = CacheService.getItem(cacheKey);
-
-				if (cachedData) {
-					console.log("Usando categorías principales en caché");
-					setMainCategories(cachedData);
-					setLoading(false);
-					return cachedData;
+				if (!forceRefresh) {
+					const cachedData = CacheService.getItem(cacheKey);
+					if (cachedData) {
+						console.log("Usando categorías principales en caché");
+						setMainCategories(cachedData);
+						setLoading(false);
+						return cachedData;
+					}
 				}
 
-				// Si no hay caché, hacer la petición a la API
-				const response = await categoryService.getMainCategories(withChildren);
+				console.log("Obteniendo categorías principales desde API");
+				
+				// Hacer la petición a la API para categorías principales
+				const response = await categoryService.getMainCategories(withCounts);
 
-				console.log("Respuesta de categorías principales:", response);
+				console.log("Respuesta de categorías principales desde API:", response);
 
-				if (response && response.length > 0) {
+				if (response && Array.isArray(response)) {
 					// Adaptar datos si es necesario
 					const adaptedCategories = response.map(adaptCategory);
 
@@ -197,10 +199,11 @@ export const useCategories = () => {
 
 					setMainCategories(adaptedCategories);
 					return adaptedCategories;
+				} else {
+					console.warn("Respuesta de categorías principales no tiene el formato esperado:", response);
+					setMainCategories([]);
+					return [];
 				}
-
-				setMainCategories([]);
-				return [];
 			} catch (err) {
 				const errorMessage =
 					err instanceof Error
@@ -221,7 +224,7 @@ export const useCategories = () => {
 	 * Obtener categorías destacadas
 	 */
 	const fetchFeaturedCategories = useCallback(
-		async (limit: number = 8) => {
+		async (limit: number = 8, forceRefresh: boolean = false) => {
 			setLoading(true);
 			setError(null);
 
@@ -229,21 +232,24 @@ export const useCategories = () => {
 
 			try {
 				// Intentar obtener datos de la caché primero
-				const cachedData = CacheService.getItem(cacheKey);
-
-				if (cachedData) {
-					console.log("Usando categorías destacadas en caché");
-					setFeaturedCategories(cachedData);
-					setLoading(false);
-					return cachedData;
+				if (!forceRefresh) {
+					const cachedData = CacheService.getItem(cacheKey);
+					if (cachedData) {
+						console.log("Usando categorías destacadas en caché");
+						setFeaturedCategories(cachedData);
+						setLoading(false);
+						return cachedData;
+					}
 				}
 
-				// Si no hay caché, hacer la petición a la API
+				console.log("Obteniendo categorías destacadas desde API");
+				
+				// Hacer la petición a la API
 				const response = await categoryService.getFeaturedCategories(limit);
 
-				console.log("Respuesta de categorías destacadas:", response);
+				console.log("Respuesta de categorías destacadas desde API:", response);
 
-				if (response && response.length > 0) {
+				if (response && Array.isArray(response)) {
 					// Adaptar datos si es necesario
 					const adaptedCategories = response.map(adaptCategory);
 
@@ -256,10 +262,11 @@ export const useCategories = () => {
 
 					setFeaturedCategories(adaptedCategories);
 					return adaptedCategories;
+				} else {
+					console.warn("Respuesta de categorías destacadas no tiene el formato esperado:", response);
+					setFeaturedCategories([]);
+					return [];
 				}
-
-				setFeaturedCategories([]);
-				return [];
 			} catch (err) {
 				const errorMessage =
 					err instanceof Error
