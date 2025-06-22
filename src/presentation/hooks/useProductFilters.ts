@@ -35,7 +35,7 @@ export const useProductFilters = (
 		const pageParam = searchParams.get("page");
 		const searchParam = searchParams.get("search");
 
-		console.log("Inicializando filtros desde URL:", {
+		console.log("useProductFilters: Inicializando desde URL:", {
 			categoryParam,
 			minPriceParam,
 			maxPriceParam,
@@ -106,7 +106,7 @@ export const useProductFilters = (
 		}
 
 		const newParamsString = newParams.toString();
-		console.log("Actualizando URL con parámetros:", newParamsString);
+		console.log("useProductFilters: Actualizando URL:", newParamsString);
 
 		setSearchParams(newParams, {replace: true});
 		
@@ -127,7 +127,7 @@ export const useProductFilters = (
 
 		lastProcessedParams.current = currentParams;
 
-		console.log("URL cambió, actualizando estado desde parámetros:", currentParams);
+		console.log("useProductFilters: URL cambió, actualizando estado:", currentParams);
 
 		const categoryParam = searchParams.get("category");
 		const minPriceParam = searchParams.get("minPrice");
@@ -164,45 +164,45 @@ export const useProductFilters = (
 
 	// Funciones para actualizar filtros
 	const setCategories = useCallback((categories: string[]) => {
-		console.log("Actualizando categorías:", categories);
+		console.log("useProductFilters: Actualizando categorías:", categories);
 		updateFiltersAndUrl({ categories });
 	}, [updateFiltersAndUrl]);
 
 	const setPriceRange = useCallback(
 		(priceRange: {min: number; max: number} | null) => {
-			console.log("Actualizando rango de precio:", priceRange);
+			console.log("useProductFilters: Actualizando rango de precio:", priceRange);
 			updateFiltersAndUrl({ priceRange });
 		},
 		[updateFiltersAndUrl]
 	);
 
 	const setRating = useCallback((rating: number | null) => {
-		console.log("Actualizando rating:", rating);
+		console.log("useProductFilters: Actualizando rating:", rating);
 		updateFiltersAndUrl({ rating });
 	}, [updateFiltersAndUrl]);
 
 	const setDiscount = useCallback((discount: boolean) => {
-		console.log("Actualizando descuento:", discount);
+		console.log("useProductFilters: Actualizando descuento:", discount);
 		updateFiltersAndUrl({ discount });
 	}, [updateFiltersAndUrl]);
 
 	const setSortBy = useCallback((sortBy: string) => {
-		console.log("Actualizando ordenamiento:", sortBy);
+		console.log("useProductFilters: Actualizando ordenamiento:", sortBy);
 		updateFiltersAndUrl({ sortBy });
 	}, [updateFiltersAndUrl]);
 
 	const setPage = useCallback((page: number) => {
-		console.log("Actualizando página:", page);
+		console.log("useProductFilters: Actualizando página:", page);
 		updateFiltersAndUrl({ page });
 	}, [updateFiltersAndUrl]);
 
 	const setSearchTerm = useCallback((searchTerm: string) => {
-		console.log("Actualizando término de búsqueda:", searchTerm);
+		console.log("useProductFilters: Actualizando término de búsqueda:", searchTerm);
 		updateFiltersAndUrl({ searchTerm });
 	}, [updateFiltersAndUrl]);
 
 	const clearFilters = useCallback(() => {
-		console.log("Limpiando todos los filtros");
+		console.log("useProductFilters: Limpiando todos los filtros");
 		updateFiltersAndUrl({
 			categories: [],
 			priceRange: null,
@@ -216,7 +216,7 @@ export const useProductFilters = (
 
 	// Función para alternar una categoría
 	const toggleCategory = useCallback((category: string) => {
-		console.log("Alternando categoría:", category);
+		console.log("useProductFilters: Alternando categoría:", category);
 		setFiltersState((prev) => {
 			const isSelected = prev.categories.includes(category);
 			const newCategories = isSelected
@@ -233,13 +233,15 @@ export const useProductFilters = (
 		});
 	}, []);
 
-	// Construir los parámetros para la API
+	// Construir los parámetros para la API - FUNCIÓN CORREGIDA
 	const buildFilterParams = useCallback((): ExtendedProductFilterParams => {
-		console.log("Construyendo parámetros de filtro desde estado:", filtersState);
+		console.log("useProductFilters: Construyendo parámetros desde estado:", filtersState);
 
 		const params: ExtendedProductFilterParams = {
 			limit: defaultPageSize,
 			offset: (filtersState.page - 1) * defaultPageSize,
+			published: true,
+			status: 'active',
 		};
 
 		// Manejar término de búsqueda
@@ -247,19 +249,24 @@ export const useProductFilters = (
 			params.term = filtersState.searchTerm;
 		}
 
-		// Manejar selección múltiple de categorías
+		// Manejar selección múltiple de categorías - CORREGIDO
 		if (filtersState.categories.length > 0) {
 			// Encontrar IDs de categorías por nombre
-			const categoryIds = filtersState.categories
-				.map((catName) => {
-					const category = allCategories.find(
-						(c) => c.name.toLowerCase() === catName.toLowerCase()
-					);
-					return category?.id;
-				})
-				.filter((id) => id !== undefined) as number[];
+			const categoryIds: number[] = [];
+			
+			filtersState.categories.forEach((catName) => {
+				const category = allCategories.find(
+					(c) => c.name.toLowerCase().trim() === catName.toLowerCase().trim()
+				);
+				if (category?.id) {
+					categoryIds.push(category.id);
+				} else {
+					console.warn(`useProductFilters: No se encontró categoría: "${catName}"`);
+					console.log("useProductFilters: Categorías disponibles:", allCategories.map(c => c.name));
+				}
+			});
 
-			console.log("IDs de categorías encontrados:", categoryIds, "para nombres:", filtersState.categories);
+			console.log("useProductFilters: IDs de categorías encontrados:", categoryIds, "para nombres:", filtersState.categories);
 
 			if (categoryIds.length > 0) {
 				params.categoryIds = categoryIds;
@@ -270,10 +277,7 @@ export const useProductFilters = (
 		// Añadir rango de precio si está seleccionado
 		if (filtersState.priceRange) {
 			params.minPrice = filtersState.priceRange.min;
-			// Solo añadir maxPrice si no es el valor máximo
-			if (filtersState.priceRange.max < 999999) {
-				params.maxPrice = filtersState.priceRange.max;
-			}
+			params.maxPrice = filtersState.priceRange.max;
 		}
 
 		// Añadir filtro de rating
@@ -286,7 +290,7 @@ export const useProductFilters = (
 			params.minDiscount = 5; // Productos con al menos 5% de descuento
 		}
 
-		// Añadir ordenamiento
+		// Añadir ordenamiento - CORREGIDO
 		switch (filtersState.sortBy) {
 			case "price-asc":
 				params.sortBy = "price";
@@ -319,7 +323,7 @@ export const useProductFilters = (
 				break;
 		}
 
-		console.log("Parámetros finales para API:", params);
+		console.log("useProductFilters: Parámetros finales para API:", params);
 		return params;
 	}, [filtersState, allCategories, defaultPageSize]);
 

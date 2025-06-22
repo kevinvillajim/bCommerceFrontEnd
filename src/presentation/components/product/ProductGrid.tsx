@@ -135,10 +135,10 @@ const ProductGrid: React.FC<ProductGridProps> = ({
 							name={adaptedProduct.name}
 							price={adaptedProduct.price}
 							discount={
-								product.discount_percentage || product.discountPercentage
+							 product.discountPercentage
 							}
 							rating={adaptedProduct.rating || 0}
-							reviews={product.rating_count || 0} // La API no proporciona este dato directamente
+							reviews={product.ratingCount || 0} // La API no proporciona este dato directamente
 							image={getImageUrl(imageUrl)}
 							category={
 								categories.find((cat) => cat.id === adaptedProduct.categoryId)

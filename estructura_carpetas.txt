@@ -1,5 +1,5 @@
 Listado de rutas de carpetas
-El n�mero de serie del volumen es 7C1B-BCDF
+El n�mero de serie del volumen es 204F-F5E4
 C:.
 |   .dockerignore
 |   .env
@@ -19,7 +19,11 @@ C:.
 |   tsconfig.json
 |   tsconfig.node.json
 |   vite.config.ts
-+---scripts
+|   
++---public
+|       favicon.ico
+|       SeviceWorker.js
+|       
 \---src
     |   App.tsx
     |   main.tsx
@@ -34,6 +38,8 @@ C:.
     |       
     +---core
     |   +---adapters
+    |   |       AdminOrderServiceAdapter.ts
+    |   |       AdminShippingAdapter.ts
     |   |       OrderServiceAdapter.ts
     |   |       PendingRatingsAdapter.ts
     |   |       RatingAdapter.ts
@@ -68,6 +74,9 @@ C:.
     |   |           Money.ts
     |   |           
     |   +---services
+    |   |       AdminOrderService.ts
+    |   |       AdminRatingService.ts
+    |   |       AdminShippingService.ts
     |   |       AdminUserService.ts
     |   |       AuthService.ts
     |   |       CartService.ts
@@ -75,6 +84,7 @@ C:.
     |   |       ChatService.ts
     |   |       CheckoutService.ts
     |   |       ConfigurationService.ts
+    |   |       DatafastService.ts
     |   |       OrderService.ts
     |   |       ProductService.ts
     |   |       RatingService.ts
@@ -102,6 +112,9 @@ C:.
     |               UpdateProfileUseCase.ts
     |               
     +---infrastructure
+    |   +---adapters
+    |   |       SellerAdapter.ts
+    |   |       
     |   +---api
     |   |       apiClient.ts
     |   |       axiosConfig.ts
@@ -120,6 +133,8 @@ C:.
     |           SellerIdResolverService.ts
     |           
     +---presentation
+    |   |   debugPanel.tsx
+    |   |   
     |   +---components
     |   |   +---admin
     |   |   |       RatingConfiguration.tsx
@@ -138,6 +153,7 @@ C:.
     |   |   |       
     |   |   +---checkout
     |   |   |       CreditCardForm.tsx
+    |   |   |       DatafastPaymentButtonProps.tsx
     |   |   |       OrderSummary.tsx
     |   |   |       PayPalForm.tsx
     |   |   |       QRPaymentForm.tsx
@@ -195,7 +211,6 @@ C:.
     |   |   |           StandardTable.tsx
     |   |   |           TableHeader.tsx
     |   |   |           
-    |   |   +---debug
     |   |   +---FAQ
     |   |   |       FAQBase.tsx
     |   |   |       
@@ -254,6 +269,8 @@ C:.
     |   |       
     |   +---hooks
     |   |       index.ts
+    |   |       useAdminRatings.ts
+    |   |       useAdminShipping.ts
     |   |       useAdminUsers.ts
     |   |       useAuth.ts
     |   |       useCart.ts
@@ -289,6 +306,7 @@ C:.
     |   |   |   CategoryPage.tsx
     |   |   |   CheckoutPage.tsx
     |   |   |   ContactPage.tsx
+    |   |   |   DatafastResultPage.tsx
     |   |   |   FAQPage.tsx
     |   |   |   FavoritePage.tsx
     |   |   |   ForgotPasswordPage.tsx
@@ -315,6 +333,7 @@ C:.
     |   |   |       AdminFeedbackPage.tsx
     |   |   |       AdminInvoicesPage.tsx
     |   |   |       AdminLogViewerPage.tsx
+    |   |   |       AdminOrderDetailPage.tsx
     |   |   |       AdminOrdersPage.tsx
     |   |   |       AdminProductsPage.tsx
     |   |   |       AdminRatingsPage.tsx
@@ -366,6 +385,7 @@ C:.
         |   apiHealthCheck.ts
         |   apiResponseInspector.ts
         |   categoryUtils.ts
+        |   debugUtils.ts
         |   errorHandler.ts
         |   helpers.ts
         |   imageUtils.ts

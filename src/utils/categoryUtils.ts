@@ -15,7 +15,7 @@ export const calculateProductCountByCategory = (
   
   // Inicializar contador para todas las categorías
   categories.forEach(category => {
-    productCountMap[category.name] = category.productCount || 0;
+    productCountMap[category.name] = category.product_count || 0;
   });
   
   // Si tenemos productos, actualizar contadores basados en ellos
