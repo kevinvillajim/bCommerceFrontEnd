@@ -24,7 +24,10 @@ import MobilePagination from "../components/product/MobilePagination";
 // Utilidades y configuración
 import {calculateProductCountByCategory} from "../../utils/categoryUtils";
 import appConfig from "../../config/appConfig";
-import environment from "../../config/environment";
+
+// IMPORTAR LA FUNCIÓN DE IMAGEN CORRECTA (la que funcionaba)
+import { getImageUrl, getProductImage } from "../../utils/imageUtils";
+
 import type {Category} from "../../core/domain/entities/Category";
 
 // Constantes para filtros
@@ -193,14 +196,10 @@ const ProductPage: React.FC = () => {
 		[toggleFavorite]
 	);
 
-	const getImageUrl = useCallback((imagePath: string | undefined) => {
-		if (!imagePath) return "https://via.placeholder.com/300?text=Sin+imagen";
-
-		if (imagePath.startsWith("http")) {
-			return imagePath;
-		}
-
-		return `${environment.imageBaseUrl}${imagePath}`;
+	// FUNCIÓN HELPER PARA OBTENER IMAGEN DEL PRODUCTO
+	// Esta función no causa recursión porque usa la importación directa
+	const getProductImageUrl = useCallback((imagePath: string | undefined) => {
+		return getImageUrl(imagePath);
 	}, []);
 
 	// Calcular el número total de páginas
@@ -369,7 +368,7 @@ const ProductPage: React.FC = () => {
 						}}
 						onAddToCart={handleAddToCart}
 						onAddToWishlist={handleAddToWishlist}
-						getImageUrl={getImageUrl}
+						getImageUrl={getProductImageUrl}
 						selectedCategories={filters.categories}
 						totalItems={productsMeta?.total || 0}
 						currentPage={filters.page}

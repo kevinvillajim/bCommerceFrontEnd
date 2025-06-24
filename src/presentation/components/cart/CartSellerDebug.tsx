@@ -1,10 +1,9 @@
 // src/presentation/components/cart/CartSellerDebug.tsx
 import React, {useState, useEffect} from "react";
 import {useCart} from "../../hooks/useCart";
-import {SellerIdResolverService} from "../../../infrastructure/services/SellerIdResolverService";
+// import {SellerIdResolverService} from "../../../infrastructure/services/SellerIdResolverService";
 import ApiClient from "../../../infrastructure/api/apiClient";
 import { API_ENDPOINTS } from "../../../constants/apiEndpoints";
-
 
 interface SellerResponse {
 	status: string;
@@ -13,6 +12,7 @@ interface SellerResponse {
 		seller_id: number;
 	};
 }
+
 /**
  * Componente para depurar la información del vendedor en el carrito
  * Solo usar en desarrollo, NO incluir en producción
@@ -78,16 +78,25 @@ const CartSellerDebug: React.FC = () => {
 		uniqueSellerIds.length === 1 && uniqueSellerIds[0] !== null;
 	const anySellerId = uniqueSellerIds.length > 0;
 
-	// Resuelve el seller_id usando el servicio
+	// COMENTADO: Resuelve el seller_id usando el servicio (servicio no disponible)
 	const resolveSellerIdForCart = async () => {
 		if (!cart || !cart.items || cart.items.length === 0) return;
 
 		setIsResolving(true);
 		try {
+			// TODO: Implementar SellerIdResolverService.resolveSellerIdForCart
+			console.warn("SellerIdResolverService.resolveSellerIdForCart no está implementado");
+			
+			// Por ahora, usar un valor predeterminado
+			const defaultSellerId = 1;
+			setResolvedSellerId(defaultSellerId);
+			
+			/* ORIGINAL CODE - COMENTADO PORQUE EL SERVICIO NO EXISTE
 			const sellerId = await SellerIdResolverService.resolveSellerIdForCart(
 				cart.items
 			);
 			setResolvedSellerId(sellerId);
+			*/
 		} catch (error) {
 			console.error("Error resolving seller ID:", error);
 		} finally {
@@ -131,10 +140,12 @@ const CartSellerDebug: React.FC = () => {
 							try {
 								console.log("Probando resolución user_id 63 → seller_id...");
 
-								// Método 1: Resolver directamente usando la función
-								const sellerId =
-									await SellerIdResolverService.resolveUserIdToSellerId(63);
+								// COMENTADO: Método 1 - Resolver directamente usando la función (servicio no disponible)
+								/* 
+								const sellerId = await SellerIdResolverService.resolveUserIdToSellerId(63);
 								console.log(`Método 1 - ID resuelto: ${sellerId}`);
+								*/
+								console.log("Método 1 - SellerIdResolverService no disponible");
 
 								// Método 2: Probar el endpoint directamente
 								try {
@@ -142,11 +153,13 @@ const CartSellerDebug: React.FC = () => {
 										API_ENDPOINTS.SELLERS.BY_USER_ID(63)
 									);
 									console.log("Respuesta API:", response);
+									const sellerId = response?.data?.seller_id;
+									alert(`User ID 63 → Seller ID: ${sellerId || "No resuelto"}`);
 								} catch (apiError) {
 									console.error("Error en llamada API:", apiError);
+									alert("Error al resolver seller_id desde API");
 								}
 
-								alert(`User ID 63 → Seller ID: ${sellerId || "No resuelto"}`);
 							} catch (error) {
 								console.error("Error global:", error);
 								alert(
@@ -241,6 +254,10 @@ const CartSellerDebug: React.FC = () => {
 						<p>
 							El sistema usará un seller_id predeterminado (1) cuando no
 							encuentra información de vendedor en los productos.
+						</p>
+						<p className="mt-1 text-red-600">
+							<strong>Nota:</strong> SellerIdResolverService no está implementado. 
+							Usando valores predeterminados para debugging.
 						</p>
 					</div>
 				</>

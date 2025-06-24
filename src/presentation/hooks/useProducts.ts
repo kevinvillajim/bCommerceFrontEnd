@@ -49,7 +49,7 @@ export const useProducts = () => {
 	} | null>(null);
 	const [isInitialized, setIsInitialized] = useState<boolean>(false);
 
-	// Función para adaptar datos de API a nuestro modelo
+	// Función para adaptar datos de API a nuestro modelo - CORREGIDA CON DEBUGGING
 	const adaptProduct = useCallback((apiProduct: any): Product => {
 		// Verificar que sea un objeto para prevenir errores
 		if (!apiProduct || typeof apiProduct !== "object") {
@@ -57,15 +57,76 @@ export const useProducts = () => {
 			return {} as Product;
 		}
 
-		const processedImages = Array.isArray(apiProduct.images)
-			? apiProduct.images.map((img: any) => {
-					if (typeof img === "string") return img;
-					return img.original || img.url || "";
-				})
-			: [];
+		// DEBUGGING DE IMÁGENES - VER QUÉ LLEGA DESDE LA API
+		console.group(`🖼️ DEBUGGING IMÁGENES - Producto ID: ${apiProduct.id}`);
+		console.log("📦 Producto completo desde API:", apiProduct);
+		console.log("🎨 Datos de imágenes originales:", {
+			images: apiProduct.images,
+			image: apiProduct.image,
+			main_image: apiProduct.main_image,
+			thumbnail: apiProduct.thumbnail,
+			featured_image: apiProduct.featured_image
+		});
+
+		// Procesar imágenes de manera más robusta
+		let processedImages: string[] = [];
+
+		// Prioridad 1: array images
+		if (Array.isArray(apiProduct.images) && apiProduct.images.length > 0) {
+			console.log("📋 Procesando array images:", apiProduct.images);
+			
+			processedImages = apiProduct.images.map((img: any) => {
+				if (typeof img === "string") {
+					console.log("📄 Imagen como string:", img);
+					return img;
+				}
+				if (typeof img === "object" && img !== null) {
+					// Intentar extraer URL del objeto imagen
+					const imageUrl = img.original || 
+								   img.large || 
+								   img.medium || 
+								   img.thumbnail || 
+								   img.url || 
+								   img.path || 
+								   img.src || 
+								   "";
+					console.log("🎯 Imagen extraída de objeto:", imageUrl, "desde:", img);
+					return imageUrl;
+				}
+				console.warn("⚠️ Formato de imagen no reconocido:", img);
+				return "";
+			}).filter(Boolean); // Filtrar strings vacíos
+		}
+
+		// Prioridad 2: campo image (singular)
+		if (processedImages.length === 0 && apiProduct.image) {
+			console.log("📄 Usando campo image singular:", apiProduct.image);
+			processedImages = [apiProduct.image];
+		}
+
+		// Prioridad 3: campo main_image
+		if (processedImages.length === 0 && apiProduct.main_image) {
+			console.log("🌟 Usando campo main_image:", apiProduct.main_image);
+			processedImages = [apiProduct.main_image];
+		}
+
+		// Prioridad 4: campo featured_image
+		if (processedImages.length === 0 && apiProduct.featured_image) {
+			console.log("⭐ Usando campo featured_image:", apiProduct.featured_image);
+			processedImages = [apiProduct.featured_image];
+		}
+
+		// Prioridad 5: campo thumbnail
+		if (processedImages.length === 0 && apiProduct.thumbnail) {
+			console.log("🖼️ Usando campo thumbnail:", apiProduct.thumbnail);
+			processedImages = [apiProduct.thumbnail];
+		}
+
+		console.log("✅ Imágenes procesadas finales:", processedImages);
+		console.groupEnd();
 
 		// Mapear propiedades para manejar tanto camelCase como snake_case
-		return {
+		const adaptedProduct: Product = {
 			id: apiProduct.id,
 			userId: apiProduct.userId || apiProduct.user_id,
 			categoryId: apiProduct.categoryId || apiProduct.category_id,
@@ -84,7 +145,7 @@ export const useProducts = () => {
 			tags: apiProduct.tags,
 			sku: apiProduct.sku,
 			attributes: apiProduct.attributes,
-			// Manejar diferentes formatos de imágenes
+			// USAR LAS IMÁGENES PROCESADAS
 			images: processedImages,
 			featured: Boolean(apiProduct.featured),
 			published: Boolean(apiProduct.published),
@@ -100,6 +161,16 @@ export const useProducts = () => {
 			createdAt: apiProduct.createdAt || apiProduct.created_at,
 			updatedAt: apiProduct.updatedAt || apiProduct.updated_at,
 		};
+
+		// Log final del producto adaptado
+		console.log("🔄 Producto adaptado:", {
+			id: adaptedProduct.id,
+			name: adaptedProduct.name,
+			images: adaptedProduct.images,
+			price: adaptedProduct.price
+		});
+
+		return adaptedProduct;
 	}, []);
 
 	// Inicializar el hook
@@ -160,6 +231,8 @@ export const useProducts = () => {
 				console.log("🌐 Realizando petición a la API");
 				const response = await productService.getProducts(filterParams);
 
+				console.log("🔍 RESPUESTA RAW DE LA API:", response);
+
 				if (response) {
 					console.log("✅ Respuesta recibida:", response);
 					
@@ -196,7 +269,8 @@ export const useProducts = () => {
 
 					console.log("💫 Datos adaptados:", {
 						productCount: adaptedData.length,
-						meta: result.meta
+						meta: result.meta,
+						firstProduct: adaptedData[0]
 					});
 
 					// Guardar en caché

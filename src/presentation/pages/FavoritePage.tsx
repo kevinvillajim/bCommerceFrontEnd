@@ -12,18 +12,19 @@ import {
 import {useFavoriteApi} from "../hooks/useFavoriteApi";
 import {useAuth} from "../hooks/useAuth";
 import {useCart} from "../hooks/useCart";
-import {getDetailsRoute} from "../../constants/routes";
 import {formatCurrency} from "../../utils/formatters/formatCurrency";
+// IMPORTAR EL HELPER DE IMÁGENES CORREGIDO
+import { getImageUrl } from "../../utils/imageUtils";
 
 // Tipo para los datos del producto favorito
 interface FavoriteProduct {
 	id: number;
 	name: string;
-	price: number;
-	discount?: number;
-	discount_percentage?: number;
-	rating?: number;
-	rating_count?: number;
+	price: number | string; // Puede venir como string o number
+	discount?: number | string;
+	discount_percentage?: number | string;
+	rating?: number | string;
+	rating_count?: number | string;
 	image?: string;
 	images?: {
 		original: string;
@@ -281,34 +282,69 @@ const FavoritePage: React.FC = () => {
 		}
 	};
 
-	// Obtener la URL de la imagen principal del producto
+	// FUNCIÓN CORREGIDA PARA OBTENER IMAGEN DEL PRODUCTO
 	const getProductImage = (product: FavoriteProduct): string => {
-		if (product.image) {
-			return product.image;
+		console.log("🎨 FavoritePage - getProductImage:", product);
+		
+		let imagePath = "";
+
+		// Prioridad 1: image
+		if (product?.image) {
+			imagePath = product.image;
+		}
+		// Prioridad 2: primer elemento de images array
+		else if (product?.images && Array.isArray(product.images) && product.images.length > 0) {
+			const firstImage = product.images[0];
+			if (typeof firstImage === 'string') {
+				imagePath = firstImage;
+			} else if (typeof firstImage === 'object' && firstImage !== null) {
+				imagePath = firstImage.original || firstImage.medium || firstImage.thumbnail || "";
+			}
 		}
 
-		if (product.images && product.images.length > 0) {
-			return (
-				product.images[0].original ||
-				product.images[0].medium ||
-				product.images[0].thumbnail
-			);
+		console.log("🖼️ FavoritePage - Path extraído:", imagePath);
+		
+		// USAR EL HELPER CORREGIDO
+		const finalUrl = getImageUrl(imagePath);
+		console.log("🔗 FavoritePage - URL final:", finalUrl);
+		
+		return finalUrl;
+	};
+
+	// FUNCIÓN CORREGIDA PARA CALCULAR PRECIO CON DESCUENTO - CONVIERTE STRINGS A NUMBERS
+	const calculateDiscountedPrice = (product: FavoriteProduct): { original: number, discounted: number, discount: number } => {
+		console.log("💰 FavoritePage - Datos del producto completo:", product);
+		
+		// CONVERTIR STRINGS A NÚMEROS - ESTA ERA LA PARTE QUE FALTABA
+		const originalPrice = parseFloat(product.price?.toString() || "0");
+		const discountPercentage = parseFloat((product.discount_percentage || product.discount)?.toString() || "0");
+		
+		console.log("💰 FavoritePage - Precio original (convertido):", originalPrice);
+		console.log("💰 FavoritePage - Descuento % (convertido):", discountPercentage);
+		
+		// Calcular precio con descuento
+		let discountedPrice = originalPrice;
+		if (discountPercentage > 0) {
+			discountedPrice = originalPrice - (originalPrice * (discountPercentage / 100));
 		}
-
-		return "https://via.placeholder.com/300x300?text=No+Image";
+		
+		console.log("💰 FavoritePage - Precio con descuento:", discountedPrice);
+		
+		return {
+			original: originalPrice,
+			discounted: discountedPrice,
+			discount: discountPercentage
+		};
 	};
 
-	// Calcular precio con descuento
-	const calculateDiscountedPrice = (
-		price: number,
-		discountPercentage?: number
-	): number => {
-		if (!discountPercentage) return price;
-		return price - price * (discountPercentage / 100);
-	};
+	// FUNCIÓN CORREGIDA PARA RENDERIZAR ESTRELLAS - CONVIERTE STRINGS A NUMBERS
+	const renderRatingStars = (rating: number | string = 0, ratingCount: number | string = 0) => {
+		// CONVERTIR STRINGS A NÚMEROS
+		const safeRating = parseFloat(rating?.toString() || "0");
+		const safeRatingCount = parseInt(ratingCount?.toString() || "0");
 
-	// Renderizar estrellas de valoración
-	const renderRatingStars = (rating: number = 0, ratingCount: number = 0) => {
+		console.log("⭐ renderRatingStars:", { rating, safeRating, ratingCount, safeRatingCount });
+
 		return (
 			<div className="flex items-center">
 				{[1, 2, 3, 4, 5].map((star) => (
@@ -316,14 +352,14 @@ const FavoritePage: React.FC = () => {
 						key={star}
 						size={14}
 						className={`${
-							star <= Math.round(rating)
+							star <= Math.round(safeRating)
 								? "text-yellow-400 fill-current"
 								: "text-gray-300"
 						}`}
 					/>
 				))}
 				<span className="ml-2 text-sm text-gray-600">
-					{rating.toFixed(1)} ({ratingCount})
+					{safeRating.toFixed(1)} ({safeRatingCount})
 				</span>
 			</div>
 		);
@@ -397,8 +433,8 @@ const FavoritePage: React.FC = () => {
 								? product.is_in_stock
 								: product.stock > 0;
 
-						const discountPercentage =
-							product.discount_percentage || product.discount || 0;
+						// USAR LA FUNCIÓN CORREGIDA QUE CONVIERTE STRINGS
+						const prices = calculateDiscountedPrice(product);
 
 						return (
 							<div
@@ -409,9 +445,9 @@ const FavoritePage: React.FC = () => {
 										: ""
 								} hover:bg-gray-50 transition-colors`}
 							>
-								{/* Imagen del producto con badges */}
+								{/* Imagen del producto con badges - NAVEGACIÓN CORREGIDA */}
 								<div className="sm:w-40 sm:h-40 h-60 w-full flex-shrink-0 mx-auto sm:mx-0 relative">
-									<Link to={getDetailsRoute.product(product.slug)}>
+									<Link to={`/products/${product.id}`}>
 										<img
 											src={getProductImage(product)}
 											alt={product.name}
@@ -421,9 +457,9 @@ const FavoritePage: React.FC = () => {
 
 									{/* Badges */}
 									<div className="absolute top-2 left-2 flex flex-col space-y-1">
-										{discountPercentage > 0 && (
+										{prices.discount > 0 && (
 											<span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-md shadow-sm">
-												{discountPercentage}% OFF
+												{prices.discount}% OFF
 											</span>
 										)}
 										{product.isNew && (
@@ -445,9 +481,9 @@ const FavoritePage: React.FC = () => {
 												</span>
 											)}
 
-											{/* Nombre del producto */}
+											{/* Nombre del producto - NAVEGACIÓN CORREGIDA */}
 											<Link
-												to={getDetailsRoute.product(product.slug)}
+												to={`/products/${product.id}`}
 												className="block"
 											>
 												<h3 className="text-xl font-medium text-gray-800 hover:text-primary-600 transition-colors mb-2">
@@ -455,7 +491,7 @@ const FavoritePage: React.FC = () => {
 												</h3>
 											</Link>
 
-											{/* Valoración */}
+											{/* Valoración - FUNCIÓN CORREGIDA QUE CONVIERTE STRINGS */}
 											<div className="mb-2">
 												{renderRatingStars(
 													product.rating || 0,
@@ -488,7 +524,7 @@ const FavoritePage: React.FC = () => {
 											>
 												<Settings
 													size={20}
-													className="stroke-current" // Esto asegura que el trazo del SVG cambie con la clase text-*
+													className="stroke-current"
 												/>
 											</button>
 
@@ -499,35 +535,30 @@ const FavoritePage: React.FC = () => {
 											>
 												<Trash2
 													size={20}
-													className="stroke-current" // Esto asegura que el trazo del SVG cambie con la clase text-*
+													className="stroke-current"
 												/>
 											</button>
 										</div>
 									</div>
 
-									{/* Precio y botón de añadir al carrito */}
+									{/* Precio y botón de añadir al carrito - USANDO PRICES CALCULADOS CORRECTAMENTE */}
 									<div className="mt-auto pt-4 flex flex-wrap sm:flex-nowrap items-center justify-between">
 										<div className="flex items-center mb-3 sm:mb-0">
-											{discountPercentage > 0 ? (
+											{prices.discount > 0 ? (
 												<>
 													<span className="font-bold text-primary-600 text-xl">
-														{formatCurrency(
-															calculateDiscountedPrice(
-																product.price,
-																discountPercentage
-															)
-														)}
+														{formatCurrency(prices.discounted)}
 													</span>
 													<span className="text-sm text-gray-500 line-through ml-2">
-														{formatCurrency(product.price)}
+														{formatCurrency(prices.original)}
 													</span>
 													<span className="ml-3 px-2 py-1 text-xs font-semibold text-white bg-red-500 rounded">
-														{discountPercentage}% DESCUENTO
+														{prices.discount}% DESCUENTO
 													</span>
 												</>
 											) : (
 												<span className="font-bold text-primary-600 text-xl">
-													{formatCurrency(product.price)}
+													{formatCurrency(prices.original)}
 												</span>
 											)}
 										</div>

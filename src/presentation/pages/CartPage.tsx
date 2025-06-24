@@ -13,6 +13,8 @@ import {useFavorites} from "../hooks/useFavorites";
 import {formatCurrency} from "../../utils/formatters/formatCurrency";
 import { NotificationType } from "../contexts/CartContext";
 import CartSellerDebug from "../components/cart/CartSellerDebug";
+// IMPORTAR EL HELPER DE IMÁGENES CORREGIDO
+import { getImageUrl } from "../../utils/imageUtils";
 
 const CartPage: React.FC = () => {
 	const [isLoading, setIsLoading] = useState(true);
@@ -209,13 +211,121 @@ const CartPage: React.FC = () => {
 		}
 	};
 
-	// Calcular subtotal, impuestos y total
-	const subtotal = cart ? cart.total : 0;
-	const taxRate = 0.15; // 15% IVA
-	const tax = subtotal * taxRate;
+	// FUNCIÓN CORREGIDA PARA OBTENER IMAGEN DEL PRODUCTO
+	const getProductImage = (product: any): string => {
+		console.log("🎨 CartPage - getProductImage:", product);
+		
+		let imagePath = "";
 
-	const couponAmount = couponApplied ? subtotal * (couponDiscount / 100) : 0;
-	const total = subtotal + tax - couponAmount;
+		// Prioridad 1: image
+		if (product?.image) {
+			imagePath = product.image;
+		}
+		// Prioridad 2: main_image  
+		else if (product?.main_image) {
+			imagePath = product.main_image;
+		}
+		// Prioridad 3: primer elemento de images array
+		else if (product?.images && Array.isArray(product.images) && product.images.length > 0) {
+			const firstImage = product.images[0];
+			if (typeof firstImage === 'string') {
+				imagePath = firstImage;
+			} else if (typeof firstImage === 'object' && firstImage !== null) {
+				imagePath = firstImage.original || firstImage.medium || firstImage.thumbnail || "";
+			}
+		}
+
+		console.log("🖼️ CartPage - Path extraído:", imagePath);
+		
+		// USAR EL HELPER CORREGIDO
+		const finalUrl = getImageUrl(imagePath);
+		console.log("🔗 CartPage - URL final:", finalUrl);
+		
+		return finalUrl;
+	};
+
+	// FUNCIÓN SIMPLIFICADA PARA CALCULAR PRECIOS DE ITEM
+	const calculateItemPrices = (item: any): { original: number, discounted: number, discount: number, subtotal: number } => {
+		console.log("💰 CartPage - Datos del item completo:", item);
+		
+		// Obtener precio original del item
+		const originalPrice = item.price || 0;
+		
+		// Obtener precio con descuento desde el producto (final_price de la API)
+		let discountedPrice = originalPrice; // Por defecto, sin descuento
+		let discountPercentage = 0;
+		
+		if (item.product) {
+			// Usar final_price de la API si está disponible
+			if (item.product.final_price !== undefined && item.product.final_price !== null) {
+				discountedPrice = item.product.final_price;
+			}
+			
+			// Obtener porcentaje de descuento
+			discountPercentage = item.product.discount_percentage || 
+								item.product.discountPercentage || 
+								item.product.discount || 
+								0;
+		}
+		
+		console.log("💰 CartPage - Precio original:", originalPrice);
+		console.log("💰 CartPage - Precio con descuento (final_price):", discountedPrice);
+		console.log("💰 CartPage - Descuento %:", discountPercentage);
+		console.log("💰 CartPage - Cantidad:", item.quantity);
+		
+		// Calcular subtotal (precio con descuento * cantidad)
+		const subtotal = discountedPrice * item.quantity;
+		
+		console.log("💰 CartPage - Subtotal:", subtotal);
+		
+		return {
+			original: originalPrice,
+			discounted: discountedPrice,
+			discount: discountPercentage,
+			subtotal: subtotal
+		};
+	};
+
+	// CALCULAR TOTALES DEL CARRITO
+	const calculateCartTotals = () => {
+		if (!cart || !cart.items || cart.items.length === 0) {
+			return {
+				subtotal: 0,
+				tax: 0,
+				couponAmount: 0,
+				total: 0
+			};
+		}
+
+		// Calcular subtotal sumando todos los subtotales con descuento
+		const subtotal = cart.items.reduce((sum, item) => {
+			const itemPrices = calculateItemPrices(item);
+			return sum + itemPrices.subtotal;
+		}, 0);
+
+		console.log("💰 CartPage - Subtotal total del carrito:", subtotal);
+
+		const taxRate = 0.15; // 15% IVA
+		const tax = subtotal * taxRate;
+		const couponAmount = couponApplied ? subtotal * (couponDiscount / 100) : 0;
+		const total = subtotal + tax - couponAmount;
+
+		console.log("💰 CartPage - Totales finales:", {
+			subtotal,
+			tax,
+			couponAmount,
+			total
+		});
+
+		return {
+			subtotal,
+			tax, 
+			couponAmount,
+			total
+		};
+	};
+
+	const { subtotal, tax, couponAmount, total } = calculateCartTotals();
 
 	// Función para proceder al checkout
 	const handleCheckout = () => {
@@ -229,28 +339,6 @@ const CartPage: React.FC = () => {
 
 		// Redireccionar a la página de checkout
 		navigate("/checkout");
-	};
-
-	// Función para obtener la imagen del producto
-
-	const getProductImage = (product: any): string => {
-		if (product?.image) {
-			return product.image;
-		}
-
-		if (product?.main_image) {
-			return product.main_image;
-		}
-
-		if (product?.images && product.images.length > 0) {
-			return (
-				product.images[0].original ||
-				product.images[0].medium ||
-				product.images[0].thumbnail
-			);
-		}
-
-		return "/placeholder-image.jpg";
 	};
 
 	return (
@@ -299,113 +387,137 @@ const CartPage: React.FC = () => {
 							</div>
 
 							{/* Productos */}
-							{cart?.items.map((item) => (
-								<div
-									key={item.id}
-									className="border-b border-gray-200 last:border-b-0"
-								>
-									<div className="grid sm:grid-cols-12 gap-4 p-5">
-										{/* Producto (imagen y nombre) */}
-										<div className="sm:col-span-6 flex">
-											<Link
-												to={`/products/${item.product?.slug || item.productId}`}
-												className="w-24 h-24 flex-shrink-0"
-											>
-												<img
-													src={getProductImage(item.product)}
-													alt={
-														item.product?.name || `Producto ${item.productId}`
-													}
-													className="w-full h-full object-cover rounded"
-												/>
-											</Link>
-											<div className="ml-4 flex flex-col">
+							{cart?.items.map((item) => {
+								// CALCULAR PRECIOS USANDO LA FUNCIÓN SIMPLIFICADA
+								const prices = calculateItemPrices(item);
+
+								console.log("🛒 CartPage - Renderizando item:", {
+									itemId: item.id,
+									prices
+								});
+
+								return (
+									<div
+										key={item.id}
+										className="border-b border-gray-200 last:border-b-0"
+									>
+										<div className="grid sm:grid-cols-12 gap-4 p-5">
+											{/* Producto (imagen y nombre) - NAVEGACIÓN CORREGIDA */}
+											<div className="sm:col-span-6 flex">
 												<Link
-													to={`/products/${item.product?.slug || item.productId}`}
-													className="font-medium text-gray-800 hover:text-primary-600"
+													to={`/products/${item.productId}`}
+													className="w-24 h-24 flex-shrink-0"
 												>
-													{item.product?.name || `Producto ${item.productId}`}
-												</Link>
-												{/* Categoría se mostraría aquí si estuviera disponible */}
-												<div className="mt-auto flex space-x-3 text-sm pt-3">
-													<button
-														onClick={() => handleRemoveFromCart(item.id)}
-														disabled={loadingItem === item.id}
-														className="text-gray-500 hover:text-red-500 flex items-center disabled:opacity-50"
-													>
-														<Trash2 size={14} className="mr-1" />
-														Eliminar
-													</button>
-													<button
-														onClick={() =>
-															moveToWishlist(item.id, item.productId)
+													<img
+														src={getProductImage(item.product)}
+														alt={
+															item.product?.name || `Producto ${item.productId}`
 														}
-														disabled={loadingItem === item.id}
-														className="text-gray-500 hover:text-primary-600 flex items-center disabled:opacity-50"
+														className="w-full h-full object-cover rounded"
+													/>
+												</Link>
+												<div className="ml-4 flex flex-col">
+													<Link
+														to={`/products/${item.productId}`}
+														className="font-medium text-gray-800 hover:text-primary-600"
 													>
-														<Heart size={14} className="mr-1" />
-														Guardar
+														{item.product?.name || `Producto ${item.productId}`}
+													</Link>
+													
+													{/* Mostrar descuento si existe */}
+													{prices.discount > 0 && (
+														<div className="mt-1">
+															<span className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded">
+																{prices.discount}% OFF
+															</span>
+														</div>
+													)}
+
+													<div className="mt-auto flex space-x-3 text-sm pt-3">
+														<button
+															onClick={() => handleRemoveFromCart(item.id)}
+															disabled={loadingItem === item.id}
+															className="text-gray-500 hover:text-red-500 flex items-center disabled:opacity-50"
+														>
+															<Trash2 size={14} className="mr-1" />
+															Eliminar
+														</button>
+														<button
+															onClick={() =>
+																moveToWishlist(item.id, item.productId)
+															}
+															disabled={loadingItem === item.id}
+															className="text-gray-500 hover:text-primary-600 flex items-center disabled:opacity-50"
+														>
+															<Heart size={14} className="mr-1" />
+															Guardar
+														</button>
+													</div>
+												</div>
+											</div>
+
+											{/* Precio - MOSTRAR PRECIO CON DESCUENTO */}
+											<div className="sm:col-span-2 flex items-center justify-center sm:justify-center">
+												<div className="sm:hidden mr-2 font-medium text-gray-800">
+													Precio:
+												</div>
+												<div className="font-medium flex flex-col items-center">
+													<span className="text-gray-800">
+														{formatCurrency(prices.discounted)}
+													</span>
+													{prices.discount > 0 && (
+														<span className="text-xs text-gray-500 line-through">
+															{formatCurrency(prices.original)}
+														</span>
+													)}
+												</div>
+											</div>
+
+											{/* Cantidad */}
+											<div className="sm:col-span-2 flex items-center justify-center">
+												<div className="sm:hidden mr-2 font-medium text-gray-800">
+													Cantidad:
+												</div>
+												<div className="flex items-center border border-gray-300 rounded-md">
+													<button
+														onClick={() => decreaseQuantity(item.id)}
+														disabled={
+															item.quantity <= 1 || loadingItem === item.id
+														}
+														className="px-2 py-1 text-gray-600 hover:text-gray-800 disabled:opacity-50"
+													>
+														<Minus size={14} />
+													</button>
+													<span className="px-3 py-1 text-gray-800 text-center w-10">
+														{loadingItem === item.id ? (
+															<span className="inline-block h-4 w-4 border-2 border-t-primary-600 border-r-primary-600 border-b-primary-200 border-l-primary-200 rounded-full animate-spin"></span>
+														) : (
+															item.quantity
+														)}
+													</span>
+													<button
+														onClick={() => increaseQuantity(item.id)}
+														disabled={loadingItem === item.id}
+														className="px-2 py-1 text-gray-600 hover:text-gray-800 disabled:opacity-50"
+													>
+														<Plus size={14} />
 													</button>
 												</div>
 											</div>
-										</div>
 
-										{/* Precio */}
-										<div className="sm:col-span-2 flex items-center justify-center sm:justify-center">
-											<div className="sm:hidden mr-2 font-medium text-gray-800">
-												Precio:
-											</div>
-											<div className="font-medium">
-												<span className="text-gray-800">
-													{formatCurrency(item.price)}
+											{/* Total - USAR SUBTOTAL CALCULADO CON DESCUENTO */}
+											<div className="sm:col-span-2 flex items-center justify-center sm:justify-center">
+												<div className="sm:hidden mr-2 font-medium text-gray-800">
+													Total:
+												</div>
+												<span className="font-bold text-gray-800">
+													{formatCurrency(prices.subtotal)}
 												</span>
 											</div>
-										</div>
-
-										{/* Cantidad */}
-										<div className="sm:col-span-2 flex items-center justify-center">
-											<div className="sm:hidden mr-2 font-medium text-gray-800">
-												Cantidad:
-											</div>
-											<div className="flex items-center border border-gray-300 rounded-md">
-												<button
-													onClick={() => decreaseQuantity(item.id)}
-													disabled={
-														item.quantity <= 1 || loadingItem === item.id
-													}
-													className="px-2 py-1 text-gray-600 hover:text-gray-800 disabled:opacity-50"
-												>
-													<Minus size={14} />
-												</button>
-												<span className="px-3 py-1 text-gray-800 text-center w-10">
-													{loadingItem === item.id ? (
-														<span className="inline-block h-4 w-4 border-2 border-t-primary-600 border-r-primary-600 border-b-primary-200 border-l-primary-200 rounded-full animate-spin"></span>
-													) : (
-														item.quantity
-													)}
-												</span>
-												<button
-													onClick={() => increaseQuantity(item.id)}
-													disabled={loadingItem === item.id}
-													className="px-2 py-1 text-gray-600 hover:text-gray-800 disabled:opacity-50"
-												>
-													<Plus size={14} />
-												</button>
-											</div>
-										</div>
-
-										{/* Total */}
-										<div className="sm:col-span-2 flex items-center justify-center sm:justify-center">
-											<div className="sm:hidden mr-2 font-medium text-gray-800">
-												Total:
-											</div>
-											<span className="font-bold text-gray-800">
-												{formatCurrency(item.subtotal)}
-											</span>
 										</div>
 									</div>
-								</div>
-							))}
+								);
+							})}
 
 							{/* Botones de acción en la parte inferior */}
 							<div className="flex justify-between items-center p-5 bg-gray-50">
@@ -436,7 +548,7 @@ const CartPage: React.FC = () => {
 						</div>
 					</div>
 
-					{/* Resumen del pedido */}
+					{/* Resumen del pedido - CÁLCULOS CORREGIDOS */}
 					<div className="lg:w-1/3">
 						<div className="bg-white rounded-lg shadow-lg overflow-hidden">
 							<div className="p-6">
@@ -473,7 +585,7 @@ const CartPage: React.FC = () => {
 								{/* Cálculos */}
 								<div className="space-y-4 border-t border-gray-200 pt-4">
 									<div className="flex justify-between">
-										<span className="text-gray-600">Subtotal</span>
+										<span className="text-gray-600">Subtotal (con descuentos)</span>
 										<span className="font-medium">
 											{formatCurrency(subtotal)}
 										</span>
@@ -537,28 +649,11 @@ const CartPage: React.FC = () => {
 					</button>
 				</div>
 			)}
+
+			{/* Herramienta de depuración de seller_id - solo en desarrollo */}
+			{process.env.NODE_ENV === "development" && <CartSellerDebug />}
 		</div>
 	);
-	{
-		/* Mostrar errores de la API */
-	}
-	{
-		error && (
-			<div className="mt-4 p-4 bg-red-50 text-red-700 rounded-lg">
-				<p className="font-medium">Error: {error}</p>
-				<button onClick={() => fetchCart()} className="underline text-sm mt-1">
-					Reintentar cargar el carrito
-				</button>
-			</div>
-		);
-	}
-
-	{
-		/* Herramienta de depuración de seller_id - solo en desarrollo */
-	}
-	{
-		process.env.NODE_ENV === "development" && <CartSellerDebug />;
-	}
 };
 
 export default CartPage;

@@ -104,29 +104,28 @@ const ProductGrid: React.FC<ProductGridProps> = ({
 					// Adaptar producto para asegurar compatibilidad
 					const adaptedProduct = adaptProduct(product);
 
-					// Obtener la imagen correcta
+					// OBTENER IMAGEN DE MANERA SIMPLIFICADA
+					// El hook useProducts ya procesó las imágenes, solo usar la primera
 					let imageUrl = "";
-					if (product.images) {
-						if (Array.isArray(product.images)) {
-							// Si es un array de strings
-							if (typeof product.images[0] === "string") {
-								imageUrl = product.images[0];
-							}
-							// Si es un array de objetos
-							else if (
-								typeof product.images[0] === "object" &&
-								product.images[0] !== null
-							) {
-								const img = product.images[0] as any;
-								imageUrl =
-									img.original ||
-									img.medium ||
-									img.large ||
-									img.thumbnail ||
-									"";
-							}
-						}
+
+					console.group(`🎨 ProductGrid - Producto ${product.id}`);
+					console.log("📦 Producto completo:", product);
+					console.log("🖼️ Imágenes disponibles:", product.images);
+
+					if (Array.isArray(product.images) && product.images.length > 0) {
+						// Usar la primera imagen del array ya procesado por el hook
+						imageUrl = typeof product.images[0] === "string" ? product.images[0] : product.images[0]?.url || "";
+						console.log("✅ Imagen seleccionada:", imageUrl);
+					} else {
+						console.warn("⚠️ No hay imágenes disponibles para el producto");
 					}
+
+					console.groupEnd();
+
+					// Procesar la imagen a través de getImageUrl
+					const processedImageUrl = getImageUrl(imageUrl);
+
+					console.log(`🔗 URL final de imagen para producto ${product.id}:`, processedImageUrl);
 
 					return (
 						<ProductCardCompact
@@ -134,12 +133,10 @@ const ProductGrid: React.FC<ProductGridProps> = ({
 							id={adaptedProduct.id || 0}
 							name={adaptedProduct.name}
 							price={adaptedProduct.price}
-							discount={
-							 product.discountPercentage
-							}
+							discount={product.discountPercentage}
 							rating={adaptedProduct.rating || 0}
-							reviews={product.ratingCount || 0} // La API no proporciona este dato directamente
-							image={getImageUrl(imageUrl)}
+							reviews={product.ratingCount || 0}
+							image={processedImageUrl}
 							category={
 								categories.find((cat) => cat.id === adaptedProduct.categoryId)
 									?.name
