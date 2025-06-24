@@ -15,7 +15,7 @@ interface AuthRouteProps {
  */
 const AuthRoute: React.FC<AuthRouteProps> = ({
 	children,
-	redirectPath = routes.PROFILE,
+	redirectPath = routes.HOME,
 }) => {
 	const {isAuthenticated} = useContext(AuthContext);
 	const location = useLocation();

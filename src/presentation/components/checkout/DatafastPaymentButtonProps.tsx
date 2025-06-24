@@ -583,7 +583,7 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 			<button
 				onClick={() => setShowForm(true)}
 				disabled={isLoading || !cart || cart.items.length === 0}
-				className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-md transition-colors disabled:opacity-50 flex items-center justify-center"
+				className="w-full transition-all duration-200 transform hover:scale-101 bg-[#003c58] border-1 hover:bg-[#00B86E] text-white font-medium py-3 px-4 rounded-md disabled:opacity-50 flex items-center justify-center"
 			>
 				<svg
 					className="w-5 h-5 mr-2"

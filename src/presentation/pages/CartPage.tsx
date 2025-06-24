@@ -12,7 +12,7 @@ import {useCart} from "../hooks/useCart";
 import {useFavorites} from "../hooks/useFavorites";
 import {formatCurrency} from "../../utils/formatters/formatCurrency";
 import { NotificationType } from "../contexts/CartContext";
-import CartSellerDebug from "../components/cart/CartSellerDebug";
+
 // IMPORTAR EL HELPER DE IMÁGENES CORREGIDO
 import { getImageUrl } from "../../utils/imageUtils";
 
@@ -247,25 +247,40 @@ const CartPage: React.FC = () => {
 	// FUNCIÓN SIMPLIFICADA PARA CALCULAR PRECIOS DE ITEM
 	const calculateItemPrices = (item: any): { original: number, discounted: number, discount: number, subtotal: number } => {
 		console.log("💰 CartPage - Datos del item completo:", item);
+	
+	// *** AGREGÁ ESTE DEBUG TEMPORAL ***
+	console.log("🔍 DEBUG - Item completo:", JSON.stringify(item, null, 2));
+	console.log("🔍 DEBUG - Producto completo:", JSON.stringify(item.product, null, 2));
+
 		
 		// Obtener precio original del item
 		const originalPrice = item.price || 0;
 		
-		// Obtener precio con descuento desde el producto (final_price de la API)
-		let discountedPrice = originalPrice; // Por defecto, sin descuento
+		// USAR DIRECTAMENTE final_price DE LA API - ESTA ES LA CORRECCIÓN PRINCIPAL
+		let discountedPrice = originalPrice; // Por defecto usar precio original
 		let discountPercentage = 0;
 		
 		if (item.product) {
-			// Usar final_price de la API si está disponible
+			// PRIORIDAD 1: usar final_price si existe (viene calculado desde la API)
 			if (item.product.final_price !== undefined && item.product.final_price !== null) {
 				discountedPrice = item.product.final_price;
 			}
+			// FALLBACK: si no hay final_price, calcular manualmente (caso raro)
+			else {
+				discountPercentage = item.product.discount_percentage || 
+									item.product.discountPercentage || 
+									item.product.discount || 
+									0;
+				if (discountPercentage > 0) {
+					discountedPrice = originalPrice - (originalPrice * (discountPercentage / 100));
+				}
+			}
 			
-			// Obtener porcentaje de descuento
+			// Obtener porcentaje de descuento para mostrar en UI
 			discountPercentage = item.product.discount_percentage || 
-			item.product.discountPercentage || 
-			item.product.discount || 
-			0;
+								item.product.discountPercentage || 
+								item.product.discount || 
+								0;
 		}
 		
 		console.log("💰 CartPage - Precio original:", originalPrice);
@@ -273,10 +288,10 @@ const CartPage: React.FC = () => {
 		console.log("💰 CartPage - Descuento %:", discountPercentage);
 		console.log("💰 CartPage - Cantidad:", item.quantity);
 		
-		// Calcular subtotal (precio con descuento * cantidad)
+		// CALCULAR SUBTOTAL usando el precio con descuento (final_price)
 		const subtotal = discountedPrice * item.quantity;
 		
-		console.log("💰 CartPage - Subtotal:", subtotal);
+		console.log("💰 CartPage - Subtotal calculado:", subtotal);
 		
 		return {
 			original: originalPrice,
@@ -651,7 +666,6 @@ const CartPage: React.FC = () => {
 			)}
 
 			{/* Herramienta de depuración de seller_id - solo en desarrollo */}
-			{process.env.NODE_ENV === "development" && <CartSellerDebug />}
 		</div>
 	);
 };

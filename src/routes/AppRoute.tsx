@@ -142,8 +142,8 @@ const DatafastResultPage = lazy(
 //Route Guards
 import PrivateRoute from "./PrivateRoute";
 import PublicRoute from "./PublicRoute";
-// import SellerRoute from "./SellerRoute";
-// import AdminRoute from "./AdminRoute";
+import SellerRoute from "./SellerRoute";
+import AdminRoute from "./AdminRoute";
 import AuthRoute from "./AuthRoute";
 import AboutUs from "@/presentation/pages/AboutUsPage";
 
@@ -361,9 +361,9 @@ const appRoutes: RouteObject[] = [
 	{
 		path: "/seller",
 		element: (
-			// <SellerRoute>
-			<SellerLayout />
-			// </SellerRoute>
+			<SellerRoute>
+				<SellerLayout />
+			</SellerRoute>
 		),
 		children: [
 			{
@@ -452,9 +452,9 @@ const appRoutes: RouteObject[] = [
 	{
 		path: "/admin",
 		element: (
-			// <AdminRoute>
-			<AdminLayout />
-			// </AdminRoute>
+			<AdminRoute>
+				<AdminLayout />
+			</AdminRoute>
 		),
 		children: [
 			{

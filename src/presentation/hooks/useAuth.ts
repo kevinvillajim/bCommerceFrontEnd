@@ -153,6 +153,7 @@ export const useAuth = () => {
       return false;
     } finally {
       setLoading(false);
+      window.location.href = '/'; // Redirigir al inicio después de cerrar sesión
     }
   }, [setUser, setIsAuthenticated]);
 

@@ -1,125 +1,78 @@
 // src/presentation/components/checkout/CreditCardForm.tsx
 import React from "react";
-import type {PaymentInfo} from "../../../core/services/CheckoutService";
 
 interface CreditCardFormProps {
-	paymentInfo: PaymentInfo;
-	errors: Record<string, string>;
-	onChange: (field: keyof PaymentInfo, value: string) => void;
+	content: React.ReactNode;
 }
 
-const CreditCardForm: React.FC<CreditCardFormProps> = ({
-	paymentInfo,
-	errors,
-	onChange,
-}) => {
+const CreditCardForm: React.FC<CreditCardFormProps> = ({content}) => {
+	const deunaInitiated = false; // Simulación de estado, reemplazar con lógica real
 	return (
 		<div className="space-y-4">
-			<div>
-				<label
-					htmlFor="card_number"
-					className="block text-sm font-medium text-gray-700 mb-1"
-				>
-					Número de tarjeta *
-				</label>
-				<input
-					type="text"
-					id="card_number"
-					value={paymentInfo.card_number || ""}
-					onChange={(e) =>
-						onChange(
-							"card_number",
-							e.target.value.replace(/\D/g, "").slice(0, 16)
-						)
-					}
-					className={`w-full px-4 py-2 border rounded-md focus:ring-primary-500 focus:border-primary-500 ${
-						errors.card_number ? "border-red-500" : "border-gray-300"
-					}`}
-					placeholder="1234 5678 9012 3456"
-				/>
-				{errors.card_number && (
-					<p className="mt-1 text-sm text-red-500">{errors.card_number}</p>
-				)}
-			</div>
+			<div className="text-center">
+      <p className="mb-4 text-gray-600">
+        Paga con Datafast!, ingresa los datos personales para pagar
+        de forma rápida y segura.
+      </p>
 
-			<div className="grid grid-cols-2 gap-4">
-				<div>
-					<label
-						htmlFor="card_expiry"
-						className="block text-sm font-medium text-gray-700 mb-1"
-					>
-						Fecha de expiración *
-					</label>
-					<input
-						type="text"
-						id="card_expiry"
-						value={paymentInfo.card_expiry || ""}
-						onChange={(e) => {
-							let value = e.target.value.replace(/[^\d/]/g, "");
-							if (
-								value.length === 2 &&
-								!value.includes("/") &&
-								paymentInfo.card_expiry?.length !== 3
-							) {
-								value += "/";
-							}
-							onChange("card_expiry", value.slice(0, 5));
-						}}
-						className={`w-full px-4 py-2 border rounded-md focus:ring-primary-500 focus:border-primary-500 ${
-							errors.card_expiry ? "border-red-500" : "border-gray-300"
-						}`}
-						placeholder="MM/YY"
-					/>
-					{errors.card_expiry && (
-						<p className="mt-1 text-sm text-red-500">{errors.card_expiry}</p>
-					)}
-				</div>
+      {deunaInitiated ? (
+        <div className="mb-4 mx-auto">
+          <div className="bg-gradient-to-r from-[#2fd8a8] to-[#4d1d81] p-6 rounded-lg text-white">
+            {/* Logo de DeUna placeholder */}
+            <div className="w-24 h-24 mx-auto mb-4 bg-white rounded-full flex items-center justify-center">
+              <div className="text-2xl font-bold text-purple-600">DeUna!</div>
+            </div>
 
-				<div>
-					<label
-						htmlFor="card_cvc"
-						className="block text-sm font-medium text-gray-700 mb-1"
-					>
-						Código de seguridad (CVC) *
-					</label>
-					<input
-						type="text"
-						id="card_cvc"
-						value={paymentInfo.card_cvc || ""}
-						onChange={(e) =>
-							onChange(
-								"card_cvc",
-								e.target.value.replace(/\D/g, "").slice(0, 4)
-							)
-						}
-						className={`w-full px-4 py-2 border rounded-md focus:ring-primary-500 focus:border-primary-500 ${
-							errors.card_cvc ? "border-red-500" : "border-gray-300"
-						}`}
-						placeholder="123"
-					/>
-					{errors.card_cvc && (
-						<p className="mt-1 text-sm text-red-500">{errors.card_cvc}</p>
-					)}
-				</div>
-			</div>
+            <h3 className="text-xl font-bold mb-2">Pago con DeUna!</h3>
+            <p className="text-purple-100 mb-4">
+            </p>
 
-			<div className="mt-2 flex items-center text-sm text-gray-500">
-				<svg
-					xmlns="http://www.w3.org/2000/svg"
-					className="h-5 w-5 text-gray-400 mr-2"
-					fill="none"
-					viewBox="0 0 24 24"
-					stroke="currentColor"
-				>
-					<path
-						strokeLinecap="round"
-						strokeLinejoin="round"
-						strokeWidth={2}
-						d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-					/>
-				</svg>
-				Tus datos están seguros y encriptados
-			</div>
+            <div className="bg-white/20 rounded-lg p-4 mb-4">
+              <div className="animate-pulse">
+                <div className="text-sm text-purple-100">
+                  Conectando con DeUna!...
+                </div>
+                <div className="w-full bg-white/30 rounded-full h-2 mt-2">
+                  <div className="bg-white h-2 rounded-full w-3/4 animate-pulse"></div>
+                </div>
+              </div>
+            </div>
+
+            <button
+              className="bg-white/20 hover:bg-white/30 text-white font-medium py-2 px-4 rounded-md transition-colors"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {/* Información sobre DeUna */}
+          <div className="bg-[linear-gradient(to_right,_rgba(0,184,110,1)_0%,_rgba(0,77,112,1)_46%,_rgba(0,77,112,1)_100%)] border-purple-200 rounded-lg p-6">
+            <div className="flex items-center justify-center mb-4 h-50">
+              <img
+                src="https://www.datafast.com.ec/images/logo.png"
+                alt="DeUna Logo"
+                className="h-20"
+              />
+            </div>
+          </div>
+
+          {content}
+        </div>
+      )}
+      <div className="mt-4 text-sm text-gray-500">
+        <p>
+          <strong>1.</strong> Haz clic en "Pagar con Datafast!"
+        </p>
+        <p>
+          <strong>2.</strong> Completa los datos de tu tarjeta de crédito o débito.
+        </p>
+        <p>
+          <strong>3.</strong> Confirma tu compra al finalizar.
+        </p>
+      </div>
+    </div>
 		</div>
 	);
 };

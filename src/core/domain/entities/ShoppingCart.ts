@@ -15,27 +15,32 @@ export interface ShoppingCart {
  * Cart Item entity
  */
 export interface CartItem {
-	id: number;
-	cartId?: number;
-	productId: number;
-	quantity: number;
-	price: number;
-	subtotal: number;
-	attributes?: Record<string, any>;
-	product?: {
-		name: string;
-		image?: string;
-		slug?: string;
-		stockAvailable?: number;
-		sellerId?: number; // Añadido para asegurar que el seller_id esté disponible
-		seller_id?: number; // Alternativa en snake_case por si la API lo devuelve así
-		seller?: {
-			// Estructura alternativa por si la API incluye un objeto seller
-			id: number;
-			storeName?: string;
-		};
-		user_id?: number; // Algunos sistemas usan user_id como seller_id
-	};
+    id: number;
+    cartId?: number;
+    productId: number;
+    quantity: number;
+    price: number;
+    subtotal: number;
+    attributes?: Record<string, any>;
+    product?: {
+        id: number;                        // ✅ AGREGADO
+        name: string;
+        slug?: string;
+        price: number;                     // ✅ AGREGADO
+        final_price: number;               // ✅ AGREGADO - CAMPO CLAVE
+        discount_percentage: number;       // ✅ AGREGADO - CAMPO CLAVE
+        rating?: number;                   // ✅ AGREGADO
+        rating_count?: number;             // ✅ AGREGADO
+        image?: string;
+        stockAvailable?: number;
+        sellerId?: number;
+        seller_id?: number;
+        seller?: {
+            id: number;
+            storeName?: string;
+        };
+        user_id?: number;
+    };
 }
 
 /**

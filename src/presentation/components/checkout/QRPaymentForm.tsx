@@ -1,109 +1,91 @@
 // src/presentation/components/checkout/QRPaymentForm.tsx
-import React, {useState} from "react";
-import {useCart} from "../../hooks/useCart";
-import {formatCurrency} from "../../../utils/formatters/formatCurrency";
+// ✅ CAMBIAR A "PAGO CON DEUNA!"
+import React, { useState } from "react";
+import { useCart } from "../../hooks/useCart";
+import { formatCurrency } from "../../../utils/formatters/formatCurrency";
 
 const QRPaymentForm: React.FC = () => {
-	const [qrRevealed, setQrRevealed] = useState(false);
-	const {cart} = useCart();
+  const [deunaInitiated, setDeunaInitiated] = useState(false);
+  const { cart } = useCart();
 
-	// Calcular el total para mostrar en el QR
-	const total = cart?.total || 0;
+  // Calcular el total para mostrar
+  const total = cart?.total || 0;
 
-	return (
-		<div className="text-center">
-			<p className="mb-4 text-gray-600">
-				Escanea el código QR con tu aplicación de pago móvil para completar la
-				compra.
-			</p>
+  return (
+    <div className="text-center">
+      <p className="mb-4 text-gray-600">
+        Paga con DeUna!, Genera el código qr y escanealo desde tu app para pagar
+        de forma rápida y segura.
+      </p>
 
-			{qrRevealed ? (
-				<div className="mb-4 mx-auto">
-					<div className="bg-gray-100 p-4 rounded-lg inline-block">
-						{/* QR code placeholder */}
-						<div className="w-64 h-64 mx-auto bg-white p-4 relative">
-							<div className="absolute inset-0 flex items-center justify-center">
-								<div className="border-2 border-gray-300 p-4 rounded-lg">
-									<svg viewBox="0 0 100 100" className="w-full h-full">
-										<rect
-											x="10"
-											y="10"
-											width="80"
-											height="80"
-											fill="none"
-											stroke="currentColor"
-											strokeWidth="2"
-										/>
-										<rect
-											x="25"
-											y="25"
-											width="50"
-											height="50"
-											fill="none"
-											stroke="currentColor"
-											strokeWidth="2"
-										/>
-										<rect
-											x="40"
-											y="40"
-											width="20"
-											height="20"
-											fill="currentColor"
-										/>
-										<rect
-											x="20"
-											y="60"
-											width="10"
-											height="10"
-											fill="currentColor"
-										/>
-										<rect
-											x="70"
-											y="20"
-											width="10"
-											height="10"
-											fill="currentColor"
-										/>
-										<rect
-											x="20"
-											y="20"
-											width="10"
-											height="10"
-											fill="currentColor"
-										/>
-										<rect
-											x="70"
-											y="70"
-											width="10"
-											height="10"
-											fill="currentColor"
-										/>
-									</svg>
-								</div>
-							</div>
-						</div>
-					</div>
-					<p className="text-sm text-gray-600 mt-2">
-						Monto a pagar: {formatCurrency(total)}
-					</p>
-				</div>
-			) : (
-				<button
-					type="button"
-					onClick={() => setQrRevealed(true)}
-					className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
-				>
-					Generar código QR
-				</button>
-			)}
+      {deunaInitiated ? (
+        <div className="mb-4 mx-auto">
+          <div className="bg-gradient-to-r from-[#2fd8a8] to-[#4d1d81] p-6 rounded-lg text-white">
+            {/* Logo de DeUna placeholder */}
+            <div className="w-24 h-24 mx-auto mb-4 bg-white rounded-full flex items-center justify-center">
+              <div className="text-2xl font-bold text-purple-600">DeUna!</div>
+            </div>
 
-			<div className="mt-4 text-sm text-gray-500">
-				<p>1. Escanea el código QR con tu aplicación de pago.</p>
-				<p>2. Confirma el pago en tu dispositivo.</p>
-				<p>3. Una vez completado, haz clic en "Finalizar compra".</p>
-			</div>
-		</div>
-	);
+            <h3 className="text-xl font-bold mb-2">Pago con DeUna!</h3>
+            <p className="text-purple-100 mb-4">
+              Monto a pagar: {formatCurrency(total)}
+            </p>
+
+            <div className="bg-white/20 rounded-lg p-4 mb-4">
+              <div className="animate-pulse">
+                <div className="text-sm text-purple-100">
+                  Conectando con DeUna!...
+                </div>
+                <div className="w-full bg-white/30 rounded-full h-2 mt-2">
+                  <div className="bg-white h-2 rounded-full w-3/4 animate-pulse"></div>
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setDeunaInitiated(false)}
+              className="bg-white/20 hover:bg-white/30 text-white font-medium py-2 px-4 rounded-md transition-colors"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {/* Información sobre DeUna */}
+          <div className="bg-[rgba(47,216,168)] border-purple-200 rounded-lg p-6">
+            <div className="flex items-center justify-center mb-4">
+              <img
+                src="https://deuna.app/assets/img/brand/logo-deuna.svg"
+                alt="DeUna Logo"
+                className="w-50 h-50"
+              />
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setDeunaInitiated(true)}
+            className="w-full bg-[#3f2b57] hover:bg-[#342843] text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-101 flex items-center justify-center"
+          >
+            Pagar con DeUna! - {formatCurrency(total)}
+          </button>
+        </div>
+      )}
+
+      <div className="mt-4 text-sm text-gray-500">
+        <p>
+          <strong>1.</strong> Haz clic en "Pagar con DeUna!"
+        </p>
+        <p>
+          <strong>2.</strong> Completa el pago con el QR
+        </p>
+        <p>
+          <strong>3.</strong> Confirma tu compra al finalizar.
+        </p>
+      </div>
+    </div>
+  );
 };
 
 export default QRPaymentForm;

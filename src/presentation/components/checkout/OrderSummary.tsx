@@ -16,8 +16,16 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({cart}) => {
 		);
 	}
 
-	// Calcular subtotal, impuestos y total
-	const subtotal = cart.total;
+	// ✅ CALCULAR SUBTOTAL CORRECTAMENTE CON DESCUENTOS
+	const calculateSubtotal = () => {
+		return cart.items.reduce((total, item) => {
+			// Usar final_price si está disponible, sino usar price
+			const finalPrice = item.product?.final_price ?? item.product?.price ?? item.price;
+			return total + (finalPrice * item.quantity);
+		}, 0);
+	};
+
+	const subtotal = calculateSubtotal();
 	const taxRate = 0.15; // 15% IVA
 	const shipping = subtotal > 50 ? 0 : 5.99; // Envío gratis para compras superiores a $50
 	const tax = subtotal * taxRate;
@@ -31,24 +39,50 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({cart}) => {
 
 			{/* Lista de productos */}
 			<div className="space-y-3 mb-4">
-				{cart.items.map((item) => (
-					<div
-						key={item.id}
-						className="flex justify-between pb-3 border-b border-gray-100"
-					>
-						<div className="flex items-center">
-							<span className="font-medium text-gray-800 mr-2">
-								{item.quantity}x
-							</span>
-							<span className="text-sm line-clamp-1">
-								{item.product?.name || `Producto ${item.productId}`}
-							</span>
+				{cart.items.map((item) => {
+					// ✅ MOSTRAR PRECIO CON DESCUENTO
+					const finalPrice = item.product?.final_price ?? item.product?.price ?? item.price;
+					const originalPrice = item.product?.price;
+					const hasDiscount = originalPrice && finalPrice < originalPrice;
+					
+					return (
+						<div
+							key={item.id}
+							className="flex justify-between pb-3 border-b border-gray-100"
+						>
+							<div className="flex items-center">
+								<span className="font-medium text-gray-800 mr-2">
+									{item.quantity}x
+								</span>
+								<div className="flex flex-col">
+									<span className="text-sm line-clamp-1">
+										{item.product?.name || `Producto ${item.productId}`}
+									</span>
+									{hasDiscount && (
+										<div className="flex items-center space-x-2 text-xs">
+											<span className="text-gray-400 line-through">
+												{formatCurrency(originalPrice!)}
+											</span>
+											<span className="text-green-600 font-medium">
+												{item.product?.discount_percentage}% off
+											</span>
+										</div>
+									)}
+								</div>
+							</div>
+							<div className="text-right">
+								<div className="font-medium text-gray-800">
+									{formatCurrency(finalPrice * item.quantity)}
+								</div>
+								{hasDiscount && (
+									<div className="text-xs text-gray-400 line-through">
+										{formatCurrency(originalPrice! * item.quantity)}
+									</div>
+								)}
+							</div>
 						</div>
-						<span className="font-medium text-gray-800">
-							{formatCurrency(item.subtotal)}
-						</span>
-					</div>
-				))}
+					);
+				})}
 			</div>
 
 			{/* Cálculos */}

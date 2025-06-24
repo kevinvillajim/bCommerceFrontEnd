@@ -2,6 +2,7 @@
 import {useState, useEffect} from "react";
 import {useNavigate} from "react-router-dom";
 import {useCart} from "../hooks/useCart";
+import {useAuth} from "../hooks/useAuth"; // ✅ AGREGAR PARA OBTENER DATOS DEL USUARIO
 import {CheckoutService} from "../../core/services/CheckoutService";
 import type {
 	ShippingInfo,
@@ -10,8 +11,7 @@ import type {
 } from "../../core/services/CheckoutService";
 import {NotificationType} from "../contexts/CartContext";
 import CreditCardForm from "../components/checkout/CreditCardForm";
-import PayPalForm from "../components/checkout/PayPalForm";
-import QRPaymentForm from "../components/checkout/QRPaymentForm";
+import QRPaymentForm from "../components/checkout/QRPaymentForm"; 
 import OrderSummary from "../components/checkout/OrderSummary";
 import ShippingForm from "../components/checkout/ShippingForm";
 import TestCheckoutButton from "../components/checkout/TestCheckoutButton";
@@ -21,10 +21,15 @@ import DatafastPaymentButton from "../components/checkout/DatafastPaymentButtonP
 const CheckoutPage: React.FC = () => {
 	const navigate = useNavigate();
 	const {cart, clearCart, showNotification} = useCart();
+	const {user} = useAuth(); // ✅ OBTENER DATOS DEL USUARIO
 	const [isLoading, setIsLoading] = useState(false);
+	
+	// ✅ SOLO TARJETA DE CRÉDITO Y DEUNA (antes QR)
 	const [paymentMethod, setPaymentMethod] = useState<
-		"credit_card" | "paypal" | "qr" | "transfer"
+		"credit_card" | "deuna"
 	>("credit_card");
+	
+	// ✅ INICIALIZAR CON DATOS DEL USUARIO
 	const [shippingInfo, setShippingInfo] = useState<ShippingInfo>({
 		address: "",
 		city: "",
@@ -33,18 +38,33 @@ const CheckoutPage: React.FC = () => {
 		postal_code: "",
 		phone: "",
 	});
+	
 	const [paymentInfo, setPaymentInfo] = useState<PaymentInfo>({
 		method: "credit_card",
 		card_number: "",
 		card_expiry: "",
 		card_cvc: "",
-		paypal_email: "",
 	});
+	
 	const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 	const [orderComplete, setOrderComplete] = useState(false);
 	const [orderDetails, setOrderDetails] = useState<any>(null);
 
 	const checkoutService = new CheckoutService();
+
+	// ✅ CARGAR DATOS DEL USUARIO AL MONTAR EL COMPONENTE
+	useEffect(() => {
+		if (user) {
+			setShippingInfo({
+				address: user.address || "",
+				city: user.city || "",
+				state: user.state || user.province || "",
+				country: user.country || "Ecuador",
+				postal_code: user.postal_code || user.zip_code || "",
+				phone: user.phone || "",
+			});
+		}
+	}, [user]);
 
 	const handleSuccess = (orderData: any) => {
 		console.log("Pago exitoso:", orderData);
@@ -62,10 +82,13 @@ const CheckoutPage: React.FC = () => {
 		}
 	}, [cart, navigate, showNotification]);
 
-	// Manejar el cambio de método de pago
-	const handlePaymentMethodChange = (method: PaymentMethod) => {
+	// ✅ ACTUALIZAR TIPOS DE MÉTODO DE PAGO
+	const handlePaymentMethodChange = (method: "credit_card" | "deuna") => {
 		setPaymentMethod(method);
-		setPaymentInfo({...paymentInfo, method});
+		setPaymentInfo({
+			...paymentInfo, 
+			method: method === "deuna" ? "transfer" : method
+		});
 	};
 
 	// Actualizar información de envío
@@ -109,7 +132,7 @@ const CheckoutPage: React.FC = () => {
 			}
 		});
 
-		// Validar información de pago según el método seleccionado
+		// ✅ VALIDAR SOLO TARJETA DE CRÉDITO (DeUna no necesita validación de campos)
 		if (paymentMethod === "credit_card") {
 			if (!paymentInfo.card_number) {
 				errors.card_number = "El número de tarjeta es obligatorio";
@@ -127,14 +150,6 @@ const CheckoutPage: React.FC = () => {
 				errors.card_cvc = "El código de seguridad es obligatorio";
 			} else if (!/^\d{3,4}$/.test(paymentInfo.card_cvc || "")) {
 				errors.card_cvc = "El código debe tener 3 o 4 dígitos";
-			}
-		} else if (paymentMethod === "paypal") {
-			if (!paymentInfo.paypal_email) {
-				errors.paypal_email = "El correo de PayPal es obligatorio";
-			} else if (
-				!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(paymentInfo.paypal_email || "")
-			) {
-				errors.paypal_email = "Introduce un correo electrónico válido";
 			}
 		}
 
@@ -158,13 +173,9 @@ const CheckoutPage: React.FC = () => {
 			const checkoutData = {
 				payment: {
 					...paymentInfo,
-					method:
-						paymentMethod === "qr"
-							? ("transfer" as PaymentMethod)
-							: paymentMethod, // API espera "transfer" para QR
+					method: paymentMethod === "deuna" ? ("transfer" as PaymentMethod) : paymentMethod,
 				},
 				shipping: shippingInfo,
-				// Ya no enviamos seller_id, pues el backend lo obtiene de los productos
 			};
 
 			const response = await checkoutService.processCheckout(checkoutData);
@@ -183,7 +194,6 @@ const CheckoutPage: React.FC = () => {
 		} catch (error) {
 			console.error("Error al procesar checkout:", error);
 
-			// Usar el extractor de mensajes para obtener un mensaje amigable
 			const errorMessage = extractErrorMessage(
 				error,
 				"Error al procesar el pago. Por favor, intenta de nuevo más tarde."
@@ -278,9 +288,9 @@ const CheckoutPage: React.FC = () => {
 			<div className="flex flex-col lg:flex-row gap-8">
 				{/* Formulario de checkout */}
 				<div className="lg:w-2/3">
-					{/* Información de envío */}
+					{/* Información de envío/facturación */}
 					<div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-						<h2 className="text-xl font-bold mb-4">Información de envío</h2>
+						<h2 className="text-xl font-bold mb-4">Información de facturación y envío</h2>
 						<ShippingForm
 							shippingInfo={shippingInfo}
 							errors={formErrors}
@@ -292,12 +302,7 @@ const CheckoutPage: React.FC = () => {
 					<div className="bg-white rounded-lg shadow-lg p-6 mb-6">
 						<h2 className="text-xl font-bold mb-4">Método de pago</h2>
 
-						<DatafastPaymentButton
-							onSuccess={handleSuccess}
-							onError={handleError}
-						/>
-
-						{/* Opciones de pago */}
+						{/* ✅ SOLO OPCIONES DE TARJETA DE CRÉDITO Y DEUNA */}
 						<div className="flex flex-wrap gap-4 mb-6">
 							<button
 								type="button"
@@ -311,29 +316,18 @@ const CheckoutPage: React.FC = () => {
 								<span className="mr-2">💳</span>
 								<span>Tarjeta de crédito</span>
 							</button>
+							
 							<button
 								type="button"
-								onClick={() => handlePaymentMethodChange("paypal")}
+								onClick={() => handlePaymentMethodChange("deuna")}
 								className={`flex items-center border rounded-lg px-4 py-3 ${
-									paymentMethod === "paypal"
+									paymentMethod === "deuna"
 										? "border-primary-600 bg-primary-50 text-primary-600"
 										: "border-gray-300 hover:bg-gray-50"
 								}`}
 							>
-								<span className="mr-2">🅿️</span>
-								<span>PayPal</span>
-							</button>
-							<button
-								type="button"
-								onClick={() => handlePaymentMethodChange("qr")}
-								className={`flex items-center border rounded-lg px-4 py-3 ${
-									paymentMethod === "qr"
-										? "border-primary-600 bg-primary-50 text-primary-600"
-										: "border-gray-300 hover:bg-gray-50"
-								}`}
-							>
-								<span className="mr-2">📱</span>
-								<span>Pago con QR</span>
+								<span className="mr-2">🚀</span>
+								<span>Pago con DeUna!</span>
 							</button>
 						</div>
 
@@ -343,18 +337,14 @@ const CheckoutPage: React.FC = () => {
 								paymentInfo={paymentInfo}
 								errors={formErrors}
 								onChange={handlePaymentChange}
+								content={<DatafastPaymentButton
+									onSuccess={handleSuccess}
+									onError={handleError}
+								/>}
 							/>
 						)}
 
-						{paymentMethod === "paypal" && (
-							<PayPalForm
-								paymentInfo={paymentInfo}
-								errors={formErrors}
-								onChange={handlePaymentChange}
-							/>
-						)}
-
-						{paymentMethod === "qr" && <QRPaymentForm />}
+						{paymentMethod === "deuna" && <QRPaymentForm />}
 					</div>
 				</div>
 
