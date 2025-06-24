@@ -46,6 +46,8 @@ interface AuthContextProps {
 	roleInfo: UserRoleInfo;
 	isLoadingRole: boolean;
 	refreshRoleInfo: () => Promise<void>;
+	isInitialized: boolean;
+	getDefaultRouteForRole: () => string; // Nueva función para obtener ruta por rol
 }
 
 // Crear el contexto con valores por defecto
@@ -64,6 +66,8 @@ export const AuthContext = createContext<AuthContextProps>({
 	},
 	isLoadingRole: false,
 	refreshRoleInfo: async () => {},
+	isInitialized: false,
+	getDefaultRouteForRole: () => '/',
 });
 
 // Props para el proveedor
@@ -101,6 +105,40 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 		userRef.current = user;
 	}, [user]);
 
+	// Función para obtener la ruta por defecto según el rol
+	const getDefaultRouteForRole = useCallback(() => {
+		if (roleInfo.isAdmin) {
+			return '/admin/dashboard';
+		} else if (roleInfo.isSeller) {
+			return '/seller/dashboard';
+		}
+		return '/';
+	}, [roleInfo]);
+
+	// Función SOLO para redirección desde páginas de auth (NO desde home)
+	const handleAuthPageRedirection = useCallback(() => {
+		const currentPath = window.location.pathname;
+		
+		// SOLO redirigir si estamos en páginas de autenticación
+		const isAuthPage = ['/login', '/register'].includes(currentPath) || 
+						   currentPath.startsWith('/auth');
+
+		if (!isAuthPage) {
+			console.log("No estamos en página de auth, no redireccionar automáticamente");
+			return;
+		}
+
+		// Si estamos en una página de auth y el usuario ya está logueado, redirigir
+		if (isAuthenticated && roleInfo.role) {
+			const targetPath = getDefaultRouteForRole();
+			console.log(`Redirigiendo desde página de auth ${currentPath} a ${targetPath}`);
+			
+			setTimeout(() => {
+				window.location.replace(targetPath);
+			}, 100);
+		}
+	}, [isAuthenticated, roleInfo, getDefaultRouteForRole]);
+
 	// Obtener información de rol del usuario
 	const fetchRoleInfo = useCallback(async () => {
 		// Verificaciones de salida temprana
@@ -114,7 +152,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 
 		setIsLoadingRole(true);
 		try {
-			const roleData = await RoleService.checkUserRole();
+			console.log("Obteniendo información de rol del usuario...");
+			
+			const roleData = await RoleService.checkUserRole(true);
 
 			if (roleData && roleData.success) {
 				const newRoleInfo = {
@@ -125,6 +165,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 					adminInfo: roleData.data.admin_info || null,
 				};
 
+				console.log("Información de rol obtenida:", newRoleInfo);
 				setRoleInfo(newRoleInfo);
 
 				// Actualizar el rol en usuario si es necesario
@@ -137,13 +178,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 
 				// Marcar que ya obtuvimos el rol
 				hasFetchedRole.current = true;
+
+				// SOLO redirigir si estamos en páginas de auth
+				setTimeout(() => {
+					handleAuthPageRedirection();
+				}, 300);
 			}
 		} catch (error) {
 			console.error("Error al obtener información de rol:", error);
 		} finally {
 			setIsLoadingRole(false);
 		}
-	}, [isLoadingRole]);
+	}, [isLoadingRole, handleAuthPageRedirection]);
 
 	// Método público para actualizar información de rol
 	const refreshRoleInfo = useCallback(async () => {
@@ -160,6 +206,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 				const token = storageService.getItem(appConfig.storage.authTokenKey);
 
 				if (token) {
+					console.log("Token encontrado, inicializando autenticación...");
 					// El usuario está autenticado
 					setIsAuthenticated(true);
 					isAuthenticatedRef.current = true;
@@ -169,11 +216,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 					if (userData) {
 						setUser(userData);
 						userRef.current = userData;
+						console.log("Datos de usuario cargados desde localStorage:", userData);
 					}
 
 					// Cargar información de rol (solo si el usuario está autenticado)
-					fetchRoleInfo();
+					await fetchRoleInfo();
 				} else {
+					console.log("No hay token, usuario no autenticado");
 					// El usuario no está autenticado
 					setIsAuthenticated(false);
 					setUser(null);
@@ -195,7 +244,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 		};
 
 		initializeAuth();
-		// Esta dependencia de fetchRoleInfo debe mantenerse para tener acceso a la versión actualizada
 	}, [fetchRoleInfo]);
 
 	// Sincronizar datos de usuario con localStorage
@@ -279,6 +327,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 			roleInfo,
 			isLoadingRole,
 			refreshRoleInfo,
+			isInitialized: initialized,
+			getDefaultRouteForRole,
 		}),
 		[
 			user,
@@ -289,6 +339,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 			roleInfo,
 			isLoadingRole,
 			refreshRoleInfo,
+			initialized,
+			getDefaultRouteForRole,
 		]
 	);
 

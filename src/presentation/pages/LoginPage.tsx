@@ -1,6 +1,11 @@
+// ===================================
+// LoginPage.tsx - SOLUCIÓN SIMPLE Y DIRECTA
+// ===================================
+
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import RoleService from '../../infrastructure/services/RoleService';
 import type { UserLoginData } from '../../core/domain/entities/User';
 
 const LoginPage: React.FC = () => {
@@ -15,15 +20,56 @@ const LoginPage: React.FC = () => {
   const { login, loading, error, isAuthenticated } = useAuth();
 
   // Obtener ruta de redirección si existe
-  const from = (location.state as any)?.from?.pathname || '/';
+  const from = (location.state as any)?.from?.pathname;
 
   // Si ya está autenticado, redirigir
   useEffect(() => {
     if (isAuthenticated) {
-      console.log('Usuario ya autenticado, redirigiendo a:', from);
-      navigate(from, { replace: true });
+      console.log('Usuario ya autenticado, verificando rol para redirección...');
+      handleRedirectBasedOnRole();
     }
-  }, [isAuthenticated, navigate, from]);
+  }, [isAuthenticated]);
+
+  // Función para manejar redirección basada en rol - DIRECTA
+  const handleRedirectBasedOnRole = async () => {
+    try {
+      console.log('Obteniendo información de rol para redirección...');
+      
+      // Llamada directa al servicio de roles
+      const roleData = await RoleService.checkUserRole(true);
+      
+      console.log('Datos de rol obtenidos:', roleData);
+      
+      if (roleData && roleData.success) {
+        let targetRoute = from || '/';
+        
+        // Determinar ruta basada en rol
+        if (roleData.data.is_admin) {
+          targetRoute = '/admin/dashboard';
+          console.log('Usuario es admin, redirigiendo a:', targetRoute);
+        } else if (roleData.data.is_seller) {
+          targetRoute = '/seller/dashboard';
+          console.log('Usuario es seller, redirigiendo a:', targetRoute);
+        } else {
+          targetRoute = from || '/';
+          console.log('Usuario normal, redirigiendo a:', targetRoute);
+        }
+        
+        // Redirigir inmediatamente
+        navigate(targetRoute, { replace: true });
+      } else {
+        // Si no podemos obtener el rol, ir al home por defecto
+        const fallbackRoute = from || '/';
+        console.log('No se pudo obtener rol, redirigiendo a:', fallbackRoute);
+        navigate(fallbackRoute, { replace: true });
+      }
+    } catch (error) {
+      console.error('Error al obtener rol para redirección:', error);
+      // En caso de error, ir al home
+      const fallbackRoute = from || '/';
+      navigate(fallbackRoute, { replace: true });
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,10 +85,12 @@ const LoginPage: React.FC = () => {
     // Intentar iniciar sesión
     const result = await login(credentials);
     
-    // Si el inicio de sesión fue exitoso, redirigir
+    // Si el inicio de sesión fue exitoso
     if (result) {
-      console.log('Login exitoso, redirigiendo a:', from);
-      navigate(from, { replace: true });
+      console.log('Login exitoso, manejando redirección...');
+      
+      // Llamar directamente a la función de redirección
+      await handleRedirectBasedOnRole();
     } else {
       console.error('Fallo en el login');
     }

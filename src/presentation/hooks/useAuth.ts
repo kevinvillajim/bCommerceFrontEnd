@@ -1,3 +1,4 @@
+// src/presentation/hooks/useAuth.ts
 import { useState, useEffect, useCallback, useContext } from 'react';
 import { AuthContext } from '../contexts/AuthContext';
 import { AuthService } from '../../core/services/AuthService';
@@ -19,47 +20,22 @@ const updateProfileUseCase = new UpdateProfileUseCase();
  * Hook para operaciones de autenticación
  */
 export const useAuth = () => {
-  const { user, setUser, isAuthenticated, setIsAuthenticated } = useContext(AuthContext);
+  // Obtener todo del contexto
+  const { 
+    user, 
+    setUser, 
+    isAuthenticated, 
+    setIsAuthenticated, 
+    logout: contextLogout,
+    roleInfo,
+    isLoadingRole,
+    refreshRoleInfo,
+    isInitialized,
+    getDefaultRouteForRole
+  } = useContext(AuthContext);
+  
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-
-  /**
-   * Verificar si el usuario ya está logueado (al montar el componente)
-   */
-  useEffect(() => {
-    const checkAuth = async () => {
-      const token = storageService.getItem(appConfig.storage.authTokenKey);
-      if (token) {
-        try {
-          const userData = storageService.getItem(appConfig.storage.userKey);
-          if (userData) {
-            setUser(userData);
-            setIsAuthenticated(true);
-          } else {
-            try {
-              // Si no hay usuario en caché, intenta obtenerlo del servidor
-              const currentUser = await authService.getCurrentUser();
-              setUser(currentUser);
-              setIsAuthenticated(true);
-            } catch (error) {
-              // Si falla, limpia el token y estado
-              storageService.removeItem(appConfig.storage.authTokenKey);
-              setUser(null);
-              setIsAuthenticated(false);
-            }
-          }
-        } catch (err) {
-          // Token inválido, limpia estado
-          storageService.removeItem(appConfig.storage.authTokenKey);
-          storageService.removeItem(appConfig.storage.userKey);
-          setUser(null);
-          setIsAuthenticated(false);
-        }
-      }
-    };
-
-    checkAuth();
-  }, [setUser, setIsAuthenticated]);
 
   /**
    * Iniciar sesión de usuario
@@ -75,6 +51,10 @@ export const useAuth = () => {
       if (response && response.user) {
         setUser(response.user);
         setIsAuthenticated(true);
+        
+        // Refrescar información de rol después del login
+        await refreshRoleInfo();
+        
         return response;
       } else {
         throw new Error("No se recibió información de usuario válida");
@@ -87,7 +67,7 @@ export const useAuth = () => {
     } finally {
       setLoading(false);
     }
-  }, [setUser, setIsAuthenticated]);
+  }, [setUser, setIsAuthenticated, refreshRoleInfo]);
 
   /**
    * Registrar nuevo usuario
@@ -103,6 +83,10 @@ export const useAuth = () => {
       if (response && response.user) {
         setUser(response.user);
         setIsAuthenticated(true);
+        
+        // Refrescar información de rol después del registro
+        await refreshRoleInfo();
+        
         return response;
       } else {
         throw new Error("No se recibió información de usuario válida");
@@ -115,51 +99,31 @@ export const useAuth = () => {
     } finally {
       setLoading(false);
     }
-  }, [setUser, setIsAuthenticated]);
+  }, [setUser, setIsAuthenticated, refreshRoleInfo]);
 
   /**
-   * Cerrar sesión de usuario
+   * Cerrar sesión de usuario - usar la del contexto
    */
   const logout = useCallback(async () => {
     setLoading(true);
     setError(null);
 
     try {
-      // Cerrar sesión con el servicio de autenticación
-      await authService.logout();
-      
-      // Limpiar estado local
-      setUser(null);
-      setIsAuthenticated(false);
-      
-      // Limpiar almacenamiento local
-      storageService.removeItem(appConfig.storage.authTokenKey);
-      storageService.removeItem(appConfig.storage.userKey);
-      storageService.removeItem(appConfig.storage.cartKey);
-      
+      await contextLogout();
       return true;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Error al cerrar sesión';
       setError(errorMessage);
-      
-      // Intentar limpiar almacenamiento local de todas formas
-      storageService.removeItem(appConfig.storage.authTokenKey);
-      storageService.removeItem(appConfig.storage.userKey);
-      storageService.removeItem(appConfig.storage.cartKey);
-      
-      setUser(null);
-      setIsAuthenticated(false);
-      
       return false;
     } finally {
       setLoading(false);
       window.location.href = '/'; // Redirigir al inicio después de cerrar sesión
     }
-  }, [setUser, setIsAuthenticated]);
+  }, [contextLogout]);
 
   /**
- * Actualizar perfil de usuario
- */
+   * Actualizar perfil de usuario
+   */
   const updateProfile = useCallback(async (profileData: UserProfileUpdateData) => {
     setLoading(true);
     setError(null);
@@ -183,7 +147,7 @@ export const useAuth = () => {
     }
   }, [setUser]);
 
-  // Devolver estado y funciones del hook
+  // Devolver estado y funciones del hook - INCLUYENDO las nuevas propiedades
   return {
     user,
     isAuthenticated,
@@ -192,7 +156,13 @@ export const useAuth = () => {
     login,
     register,
     logout,
-    updateProfile
+    updateProfile,
+    // Nuevas propiedades del contexto
+    roleInfo,
+    isLoadingRole,
+    refreshRoleInfo,
+    isInitialized,
+    getDefaultRouteForRole
   };
 };
 

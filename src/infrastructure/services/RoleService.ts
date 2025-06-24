@@ -1,3 +1,5 @@
+// src/infrastructure/services/RoleService.ts
+
 import axiosInstance from "../api/axiosConfig";
 import CacheService from "./CacheService";
 import {API_ENDPOINTS} from "../../constants/apiEndpoints";
@@ -46,7 +48,7 @@ export class RoleService {
 			// Si tenemos datos en memoria y no ha pasado mucho tiempo, usarlos directamente
 			const now = Date.now();
 			if (!forceRefresh && cachedRoleData && now - lastRoleCheck < 30000) {
-				// 30 segundos
+				console.log("Usando datos de rol desde memoria:", cachedRoleData);
 				return cachedRoleData;
 			}
 
@@ -54,15 +56,18 @@ export class RoleService {
 			if (!forceRefresh) {
 				const localCachedData = CacheService.getItem(ROLE_CACHE_KEY);
 				if (localCachedData) {
-					// Actualizar caché en memoria pero no mostrar el log cada vez
 					cachedRoleData = localCachedData as RoleCheckResponse;
 					lastRoleCheck = now;
+					console.log("Usando datos de rol desde localStorage:", cachedRoleData);
 					return cachedRoleData;
 				}
 			}
 
 			// Si se fuerza actualización o no hay caché, hacer la petición a la API
+			console.log("Verificando rol del usuario desde API...");
 			const response = await axiosInstance.get(API_ENDPOINTS.AUTH.CHECK_ROLE);
+
+			console.log("Respuesta del endpoint check-role:", response.data);
 
 			// Verificar la respuesta
 			if (response && response.data && response.data.success) {
@@ -73,11 +78,12 @@ export class RoleService {
 				cachedRoleData = response.data as RoleCheckResponse;
 				lastRoleCheck = now;
 
-				console.log("Datos de rol actualizados desde API");
+				console.log("Datos de rol actualizados desde API:", cachedRoleData);
 				return cachedRoleData;
+			} else {
+				console.error("Respuesta inválida del endpoint check-role:", response.data);
+				return null;
 			}
-
-			return null;
 		} catch (error) {
 			console.error("Error al verificar rol de usuario:", error);
 			return null;
@@ -89,7 +95,9 @@ export class RoleService {
 	 */
 	static async isAdmin(): Promise<boolean> {
 		const roleData = await this.checkUserRole();
-		return roleData?.data?.is_admin || false;
+		const isAdmin = roleData?.data?.is_admin || false;
+		console.log("Verificando si es admin:", isAdmin, roleData);
+		return isAdmin;
 	}
 
 	/**
@@ -97,7 +105,9 @@ export class RoleService {
 	 */
 	static async isSeller(): Promise<boolean> {
 		const roleData = await this.checkUserRole();
-		return roleData?.data?.is_seller || false;
+		const isSeller = roleData?.data?.is_seller || false;
+		console.log("Verificando si es seller:", isSeller, roleData);
+		return isSeller;
 	}
 
 	/**
@@ -105,7 +115,9 @@ export class RoleService {
 	 */
 	static async getUserRole(): Promise<string | null> {
 		const roleData = await this.checkUserRole();
-		return roleData?.data?.role || null;
+		const role = roleData?.data?.role || null;
+		console.log("Obteniendo rol del usuario:", role, roleData);
+		return role;
 	}
 
 	/**
@@ -117,6 +129,22 @@ export class RoleService {
 		cachedRoleData = null;
 		lastRoleCheck = 0;
 		console.log("Caché de roles limpiada");
+	}
+
+	/**
+	 * Obtener información completa del seller
+	 */
+	static async getSellerInfo(): Promise<any> {
+		const roleData = await this.checkUserRole();
+		return roleData?.data?.seller_info || null;
+	}
+
+	/**
+	 * Obtener información completa del admin
+	 */
+	static async getAdminInfo(): Promise<any> {
+		const roleData = await this.checkUserRole();
+		return roleData?.data?.admin_info || null;
 	}
 }
 
