@@ -47,7 +47,7 @@ interface AuthContextProps {
 	isLoadingRole: boolean;
 	refreshRoleInfo: () => Promise<void>;
 	isInitialized: boolean;
-	getDefaultRouteForRole: () => string; // Nueva función para obtener ruta por rol
+	getDefaultRouteForRole: () => string;
 }
 
 // Crear el contexto con valores por defecto
@@ -115,11 +115,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 		return '/';
 	}, [roleInfo]);
 
-	// Función SOLO para redirección desde páginas de auth (NO desde home)
-	const handleAuthPageRedirection = useCallback(() => {
+	// Función SOLO para redirección automática en inicialización (NO desde login manual)
+	const handleInitialRedirection = useCallback(() => {
 		const currentPath = window.location.pathname;
 		
-		// SOLO redirigir si estamos en páginas de autenticación
+		// SOLO redirigir automáticamente si estamos en páginas de autenticación Y es inicialización automática
 		const isAuthPage = ['/login', '/register'].includes(currentPath) || 
 						   currentPath.startsWith('/auth');
 
@@ -128,10 +128,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 			return;
 		}
 
-		// Si estamos en una página de auth y el usuario ya está logueado, redirigir
-		if (isAuthenticated && roleInfo.role) {
+		// Si estamos en una página de auth y el usuario ya está logueado automáticamente, redirigir
+		if (isAuthenticated && roleInfo.role && isInitializationComplete.current) {
 			const targetPath = getDefaultRouteForRole();
-			console.log(`Redirigiendo desde página de auth ${currentPath} a ${targetPath}`);
+			console.log(`Redirección automática desde ${currentPath} a ${targetPath}`);
 			
 			setTimeout(() => {
 				window.location.replace(targetPath);
@@ -179,23 +179,59 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 				// Marcar que ya obtuvimos el rol
 				hasFetchedRole.current = true;
 
-				// SOLO redirigir si estamos en páginas de auth
-				setTimeout(() => {
-					handleAuthPageRedirection();
-				}, 300);
+				// SOLO redirigir automáticamente si estamos en inicialización
+				if (isInitializationComplete.current) {
+					setTimeout(() => {
+						handleInitialRedirection();
+					}, 300);
+				}
 			}
 		} catch (error) {
 			console.error("Error al obtener información de rol:", error);
 		} finally {
 			setIsLoadingRole(false);
 		}
-	}, [isLoadingRole, handleAuthPageRedirection]);
+	}, [isLoadingRole, handleInitialRedirection]);
 
 	// Método público para actualizar información de rol
 	const refreshRoleInfo = useCallback(async () => {
 		hasFetchedRole.current = false;
-		await fetchRoleInfo();
-	}, [fetchRoleInfo]);
+		setIsLoadingRole(true);
+		
+		try {
+			console.log("Refrescando información de rol del usuario...");
+			
+			const roleData = await RoleService.checkUserRole(true);
+
+			if (roleData && roleData.success) {
+				const newRoleInfo = {
+					role: roleData.data.role,
+					isAdmin: roleData.data.is_admin,
+					isSeller: roleData.data.is_seller,
+					sellerInfo: roleData.data.seller_info || null,
+					adminInfo: roleData.data.admin_info || null,
+				};
+
+				console.log("Información de rol refrescada:", newRoleInfo);
+				setRoleInfo(newRoleInfo);
+
+				// Actualizar el rol en usuario si es necesario
+				if (userRef.current && !userRef.current.role) {
+					setUser((prevUser) => {
+						if (!prevUser) return null;
+						return {...prevUser, role: roleData.data.role};
+					});
+				}
+
+				// Marcar que ya obtuvimos el rol
+				hasFetchedRole.current = true;
+			}
+		} catch (error) {
+			console.error("Error al refrescar información de rol:", error);
+		} finally {
+			setIsLoadingRole(false);
+		}
+	}, []);
 
 	// Verificar si hay un token guardado al cargar - UNA SOLA VEZ
 	useEffect(() => {

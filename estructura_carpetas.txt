@@ -20,6 +20,7 @@ C:.
 |   tsconfig.node.json
 |   vite.config.ts
 |   
+|               
 +---public
 |       favicon.ico
 |       SeviceWorker.js
@@ -28,6 +29,12 @@ C:.
     |   App.tsx
     |   main.tsx
     |   
+    +---assets
+    |   \---images
+    |           datafast-logo.png
+    |           icon_deuna_mini.png
+    |           logo-deuna.svg
+    |           
     +---config
     |       appConfig.ts
     |       environment.ts
@@ -388,9 +395,11 @@ C:.
         |   debugUtils.ts
         |   errorHandler.ts
         |   helpers.ts
+        |   imageHelper.tsx
         |   imageUtils.ts
         |   productAdapter.ts
         |   sellerHelper.ts
+        |   unifiedImageUtils.ts
         |   
         +---formatters
         |       currencyFormatter.ts

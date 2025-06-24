@@ -2,10 +2,9 @@
 // LoginPage.tsx - SOLUCIÓN SIMPLE Y DIRECTA
 // ===================================
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import RoleService from '../../infrastructure/services/RoleService';
 import type { UserLoginData } from '../../core/domain/entities/User';
 
 const LoginPage: React.FC = () => {
@@ -13,86 +12,76 @@ const LoginPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
   // Usar el hook de autenticación
-  const { login, loading, error, isAuthenticated } = useAuth();
+  const { login, loading, error } = useAuth();
 
   // Obtener ruta de redirección si existe
   const from = (location.state as any)?.from?.pathname;
 
-  // Si ya está autenticado, redirigir
-  useEffect(() => {
-    if (isAuthenticated) {
-      console.log('Usuario ya autenticado, verificando rol para redirección...');
-      handleRedirectBasedOnRole();
-    }
-  }, [isAuthenticated]);
-
-  // Función para manejar redirección basada en rol - DIRECTA
-  const handleRedirectBasedOnRole = async () => {
-    try {
-      console.log('Obteniendo información de rol para redirección...');
-      
-      // Llamada directa al servicio de roles
-      const roleData = await RoleService.checkUserRole(true);
-      
-      console.log('Datos de rol obtenidos:', roleData);
-      
-      if (roleData && roleData.success) {
-        let targetRoute = from || '/';
-        
-        // Determinar ruta basada en rol
-        if (roleData.data.is_admin) {
-          targetRoute = '/admin/dashboard';
-          console.log('Usuario es admin, redirigiendo a:', targetRoute);
-        } else if (roleData.data.is_seller) {
-          targetRoute = '/seller/dashboard';
-          console.log('Usuario es seller, redirigiendo a:', targetRoute);
-        } else {
-          targetRoute = from || '/';
-          console.log('Usuario normal, redirigiendo a:', targetRoute);
-        }
-        
-        // Redirigir inmediatamente
-        navigate(targetRoute, { replace: true });
-      } else {
-        // Si no podemos obtener el rol, ir al home por defecto
-        const fallbackRoute = from || '/';
-        console.log('No se pudo obtener rol, redirigiendo a:', fallbackRoute);
-        navigate(fallbackRoute, { replace: true });
-      }
-    } catch (error) {
-      console.error('Error al obtener rol para redirección:', error);
-      // En caso de error, ir al home
-      const fallbackRoute = from || '/';
-      navigate(fallbackRoute, { replace: true });
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Preparar las credenciales
-    const credentials: UserLoginData = {
-      email,
-      password
-    };
+    if (isProcessing) return; // Prevenir múltiples submits
     
-    console.log('Intentando iniciar sesión con:', email);
+    setIsProcessing(true);
     
-    // Intentar iniciar sesión
-    const result = await login(credentials);
+    console.log('🔐 Iniciando proceso de login con:', email);
     
-    // Si el inicio de sesión fue exitoso
-    if (result) {
-      console.log('Login exitoso, manejando redirección...');
+    try {
+      // Preparar las credenciales
+      const credentials: UserLoginData = {
+        email,
+        password
+      };
       
-      // Llamar directamente a la función de redirección
-      await handleRedirectBasedOnRole();
-    } else {
-      console.error('Fallo en el login');
+      // Intentar iniciar sesión
+      const result = await login(credentials);
+      
+      // Si el inicio de sesión fue exitoso
+      if (result) {
+        console.log('✅ Login exitoso, obteniendo información de rol...');
+        
+        // Usar el servicio directamente para obtener rol inmediatamente
+        const RoleService = (await import('../../infrastructure/services/RoleService')).default;
+        const roleData = await RoleService.checkUserRole(true);
+        
+        console.log('🎯 Información de rol obtenida:', roleData);
+        
+        if (roleData && roleData.success) {
+          let targetRoute = from || '/';
+          
+          // Determinar ruta basada en rol
+          if (roleData.data.is_admin) {
+            targetRoute = '/admin/dashboard';
+            console.log('👑 Usuario es admin, redirigiendo a:', targetRoute);
+          } else if (roleData.data.is_seller) {
+            targetRoute = '/seller/dashboard';
+            console.log('🏪 Usuario es seller, redirigiendo a:', targetRoute);
+          } else {
+            targetRoute = from || '/';
+            console.log('👤 Usuario normal, redirigiendo a:', targetRoute);
+          }
+          
+          console.log('🚀 Redirigiendo inmediatamente a:', targetRoute);
+          
+          // Redirigir inmediatamente sin setTimeout
+          navigate(targetRoute, { replace: true });
+        } else {
+          console.error('❌ No se pudo obtener información de rol');
+          // Si no podemos obtener el rol, ir al home por defecto
+          navigate(from || '/', { replace: true });
+        }
+      } else {
+        console.error('❌ Fallo en el login');
+      }
+    } catch (error) {
+      console.error('❌ Error durante el proceso de login:', error);
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -101,14 +90,24 @@ const LoginPage: React.FC = () => {
   };
 
   const handleGoogleLogin = () => {
-    // Implementar inicio de sesión con Google
     console.log('Iniciar sesión con Google');
   };
 
   const handleFacebookLogin = () => {
-    // Implementar inicio de sesión con Facebook
     console.log('Iniciar sesión con Facebook');
   };
+
+  // Mostrar loading durante el procesamiento
+  if (isProcessing) {
+    return (
+      <div className="min-h-[80vh] flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Iniciando sesión...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center py-12 px-4">
@@ -209,10 +208,10 @@ const LoginPage: React.FC = () => {
           <div>
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || isProcessing}
               className="group relative w-full flex justify-center py-3 px-4 border border-transparent rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? (
+              {(loading || isProcessing) ? (
                 <span className="absolute left-0 inset-y-0 flex items-center pl-3">
                   <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
