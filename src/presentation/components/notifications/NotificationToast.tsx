@@ -11,6 +11,11 @@ interface NotificationToastProps {
   autoCloseTime?: number;
 }
 
+
+const getNotificationCreatedAt = (notification: Notification): string => {
+  return notification.createdAt || (notification as any).created_at || '';
+};
+
 // Función mejorada para formatear tiempo relativo (igual que en NotificationPage)
 const formatRelativeTime = (dateString: string): string => {
   try {
@@ -221,7 +226,7 @@ const NotificationToast: React.FC<NotificationToastProps> = ({
               
               {/* Tiempo relativo */}
               <span className="text-xs text-gray-500">
-                {formatRelativeTime(notification.createdAt)}
+              {formatRelativeTime(getNotificationCreatedAt(notification))}
               </span>
             </div>
           </div>

@@ -22,6 +22,29 @@ interface NotificationContextProps {
   getNotificationUrl: (notification: Notification) => string | null;
 }
 
+/**
+ * Normaliza una notificación desde el formato del backend
+ * Convierte snake_case a camelCase para compatibilidad
+ */
+const normalizeNotification = (notification: any): Notification => {
+  return {
+    ...notification,
+    // Asegurar que siempre tenemos las propiedades en camelCase
+    createdAt: notification.createdAt || notification.created_at || '',
+    readAt: notification.readAt || notification.read_at || undefined,
+    // Mantener compatibilidad hacia atrás
+    created_at: notification.created_at,
+    read_at: notification.read_at
+  };
+};
+
+/**
+ * Normaliza un array de notificaciones
+ */
+const normalizeNotifications = (notifications: any[]): Notification[] => {
+  return notifications.map(normalizeNotification);
+};
+
 export const NotificationContext = createContext<NotificationContextProps>({
   notifications: [],
   loading: false,
@@ -96,9 +119,9 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
         const { notifications: newNotifications, unread_count, total } = response.data;
         
         if (page === 1) {
-          setNotifications(newNotifications);
+          setNotifications(normalizeNotifications(newNotifications));
         } else {
-          setNotifications(prev => [...prev, ...newNotifications]);
+          setNotifications(prev => [...prev, ...normalizeNotifications(newNotifications)]);
         }
         
         setUnreadCount(unread_count);
@@ -149,10 +172,8 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       if (response.status === 'success') {
         // Actualizar el estado local
         setNotifications(prev => 
-          prev.map(notif => 
-            notif.id === id ? { ...notif, read: true, readAt: new Date().toISOString() } : notif
-          )
-        );
+           prev.map(notif => normalizeNotification({ ...notif, read: true, readAt: new Date().toISOString() }))
+         );
         
         // Actualizar contador
         if (response.data?.unread_count !== undefined) {

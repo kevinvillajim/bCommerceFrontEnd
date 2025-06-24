@@ -11,6 +11,11 @@ export interface Notification {
   read: boolean;
   readAt?: string;
   createdAt: string;
+  
+  // ✅ Campos adicionales del backend (snake_case)
+  // Estos permiten compatibilidad con la respuesta del API
+  created_at?: string;
+  read_at?: string | null;
 }
 
 /**

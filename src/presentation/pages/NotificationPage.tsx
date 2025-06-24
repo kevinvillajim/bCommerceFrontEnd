@@ -21,6 +21,11 @@ import { useNotifications } from '../hooks/useNotifications';
 import { useAuth } from '../hooks/useAuth';
 import type { Notification } from '../../core/domain/entities/Notification';
 
+// ✅ Función helper para manejar las fechas
+const getNotificationCreatedAt = (notification: Notification): string => {
+  return notification.createdAt || (notification as any).created_at || '';
+};
+
 // Función para obtener el icono según el tipo de notificación
 const getNotificationIcon = (type: string) => {
   switch (type) {
@@ -77,25 +82,25 @@ const getNotificationColor = (type: string) => {
   }
 };
 
-// Función mejorada para formatear tiempo relativo
+// ✅ Función mejorada para formatear tiempo relativo
 const formatRelativeTime = (dateString: string): string => {
-  // ✅ Validación básica
-  if (!dateString) {
+  // Validación básica
+  if (!dateString || dateString.trim() === '') {
     console.warn('⚠️ formatRelativeTime: fecha vacía o undefined');
     return 'Fecha desconocida';
   }
 
   try {
-    // ✅ Crear fecha directamente desde ISO string
+    // Crear fecha directamente desde ISO string
     const date = new Date(dateString);
     
-    // ✅ Verificar que la fecha es válida
+    // Verificar que la fecha es válida
     if (isNaN(date.getTime())) {
       console.error('❌ formatRelativeTime: fecha inválida:', dateString);
       return 'Fecha inválida';
     }
 
-    // ✅ Calcular diferencia
+    // Calcular diferencia
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffSeconds = Math.floor(diffMs / 1000);
@@ -103,18 +108,7 @@ const formatRelativeTime = (dateString: string): string => {
     const diffHours = Math.floor(diffMinutes / 60);
     const diffDays = Math.floor(diffHours / 24);
 
-    // 🐛 DEBUG: Agregar logging temporal (puedes quitarlo después)
-    console.log('🔍 formatRelativeTime debug:', {
-      input: dateString,
-      parsed: date.toISOString(),
-      now: now.toISOString(),
-      diffSeconds,
-      diffMinutes,
-      diffHours,
-      diffDays
-    });
-
-    // ✅ Lógica de formateo
+    // Lógica de formateo
     if (diffSeconds < 0) {
       // Fecha en el futuro
       return date.toLocaleDateString('es-EC', { 
@@ -251,12 +245,6 @@ const NotificationPage: React.FC = () => {
       fetchNotifications(1, filter === 'unread');
     }
   }, [isAuthenticated, filter]);
-
-  useEffect(() => {
-    if (notifications.length > 0) {
-      console.log('📊 Notificaciones recibidas:', notifications.slice(0, 2));
-    }
-  }, [notifications]);
 
   // Manejar click en notificación
   const handleNotificationClick = async (notification: Notification) => {
@@ -414,95 +402,77 @@ const NotificationPage: React.FC = () => {
       ) : (
         /* Lista de notificaciones */
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          {notifications.map((notification, index) => (
-            <div
-              key={notification.id}
-              onClick={() => handleNotificationClick(notification)}
-              className={`
-                relative border-l-4 cursor-pointer transition-all duration-200 hover:shadow-sm
-                ${!notification.read 
-                  ? 'bg-blue-50 border-l-primary-500 hover:bg-blue-100' 
-                  : 'bg-white border-l-gray-200 hover:bg-gray-50'
-                }
-                ${index !== notifications.length - 1 ? 'border-b border-gray-100' : ''}
-              `}
-            >
-              <div className="p-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start space-x-4 flex-1">
-                    {/* Icono */}
-                    <div className={`
-                      flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center
-                      ${getNotificationColor(notification.type)}
-                    `}>
-                      {getNotificationIcon(notification.type)}
-                    </div>
-
-                    {/* Contenido */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center space-x-2 mb-1">
-                        <h3 className={`text-base font-medium ${
-                          !notification.read ? 'text-gray-900' : 'text-gray-700'
-                        }`}>
-                          {notification.title}
-                        </h3>
-                        {!notification.read && (
-                          <div className="w-2 h-2 bg-primary-500 rounded-full"></div>
-                        )}
+          {notifications.map((notification, index) => {
+            // ✅ Obtener fecha de creación
+            const createdAt = getNotificationCreatedAt(notification);
+            
+            return (
+              <div
+                key={notification.id}
+                onClick={() => handleNotificationClick(notification)}
+                className={`
+                  relative border-l-4 cursor-pointer transition-all duration-200 hover:shadow-sm
+                  ${!notification.read 
+                    ? 'bg-blue-50 border-l-primary-500 hover:bg-blue-100' 
+                    : 'bg-white border-l-gray-200 hover:bg-gray-50'
+                  }
+                  ${index !== notifications.length - 1 ? 'border-b border-gray-100' : ''}
+                `}
+              >
+                <div className="p-6">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-start space-x-4 flex-1">
+                      {/* Icono */}
+                      <div className={`
+                        flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center
+                        ${getNotificationColor(notification.type)}
+                      `}>
+                        {getNotificationIcon(notification.type)}
                       </div>
-                      
-                      <p className={`text-sm ${
-                        !notification.read ? 'text-gray-700' : 'text-gray-600'
-                      } mb-2`}>
-                        {notification.message}
-                      </p>
-                      
-                      <div className="flex items-center text-xs text-gray-500">
-                      <span>{(() => {
-  console.log('🔍 Debug notificación:', {
-    id: notification.id,
-  createdAt: notification.createdAt,
-  created_at: notification.created_at, // ← AGREGAR ESTA LÍNEA
-  readAt: notification.readAt,
-  read_at: notification.read_at, // ← AGREGAR ESTA LÍNEA
-  notification: notification
-  });
-  
-  if (!notification.createdAt) {
-    return 'Sin fecha';
-  }
-  
-  return formatRelativeTime(notification.createdAt);
-})()}</span>
-                        {notification.readAt && (
-                          <span className="ml-2 flex items-center">
-                            <Check size={12} className="mr-1" />
-                            Leída el {<span>Leída el {(() => {
-  if (!notification.readAt) {
-    return 'nunca';
-  }
-  return formatRelativeTime(notification.readAt);
-})()}</span>}
+
+                      {/* Contenido */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center space-x-2 mb-1">
+                          <h3 className={`text-base font-medium ${
+                            !notification.read ? 'text-gray-900' : 'text-gray-700'
+                          }`}>
+                            {notification.title}
+                          </h3>
+                          {!notification.read && (
+                            <div className="w-2 h-2 bg-primary-500 rounded-full"></div>
+                          )}
+                        </div>
+                        
+                        <p className={`text-sm ${
+                          !notification.read ? 'text-gray-700' : 'text-gray-600'
+                        } mb-2`}>
+                          {notification.message}
+                        </p>
+                        
+                        <div className="flex items-center text-xs text-gray-500">
+                          {/* Fecha de creación */}
+                          <span>
+                            {createdAt ? formatRelativeTime(createdAt) : 'Sin fecha'}
                           </span>
-                        )}
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Menú de acciones */}
-                  <NotificationActions
-                    notification={notification}
-                    onMarkAsRead={handleMarkAsRead}
-                    onDelete={handleDelete}
-                    isOpen={activeMenu === notification.id}
-                    onToggle={() => setActiveMenu(
-                      activeMenu === notification.id ? null : notification.id!
-                    )}
-                  />
+                    {/* Menú de acciones */}
+                    <NotificationActions
+                      notification={notification}
+                      onMarkAsRead={handleMarkAsRead}
+                      onDelete={handleDelete}
+                      isOpen={activeMenu === notification.id}
+                      onToggle={() => setActiveMenu(
+                        activeMenu === notification.id ? null : notification.id!
+                      )}
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
 
           {/* Botón cargar más */}
           {hasMore && (
