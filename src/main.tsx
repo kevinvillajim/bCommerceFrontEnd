@@ -7,6 +7,7 @@ import { CartProvider } from './presentation/contexts/CartContext';
 import { FavoriteProvider } from './presentation/contexts/FavoriteContext';
 import { NotificationProvider } from './presentation/contexts/NotificationContext';
 import { ThemeProvider } from './presentation/contexts/ThemeContext';
+import NotificationWrapper from './presentation/components/layout/NotificationWrapper';
 import PrefetchService from './infrastructure/services/PrefetchService';
 
 // Import main styles
@@ -53,7 +54,9 @@ if (root) {
             <CartProvider>
               <FavoriteProvider>
                 <NotificationProvider>
+                  <NotificationWrapper>
                     <App />
+                  </NotificationWrapper> 
                 </NotificationProvider>
               </FavoriteProvider>
             </CartProvider>

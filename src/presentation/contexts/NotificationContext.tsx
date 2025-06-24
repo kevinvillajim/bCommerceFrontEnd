@@ -1,9 +1,9 @@
 // src/presentation/contexts/NotificationContext.tsx
-import React, { createContext, useState, useEffect} from 'react';
+import React, { createContext, useState, useEffect, useCallback, useRef } from 'react';
 import type { ReactNode } from 'react';
 import ApiClient from '../../infrastructure/api/apiClient';
 import { API_ENDPOINTS } from '../../constants/apiEndpoints';
-import type { Notification, NotificationCountResponse } from '../../core/domain/entities/Notification';
+import type { Notification } from '../../core/domain/entities/Notification';
 import { useAuth } from '../hooks/useAuth';
 
 interface NotificationContextProps {
@@ -11,9 +11,15 @@ interface NotificationContextProps {
   loading: boolean;
   error: string | null;
   unreadCount: number;
-  fetchNotifications: () => Promise<void>;
+  hasMore: boolean;
+  currentPage: number;
+  totalNotifications: number;
+  fetchNotifications: (page?: number, showUnreadOnly?: boolean) => Promise<void>;
   markAsRead: (id: number) => Promise<boolean>;
   markAllAsRead: () => Promise<boolean>;
+  deleteNotification: (id: number) => Promise<boolean>;
+  refreshUnreadCount: () => Promise<void>;
+  getNotificationUrl: (notification: Notification) => string | null;
 }
 
 export const NotificationContext = createContext<NotificationContextProps>({
@@ -21,9 +27,15 @@ export const NotificationContext = createContext<NotificationContextProps>({
   loading: false,
   error: null,
   unreadCount: 0,
+  hasMore: false,
+  currentPage: 1,
+  totalNotifications: 0,
   fetchNotifications: async () => {},
   markAsRead: async () => false,
-  markAllAsRead: async () => false
+  markAllAsRead: async () => false,
+  deleteNotification: async () => false,
+  refreshUnreadCount: async () => {},
+  getNotificationUrl: () => null
 });
 
 interface NotificationProviderProps {
@@ -35,98 +47,159 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [unreadCount, setUnreadCount] = useState<number>(0);
+  const [hasMore, setHasMore] = useState<boolean>(false);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [totalNotifications, setTotalNotifications] = useState<number>(0);
+
   const { isAuthenticated } = useAuth();
+  const isInitialized = useRef(false);
+  const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Cargar notificaciones cuando el usuario está autenticado
+
+  // Limpiar timeouts al desmontar
   useEffect(() => {
-    if (isAuthenticated) {
-      fetchUnreadCount();
-    } else {
-      setNotifications([]);
-      setUnreadCount(0);
-    }
-  }, [isAuthenticated]);
+    return () => {
+      if (refreshTimeoutRef.current) {
+        clearTimeout(refreshTimeoutRef.current);
+      }
+    };
+  }, []);
 
-  // Obtener lista de notificaciones
-  const fetchNotifications = async (): Promise<void> => {
+  // Obtener lista de notificaciones con paginación
+  const fetchNotifications = useCallback(async (page: number = 1, showUnreadOnly: boolean = false): Promise<void> => {
     if (!isAuthenticated) return;
     
     setLoading(true);
     setError(null);
     
     try {
-    const response = await ApiClient.get<{ notifications: Notification[]; unread_count: number }>(
-      API_ENDPOINTS.NOTIFICATIONS.LIST
-        );
-      setNotifications(response.notifications || []);
-      setUnreadCount(response.unread_count || 0);
+      const endpoint = showUnreadOnly 
+        ? API_ENDPOINTS.NOTIFICATIONS.UNREAD 
+        : API_ENDPOINTS.NOTIFICATIONS.LIST;
+      
+      const params = {
+        page,
+        limit: 20,
+        ...(showUnreadOnly && { unread: true })
+      };
+
+      const response = await ApiClient.get<{
+        status: string;
+        data: {
+          notifications: Notification[];
+          unread_count: number;
+          total: number;
+        };
+      }>(endpoint, params);
+
+      if (response.status === 'success' && response.data) {
+        const { notifications: newNotifications, unread_count, total } = response.data;
+        
+        if (page === 1) {
+          setNotifications(newNotifications);
+        } else {
+          setNotifications(prev => [...prev, ...newNotifications]);
+        }
+        
+        setUnreadCount(unread_count);
+        setTotalNotifications(total);
+        setCurrentPage(page);
+        setHasMore(newNotifications.length === 20); // Si recibimos 20, probablemente hay más
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cargar notificaciones');
       console.error('Error fetching notifications:', err);
     } finally {
       setLoading(false);
     }
-  };
+  }, [isAuthenticated]);
 
-  // Obtener solo el contador de no leídas (más ligero que obtener todas las notificaciones)
-  const fetchUnreadCount = async (): Promise<void> => {
+  // Obtener solo el contador de no leídas (más ligero)
+  const refreshUnreadCount = useCallback(async (): Promise<void> => {
     if (!isAuthenticated) return;
     
     try {
-      const response = await ApiClient.get<NotificationCountResponse>(API_ENDPOINTS.NOTIFICATIONS.COUNT);
-      setUnreadCount(response.count || 0);
+      const response = await ApiClient.get<{
+        status: string;
+        data: {
+          unread_count: number;
+        };
+      }>(API_ENDPOINTS.NOTIFICATIONS.COUNT);
+
+      if (response.status === 'success' && response.data) {
+        setUnreadCount(response.data.unread_count);
+      }
     } catch (err) {
       console.error('Error fetching notification count:', err);
     }
-  };
+  }, [isAuthenticated]);
 
   // Marcar notificación como leída
-  const markAsRead = async (id: number): Promise<boolean> => {
+  const markAsRead = useCallback(async (id: number): Promise<boolean> => {
     if (!isAuthenticated) return false;
     
-    setLoading(true);
-    setError(null);
-    
     try {
-      await ApiClient.post(API_ENDPOINTS.NOTIFICATIONS.MARK_AS_READ(id));
+      const response = await ApiClient.post<{
+        status: string;
+        data: {
+          unread_count: number;
+        };
+      }>(`${API_ENDPOINTS.NOTIFICATIONS.MARK_AS_READ(id)}`);
       
-      // Actualizar la lista y el contador
-      await fetchUnreadCount();
+      if (response.status === 'success') {
+        // Actualizar el estado local
+        setNotifications(prev => 
+          prev.map(notif => 
+            notif.id === id ? { ...notif, read: true, readAt: new Date().toISOString() } : notif
+          )
+        );
+        
+        // Actualizar contador
+        if (response.data?.unread_count !== undefined) {
+          setUnreadCount(response.data.unread_count);
+        } else {
+          setUnreadCount(prev => Math.max(0, prev - 1));
+        }
+        
+        return true;
+      }
       
-      // Actualizar el estado local
-      setNotifications(prev => 
-        prev.map(notif => 
-          notif.id === id ? { ...notif, read: true, readAt: new Date().toISOString() } : notif
-        )
-      );
-      
-      return true;
+      return false;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al marcar notificación como leída');
       console.error('Error marking notification as read:', err);
       return false;
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [isAuthenticated]);
 
   // Marcar todas las notificaciones como leídas
-  const markAllAsRead = async (): Promise<boolean> => {
+  const markAllAsRead = useCallback(async (): Promise<boolean> => {
     if (!isAuthenticated) return false;
     
     setLoading(true);
     setError(null);
     
     try {
-      await ApiClient.post(API_ENDPOINTS.NOTIFICATIONS.MARK_ALL_AS_READ);
+      const response = await ApiClient.post<{
+        status: string;
+        data: {
+          unread_count: number;
+        };
+      }>(API_ENDPOINTS.NOTIFICATIONS.MARK_ALL_AS_READ);
       
-      // Actualizar la lista y el contador
-      setUnreadCount(0);
-      setNotifications(prev => 
-        prev.map(notif => ({ ...notif, read: true, readAt: new Date().toISOString() }))
-      );
+      if (response.status === 'success') {
+        // Actualizar la lista
+        setNotifications(prev => 
+          prev.map(notif => ({ ...notif, read: true, readAt: new Date().toISOString() }))
+        );
+        
+        // Reset contador
+        setUnreadCount(0);
+        
+        return true;
+      }
       
-      return true;
+      return false;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al marcar todas las notificaciones como leídas');
       console.error('Error marking all notifications as read:', err);
@@ -134,7 +207,104 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     } finally {
       setLoading(false);
     }
-  };
+  }, [isAuthenticated]);
+
+  // Eliminar notificación
+  const deleteNotification = useCallback(async (id: number): Promise<boolean> => {
+    if (!isAuthenticated) return false;
+    
+    try {
+      const response = await ApiClient.delete<{
+        status: string;
+        data: {
+          unread_count: number;
+        };
+      }>(`${API_ENDPOINTS.NOTIFICATIONS.DELETE(id)}`);
+      
+      if (response.status === 'success') {
+        // Encontrar la notificación antes de eliminarla
+        const notification = notifications.find(n => n.id === id);
+        const wasUnread = notification && !notification.read;
+        
+        // Remover de la lista local
+        setNotifications(prev => prev.filter(notif => notif.id !== id));
+        
+        // Actualizar contador si la notificación no estaba leída
+        if (wasUnread) {
+          if (response.data?.unread_count !== undefined) {
+            setUnreadCount(response.data.unread_count);
+          } else {
+            setUnreadCount(prev => Math.max(0, prev - 1));
+          }
+        }
+        
+        // Actualizar total
+        setTotalNotifications(prev => Math.max(0, prev - 1));
+        
+        return true;
+      }
+      
+      return false;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al eliminar notificación');
+      console.error('Error deleting notification:', err);
+      return false;
+    }
+  }, [isAuthenticated, notifications]);
+
+  // Cargar notificaciones y contador cuando el usuario está autenticado
+  useEffect(() => {
+    if (isAuthenticated) {
+      if (!isInitialized.current) {
+        fetchNotifications(1);
+        refreshUnreadCount();
+        isInitialized.current = true;
+      }
+    } else {
+      // Reset cuando no está autenticado
+      setNotifications([]);
+      setUnreadCount(0);
+      setCurrentPage(1);
+      setTotalNotifications(0);
+      setHasMore(false);
+      isInitialized.current = false;
+    }
+  }, [isAuthenticated, fetchNotifications, refreshUnreadCount]);
+
+  // Obtener URL de destino según el tipo de notificación
+  const getNotificationUrl = useCallback((notification: Notification): string | null => {
+    const { type, data } = notification;
+    
+    switch (type) {
+      case 'new_message':
+        return data.chat_id ? `/chats/${data.chat_id}` : null;
+        
+      case 'feedback_response':
+        return data.feedback_id ? `/feedback/${data.feedback_id}` : '/feedback';
+        
+      case 'order_status':
+        return data.order_id ? `/orders/${data.order_id}` : '/orders';
+        
+      case 'product_update':
+        return data.product_id ? `/products/${data.product_id}` : null;
+        
+      case 'shipping_update':
+        return data.tracking_number ? `/tracking/${data.tracking_number}` : (data.order_id ? `/orders/${data.order_id}` : null);
+        
+      case 'rating_received':
+      case 'seller_rated':
+        return data.rating_id ? `/ratings/${data.rating_id}` : '/profile';
+        
+      case 'new_order':
+        return data.order_id ? `/seller/orders/${data.order_id}` : '/seller/orders';
+        
+      case 'low_stock':
+        return data.product_id ? `/seller/products/${data.product_id}` : '/seller/products';
+        
+      default:
+        return null;
+    }
+  }, []);
 
   return (
     <NotificationContext.Provider value={{
@@ -142,9 +312,15 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       loading,
       error,
       unreadCount,
+      hasMore,
+      currentPage,
+      totalNotifications,
       fetchNotifications,
       markAsRead,
-      markAllAsRead
+      markAllAsRead,
+      deleteNotification,
+      refreshUnreadCount,
+      getNotificationUrl
     }}>
       {children}
     </NotificationContext.Provider>

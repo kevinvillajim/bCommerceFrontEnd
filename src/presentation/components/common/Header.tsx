@@ -122,6 +122,8 @@ const Header: React.FC<HeaderProps> = ({
 		return "U";
 	};
 
+	const notificationCountSanitized = notificationCount > 99 ? "99" : notificationCount;
+
 	return (
 		<header className="bg-white shadow-md sticky top-0 z-50">
 			{/* Top Bar */}
@@ -216,7 +218,7 @@ const Header: React.FC<HeaderProps> = ({
 									<Bell size={22} />
 									{notificationCount > 0 && (
 										<span className="absolute -top-2 -right-2 bg-primary-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-											{notificationCount}
+											{notificationCountSanitized}
 										</span>
 									)}
 								</Link>
