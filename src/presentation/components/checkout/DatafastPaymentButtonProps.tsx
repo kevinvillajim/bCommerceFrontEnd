@@ -2,7 +2,9 @@ import React, {useState, useRef, useEffect} from "react";
 import {useNavigate} from "react-router-dom";
 import {useCart} from "../../hooks/useCart";
 import {DatafastService} from "../../../core/services/DatafastService";
+import {CheckoutService} from "../../../core/services/CheckoutService";
 import type {DatafastCheckoutRequest} from "../../../core/services/DatafastService";
+import type {PaymentMethod, ShippingInfo, PaymentInfo} from "../../../core/services/CheckoutService";
 import {NotificationType} from "../../contexts/CartContext";
 
 interface DatafastPaymentButtonProps {
@@ -46,6 +48,7 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 	});
 
 	const datafastService = new DatafastService();
+	const checkoutService = new CheckoutService(); // ✅ AGREGAR CHECKOUT SERVICE
 
 	// Limpiar al desmontar componente
 	useEffect(() => {
@@ -231,7 +234,77 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 		}
 	};
 
-	// Verificar pago (simulación para pruebas)
+	// ✅ NUEVO: Prueba completa de checkout (como TestCheckoutButton)
+	const handleCompleteTestCheckout = async () => {
+		if (!cart || cart.items.length === 0) {
+			showNotification(NotificationType.ERROR, "El carrito está vacío");
+			return;
+		}
+
+		if (!validateFormData()) {
+			return;
+		}
+
+		setIsLoading(true);
+
+		try {
+			console.log("Iniciando checkout de prueba completo...");
+
+			// ✅ OBTENER SELLER_ID DEL CARRITO
+			const sellerId = CheckoutService.getSellerIdFromCart(cart);
+			console.log("Seller ID obtenido:", sellerId);
+
+			// Datos de prueba completos (similar al TestCheckoutButton original)
+			const testCheckoutData = {
+				payment: {
+					method: "transfer" as PaymentMethod, // Datafast usa transfer
+				} as PaymentInfo,
+				shipping: {
+					address: formData.address || "Calle de Prueba 123",
+					city: formData.city || "Quito", 
+					state: formData.country || "Pichincha",
+					country: formData.country || "Ecuador",
+					postal_code: "170000",
+					phone: formData.phone || "0999999999",
+				} as ShippingInfo,
+				seller_id: sellerId, // ✅ AGREGAR SELLER_ID
+			};
+
+			console.log("Procesando checkout de prueba:", testCheckoutData);
+
+			// Procesar directamente con CheckoutService (saltándose Datafast para la prueba)
+			const response = await checkoutService.processCheckout(testCheckoutData);
+
+			if (response.status === "success") {
+				clearCart();
+				setShowWidget(false);
+				setShowForm(false);
+
+				showNotification(
+					NotificationType.SUCCESS,
+					"¡Pedido de prueba completado con éxito!"
+				);
+
+				// Mostrar los detalles de la orden
+				console.log("Detalles de la orden de prueba:", response.data);
+
+				onSuccess?.(response.data);
+				navigate("/orders");
+			} else {
+				throw new Error(response.message || "Error en el checkout de prueba");
+			}
+		} catch (error) {
+			console.error("Error en el checkout de prueba completo:", error);
+			const errorMessage =
+				error instanceof Error ? error.message : "Error al procesar el checkout de prueba";
+			showNotification(NotificationType.ERROR, errorMessage);
+			onError?.(errorMessage);
+		} finally {
+			setIsLoading(false);
+		}
+	};
+
+	// ✅ ACTUALIZADO: Verificar pago con proceso completo
 	const handleSimulatePaymentResult = async () => {
 		if (!checkoutData) {
 			showNotification(NotificationType.ERROR, "No hay datos de checkout");
@@ -240,34 +313,73 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 
 		setIsLoading(true);
 		try {
-			console.log("Simulando pago exitoso...");
+			console.log("Simulando pago exitoso completo...");
 
-			// Usar el método actualizado que recibe los parámetros directamente
+			// PASO 1: Simular el pago exitoso con Datafast
 			const verifyResponse = await datafastService.simulateSuccessfulPayment(
 				checkoutData.checkout_id,
 				checkoutData.transaction_id
 			);
 
-			console.log("Respuesta de verificación:", verifyResponse);
+			console.log("Respuesta de verificación Datafast:", verifyResponse);
 
 			if (verifyResponse.success && verifyResponse.data) {
-				clearCart();
-				setShowWidget(false);
+				// PASO 2: Procesar el checkout completo en el sistema
+				console.log("Procesando checkout completo en el sistema...");
+				
+				// ✅ OBTENER SELLER_ID DEL CARRITO
+				const sellerId = CheckoutService.getSellerIdFromCart(cart);
+				console.log("Seller ID obtenido:", sellerId);
+				
+				// Preparar datos completos para el checkout
+				const checkoutRequestData = {
+					payment: {
+						method: "transfer" as PaymentMethod, // Datafast usa transfer
+					} as PaymentInfo,
+					shipping: {
+						address: formData.address,
+						city: formData.city,
+						state: formData.country, // Usar country como state para simplificar
+						country: formData.country,
+						postal_code: "00000", // Código postal por defecto
+						phone: formData.phone,
+					} as ShippingInfo,
+					seller_id: sellerId, // ✅ AGREGAR SELLER_ID
+				};
 
-				showNotification(
-					NotificationType.SUCCESS,
-					"¡Pago completado exitosamente!"
-				);
+				// Procesar el checkout completo
+				const checkoutResponse = await checkoutService.processCheckout(checkoutRequestData);
+				
+				console.log("Respuesta del checkout completo:", checkoutResponse);
 
-				onSuccess?.(verifyResponse.data);
-				navigate("/orders");
+				if (checkoutResponse.status === "success") {
+					// PASO 3: Completar el proceso (limpiar carrito, notificar, navegar)
+					clearCart();
+					setShowWidget(false);
+
+					showNotification(
+						NotificationType.SUCCESS,
+						"¡Pago y pedido completados exitosamente!"
+					);
+
+					// Mostrar detalles de la orden
+					console.log("Detalles completos de la orden:", {
+						datafast: verifyResponse.data,
+						checkout: checkoutResponse.data
+					});
+
+					onSuccess?.(checkoutResponse.data); // Usar datos del checkout completo
+					navigate("/orders");
+				} else {
+					throw new Error(checkoutResponse.message || "Error al procesar el checkout completo");
+				}
 			} else {
-				throw new Error(verifyResponse.message || "Pago no completado");
+				throw new Error(verifyResponse.message || "Error en la simulación de Datafast");
 			}
 		} catch (error) {
-			console.error("Error al verificar pago:", error);
+			console.error("Error en la simulación completa:", error);
 			const errorMessage =
-				error instanceof Error ? error.message : "Error al verificar pago";
+				error instanceof Error ? error.message : "Error al procesar la simulación completa";
 			showNotification(NotificationType.ERROR, errorMessage);
 			onError?.(errorMessage);
 		} finally {
@@ -391,40 +503,70 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 						</div>
 					</div>
 
-					{/* Botones de control */}
-					<div className="mt-6 flex gap-4">
-						<button
-							onClick={handleRealPayment}
-							disabled={!widgetLoaded}
-							className="flex-1 bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-md transition-colors disabled:opacity-50"
-						>
-							Pago Real
-						</button>
+					{/* ✅ BOTONES ACTUALIZADOS */}
+					<div className="mt-6 space-y-4">
+						{/* Botones principales */}
+						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+							<button
+								onClick={handleRealPayment}
+								disabled={!widgetLoaded}
+								className="bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-md transition-colors disabled:opacity-50"
+							>
+								Pago Real
+							</button>
 
-						<button
-							onClick={handleSimulatePaymentResult}
-							disabled={isLoading}
-							className="flex-1 bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-md transition-colors disabled:opacity-50"
-						>
-							{isLoading ? "Verificando..." : "Simular Pago Exitoso"}
-						</button>
+							<button
+								onClick={handleSimulatePaymentResult}
+								disabled={isLoading}
+								className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-md transition-colors disabled:opacity-50"
+							>
+								{isLoading ? "Verificando..." : "Simular Pago Exitoso"}
+							</button>
+						</div>
 
-						<button
-							onClick={() => {
-								setShowWidget(false);
-								setShowForm(true);
-								setWidgetLoaded(false);
-								// Limpiar script
-								const script = document.getElementById(
-									"datafast-widget-script"
-								);
-								if (script) script.remove();
-							}}
-							disabled={isLoading}
-							className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
-						>
-							Volver
-						</button>
+						{/* Botón de prueba completa */}
+						<div className="border-t pt-4">
+							<button
+								onClick={handleCompleteTestCheckout}
+								disabled={isLoading}
+								className="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-medium py-3 px-4 rounded-md transition-colors disabled:opacity-50 flex items-center justify-center"
+							>
+								{isLoading ? (
+									<>
+										<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+										Procesando...
+									</>
+								) : (
+									<>
+										<svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+										</svg>
+										Prueba Completa de Checkout
+									</>
+								)}
+							</button>
+							<p className="text-xs text-gray-500 text-center mt-2">
+								Simula el proceso completo de checkout como el botón de prueba original
+							</p>
+						</div>
+
+						{/* Botón volver */}
+						<div className="flex justify-center">
+							<button
+								onClick={() => {
+									setShowWidget(false);
+									setShowForm(true);
+									setWidgetLoaded(false);
+									// Limpiar script
+									const script = document.getElementById("datafast-widget-script");
+									if (script) script.remove();
+								}}
+								disabled={isLoading}
+								className="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
+							>
+								Volver
+							</button>
+						</div>
 					</div>
 				</div>
 			</div>

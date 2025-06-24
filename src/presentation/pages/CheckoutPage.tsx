@@ -176,7 +176,10 @@ const CheckoutPage: React.FC = () => {
 					method: paymentMethod === "deuna" ? ("transfer" as PaymentMethod) : paymentMethod,
 				},
 				shipping: shippingInfo,
+				// ✅ NO ENVIAR seller_id - el backend lo obtiene de los productos
 			};
+
+			console.log("Procesando checkout con datos:", checkoutData);
 
 			const response = await checkoutService.processCheckout(checkoutData);
 

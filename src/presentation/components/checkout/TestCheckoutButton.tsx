@@ -22,7 +22,11 @@ const TestCheckoutButton: React.FC<TestCheckoutButtonProps> = () => {
 
 		setIsLoading(true);
 		try {
-			// Datos de prueba - eliminado seller_id
+			// ✅ OBTENER SELLER_ID DEL CARRITO
+			const sellerId = CheckoutService.getSellerIdFromCart(cart);
+			console.log("Seller ID obtenido para test:", sellerId);
+
+			// Datos de prueba - agregado seller_id de vuelta
 			const testData = {
 				payment: {
 					method: "credit_card" as PaymentMethod,
@@ -38,7 +42,10 @@ const TestCheckoutButton: React.FC<TestCheckoutButtonProps> = () => {
 					postal_code: "12345",
 					phone: "123456789",
 				},
+				seller_id: sellerId, // ✅ AGREGAR SELLER_ID DE VUELTA
 			};
+
+			console.log("Procesando checkout de prueba con datos:", testData);
 
 			const response = await checkoutService.processCheckout(testData);
 

@@ -77,29 +77,83 @@ const getNotificationColor = (type: string) => {
   }
 };
 
-// Función para formatear tiempo relativo
+// Función mejorada para formatear tiempo relativo
 const formatRelativeTime = (dateString: string): string => {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-  
-  if (diffInSeconds < 60) {
-    return 'Ahora mismo';
-  } else if (diffInSeconds < 3600) {
-    const minutes = Math.floor(diffInSeconds / 60);
-    return `${minutes} ${minutes === 1 ? 'minuto' : 'minutos'}`;
-  } else if (diffInSeconds < 86400) {
-    const hours = Math.floor(diffInSeconds / 3600);
-    return `${hours} ${hours === 1 ? 'hora' : 'horas'}`;
-  } else if (diffInSeconds < 604800) {
-    const days = Math.floor(diffInSeconds / 86400);
-    return `${days} ${days === 1 ? 'día' : 'días'}`;
-  } else {
-    return date.toLocaleDateString('es-ES', {
+  // ✅ Validación básica
+  if (!dateString) {
+    console.warn('⚠️ formatRelativeTime: fecha vacía o undefined');
+    return 'Fecha desconocida';
+  }
+
+  try {
+    // ✅ Crear fecha directamente desde ISO string
+    const date = new Date(dateString);
+    
+    // ✅ Verificar que la fecha es válida
+    if (isNaN(date.getTime())) {
+      console.error('❌ formatRelativeTime: fecha inválida:', dateString);
+      return 'Fecha inválida';
+    }
+
+    // ✅ Calcular diferencia
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffSeconds = Math.floor(diffMs / 1000);
+    const diffMinutes = Math.floor(diffSeconds / 60);
+    const diffHours = Math.floor(diffMinutes / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    // 🐛 DEBUG: Agregar logging temporal (puedes quitarlo después)
+    console.log('🔍 formatRelativeTime debug:', {
+      input: dateString,
+      parsed: date.toISOString(),
+      now: now.toISOString(),
+      diffSeconds,
+      diffMinutes,
+      diffHours,
+      diffDays
+    });
+
+    // ✅ Lógica de formateo
+    if (diffSeconds < 0) {
+      // Fecha en el futuro
+      return date.toLocaleDateString('es-EC', { 
+        month: 'short', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+    
+    if (diffSeconds < 60) {
+      return 'Ahora mismo';
+    }
+    
+    if (diffMinutes < 60) {
+      return `${diffMinutes} ${diffMinutes === 1 ? 'minuto' : 'minutos'}`;
+    }
+    
+    if (diffHours < 24) {
+      return `${diffHours} ${diffHours === 1 ? 'hora' : 'horas'}`;
+    }
+    
+    if (diffDays < 7) {
+      return `${diffDays} ${diffDays === 1 ? 'día' : 'días'}`;
+    }
+    
+    // Para fechas más antiguas, mostrar fecha absoluta
+    const currentYear = now.getFullYear();
+    const dateYear = date.getFullYear();
+    
+    return date.toLocaleDateString('es-EC', {
       day: 'numeric',
       month: 'short',
-      year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+      ...(dateYear !== currentYear && { year: 'numeric' })
     });
+
+  } catch (error) {
+    console.error('💥 Error en formatRelativeTime:', error, 'Input:', dateString);
+    return 'Error en fecha';
   }
 };
 
@@ -197,6 +251,12 @@ const NotificationPage: React.FC = () => {
       fetchNotifications(1, filter === 'unread');
     }
   }, [isAuthenticated, filter]);
+
+  useEffect(() => {
+    if (notifications.length > 0) {
+      console.log('📊 Notificaciones recibidas:', notifications.slice(0, 2));
+    }
+  }, [notifications]);
 
   // Manejar click en notificación
   const handleNotificationClick = async (notification: Notification) => {
@@ -398,11 +458,31 @@ const NotificationPage: React.FC = () => {
                       </p>
                       
                       <div className="flex items-center text-xs text-gray-500">
-                        <span>{formatRelativeTime(notification.createdAt)}</span>
+                      <span>{(() => {
+  console.log('🔍 Debug notificación:', {
+    id: notification.id,
+  createdAt: notification.createdAt,
+  created_at: notification.created_at, // ← AGREGAR ESTA LÍNEA
+  readAt: notification.readAt,
+  read_at: notification.read_at, // ← AGREGAR ESTA LÍNEA
+  notification: notification
+  });
+  
+  if (!notification.createdAt) {
+    return 'Sin fecha';
+  }
+  
+  return formatRelativeTime(notification.createdAt);
+})()}</span>
                         {notification.readAt && (
                           <span className="ml-2 flex items-center">
                             <Check size={12} className="mr-1" />
-                            Leída
+                            Leída el {<span>Leída el {(() => {
+  if (!notification.readAt) {
+    return 'nunca';
+  }
+  return formatRelativeTime(notification.readAt);
+})()}</span>}
                           </span>
                         )}
                       </div>

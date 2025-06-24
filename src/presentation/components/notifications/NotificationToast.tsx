@@ -11,6 +11,59 @@ interface NotificationToastProps {
   autoCloseTime?: number;
 }
 
+// Función mejorada para formatear tiempo relativo (igual que en NotificationPage)
+const formatRelativeTime = (dateString: string): string => {
+  try {
+    // Verificar si la fecha está vacía o es inválida
+    if (!dateString || dateString.trim() === '') {
+      return 'Ahora';
+    }
+
+    let date: Date;
+
+    // Si la fecha viene en formato "YYYY-MM-DD HH:mm:ss" (formato Laravel sin zona horaria)
+    if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(dateString.trim())) {
+      // Asumir que es hora local de Ecuador (UTC-5)
+      // Convertir formato Laravel a ISO string
+      const isoString = dateString.replace(' ', 'T') + '-05:00';
+      date = new Date(isoString);
+    } else {
+      // Intentar parsear directamente
+      date = new Date(dateString);
+    }
+
+    // Verificar si la fecha es válida
+    if (isNaN(date.getTime())) {
+      console.warn('Fecha inválida recibida en toast:', dateString);
+      return 'Ahora';
+    }
+
+    const now = new Date();
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+    
+    // Si la diferencia es negativa (fecha en el futuro), mostrar "Ahora"
+    if (diffInSeconds < 0) {
+      return 'Ahora';
+    }
+    
+    if (diffInSeconds < 60) {
+      return 'Ahora mismo';
+    } else if (diffInSeconds < 3600) {
+      const minutes = Math.floor(diffInSeconds / 60);
+      return `${minutes} min`;
+    } else if (diffInSeconds < 86400) {
+      const hours = Math.floor(diffInSeconds / 3600);
+      return `${hours} h`;
+    } else {
+      const days = Math.floor(diffInSeconds / 86400);
+      return `${days} d`;
+    }
+  } catch (error) {
+    console.error('Error al formatear fecha en toast:', error, 'Fecha original:', dateString);
+    return 'Ahora';
+  }
+};
+
 const NotificationToast: React.FC<NotificationToastProps> = ({
   notification,
   onClose,
@@ -155,13 +208,22 @@ const NotificationToast: React.FC<NotificationToastProps> = ({
               </button>
             </div>
             
-            {/* Indicador de no leída */}
-            {!notification.read && (
-              <div className="flex items-center mt-2">
-                <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
-                <span className="text-xs text-blue-600 font-medium">Nueva</span>
+            {/* Tiempo y estado */}
+            <div className="flex items-center justify-between mt-2">
+              <div className="flex items-center">
+                {!notification.read && (
+                  <>
+                    <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
+                    <span className="text-xs text-blue-600 font-medium">Nueva</span>
+                  </>
+                )}
               </div>
-            )}
+              
+              {/* Tiempo relativo */}
+              <span className="text-xs text-gray-500">
+                {formatRelativeTime(notification.createdAt)}
+              </span>
+            </div>
           </div>
         </div>
       </div>
