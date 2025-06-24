@@ -263,9 +263,9 @@ const CartPage: React.FC = () => {
 			
 			// Obtener porcentaje de descuento
 			discountPercentage = item.product.discount_percentage || 
-								item.product.discountPercentage || 
-								item.product.discount || 
-								0;
+			item.product.discountPercentage || 
+			item.product.discount || 
+			0;
 		}
 		
 		console.log("💰 CartPage - Precio original:", originalPrice);
