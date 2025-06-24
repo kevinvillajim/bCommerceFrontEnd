@@ -19,7 +19,6 @@ C:.
 |   tsconfig.json
 |   tsconfig.node.json
 |   vite.config.ts
-|   
 |               
 +---public
 |       favicon.ico
@@ -221,6 +220,12 @@ C:.
     |   |   +---FAQ
     |   |   |       FAQBase.tsx
     |   |   |       
+    |   |   +---layout
+    |   |   |       NotificationWrapper.tsx
+    |   |   |       
+    |   |   +---notifications
+    |   |   |       NotificationToast.tsx
+    |   |   |       
     |   |   +---orders
     |   |   |       OrderFilters.tsx
     |   |   |       OrderStatusBadge.tsx
@@ -292,6 +297,7 @@ C:.
     |   |       useProducts.ts
     |   |       useProductSearch.ts
     |   |       useRatings.ts
+    |   |       useRealTimeNotifications.ts
     |   |       useSellerAdmin.ts
     |   |       useSellerProducts.ts
     |   |       useSellerRatings.ts
@@ -320,6 +326,7 @@ C:.
     |   |   |   HomePage.tsx
     |   |   |   LoginPage.tsx
     |   |   |   NotFoundPage.tsx
+    |   |   |   NotificationPage.tsx
     |   |   |   OrderDetailClientPage.tsx
     |   |   |   OrdersPage.tsx
     |   |   |   ProductItemPage.tsx
@@ -386,17 +393,20 @@ C:.
     +---styles
     |       dark-mode.css
     |       main.css
+    |       notification-animations.css
     |       tailwind.css
     |       
     \---utils
         |   apiHealthCheck.ts
         |   apiResponseInspector.ts
         |   categoryUtils.ts
+        |   dateUtils.ts
         |   debugUtils.ts
         |   errorHandler.ts
         |   helpers.ts
         |   imageHelper.tsx
         |   imageUtils.ts
+        |   notificationHelpers.ts
         |   productAdapter.ts
         |   sellerHelper.ts
         |   unifiedImageUtils.ts

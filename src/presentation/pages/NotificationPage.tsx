@@ -1,4 +1,4 @@
-// src/presentation/pages/NotificationPage.tsx
+// src/presentation/pages/NotificationPage.tsx - CORREGIDO para sellers
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -20,11 +20,7 @@ import {
 import { useNotifications } from '../hooks/useNotifications';
 import { useAuth } from '../hooks/useAuth';
 import type { Notification } from '../../core/domain/entities/Notification';
-
-// ✅ Función helper para manejar las fechas
-const getNotificationCreatedAt = (notification: Notification): string => {
-  return notification.createdAt || (notification as any).created_at || '';
-};
+import { formatRelativeTime } from '../../utils/dateUtils';
 
 // Función para obtener el icono según el tipo de notificación
 const getNotificationIcon = (type: string) => {
@@ -79,75 +75,6 @@ const getNotificationColor = (type: string) => {
       return 'bg-pink-50 border-pink-200';
     default:
       return 'bg-gray-50 border-gray-200';
-  }
-};
-
-// ✅ Función mejorada para formatear tiempo relativo
-const formatRelativeTime = (dateString: string): string => {
-  // Validación básica
-  if (!dateString || dateString.trim() === '') {
-    console.warn('⚠️ formatRelativeTime: fecha vacía o undefined');
-    return 'Fecha desconocida';
-  }
-
-  try {
-    // Crear fecha directamente desde ISO string
-    const date = new Date(dateString);
-    
-    // Verificar que la fecha es válida
-    if (isNaN(date.getTime())) {
-      console.error('❌ formatRelativeTime: fecha inválida:', dateString);
-      return 'Fecha inválida';
-    }
-
-    // Calcular diferencia
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffSeconds = Math.floor(diffMs / 1000);
-    const diffMinutes = Math.floor(diffSeconds / 60);
-    const diffHours = Math.floor(diffMinutes / 60);
-    const diffDays = Math.floor(diffHours / 24);
-
-    // Lógica de formateo
-    if (diffSeconds < 0) {
-      // Fecha en el futuro
-      return date.toLocaleDateString('es-EC', { 
-        month: 'short', 
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    }
-    
-    if (diffSeconds < 60) {
-      return 'Ahora mismo';
-    }
-    
-    if (diffMinutes < 60) {
-      return `${diffMinutes} ${diffMinutes === 1 ? 'minuto' : 'minutos'}`;
-    }
-    
-    if (diffHours < 24) {
-      return `${diffHours} ${diffHours === 1 ? 'hora' : 'horas'}`;
-    }
-    
-    if (diffDays < 7) {
-      return `${diffDays} ${diffDays === 1 ? 'día' : 'días'}`;
-    }
-    
-    // Para fechas más antiguas, mostrar fecha absoluta
-    const currentYear = now.getFullYear();
-    const dateYear = date.getFullYear();
-    
-    return date.toLocaleDateString('es-EC', {
-      day: 'numeric',
-      month: 'short',
-      ...(dateYear !== currentYear && { year: 'numeric' })
-    });
-
-  } catch (error) {
-    console.error('💥 Error en formatRelativeTime:', error, 'Input:', dateString);
-    return 'Error en fecha';
   }
 };
 
@@ -215,7 +142,7 @@ const NotificationPage: React.FC = () => {
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
   const [activeMenu, setActiveMenu] = useState<number | null>(null);
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, roleInfo } = useAuth(); // CORRECCIÓN: Usar roleInfo
   
   const {
     notifications,
@@ -228,8 +155,7 @@ const NotificationPage: React.FC = () => {
     fetchNotifications,
     markAsRead,
     markAllAsRead,
-    deleteNotification,
-    getNotificationUrl
+    deleteNotification
   } = useNotifications();
 
   // Redirigir si no está autenticado
@@ -246,6 +172,93 @@ const NotificationPage: React.FC = () => {
     }
   }, [isAuthenticated, filter]);
 
+  useEffect(() => {
+    if (notifications.length > 0) {
+      console.log('📊 Notificaciones recibidas:', notifications.slice(0, 2));
+    }
+  }, [notifications]);
+
+  // NUEVA FUNCIÓN: Obtener URL correcta según el rol del usuario
+  const getNotificationUrl = (notification: Notification): string | null => {
+    const { type, data } = notification;
+    
+    // CORRECCIÓN: Detectar si es seller y ajustar rutas de chat
+    const isSeller = roleInfo.isSeller;
+    
+    switch (type) {
+      case 'new_message':
+        if (data.chat_id) {
+          // CORRECCIÓN: Redirigir a ruta de seller si es seller
+          return isSeller 
+            ? `/seller/messages/${data.chat_id}` 
+            : `/chats/${data.chat_id}`;
+        }
+        return null;
+        
+      case 'feedback_response':
+        return data.feedback_id ? `/feedback/${data.feedback_id}` : '/feedback';
+        
+      case 'order_status':
+        if (data.order_id) {
+          // CORRECCIÓN: Sellers van a su dashboard de órdenes
+          return isSeller 
+            ? `/seller/orders/${data.order_id}` 
+            : `/orders/${data.order_id}`;
+        }
+        return isSeller ? '/seller/orders' : '/orders';
+        
+      case 'product_update':
+        if (data.product_id) {
+          // CORRECCIÓN: Sellers van a su editor de productos
+          return isSeller 
+            ? `/seller/products/edit/${data.product_id}` 
+            : `/products/${data.product_id}`;
+        }
+        return null;
+        
+      case 'shipping_update':
+        if (data.tracking_number) {
+          return `/tracking/${data.tracking_number}`;
+        } else if (data.order_id) {
+          return isSeller 
+            ? `/seller/orders/${data.order_id}` 
+            : `/orders/${data.order_id}`;
+        }
+        return null;
+        
+      case 'rating_received':
+      case 'seller_rated':
+        if (data.rating_id) {
+          return `/ratings/${data.rating_id}`;
+        }
+        // CORRECCIÓN: Sellers van a su página de ratings
+        return isSeller ? '/seller/ratings' : '/profile';
+        
+      case 'new_order':
+        if (data.order_id) {
+          // Solo para sellers
+          return isSeller ? `/seller/orders/${data.order_id}` : null;
+        }
+        return isSeller ? '/seller/orders' : null;
+        
+      case 'low_stock':
+        if (data.product_id) {
+          // Solo para sellers
+          return isSeller ? `/seller/products/edit/${data.product_id}` : null;
+        }
+        return isSeller ? '/seller/products' : null;
+
+      // NUEVOS CASOS para strikes y bloqueos
+      case 'seller_strike':
+      case 'account_blocked':
+        // Redirigir al perfil de seller
+        return isSeller ? '/seller/profile' : '/profile';
+        
+      default:
+        return null;
+    }
+  };
+
   // Manejar click en notificación
   const handleNotificationClick = async (notification: Notification) => {
     // Cerrar menú de acciones si está abierto
@@ -256,10 +269,13 @@ const NotificationPage: React.FC = () => {
       await markAsRead(notification.id!);
     }
     
-    // Navegar a la URL correspondiente
+    // CORRECCIÓN: Usar la nueva función que considera el rol
     const url = getNotificationUrl(notification);
     if (url) {
+      console.log(`🔀 Navegando a: ${url} (usuario ${roleInfo.isSeller ? 'seller' : 'normal'})`);
       navigate(url);
+    } else {
+      console.log('⚠️ No hay URL de destino para esta notificación');
     }
   };
 
@@ -402,77 +418,75 @@ const NotificationPage: React.FC = () => {
       ) : (
         /* Lista de notificaciones */
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          {notifications.map((notification, index) => {
-            // ✅ Obtener fecha de creación
-            const createdAt = getNotificationCreatedAt(notification);
-            
-            return (
-              <div
-                key={notification.id}
-                onClick={() => handleNotificationClick(notification)}
-                className={`
-                  relative border-l-4 cursor-pointer transition-all duration-200 hover:shadow-sm
-                  ${!notification.read 
-                    ? 'bg-blue-50 border-l-primary-500 hover:bg-blue-100' 
-                    : 'bg-white border-l-gray-200 hover:bg-gray-50'
-                  }
-                  ${index !== notifications.length - 1 ? 'border-b border-gray-100' : ''}
-                `}
-              >
-                <div className="p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start space-x-4 flex-1">
-                      {/* Icono */}
-                      <div className={`
-                        flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center
-                        ${getNotificationColor(notification.type)}
-                      `}>
-                        {getNotificationIcon(notification.type)}
-                      </div>
-
-                      {/* Contenido */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center space-x-2 mb-1">
-                          <h3 className={`text-base font-medium ${
-                            !notification.read ? 'text-gray-900' : 'text-gray-700'
-                          }`}>
-                            {notification.title}
-                          </h3>
-                          {!notification.read && (
-                            <div className="w-2 h-2 bg-primary-500 rounded-full"></div>
-                          )}
-                        </div>
-                        
-                        <p className={`text-sm ${
-                          !notification.read ? 'text-gray-700' : 'text-gray-600'
-                        } mb-2`}>
-                          {notification.message}
-                        </p>
-                        
-                        <div className="flex items-center text-xs text-gray-500">
-                          {/* Fecha de creación */}
-                          <span>
-                            {createdAt ? formatRelativeTime(createdAt) : 'Sin fecha'}
-                          </span>
-                        </div>
-                      </div>
+          {notifications.map((notification, index) => (
+            <div
+              key={notification.id}
+              onClick={() => handleNotificationClick(notification)}
+              className={`
+                relative border-l-4 cursor-pointer transition-all duration-200 hover:shadow-sm
+                ${!notification.read 
+                  ? 'bg-blue-50 border-l-primary-500 hover:bg-blue-100' 
+                  : 'bg-white border-l-gray-200 hover:bg-gray-50'
+                }
+                ${index !== notifications.length - 1 ? 'border-b border-gray-100' : ''}
+              `}
+            >
+              <div className="p-6">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start space-x-4 flex-1">
+                    {/* Icono */}
+                    <div className={`
+                      flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center
+                      ${getNotificationColor(notification.type)}
+                    `}>
+                      {getNotificationIcon(notification.type)}
                     </div>
 
-                    {/* Menú de acciones */}
-                    <NotificationActions
-                      notification={notification}
-                      onMarkAsRead={handleMarkAsRead}
-                      onDelete={handleDelete}
-                      isOpen={activeMenu === notification.id}
-                      onToggle={() => setActiveMenu(
-                        activeMenu === notification.id ? null : notification.id!
-                      )}
-                    />
+                    {/* Contenido */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center space-x-2 mb-1">
+                        <h3 className={`text-base font-medium ${
+                          !notification.read ? 'text-gray-900' : 'text-gray-700'
+                        }`}>
+                          {notification.title}
+                        </h3>
+                        {!notification.read && (
+                          <div className="w-2 h-2 bg-primary-500 rounded-full"></div>
+                        )}
+                      </div>
+                      
+                      <p className={`text-sm ${
+                        !notification.read ? 'text-gray-700' : 'text-gray-600'
+                      } mb-2`}>
+                        {notification.message}
+                      </p>
+                      
+                      <div className="flex items-center text-xs text-gray-500">
+                        <span>{formatRelativeTime(notification.createdAt)}</span>
+                        {notification.readAt && (
+                          <span className="ml-2 flex items-center">
+                            <Check size={12} className="mr-1" />
+                            Leída el {formatRelativeTime(notification.readAt)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   </div>
+
+                  {/* Menú de acciones */}
+                  <NotificationActions
+                    notification={notification}
+                    onMarkAsRead={handleMarkAsRead}
+                    onDelete={handleDelete}
+                    isOpen={activeMenu === notification.id}
+                    onToggle={() => setActiveMenu(
+                      activeMenu === notification.id ? null : notification.id!
+                    )}
+                  />
                 </div>
               </div>
-            );
-          })}
+            </div>
+          ))}
 
           {/* Botón cargar más */}
           {hasMore && (

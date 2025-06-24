@@ -28,20 +28,18 @@ const SellerMessagesPage: React.FC = () => {
 		"Cargando conversaciones..."
 	);
 
+	// CORRECCIÓN: Estado local para el loading de envío de mensajes
+	const [sendingMessage, setSendingMessage] = useState<boolean>(false);
+
 	// Referencias para evitar bucles infinitos
 	const initialLoadComplete = useRef<boolean>(false);
 	const chatIdRef = useRef<string | undefined>(chatIdParam);
 	const loadAttempts = useRef<number>(0);
 	const isInitialNavRef = useRef<boolean>(true);
-
-	// CORRECCIÓN 1: Usar un objeto para rastrear cuándo se ha llamado markAllAsRead para cada chatId
 	const markAllAsReadCalledRef = useRef<Record<number, boolean>>({});
-
-	// CORRECCIÓN 2: Guardar referencia al último selectedChat para comparaciones
 	const lastSelectedChatRef = useRef<number | null>(null);
 
-	// CORRECCIÓN 3: Crear la instancia de useChat con isSeller=true una sola vez
-	// y evitar que esa propiedad cambie entre renderizados
+	// Obtener datos del chat usando el hook personalizado
 	const {
 		chats,
 		selectedChat,
@@ -68,9 +66,8 @@ const SellerMessagesPage: React.FC = () => {
 		return () => window.removeEventListener("resize", handleResize);
 	}, []);
 
-	// CORRECCIÓN 4: Optimizar la carga inicial de chats y manejar las referencias correctamente
+	// Cargar chats al iniciar
 	useEffect(() => {
-		// Solo ejecutar una vez al inicio
 		if (!initialLoadComplete.current && user?.id) {
 			console.log("Cargando lista inicial de chats para vendedor...");
 			setIsLoadingChat(true);
@@ -81,7 +78,6 @@ const SellerMessagesPage: React.FC = () => {
 					setIsLoadingChat(false);
 					console.log(`Lista inicial de ${fetchedChats.length} chats cargada`);
 
-					// Si hay un chatId en la URL, seleccionarlo tras cargar la lista
 					if (chatIdParam && fetchedChats.length > 0) {
 						const chatId = parseInt(chatIdParam, 10);
 						const chat = fetchedChats.find((c) => c.id === chatId);
@@ -94,7 +90,6 @@ const SellerMessagesPage: React.FC = () => {
 							setShowChatList(false);
 							lastSelectedChatRef.current = chatId;
 
-							// Marcar mensajes como leídos (con protección para evitar múltiples llamadas)
 							if (
 								chat.unreadCount &&
 								chat.unreadCount > 0 &&
@@ -106,7 +101,6 @@ const SellerMessagesPage: React.FC = () => {
 								}, 500);
 							}
 						} else {
-							// Si no se encuentra el chat en la lista inicial, intentar cargar directamente
 							console.log(
 								`Chat ${chatId} no encontrado en lista inicial, intentando carga directa...`
 							);
@@ -122,10 +116,8 @@ const SellerMessagesPage: React.FC = () => {
 		}
 	}, [fetchChats, chatIdParam, setSelectedChat, user?.id, markAllAsRead]);
 
-	// CORRECCIÓN 5: Optimizar loadSpecificChat para evitar ciclos
 	const loadSpecificChat = useCallback(
 		async (chatId: number) => {
-			// Evitar cargar el mismo chat que ya está cargado
 			if (lastSelectedChatRef.current === chatId) {
 				console.log(`Chat ${chatId} ya está seleccionado, omitiendo carga.`);
 				return;
@@ -139,22 +131,18 @@ const SellerMessagesPage: React.FC = () => {
 			loadAttempts.current += 1;
 
 			try {
-				// Buscar el chat en la lista de chats
 				const chat = chats.find((c) => c.id === chatId);
 
 				if (chat) {
 					console.log(
 						`Chat ${chatId} encontrado en la lista, seleccionando...`
 					);
-					// Si encontramos el chat en la lista, seleccionarlo y cargar mensajes
 					setSelectedChat(chat);
 					setShowChatList(false);
 					lastSelectedChatRef.current = chatId;
 
-					// Iniciar polling de mensajes
 					startMessagesPolling(chatId);
 
-					// Marcar mensajes como leídos con protección contra loops
 					if (
 						chat.unreadCount &&
 						chat.unreadCount > 0 &&
@@ -169,7 +157,6 @@ const SellerMessagesPage: React.FC = () => {
 					console.log(
 						`Chat ${chatId} no encontrado en la lista, cargando desde API...`
 					);
-					// Intentar cargar los mensajes directamente
 					try {
 						const result = await fetchChatMessages(chatId);
 
@@ -178,10 +165,8 @@ const SellerMessagesPage: React.FC = () => {
 							setShowChatList(false);
 							lastSelectedChatRef.current = chatId;
 
-							// Iniciar polling de mensajes
 							startMessagesPolling(chatId);
 
-							// Proteger llamada a markAllAsRead
 							if (!markAllAsReadCalledRef.current[chatId]) {
 								markAllAsReadCalledRef.current[chatId] = true;
 								setTimeout(() => {
@@ -193,15 +178,12 @@ const SellerMessagesPage: React.FC = () => {
 								`Chat ${chatId} no encontrado en API, mostrando lista de chats`
 							);
 
-							// Si hay demasiados intentos, mostrar página principal de chats
 							if (loadAttempts.current >= 3) {
 								navigate("/seller/messages", {replace: true});
 								lastSelectedChatRef.current = null;
 							} else {
-								// Intentar recargar los chats y volver a intentar
 								const updatedChats = await fetchChats();
 
-								// Si sigue sin encontrar el chat, mostrar lista de chats
 								const updatedChat = updatedChats.find((c) => c.id === chatId);
 								if (updatedChat) {
 									setSelectedChat(updatedChat);
@@ -239,20 +221,16 @@ const SellerMessagesPage: React.FC = () => {
 		]
 	);
 
-	// CORRECCIÓN 6: Optimizar useEffect para cambiar de chat cuando cambia la URL
 	useEffect(() => {
-		// Si la carga inicial no está completa, esperar
 		if (!initialLoadComplete.current || !user?.id) {
 			return;
 		}
 
-		// En la navegación inicial, ya manejamos la carga en el useEffect anterior
 		if (isInitialNavRef.current) {
 			isInitialNavRef.current = false;
 			return;
 		}
 
-		// Evitar procesar el mismo chatId múltiples veces
 		if (
 			chatIdParam === chatIdRef.current &&
 			lastSelectedChatRef.current !== null
@@ -260,32 +238,25 @@ const SellerMessagesPage: React.FC = () => {
 			return;
 		}
 
-		// Detener cualquier polling activo al cambiar de chat
 		stopMessagesPolling();
 
-		// Actualizar la referencia
 		chatIdRef.current = chatIdParam;
 		loadAttempts.current = 0;
 
-		// Si hay un ID de chat en la URL
 		if (chatIdParam) {
 			const chatId = parseInt(chatIdParam, 10);
 
-			// Si no es un número válido, redirigir a chats
 			if (isNaN(chatId)) {
 				navigate("/seller/messages", {replace: true});
 				lastSelectedChatRef.current = null;
 				return;
 			}
 
-			// Resetear el flag de marcado como leído para este chat
-			// solo si es diferente al último chat seleccionado
 			if (lastSelectedChatRef.current !== chatId) {
 				markAllAsReadCalledRef.current[chatId] = false;
 				loadSpecificChat(chatId);
 			}
 		} else {
-			// Si no hay chatId, limpiar selección y mostrar lista
 			if (lastSelectedChatRef.current !== null) {
 				setSelectedChat(null);
 				lastSelectedChatRef.current = null;
@@ -303,16 +274,13 @@ const SellerMessagesPage: React.FC = () => {
 
 	// Filtrar chats según los criterios
 	const filteredChats = chats.filter((chat) => {
-		// Filtro por estado
 		const matchesStatus =
 			statusFilter === "all" || chat.status === statusFilter;
 
-		// Filtro por mensajes no leídos
 		const matchesUnread = unreadFilter
 			? chat.unreadCount && chat.unreadCount > 0
 			: true;
 
-		// Búsqueda por nombre de usuario o producto
 		const matchesSearch =
 			searchTerm === "" ||
 			(chat.product?.name &&
@@ -323,10 +291,8 @@ const SellerMessagesPage: React.FC = () => {
 		return matchesStatus && matchesUnread && matchesSearch;
 	});
 
-	// CORRECCIÓN 7: Optimizar handleSelectChat para evitar llamadas innecesarias
 	const handleSelectChat = (chat: typeof selectedChat) => {
 		if (chat && chat.id) {
-			// Evitar seleccionar el mismo chat repetidamente
 			if (lastSelectedChatRef.current === chat.id) {
 				console.log(
 					`Chat ${chat.id} ya está seleccionado, omitiendo selección.`
@@ -336,54 +302,60 @@ const SellerMessagesPage: React.FC = () => {
 
 			console.log(`Vendedor seleccionó chat ${chat.id}`);
 
-			// Detener cualquier polling activo
 			stopMessagesPolling();
 
-			// Actualizar la URL
 			navigate(`/seller/messages/${chat.id}`, {replace: true});
 			chatIdRef.current = String(chat.id);
 
-			// Guardar referencia al chat seleccionado
 			lastSelectedChatRef.current = chat.id;
 
-			// Seleccionar chat y cargar mensajes
 			setSelectedChat(chat);
 
-			// En móvil, ocultar la lista
 			if (isMobileView) {
 				setShowChatList(false);
 			}
 
-			// Marcar mensajes como leídos con protección
 			if (
 				chat.unreadCount &&
 				chat.unreadCount > 0 &&
 				!markAllAsReadCalledRef.current[chat.id]
 			) {
 				markAllAsReadCalledRef.current[chat.id] = true;
-				// Usar setTimeout para asegurar que esto ocurre después del render
 				setTimeout(() => {
-					markAllAsRead(chat.id).catch(console.error);
+					if (chat.id !== undefined) {
+						markAllAsRead(chat.id).catch(console.error);
+					}
 				}, 500);
 			}
 		}
 	};
 
-	// Enviar un mensaje
+	// CORRECCIÓN: Enviar un mensaje SIN llamar fetchChatMessages después
 	const handleSendMessage = async (content: string): Promise<boolean> => {
-		console.log("Enviando mensaje como vendedor...");
-		const result = await sendMessage(content);
-
-		// Si el mensaje se envió correctamente, actualizar la lista de chats
-		// para reflejar el último mensaje
-		if (result && selectedChat) {
-			await fetchChatMessages(selectedChat.id!);
+		if (sendingMessage) {
+			console.log("Ya se está enviando un mensaje, ignorando...");
+			return false;
 		}
 
-		return result;
+		console.log("Enviando mensaje como vendedor...");
+		setSendingMessage(true);
+
+		try {
+			const result = await sendMessage(content);
+			
+			// CORRECCIÓN: NO llamar fetchChatMessages aquí ya que el hook useChat
+			// debería manejar la actualización automáticamente
+			console.log("Mensaje enviado:", result ? "exitoso" : "fallido");
+			
+			return result;
+		} catch (error) {
+			console.error("Error al enviar mensaje:", error);
+			return false;
+		} finally {
+			setSendingMessage(false);
+		}
 	};
 
-	// Actualizar estado del chat
 	const handleUpdateStatus = async (
 		chatId: number,
 		status: "active" | "closed" | "archived"
@@ -392,11 +364,9 @@ const SellerMessagesPage: React.FC = () => {
 		return await updateChatStatus(chatId, status);
 	};
 
-	// Volver a la lista en móvil
 	const handleBackToList = () => {
 		console.log("Volviendo a lista de chats");
 
-		// Detener polling de mensajes
 		stopMessagesPolling();
 
 		setShowChatList(true);
@@ -405,27 +375,21 @@ const SellerMessagesPage: React.FC = () => {
 		lastSelectedChatRef.current = null;
 	};
 
-	// CORRECCIÓN 8: Optimizar refreshChats para evitar bucles
 	const refreshChats = () => {
 		console.log("Refrescando lista de chats");
 
-		// Resetear los marcados como leído para permitir marcar de nuevo
-		// pero solo para el chat actualmente seleccionado si existe
 		if (selectedChat && selectedChat.id) {
 			markAllAsReadCalledRef.current[selectedChat.id] = false;
 		}
 
 		fetchChats().then(() => {
-			// Si hay un chat seleccionado, recargar sus mensajes
-			if (selectedChat && selectedChat.id) {
-				fetchChatMessages(selectedChat.id);
-			}
+			// CORRECCIÓN: NO recargar mensajes aquí para evitar bucles
+			console.log("Lista de chats refrescada");
 		});
 	};
 
 	// Contenido principal a renderizar
 	const renderChatContent = () => {
-		// Si estamos cargando inicialmente y no hay selectedChat
 		if ((loading || isLoadingChat) && !selectedChat) {
 			return (
 				<div className="flex flex-col justify-center items-center h-full">
@@ -435,19 +399,16 @@ const SellerMessagesPage: React.FC = () => {
 			);
 		}
 
-		// Si hay un chat seleccionado
 		if (selectedChat) {
 			return (
 				<>
-					{/* Encabezado del chat */}
 					<ChatHeader
 						chat={selectedChat}
-						isSeller={true} // Indicamos que somos el vendedor
+						isSeller={true}
 						onUpdateStatus={handleUpdateStatus}
-						loading={loading}
+						loading={loading || sendingMessage}
 					/>
 
-					{/* Mensajes */}
 					<div className="flex-1 overflow-y-auto">
 						<ChatMessages
 							messages={messages}
@@ -456,7 +417,6 @@ const SellerMessagesPage: React.FC = () => {
 						/>
 					</div>
 
-					{/* Formulario de mensajes */}
 					<MessageForm
 						onSendMessage={handleSendMessage}
 						isDisabled={selectedChat.status !== "active"}
@@ -465,13 +425,12 @@ const SellerMessagesPage: React.FC = () => {
 								? "Esta conversación está cerrada"
 								: "Esta conversación está archivada"
 						}
-						isLoading={loading}
+						isLoading={loading || sendingMessage} // CORRECCIÓN: Usar estado local
 					/>
 				</>
 			);
 		}
 
-		// Si no hay chat seleccionado (mensaje de bienvenida)
 		return (
 			<div className="flex flex-col items-center justify-center h-full p-4 text-center">
 				<div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mb-4">
@@ -500,7 +459,7 @@ const SellerMessagesPage: React.FC = () => {
 					{isMobileView && selectedChat && !showChatList && (
 						<button
 							onClick={handleBackToList}
-							className="px-3 py-2 bg-gray-200 text-gray-80 rounded-lg hover:bg-gray-300 flex items-center"
+							className="px-3 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 flex items-center"
 						>
 							<ArrowLeft size={16} className="mr-1" />
 							Volver
@@ -537,7 +496,6 @@ const SellerMessagesPage: React.FC = () => {
 				className="bg-white rounded-lg shadow-sm flex flex-col md:flex-row overflow-hidden"
 				style={{minHeight: "70vh"}}
 			>
-				{/* Lista de chats (visible en escritorio o cuando está activa en móvil) */}
 				{(!isMobileView || showChatList) && (
 					<div className="w-full md:w-1/3 border-r border-gray-200 flex flex-col">
 						<ChatList
@@ -551,12 +509,11 @@ const SellerMessagesPage: React.FC = () => {
 							onStatusFilterChange={setStatusFilter}
 							unreadFilter={unreadFilter}
 							onUnreadFilterChange={setUnreadFilter}
-							isSeller={true} // Indicamos que somos el vendedor
+							isSeller={true}
 						/>
 					</div>
 				)}
 
-				{/* Área de chat (visible en escritorio o cuando está activa en móvil) */}
 				{(!isMobileView || !showChatList) && (
 					<div className="w-full md:w-2/3 flex flex-col">
 						{renderChatContent()}

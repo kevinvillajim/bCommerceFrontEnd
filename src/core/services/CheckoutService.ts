@@ -38,6 +38,8 @@ export interface CheckoutResponse {
 	};
 }
 
+
+
 export class CheckoutService {
 	/**
 	 * Procesar el pago y finalizar la compra
