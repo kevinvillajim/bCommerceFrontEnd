@@ -409,8 +409,8 @@ const MessageForm: React.FC<MessageFormProps> = ({
 						</div>
 					</div>
 
-					{/* Grid de emojis */}
-					<div className="p-2 max-h-48 overflow-y-auto">
+					{/* Grid de emojis con scroll personalizado */}
+					<div className="p-2 max-h-48 overflow-y-auto emoji-scroll">
 						<div className="grid grid-cols-8 gap-1">
 							{getCurrentEmojis().map((emoji, index) => (
 								<button

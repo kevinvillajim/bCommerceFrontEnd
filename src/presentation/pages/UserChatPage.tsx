@@ -384,7 +384,7 @@ const UserChatPage: React.FC = () => {
 							messages={messages}
 							loading={loading}
 							noMessagesText="No hay mensajes todavía"
-							currentUserId={user?.id ?? undefined} // ← CORREGIDO: Manejar el caso null explícitamente
+							currentUserId={user?.id ?? undefined} // ← CORREGIDO: Asegurar que sea 'number | undefined'
 						/>
 					</div>
 
@@ -472,7 +472,7 @@ const UserChatPage: React.FC = () => {
 			>
 				{/* Lista de chats (visible en escritorio o cuando está activa en móvil) */}
 				{(!isMobileView || showChatList) && (
-					<div className="w-full md:w-1/3 border-r border-gray-200 flex flex-col">
+					<div className="w-full md:w-1/3 border-r border-gray-200 flex flex-col scrollable-container">
 						<ChatList
 							chats={filteredChats}
 							selectedChatId={selectedChat?.id}

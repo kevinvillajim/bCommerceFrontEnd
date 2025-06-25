@@ -68,7 +68,7 @@ const ChatList: React.FC<ChatListProps> = ({
 	return (
 		<div className="flex flex-col h-full">
 			{/* Filtros y búsqueda */}
-			<div className="p-4 border-b border-gray-200">
+			<div className="p-4 border-b border-gray-200 bg-white flex-shrink-0">
 				<div className="mb-2 relative">
 					<input
 						type="text"
@@ -111,8 +111,8 @@ const ChatList: React.FC<ChatListProps> = ({
 				</div>
 			</div>
 
-			{/* Lista de conversaciones */}
-			<div className="flex-1 overflow-y-auto">
+			{/* Lista de conversaciones con scroll personalizado */}
+			<div className="flex-1 overflow-y-auto custom-scrollbar">
 				{loading ? (
 					<div className="flex justify-center items-center h-full">
 						<div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
@@ -138,101 +138,121 @@ const ChatList: React.FC<ChatListProps> = ({
 						</p>
 					</div>
 				) : (
-					<ul>
+					<div className="divide-y divide-gray-200">
 						{chats.map((chat) => {
 							const participant = getChatParticipant(chat);
 							// Asegurar que cada chat tiene un id válido
 							const chatId = chat.id || 0;
 
 							return (
-								<li
+								<div
 									key={`chat-${chatId}`}
-									className={`border-b border-gray-200 hover:bg-gray-50 cursor-pointer ${
+									className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors border-l-4 ${
 										selectedChatId === chatId
-											? "bg-primary-50"
-											: ""
+											? "bg-primary-50 border-l-primary-500"
+											: "border-l-transparent hover:border-l-gray-300"
 									}`}
 									onClick={() => onSelectChat(chat)}
 								>
-									<div className="px-4 py-3 flex items-start">
+									<div className="flex items-start">
 										{/* Avatar */}
 										<div className="flex-shrink-0 mr-3">
 											{participant.avatar ? (
 												<img
 													src={participant.avatar}
 													alt={participant.name}
-													className="h-10 w-10 rounded-full"
+													className="h-12 w-12 rounded-full border-2 border-white shadow-sm"
 													onError={(e) => {
 														const target = e.target as HTMLImageElement;
 														target.onerror = null;
 														target.src =
-															"https://via.placeholder.com/40?text=U";
+															"https://via.placeholder.com/48?text=U";
 													}}
 												/>
 											) : (
-												<div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
+												<div className="h-12 w-12 rounded-full bg-gray-200 flex items-center justify-center border-2 border-white shadow-sm">
 													{participant.icon}
 												</div>
 											)}
 										</div>
 
-										{/* Contenido */}
+										{/* Contenido del chat */}
 										<div className="flex-1 min-w-0">
-											<div className="flex justify-between">
-												<p className="text-sm font-medium text-gray-900 truncate">
+											<div className="flex justify-between items-start mb-1">
+												<h3 className={`text-sm font-medium truncate pr-2 ${
+													selectedChatId === chatId ? 'text-primary-700' : 'text-gray-900'
+												}`}>
 													{participant.name}
-												</p>
-												<p className="text-xs text-gray-500">
-													{formatDate(chat.updatedAt)}
-												</p>
+												</h3>
+												<div className="flex items-center space-x-2 flex-shrink-0">
+													<span className="text-xs text-gray-500">
+														{formatDate(chat.updatedAt)}
+													</span>
+													{/* Indicador de no leídos */}
+													{chat.unreadCount && chat.unreadCount > 0 && (
+														<span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-primary-600 text-white text-xs font-medium">
+															{chat.unreadCount > 99 ? '99+' : chat.unreadCount}
+														</span>
+													)}
+												</div>
 											</div>
-											<div className="flex items-center text-xs text-gray-500 mt-1">
-												<Package className="h-3 w-3 mr-1" />
+											
+											{/* Información del producto */}
+											<div className="flex items-center text-xs text-gray-500 mb-2">
+												<Package className="h-3 w-3 mr-1 flex-shrink-0" />
 												<span className="truncate">
 													{chat.product?.name || `Producto #${chat.productId}`}
 												</span>
 											</div>
-											<div className="flex items-center mt-1">
-												<span
-													className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium mr-2 ${
-														chat.status === "active"
-															? "bg-green-100 text-green-800"
+											
+											{/* Último mensaje y estado */}
+											<div className="flex items-center justify-between">
+												<div className="flex items-center min-w-0 flex-1">
+													<span
+														className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium mr-2 flex-shrink-0 ${
+															chat.status === "active"
+																? "bg-green-100 text-green-800"
+																: chat.status === "closed"
+																	? "bg-blue-100 text-blue-800"
+																	: "bg-gray-100 text-gray-800"
+														}`}
+													>
+														<Circle
+															className="w-1.5 h-1.5 mr-1"
+															fill="currentColor"
+														/>
+														{chat.status === "active"
+															? "Activo"
 															: chat.status === "closed"
-																? "bg-blue-100 text-blue-800"
-																: "bg-gray-100 text-gray-800"
-													}`}
-												>
-													<Circle
-														className="w-1.5 h-1.5 mr-1"
-														fill="currentColor"
-													/>
-													{chat.status === "active"
-														? "Activo"
-														: chat.status === "closed"
-															? "Cerrado"
-															: "Archivado"}
-												</span>
+																? "Cerrado"
+																: "Archivado"}
+													</span>
+												</div>
+											</div>
+											
+											{/* Último mensaje */}
+											<div className="mt-1">
 												<p className="text-sm text-gray-600 truncate">
 													{chat.lastMessage?.content || "Sin mensajes"}
 												</p>
 											</div>
 										</div>
-
-										{/* Indicadores de no leídos */}
-										{chat.unreadCount && chat.unreadCount > 0 && (
-											<div className="ml-2 flex-shrink-0">
-												<span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-primary-600 text-white text-xs font-medium">
-													{chat.unreadCount}
-												</span>
-											</div>
-										)}
 									</div>
-								</li>
+								</div>
 							);
 						})}
-					</ul>
+					</div>
 				)}
 			</div>
+
+			{/* Indicador de scroll */}
+			{chats.length > 10 && (
+				<div className="p-2 border-t border-gray-200 bg-gray-50 text-center">
+					<span className="text-xs text-gray-500">
+						{chats.length} conversaciones • Desliza para ver más
+					</span>
+				</div>
+			)}
 		</div>
 	);
 };

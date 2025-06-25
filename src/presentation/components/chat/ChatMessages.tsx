@@ -272,9 +272,9 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({
 	const messageGroups = groupMessagesByDate(messages);
 
 	return (
-		<div className="flex flex-col h-full bg-gray-50">
+		<div className="flex flex-col h-full bg-gray-50 relative">
 			<div
-				className="flex-1 overflow-y-auto px-4 py-2 space-y-1"
+				className="flex-1 overflow-y-auto px-4 py-2 space-y-1 messages-scroll smooth-scroll"
 				style={{ height: "calc(70vh - 180px)" }}
 				ref={messagesContainerRef}
 				onScroll={handleScroll}
@@ -421,11 +421,33 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({
 							setAutoScroll(true);
 							messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
 						}}
-						className="bg-primary-500 text-white p-2 rounded-full shadow-lg hover:bg-primary-600 transition-colors"
+						className="bg-primary-500 text-white p-3 rounded-full shadow-lg hover:bg-primary-600 transition-all transform hover:scale-105 active:scale-95"
 						title="Ir al final"
 					>
-						↓
+						<svg 
+							xmlns="http://www.w3.org/2000/svg" 
+							width="20" 
+							height="20" 
+							viewBox="0 0 24 24" 
+							fill="none" 
+							stroke="currentColor" 
+							strokeWidth="2" 
+							strokeLinecap="round" 
+							strokeLinejoin="round"
+						>
+							<path d="m6 9 6 6 6-6"/>
+						</svg>
 					</button>
+				</div>
+			)}
+
+			{/* Indicador de scroll */}
+			<div className={`scroll-indicator ${messages.length > 10 ? 'visible' : ''}`}></div>
+
+			{/* Hint de scroll para nuevos usuarios */}
+			{messages.length > 10 && (
+				<div className="scroll-hint">
+					Desliza para ver más mensajes
 				</div>
 			)}
 		</div>
