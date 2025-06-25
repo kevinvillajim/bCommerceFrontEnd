@@ -15,7 +15,9 @@ import {
   Gift,
   Truck,
   FileText,
-  MoreVertical
+  MoreVertical,
+  Shield,
+  Ban
 } from 'lucide-react';
 import { useNotifications } from '../hooks/useNotifications';
 import { useAuth } from '../hooks/useAuth';
@@ -45,6 +47,10 @@ const getNotificationIcon = (type: string) => {
     case 'promotion':
     case 'discount':
       return <Gift className="text-pink-500" size={20} />;
+    case 'seller_strike':
+      return <Shield className="text-orange-500" size={20} />;
+    case 'account_blocked':
+      return <Ban className="text-red-500" size={20} />;
     default:
       return <Bell className="text-gray-500" size={20} />;
   }
@@ -73,12 +79,16 @@ const getNotificationColor = (type: string) => {
     case 'promotion':
     case 'discount':
       return 'bg-pink-50 border-pink-200';
+    case 'seller_strike':
+      return 'bg-orange-50 border-orange-200';
+    case 'account_blocked':
+      return 'bg-red-50 border-red-200';
     default:
       return 'bg-gray-50 border-gray-200';
   }
 };
 
-// Componente para mostrar el menú de acciones de notificación
+// Componente para el menú de acciones de notificación
 interface NotificationActionsProps {
   notification: Notification;
   onMarkAsRead: (id: number) => void;
@@ -142,7 +152,7 @@ const NotificationPage: React.FC = () => {
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
   const [activeMenu, setActiveMenu] = useState<number | null>(null);
   const navigate = useNavigate();
-  const { isAuthenticated, roleInfo } = useAuth(); // CORRECCIÓN: Usar roleInfo
+  const { isAuthenticated, roleInfo } = useAuth();
   
   const {
     notifications,
@@ -178,29 +188,33 @@ const NotificationPage: React.FC = () => {
     }
   }, [notifications]);
 
-  // NUEVA FUNCIÓN: Obtener URL correcta según el rol del usuario
+  // CORRECCIÓN: Función mejorada para obtener URL correcta según el rol del usuario
   const getNotificationUrl = (notification: Notification): string | null => {
     const { type, data } = notification;
     
-    // CORRECCIÓN: Detectar si es seller y ajustar rutas de chat
+    // Detectar si es seller y ajustar rutas
     const isSeller = roleInfo.isSeller;
+    
+    console.log(`🔀 Procesando notificación tipo: ${type}, isSeller: ${isSeller}`, data);
     
     switch (type) {
       case 'new_message':
         if (data.chat_id) {
-          // CORRECCIÓN: Redirigir a ruta de seller si es seller
-          return isSeller 
+          // CORRECCIÓN: Redirigir a ruta correcta según el rol
+          const chatUrl = isSeller 
             ? `/seller/messages/${data.chat_id}` 
             : `/chats/${data.chat_id}`;
+          console.log(`📧 Redirigiendo a chat: ${chatUrl}`);
+          return chatUrl;
         }
-        return null;
+        // Fallback a página principal de mensajes
+        return isSeller ? '/seller/messages' : '/chats';
         
       case 'feedback_response':
         return data.feedback_id ? `/feedback/${data.feedback_id}` : '/feedback';
         
       case 'order_status':
         if (data.order_id) {
-          // CORRECCIÓN: Sellers van a su dashboard de órdenes
           return isSeller 
             ? `/seller/orders/${data.order_id}` 
             : `/orders/${data.order_id}`;
@@ -209,12 +223,11 @@ const NotificationPage: React.FC = () => {
         
       case 'product_update':
         if (data.product_id) {
-          // CORRECCIÓN: Sellers van a su editor de productos
           return isSeller 
             ? `/seller/products/edit/${data.product_id}` 
             : `/products/${data.product_id}`;
         }
-        return null;
+        return isSeller ? '/seller/products' : null;
         
       case 'shipping_update':
         if (data.tracking_number) {
@@ -231,36 +244,35 @@ const NotificationPage: React.FC = () => {
         if (data.rating_id) {
           return `/ratings/${data.rating_id}`;
         }
-        // CORRECCIÓN: Sellers van a su página de ratings
         return isSeller ? '/seller/ratings' : '/profile';
         
       case 'new_order':
         if (data.order_id) {
-          // Solo para sellers
           return isSeller ? `/seller/orders/${data.order_id}` : null;
         }
         return isSeller ? '/seller/orders' : null;
         
       case 'low_stock':
         if (data.product_id) {
-          // Solo para sellers
           return isSeller ? `/seller/products/edit/${data.product_id}` : null;
         }
         return isSeller ? '/seller/products' : null;
 
-      // NUEVOS CASOS para strikes y bloqueos
+      // CORRECCIÓN: Casos específicos para strikes y bloqueos
       case 'seller_strike':
       case 'account_blocked':
-        // Redirigir al perfil de seller
         return isSeller ? '/seller/profile' : '/profile';
         
       default:
+        console.log(`❓ Tipo de notificación no reconocido: ${type}`);
         return null;
     }
   };
 
   // Manejar click en notificación
   const handleNotificationClick = async (notification: Notification) => {
+    console.log(`🖱️ Click en notificación ${notification.id} (tipo: ${notification.type})`);
+    
     // Cerrar menú de acciones si está abierto
     setActiveMenu(null);
     
@@ -269,7 +281,7 @@ const NotificationPage: React.FC = () => {
       await markAsRead(notification.id!);
     }
     
-    // CORRECCIÓN: Usar la nueva función que considera el rol
+    // Obtener URL de destino
     const url = getNotificationUrl(notification);
     if (url) {
       console.log(`🔀 Navegando a: ${url} (usuario ${roleInfo.isSeller ? 'seller' : 'normal'})`);

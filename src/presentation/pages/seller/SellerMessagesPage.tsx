@@ -1,4 +1,4 @@
-// src/presentation/pages/seller/SellerMessagesPage.tsx - VERSIÓN CORREGIDA
+// src/presentation/pages/seller/SellerMessagesPage.tsx - CORREGIDO COMPLETAMENTE
 
 import React, {useState, useEffect, useRef, useCallback} from "react";
 import {useParams, useNavigate} from "react-router-dom";
@@ -9,6 +9,8 @@ import ChatList from "../../components/chat/ChatList";
 import ChatMessages from "../../components/chat/ChatMessages";
 import ChatHeader from "../../components/chat/ChatHeader";
 import MessageForm from "../../components/chat/MessageForm";
+import {useChatFilterNotifications} from "../../components/notifications/ChatFilterToast";
+import type { Chat } from "../../../core/domain/entities/Chat";
 
 const SellerMessagesPage: React.FC = () => {
 	const navigate = useNavigate();
@@ -28,7 +30,7 @@ const SellerMessagesPage: React.FC = () => {
 		"Cargando conversaciones..."
 	);
 
-	// CORRECCIÓN: Estado local para el loading de envío de mensajes
+	// CORRECCIÓN: Estado local independiente para el envío de mensajes
 	const [sendingMessage, setSendingMessage] = useState<boolean>(false);
 
 	// Referencias para evitar bucles infinitos
@@ -39,7 +41,14 @@ const SellerMessagesPage: React.FC = () => {
 	const markAllAsReadCalledRef = useRef<Record<number, boolean>>({});
 	const lastSelectedChatRef = useRef<number | null>(null);
 
-	// Obtener datos del chat usando el hook personalizado
+	// Hook para notificaciones de filtro
+	const {
+		showSellerStrike,
+		showSellerBlocked,
+		NotificationComponent
+	} = useChatFilterNotifications();
+
+	// Obtener datos del chat usando el hook personalizado para vendedores
 	const {
 		chats,
 		selectedChat,
@@ -54,7 +63,7 @@ const SellerMessagesPage: React.FC = () => {
 		startMessagesPolling,
 		stopMessagesPolling,
 		markAllAsRead,
-	} = useChat(true); // Indicamos que es un vendedor con true fijo
+	} = useChat(true); // IMPORTANTE: true para vendedor
 
 	// Función para detectar cambios en el tamaño de la ventana
 	useEffect(() => {
@@ -90,15 +99,12 @@ const SellerMessagesPage: React.FC = () => {
 							setShowChatList(false);
 							lastSelectedChatRef.current = chatId;
 
-							if (
-								chat.unreadCount &&
-								chat.unreadCount > 0 &&
-								!markAllAsReadCalledRef.current[chatId]
-							) {
+							// Marcar como leído después de un delay
+							if (chat.unreadCount && chat.unreadCount > 0 && !markAllAsReadCalledRef.current[chatId]) {
 								markAllAsReadCalledRef.current[chatId] = true;
 								setTimeout(() => {
 									markAllAsRead(chatId).catch(console.error);
-								}, 500);
+								}, 1000);
 							}
 						} else {
 							console.log(
@@ -116,6 +122,7 @@ const SellerMessagesPage: React.FC = () => {
 		}
 	}, [fetchChats, chatIdParam, setSelectedChat, user?.id, markAllAsRead]);
 
+	// Función para cargar un chat específico
 	const loadSpecificChat = useCallback(
 		async (chatId: number) => {
 			if (lastSelectedChatRef.current === chatId) {
@@ -134,29 +141,22 @@ const SellerMessagesPage: React.FC = () => {
 				const chat = chats.find((c) => c.id === chatId);
 
 				if (chat) {
-					console.log(
-						`Chat ${chatId} encontrado en la lista, seleccionando...`
-					);
+					console.log(`Chat ${chatId} encontrado en la lista, seleccionando...`);
 					setSelectedChat(chat);
 					setShowChatList(false);
 					lastSelectedChatRef.current = chatId;
 
 					startMessagesPolling(chatId);
 
-					if (
-						chat.unreadCount &&
-						chat.unreadCount > 0 &&
-						!markAllAsReadCalledRef.current[chatId]
-					) {
+					// Marcar como leído
+					if (chat.unreadCount && chat.unreadCount > 0 && !markAllAsReadCalledRef.current[chatId]) {
 						markAllAsReadCalledRef.current[chatId] = true;
 						setTimeout(() => {
 							markAllAsRead(chatId).catch(console.error);
-						}, 500);
+						}, 1000);
 					}
 				} else {
-					console.log(
-						`Chat ${chatId} no encontrado en la lista, cargando desde API...`
-					);
+					console.log(`Chat ${chatId} no encontrado en la lista, cargando desde API...`);
 					try {
 						const result = await fetchChatMessages(chatId);
 
@@ -164,26 +164,23 @@ const SellerMessagesPage: React.FC = () => {
 							console.log(`Chat ${chatId} cargado correctamente desde API`);
 							setShowChatList(false);
 							lastSelectedChatRef.current = chatId;
-
 							startMessagesPolling(chatId);
 
+							// Marcar como leído
 							if (!markAllAsReadCalledRef.current[chatId]) {
 								markAllAsReadCalledRef.current[chatId] = true;
 								setTimeout(() => {
 									markAllAsRead(chatId).catch(console.error);
-								}, 500);
+								}, 1000);
 							}
 						} else {
-							console.warn(
-								`Chat ${chatId} no encontrado en API, mostrando lista de chats`
-							);
+							console.warn(`Chat ${chatId} no encontrado en API`);
 
 							if (loadAttempts.current >= 3) {
 								navigate("/seller/messages", {replace: true});
 								lastSelectedChatRef.current = null;
 							} else {
 								const updatedChats = await fetchChats();
-
 								const updatedChat = updatedChats.find((c) => c.id === chatId);
 								if (updatedChat) {
 									setSelectedChat(updatedChat);
@@ -221,6 +218,7 @@ const SellerMessagesPage: React.FC = () => {
 		]
 	);
 
+	// Manejar cambios en la URL
 	useEffect(() => {
 		if (!initialLoadComplete.current || !user?.id) {
 			return;
@@ -231,15 +229,11 @@ const SellerMessagesPage: React.FC = () => {
 			return;
 		}
 
-		if (
-			chatIdParam === chatIdRef.current &&
-			lastSelectedChatRef.current !== null
-		) {
+		if (chatIdParam === chatIdRef.current && lastSelectedChatRef.current !== null) {
 			return;
 		}
 
 		stopMessagesPolling();
-
 		chatIdRef.current = chatIdParam;
 		loadAttempts.current = 0;
 
@@ -274,13 +268,10 @@ const SellerMessagesPage: React.FC = () => {
 
 	// Filtrar chats según los criterios
 	const filteredChats = chats.filter((chat) => {
-		const matchesStatus =
-			statusFilter === "all" || chat.status === statusFilter;
+		const matchesStatus = statusFilter === "all" || chat.status === statusFilter;
+		const matchesUnread = unreadFilter ? chat.unreadCount && chat.unreadCount > 0 : true;
 
-		const matchesUnread = unreadFilter
-			? chat.unreadCount && chat.unreadCount > 0
-			: true;
-
+		// CORRECCIÓN: Buscar por nombre de usuario y producto
 		const matchesSearch =
 			searchTerm === "" ||
 			(chat.product?.name &&
@@ -291,12 +282,11 @@ const SellerMessagesPage: React.FC = () => {
 		return matchesStatus && matchesUnread && matchesSearch;
 	});
 
-	const handleSelectChat = (chat: typeof selectedChat) => {
+	// Seleccionar un chat
+	const handleSelectChat = (chat: Chat) => {
 		if (chat && chat.id) {
 			if (lastSelectedChatRef.current === chat.id) {
-				console.log(
-					`Chat ${chat.id} ya está seleccionado, omitiendo selección.`
-				);
+				console.log(`Chat ${chat.id} ya está seleccionado, omitiendo selección.`);
 				return;
 			}
 
@@ -306,7 +296,6 @@ const SellerMessagesPage: React.FC = () => {
 
 			navigate(`/seller/messages/${chat.id}`, {replace: true});
 			chatIdRef.current = String(chat.id);
-
 			lastSelectedChatRef.current = chat.id;
 
 			setSelectedChat(chat);
@@ -315,22 +304,19 @@ const SellerMessagesPage: React.FC = () => {
 				setShowChatList(false);
 			}
 
-			if (
-				chat.unreadCount &&
-				chat.unreadCount > 0 &&
-				!markAllAsReadCalledRef.current[chat.id]
-			) {
+			// Marcar como leído
+			if (chat.unreadCount && chat.unreadCount > 0 && !markAllAsReadCalledRef.current[chat.id]) {
 				markAllAsReadCalledRef.current[chat.id] = true;
 				setTimeout(() => {
 					if (chat.id !== undefined) {
 						markAllAsRead(chat.id).catch(console.error);
 					}
-				}, 500);
+				}, 1000);
 			}
 		}
 	};
 
-	// CORRECCIÓN: Enviar un mensaje SIN llamar fetchChatMessages después
+	// CORRECCIÓN: Enviar mensaje con manejo completo de errores
 	const handleSendMessage = async (content: string): Promise<boolean> => {
 		if (sendingMessage) {
 			console.log("Ya se está enviando un mensaje, ignorando...");
@@ -342,20 +328,40 @@ const SellerMessagesPage: React.FC = () => {
 
 		try {
 			const result = await sendMessage(content);
-			
-			// CORRECCIÓN: NO llamar fetchChatMessages aquí ya que el hook useChat
-			// debería manejar la actualización automáticamente
 			console.log("Mensaje enviado:", result ? "exitoso" : "fallido");
-			
 			return result;
-		} catch (error) {
+		} catch (error: any) {
 			console.error("Error al enviar mensaje:", error);
+
+			// Manejar errores específicos del filtro de chat
+			if (error?.response?.data?.status === 'error') {
+				const errorData = error.response.data;
+				const strikeCount = errorData.data?.strike_count || 0;
+				const isBlocked = errorData.data?.is_blocked || false;
+				const censoredContent = errorData.data?.censored_content;
+
+				if (isBlocked) {
+					// Cuenta bloqueada
+					showSellerBlocked(
+						"Tu cuenta ha sido bloqueada por acumular múltiples strikes. Contacta al soporte."
+					);
+				} else {
+					// Strike aplicado
+					showSellerStrike(
+						errorData.message,
+						strikeCount,
+						censoredContent
+					);
+				}
+			}
+
 			return false;
 		} finally {
 			setSendingMessage(false);
 		}
 	};
 
+	// Actualizar estado del chat
 	const handleUpdateStatus = async (
 		chatId: number,
 		status: "active" | "closed" | "archived"
@@ -364,17 +370,18 @@ const SellerMessagesPage: React.FC = () => {
 		return await updateChatStatus(chatId, status);
 	};
 
+	// Volver a la lista en móvil
 	const handleBackToList = () => {
 		console.log("Volviendo a lista de chats");
 
 		stopMessagesPolling();
-
 		setShowChatList(true);
 		navigate("/seller/messages", {replace: true});
 		chatIdRef.current = undefined;
 		lastSelectedChatRef.current = null;
 	};
 
+	// Refrescar lista de chats
 	const refreshChats = () => {
 		console.log("Refrescando lista de chats");
 
@@ -383,7 +390,6 @@ const SellerMessagesPage: React.FC = () => {
 		}
 
 		fetchChats().then(() => {
-			// CORRECCIÓN: NO recargar mensajes aquí para evitar bucles
 			console.log("Lista de chats refrescada");
 		});
 	};
@@ -406,7 +412,7 @@ const SellerMessagesPage: React.FC = () => {
 						chat={selectedChat}
 						isSeller={true}
 						onUpdateStatus={handleUpdateStatus}
-						loading={loading || sendingMessage}
+						loading={loading}
 					/>
 
 					<div className="flex-1 overflow-y-auto">
@@ -425,7 +431,7 @@ const SellerMessagesPage: React.FC = () => {
 								? "Esta conversación está cerrada"
 								: "Esta conversación está archivada"
 						}
-						isLoading={loading || sendingMessage} // CORRECCIÓN: Usar estado local
+						isLoading={sendingMessage} // CORRECCIÓN: Usar estado local
 					/>
 				</>
 			);
@@ -520,6 +526,9 @@ const SellerMessagesPage: React.FC = () => {
 					</div>
 				)}
 			</div>
+
+			{/* Componente de notificaciones flotantes */}
+			<NotificationComponent />
 		</div>
 	);
 };

@@ -1,14 +1,20 @@
 // src/core/services/ChatService.ts - VERSIÓN CORREGIDA
 import ApiClient from "../../infrastructure/api/apiClient";
 import {API_ENDPOINTS} from "../../constants/apiEndpoints";
-import type {Chat, Message} from "../domain/entities/Chat";
+import type {Chat, Message, ContentFilterResponse} from "../domain/entities/Chat";
 
 /**
- * Interfaces para respuestas de API
+ * Interfaces para respuestas de API - CORREGIDAS
  */
 export interface ChatListResponse {
 	status: string;
 	data: Chat[];
+	meta?: {
+		total: number;
+		per_page: number;
+		current_page: number;
+		last_page: number;
+	};
 }
 
 export interface ChatDetailResponse {
@@ -83,19 +89,12 @@ export interface UpdateChatStatusRequest {
 }
 
 /**
- * Servicio para gestionar chats y mensajes
- *
- * CORRECCIÓN: Optimizar la inicialización para evitar creaciones múltiples
+ * Servicio para gestionar chats y mensajes - CORREGIDO
  */
 class ChatService {
 	private readonly isSeller: boolean;
-	// CORRECCIÓN: Añadir un ID único para cada instancia para depuración
 	private readonly serviceId: string;
 
-	/**
-	 * Construye una instancia del servicio
-	 * @param isSeller Indica si el usuario es un vendedor
-	 */
 	constructor(isSeller = false) {
 		this.isSeller = isSeller;
 		this.serviceId = `chat-service-${Date.now()}-${Math.round(Math.random() * 1000)}`;
@@ -106,7 +105,6 @@ class ChatService {
 
 	/**
 	 * Obtiene el endpoint adecuado según el rol del usuario
-	 * @private
 	 */
 	private getEndpoint(
 		type:
@@ -122,7 +120,6 @@ class ChatService {
 		...params: any[]
 	): string {
 		if (this.isSeller) {
-			// Usar endpoints específicos para vendedores
 			switch (type) {
 				case "LIST":
 					return API_ENDPOINTS.CHAT.SELLER.LIST;
@@ -136,7 +133,6 @@ class ChatService {
 					return API_ENDPOINTS.CHAT.SELLER.GET_MESSAGES(params[0]);
 				case "MARK_ALL_READ":
 					return API_ENDPOINTS.CHAT.SELLER.MARK_ALL_READ(params[0]);
-				// Para los que no tienen endpoints específicos de vendedor, usar los generales
 				case "MARK_MESSAGE_READ":
 					return API_ENDPOINTS.CHAT.MARK_MESSAGE_READ(params[0], params[1]);
 				case "DELETE":
@@ -147,7 +143,6 @@ class ChatService {
 					return "";
 			}
 		} else {
-			// Usar endpoints generales para usuarios normales
 			switch (type) {
 				case "LIST":
 					return API_ENDPOINTS.CHAT.LIST;
@@ -174,6 +169,26 @@ class ChatService {
 	}
 
 	/**
+	 * Valida y normaliza respuesta del API
+	 */
+	private validateApiResponse<T>(response: any, expectedFields: string[] = []): T | null {
+		if (!response || typeof response !== 'object') {
+			console.warn('Respuesta inválida del API:', response);
+			return null;
+		}
+
+		// Verificar campos requeridos si se especifican
+		for (const field of expectedFields) {
+			if (!(field in response)) {
+				console.warn(`Campo requerido '${field}' no encontrado en respuesta:`, response);
+				return null;
+			}
+		}
+
+		return response as T;
+	}
+
+	/**
 	 * Obtiene la lista de chats del usuario actual
 	 */
 	async getChats(): Promise<ChatListResponse> {
@@ -182,87 +197,41 @@ class ChatService {
 				`ChatService (${this.serviceId}): Obteniendo lista de chats ${this.isSeller ? "como vendedor" : "como usuario"}`
 			);
 			const endpoint = this.getEndpoint("LIST");
-			console.log(`Usando endpoint: ${endpoint}`);
-
+			
 			const response = await ApiClient.get<any>(endpoint);
+			const validatedResponse = this.validateApiResponse<any>(response);
 
-			// Validación mejorada de la respuesta
-			if (response) {
-				// Caso 1: response tiene estructura de éxito con data
-				if (response.status === "success" && response.data) {
-					// Si data es un array directamente
-					if (Array.isArray(response.data)) {
-						console.log(
-							`ChatService (${this.serviceId}): Se encontraron ${response.data.length} chats`
-						);
-						return {
-							status: "success",
-							data: response.data,
-						};
-					}
-					// Si data.data es un array (formato anidado)
-					else if (response.data.data && Array.isArray(response.data.data)) {
-						console.log(
-							`ChatService (${this.serviceId}): Se encontraron ${response.data.data.length} chats (formato anidado)`
-						);
-						return {
-							status: "success",
-							data: response.data.data,
-						};
-					}
-					// Si respuesta tiene otra estructura pero con datos
-					else {
-						console.warn(
-							`ChatService (${this.serviceId}): Formato de respuesta no estándar:`,
-							response
-						);
-						return {
-							status: "success",
-							data: [],
-						};
-					}
-				}
-				// Caso 2: respuesta es directamente un array
-				else if (Array.isArray(response)) {
-					console.log(
-						`ChatService (${this.serviceId}): Se encontraron ${response.length} chats (array directo)`
-					);
-					return {
-						status: "success",
-						data: response,
-					};
-				}
-				// Caso 3: Otros formatos pero con status de éxito
-				else if (typeof response === "object") {
-					console.warn(
-						`ChatService (${this.serviceId}): Formato de respuesta inesperado pero válido`,
-						response
-					);
-					return {
-						status: "success",
-						data: [],
-					};
-				}
+			if (!validatedResponse) {
+				return { status: "error", data: [] };
 			}
 
-			// Si llegamos aquí, la respuesta es válida pero sin chats
-			console.log(
-				`ChatService (${this.serviceId}): No se encontraron chats o formato no reconocido`
-			);
-			return {
-				status: "success",
-				data: [],
-			};
+			// Manejar diferentes formatos de respuesta
+			if (validatedResponse.status === "success") {
+				const data = Array.isArray(validatedResponse.data) 
+					? validatedResponse.data 
+					: validatedResponse.data?.data || [];
+				
+				console.log(`ChatService (${this.serviceId}): Se encontraron ${data.length} chats`);
+				
+				return {
+					status: "success",
+					data: data,
+					meta: validatedResponse.data?.meta || validatedResponse.meta
+				};
+			} else if (Array.isArray(validatedResponse)) {
+				console.log(`ChatService (${this.serviceId}): Array directo con ${validatedResponse.length} chats`);
+				return {
+					status: "success",
+					data: validatedResponse
+				};
+			}
+
+			console.log(`ChatService (${this.serviceId}): No se encontraron chats`);
+			return { status: "success", data: [] };
+
 		} catch (error) {
-			console.error(
-				`ChatService (${this.serviceId}): Error al obtener chats ${this.isSeller ? "de vendedor" : "de usuario"}:`,
-				error
-			);
-			// En caso de error, devolver una respuesta vacía pero válida
-			return {
-				status: "error",
-				data: [],
-			};
+			console.error(`ChatService (${this.serviceId}): Error al obtener chats:`, error);
+			return { status: "error", data: [] };
 		}
 	}
 
@@ -276,72 +245,41 @@ class ChatService {
 	): Promise<ChatDetailResponse> {
 		try {
 			console.log(
-				`ChatService (${this.serviceId}): Obteniendo detalles del chat ${chatId} (página ${page}, límite ${limit}) ${this.isSeller ? "como vendedor" : "como usuario"}`
+				`ChatService (${this.serviceId}): Obteniendo detalles del chat ${chatId}`
 			);
 
 			const endpoint = this.getEndpoint("DETAILS", chatId);
-			console.log(`Usando endpoint: ${endpoint}`);
-
 			const response = await ApiClient.get<any>(
 				`${endpoint}?page=${page}&limit=${limit}`
 			);
 
-			// Validación mejorada
-			if (response) {
-				// Asegurar que response.data existe
-				const responseData = response.data || {};
+			const validatedResponse = this.validateApiResponse<any>(response, ['status']);
 
-				// Extraer chat, mensajes y paginación
-				let chat: Chat;
-				let messages: Message[] = [];
-				let pagination = {
+			if (!validatedResponse) {
+				throw new Error(`No se pudo obtener información del chat ${chatId}`);
+			}
+
+			if (validatedResponse.status === "success") {
+				// Extraer datos con valores por defecto
+				const responseData = validatedResponse.data || {};
+				const chat: Chat = responseData.chat || {
+					id: chatId,
+					userId: 0,
+					sellerId: 0,
+					productId: 0,
+					status: "active" as const,
+					messages: []
+				};
+				
+				const messages: Message[] = responseData.messages || [];
+				const pagination = responseData.pagination || {
 					currentPage: page,
 					limit: limit,
-					total: 0,
+					total: messages.length
 				};
-
-				// Caso 1: Respuesta con estructura esperada
-				if (responseData.chat && Array.isArray(responseData.messages)) {
-					chat = responseData.chat;
-					messages = responseData.messages;
-					pagination = responseData.pagination || pagination;
-				}
-				// Caso 2: Respuesta con data anidada
-				else if (responseData.data) {
-					if (
-						responseData.data.chat &&
-						Array.isArray(responseData.data.messages)
-					) {
-						chat = responseData.data.chat;
-						messages = responseData.data.messages;
-						pagination = responseData.data.pagination || pagination;
-					}
-					// Caso 3: La respuesta tiene estructura diferente
-					else if (responseData.data.id) {
-						chat = responseData.data;
-						messages = chat.messages || [];
-					}
-				}
-				// Fallback: Si no podemos identificar un chat, creamos uno básico con el ID proporcionado
-				else {
-					console.warn(
-						`ChatService (${this.serviceId}): Respuesta no estándar para chat ${chatId}, construyendo objeto básico`
-					);
-					chat = {
-						id: chatId,
-						userId: 0,
-						sellerId: 0,
-						productId: 0,
-						status: "active",
-						messages: [],
-					};
-				}
 
 				// Asegurar que el chat tiene ID
 				if (!chat.id) {
-					console.warn(
-						`ChatService (${this.serviceId}): Chat sin ID en la respuesta, asignando ${chatId}`
-					);
 					chat.id = chatId;
 				}
 
@@ -350,17 +288,14 @@ class ChatService {
 					data: {
 						chat,
 						messages,
-						pagination,
-					},
+						pagination
+					}
 				};
 			}
 
-			throw new Error(`No se pudo obtener información del chat ${chatId}`);
+			throw new Error(`Error en respuesta del servidor: ${validatedResponse.status}`);
 		} catch (error) {
-			console.error(
-				`ChatService (${this.serviceId}): Error al obtener detalles del chat ${chatId} ${this.isSeller ? "como vendedor" : "como usuario"}:`,
-				error
-			);
+			console.error(`ChatService (${this.serviceId}): Error al obtener detalles del chat ${chatId}:`, error);
 			throw error;
 		}
 	}
@@ -374,122 +309,89 @@ class ChatService {
 		limit: number = 20
 	): Promise<MessagesResponse> {
 		try {
-			console.log(
-				`ChatService (${this.serviceId}): Obteniendo mensajes del chat ${chatId} (página ${page}, límite ${limit}) ${this.isSeller ? "como vendedor" : "como usuario"}`
-			);
-
 			const endpoint = this.getEndpoint("GET_MESSAGES", chatId);
-			console.log(`Usando endpoint: ${endpoint}`);
-
 			const response = await ApiClient.get<any>(
 				`${endpoint}?page=${page}&limit=${limit}`
 			);
 
-			if (!response) {
-				throw new Error(
-					`No se pudieron obtener los mensajes del chat ${chatId}`
-				);
+			const validatedResponse = this.validateApiResponse<any>(response);
+
+			if (!validatedResponse) {
+				throw new Error(`No se pudieron obtener los mensajes del chat ${chatId}`);
 			}
 
-			// Extraer mensajes y paginación
-			let messages: Message[] = [];
-			let pagination = {
+			const messages: Message[] = validatedResponse.data?.messages || [];
+			const pagination = validatedResponse.data?.pagination || {
 				currentPage: page,
 				limit: limit,
-				total: 0,
+				total: 0
 			};
-
-			if (response.status === "success" && response.data) {
-				if (Array.isArray(response.data.messages)) {
-					messages = response.data.messages;
-					pagination = response.data.pagination || pagination;
-				} else if (
-					response.data.data &&
-					Array.isArray(response.data.data.messages)
-				) {
-					messages = response.data.data.messages;
-					pagination = response.data.data.pagination || pagination;
-				}
-			}
 
 			return {
 				status: "success",
 				data: {
 					messages,
-					pagination,
-				},
+					pagination
+				}
 			};
 		} catch (error) {
-			console.error(
-				`ChatService (${this.serviceId}): Error al obtener mensajes del chat ${chatId} ${this.isSeller ? "como vendedor" : "como usuario"}:`,
-				error
-			);
+			console.error(`ChatService (${this.serviceId}): Error al obtener mensajes del chat ${chatId}:`, error);
 			throw error;
 		}
 	}
 
 	/**
-	 * Envía un mensaje a un chat
+	 * Envía un mensaje a un chat - CORREGIDO para manejar filtro de contenido
 	 */
 	async sendMessage(
 		chatId: number,
 		message: SendMessageRequest
 	): Promise<MessageResponse> {
 		try {
-			console.log(
-				`ChatService (${this.serviceId}): Enviando mensaje al chat ${chatId} ${this.isSeller ? "como vendedor" : "como usuario"}`
-			);
+			console.log(`ChatService (${this.serviceId}): Enviando mensaje al chat ${chatId}`);
 
-			// Validar parámetros
 			if (!chatId || !message.content.trim()) {
-				throw new Error(
-					`ChatService (${this.serviceId}): ID de chat o contenido del mensaje inválidos`
-				);
+				throw new Error("ID de chat o contenido del mensaje inválidos");
 			}
 
 			const endpoint = this.getEndpoint("SEND_MESSAGE", chatId);
-			console.log(`Usando endpoint: ${endpoint}`);
-
 			const response = await ApiClient.post<any>(endpoint, message);
 
-			if (!response) {
+			const validatedResponse = this.validateApiResponse<any>(response);
+
+			if (!validatedResponse) {
 				throw new Error("No se recibió respuesta al enviar mensaje");
 			}
 
-			// Si la respuesta tiene la estructura esperada
-			if (
-				response.status === "success" &&
-				response.data &&
-				response.data.message
-			) {
+			// Manejar respuesta de filtro de contenido
+			if (validatedResponse.status === "error") {
+				// Re-lanzar el error completo para que el hook lo maneje
+				const error = new Error(validatedResponse.message);
+				(error as any).response = { data: validatedResponse };
+				throw error;
+			}
+
+			// Respuesta exitosa
+			if (validatedResponse.status === "success") {
 				return {
-					status: response.status,
-					message: response.message || "Mensaje enviado",
-					data: response.data,
+					status: validatedResponse.status,
+					message: validatedResponse.message || "Mensaje enviado",
+					data: {
+						message: validatedResponse.data?.message || {
+							id: Date.now(),
+							chatId: chatId,
+							senderId: 0,
+							content: message.content,
+							isRead: false,
+							createdAt: new Date().toISOString()
+						}
+					}
 				};
 			}
 
-			// Intentar adaptar la respuesta si tiene otra estructura
-			return {
-				status: response.status || "success",
-				message: response.message || "Mensaje enviado",
-				data: {
-					message: response.message ||
-						response.data || {
-							id: Date.now(),
-							chatId: chatId,
-							senderId: 0, // Se sobreescribirá en el hook
-							content: message.content,
-							isRead: false,
-							createdAt: new Date().toISOString(),
-						},
-				},
-			};
+			throw new Error("Formato de respuesta inesperado");
 		} catch (error) {
-			console.error(
-				`ChatService (${this.serviceId}): Error al enviar mensaje al chat ${chatId} ${this.isSeller ? "como vendedor" : "como usuario"}:`,
-				error
-			);
+			console.error(`ChatService (${this.serviceId}): Error al enviar mensaje:`, error);
 			throw error;
 		}
 	}
@@ -499,138 +401,74 @@ class ChatService {
 	 */
 	async createChat(data: CreateChatRequest): Promise<CreateChatResponse> {
 		try {
-			console.log(
-				`ChatService (${this.serviceId}): Creando chat con vendedor ${data.seller_id} para producto ${data.product_id}`
-			);
+			console.log(`ChatService (${this.serviceId}): Creando chat`);
 
-			// Validar parámetros
 			if (!data.seller_id || !data.product_id) {
-				throw new Error(
-					`ChatService (${this.serviceId}): ID de vendedor o producto inválidos`
-				);
+				throw new Error("ID de vendedor o producto inválidos");
 			}
 
 			const endpoint = this.getEndpoint("CREATE");
-			console.log(`Usando endpoint: ${endpoint}`);
-
 			const response = await ApiClient.post<any>(endpoint, data);
 
-			// Validación y adaptación de respuesta
-			if (response) {
-				// Si la respuesta tiene la estructura esperada
-				if (response.data && response.data.chat_id) {
-					return {
-						status: "success",
-						message: response.message || "Chat creado correctamente",
-						data: {
-							chat_id: response.data.chat_id,
-						},
-					};
-				}
+			const validatedResponse = this.validateApiResponse<any>(response);
 
-				// Si la respuesta tiene otra estructura pero contiene el ID del chat
-				if (response.data && response.data.id) {
-					return {
-						status: "success",
-						message: "Chat creado correctamente",
-						data: {
-							chat_id: response.data.id,
-						},
-					};
-				}
+			if (!validatedResponse) {
+				throw new Error("Formato de respuesta inesperado al crear chat");
+			}
 
-				// Si la respuesta es un objeto con id directamente
-				if (response.id) {
-					return {
-						status: "success",
-						message: "Chat creado correctamente",
-						data: {
-							chat_id: response.id,
-						},
-					};
-				}
+			// Manejar diferentes formatos de respuesta
+			if (validatedResponse.status === "success") {
+				const chatId = validatedResponse.data?.chat_id || 
+							   validatedResponse.data?.id || 
+							   validatedResponse.id;
 
-				// Si no encontramos un ID pero la respuesta indica éxito
-				if (response.status === "success") {
-					console.warn(
-						`ChatService (${this.serviceId}): Respuesta de éxito sin ID de chat:`,
-						response
-					);
+				if (chatId) {
 					return {
 						status: "success",
-						message: "Chat creado, pero no se recibió su ID",
-						data: {
-							chat_id: 0, // Se manejará en el hook
-						},
+						message: validatedResponse.message || "Chat creado correctamente",
+						data: { chat_id: chatId }
 					};
 				}
 			}
 
-			throw new Error("Formato de respuesta inesperado al crear chat");
+			throw new Error("No se pudo obtener el ID del chat creado");
 		} catch (error) {
-			console.error(
-				`ChatService (${this.serviceId}): Error al crear chat:`,
-				error
-			);
+			console.error(`ChatService (${this.serviceId}): Error al crear chat:`, error);
 			throw error;
 		}
 	}
 
 	/**
-	 * Actualiza el estado de un chat (cerrar, archivar, reabrir)
+	 * Actualiza el estado de un chat
 	 */
 	async updateChatStatus(
 		chatId: number,
 		data: UpdateChatStatusRequest
 	): Promise<UpdateChatStatusResponse> {
 		try {
-			console.log(
-				`ChatService (${this.serviceId}): Actualizando estado del chat ${chatId} a ${data.status} ${this.isSeller ? "como vendedor" : "como usuario"}`
-			);
-
-			// Validar parámetros
 			if (!chatId || !data.status) {
-				throw new Error(
-					`ChatService (${this.serviceId}): ID de chat o estado inválidos`
-				);
+				throw new Error("ID de chat o estado inválidos");
 			}
 
 			const endpoint = this.getEndpoint("UPDATE_STATUS", chatId);
-			console.log(`Usando endpoint: ${endpoint}`);
-
 			const response = await ApiClient.put<any>(endpoint, data);
 
-			// Validación y adaptación
-			if (response) {
-				// Si la respuesta tiene la estructura esperada
-				if (response.status === "success" && response.data) {
-					return {
-						status: "success",
-						message: response.message || `Chat ${data.status} correctamente`,
-						data: {
-							chat_id: response.data.chat_id || chatId,
-							status: response.data.status || data.status,
-						},
-					};
-				}
+			const validatedResponse = this.validateApiResponse<any>(response);
 
-				// Adaptar respuesta para mantener consistencia
-				return {
-					status: response.status || "success",
-					message: response.message || `Chat ${data.status} correctamente`,
-					data: {
-						chat_id: chatId,
-						status: data.status,
-					},
-				};
+			if (!validatedResponse) {
+				throw new Error("No se recibió respuesta al actualizar estado");
 			}
 
-			throw new Error("No se recibió respuesta al actualizar estado");
+			return {
+				status: validatedResponse.status || "success",
+				message: validatedResponse.message || `Chat ${data.status} correctamente`,
+				data: {
+					chat_id: validatedResponse.data?.chat_id || chatId,
+					status: validatedResponse.data?.status || data.status
+				}
+			};
 		} catch (error) {
-			console.error(
-				`ChatService (${this.serviceId}): Error al actualizar estado del chat ${chatId} ${this.isSeller ? "como vendedor" : "como usuario"}:`,
-				error
-			);
+			console.error(`ChatService (${this.serviceId}): Error al actualizar estado del chat ${chatId}:`, error);
 			throw error;
 		}
 	}
@@ -640,30 +478,21 @@ class ChatService {
 	 */
 	async markAllMessagesAsRead(chatId: number): Promise<MarkAsReadResponse> {
 		try {
-			console.log(
-				`ChatService (${this.serviceId}): Marcando todos los mensajes del chat ${chatId} como leídos ${this.isSeller ? "como vendedor" : "como usuario"}`
-			);
-
 			const endpoint = this.getEndpoint("MARK_ALL_READ", chatId);
-			console.log(`Usando endpoint: ${endpoint}`);
-
 			const response = await ApiClient.post<any>(endpoint, {});
 
-			if (!response) {
-				throw new Error(
-					"No se recibió respuesta al marcar mensajes como leídos"
-				);
+			const validatedResponse = this.validateApiResponse<any>(response);
+
+			if (!validatedResponse) {
+				throw new Error("No se recibió respuesta al marcar mensajes como leídos");
 			}
 
 			return {
-				status: response.status || "success",
-				message: response.message || "Mensajes marcados como leídos",
+				status: validatedResponse.status || "success",
+				message: validatedResponse.message || "Mensajes marcados como leídos"
 			};
 		} catch (error) {
-			console.error(
-				`ChatService (${this.serviceId}): Error al marcar mensajes como leídos en chat ${chatId} ${this.isSeller ? "como vendedor" : "como usuario"}:`,
-				error
-			);
+			console.error(`ChatService (${this.serviceId}): Error al marcar mensajes como leídos:`, error);
 			throw error;
 		}
 	}
@@ -676,28 +505,21 @@ class ChatService {
 		messageId: number
 	): Promise<MarkAsReadResponse> {
 		try {
-			console.log(
-				`ChatService (${this.serviceId}): Marcando mensaje ${messageId} del chat ${chatId} como leído ${this.isSeller ? "como vendedor" : "como usuario"}`
-			);
-
 			const endpoint = this.getEndpoint("MARK_MESSAGE_READ", chatId, messageId);
-			console.log(`Usando endpoint: ${endpoint}`);
-
 			const response = await ApiClient.patch<any>(endpoint, {});
 
-			if (!response) {
+			const validatedResponse = this.validateApiResponse<any>(response);
+
+			if (!validatedResponse) {
 				throw new Error("No se recibió respuesta al marcar mensaje como leído");
 			}
 
 			return {
-				status: response.status || "success",
-				message: response.message || "Mensaje marcado como leído",
+				status: validatedResponse.status || "success",
+				message: validatedResponse.message || "Mensaje marcado como leído"
 			};
 		} catch (error) {
-			console.error(
-				`ChatService (${this.serviceId}): Error al marcar mensaje ${messageId} como leído en chat ${chatId} ${this.isSeller ? "como vendedor" : "como usuario"}:`,
-				error
-			);
+			console.error(`ChatService (${this.serviceId}): Error al marcar mensaje como leído:`, error);
 			throw error;
 		}
 	}
@@ -707,122 +529,61 @@ class ChatService {
 	 */
 	async deleteChat(chatId: number): Promise<MarkAsReadResponse> {
 		try {
-			console.log(
-				`ChatService (${this.serviceId}): Eliminando chat ${chatId} ${this.isSeller ? "como vendedor" : "como usuario"}`
-			);
-
 			const endpoint = this.getEndpoint("DELETE", chatId);
-			console.log(`Usando endpoint: ${endpoint}`);
-
 			const response = await ApiClient.delete<any>(endpoint);
 
-			if (!response) {
+			const validatedResponse = this.validateApiResponse<any>(response);
+
+			if (!validatedResponse) {
 				throw new Error("No se recibió respuesta al eliminar chat");
 			}
 
 			return {
-				status: response.status || "success",
-				message: response.message || "Chat eliminado correctamente",
+				status: validatedResponse.status || "success",
+				message: validatedResponse.message || "Chat eliminado correctamente"
 			};
 		} catch (error) {
-			console.error(
-				`ChatService (${this.serviceId}): Error al eliminar chat ${chatId} ${this.isSeller ? "como vendedor" : "como usuario"}:`,
-				error
-			);
+			console.error(`ChatService (${this.serviceId}): Error al eliminar chat:`, error);
 			throw error;
 		}
 	}
+
 	/**
-	 * Obtiene la lista de chats para un vendedor específico usando ID explícito
-	 * Este método es un fallback para cuando la ruta principal no funciona
+	 * Obtiene chats por ID de vendedor (método explícito)
 	 */
 	async getChatsBySellerIdExplicit(id: number): Promise<ChatListResponse> {
 		try {
-			console.log(
-				`ChatService (${this.serviceId}): Obteniendo lista de chats para vendedor con ID ${id} (búsqueda explícita)`
-			);
+			console.log(`ChatService (${this.serviceId}): Obteniendo chats para vendedor ID ${id}`);
 
-			// Utiliza la ruta explícita usando el ID proporcionado
-			// Nota: Este ID puede ser tanto un user_id como un seller_id
-			// El backend se encargará de manejar ambos casos
 			const endpoint = API_ENDPOINTS.CHAT.SELLER.LIST_BY_SELLER(id);
-			console.log(`Usando endpoint explícito: ${endpoint}`);
-
 			const response = await ApiClient.get<any>(endpoint);
 
-			// Validación mejorada de la respuesta
-			if (response) {
-				// Caso 1: response tiene estructura de éxito con data
-				if (response.status === "success" && response.data) {
-					// Si data es un array directamente
-					if (Array.isArray(response.data)) {
-						console.log(
-							`ChatService (${this.serviceId}): Se encontraron ${response.data.length} chats (método explícito)`
-						);
-						return {
-							status: "success",
-							data: response.data,
-						};
-					}
-					// Si data.data es un array (formato anidado)
-					else if (response.data.data && Array.isArray(response.data.data)) {
-						console.log(
-							`ChatService (${this.serviceId}): Se encontraron ${response.data.data.length} chats (método explícito, formato anidado)`
-						);
-						return {
-							status: "success",
-							data: response.data.data,
-						};
-					}
-					// Si respuesta tiene otra estructura pero con datos
-					else {
-						console.warn(
-							`ChatService (${this.serviceId}): Formato de respuesta no estándar en método explícito:`,
-							response
-						);
-						return {
-							status: "success",
-							data: [],
-						};
-					}
-				}
-				// Caso 2: respuesta es directamente un array
-				else if (Array.isArray(response)) {
-					console.log(
-						`ChatService (${this.serviceId}): Se encontraron ${response.length} chats (array directo, método explícito)`
-					);
-					return {
-						status: "success",
-						data: response,
-					};
-				}
-				// Caso 3: Otros formatos pero con status de éxito
-				else if (typeof response === "object") {
-					console.warn(
-						`ChatService (${this.serviceId}): Formato de respuesta inesperado pero válido (método explícito)`,
-						response
-					);
-					return {
-						status: "success",
-						data: [],
-					};
-				}
+			const validatedResponse = this.validateApiResponse<any>(response);
+
+			if (!validatedResponse) {
+				return { status: "error", data: [] };
 			}
 
-			// Si llegamos aquí, la respuesta es válida pero sin chats
-			console.log(
-				`ChatService (${this.serviceId}): No se encontraron chats o formato no reconocido (método explícito)`
-			);
-			return {
-				status: "success",
-				data: [],
-			};
+			if (validatedResponse.status === "success") {
+				const data = Array.isArray(validatedResponse.data) 
+					? validatedResponse.data 
+					: validatedResponse.data?.data || [];
+				
+				return {
+					status: "success",
+					data: data,
+					meta: validatedResponse.data?.meta
+				};
+			} else if (Array.isArray(validatedResponse)) {
+				return {
+					status: "success",
+					data: validatedResponse
+				};
+			}
+
+			return { status: "success", data: [] };
 		} catch (error) {
-			console.error(
-				`ChatService (${this.serviceId}): Error al obtener chats para ID ${id} (método explícito):`,
-				error
-			);
-			// Relanzamos el error para que el hook pueda manejarlo y probar el siguiente método
+			console.error(`ChatService (${this.serviceId}): Error al obtener chats para vendedor ID ${id}:`, error);
 			throw error;
 		}
 	}

@@ -1,5 +1,6 @@
+// src/presentation/pages/UserChatPage.tsx - CORREGIDO
 import React, {useState, useEffect, useRef, useCallback} from "react";
-import {useParams, useNavigate, useLocation} from "react-router-dom";
+import {useParams, useNavigate} from "react-router-dom";
 import {MessageSquare, ArrowLeft, RefreshCw} from "lucide-react";
 import {useChat} from "../hooks/useChat";
 import {useAuth} from "../hooks/useAuth";
@@ -7,10 +8,10 @@ import ChatList from "../components/chat/ChatList";
 import ChatMessages from "../components/chat/ChatMessages";
 import ChatHeader from "../components/chat/ChatHeader";
 import MessageForm from "../components/chat/MessageForm";
+import type { Chat } from "../../core/domain/entities/Chat";
 
 const UserChatPage: React.FC = () => {
 	const navigate = useNavigate();
-	const location = useLocation();
 	const {chatId: chatIdParam} = useParams<{chatId?: string}>();
 	const {user} = useAuth();
 
@@ -83,7 +84,6 @@ const UserChatPage: React.FC = () => {
 							setSelectedChat(chat);
 							setShowChatList(false);
 						} else {
-							// Si no se encuentra el chat en la lista inicial, intentar cargar directamente
 							console.log(
 								`Chat ${chatId} no encontrado en lista inicial, intentando carga directa...`
 							);
@@ -117,39 +117,29 @@ const UserChatPage: React.FC = () => {
 					console.log(
 						`Chat ${chatId} encontrado en la lista, seleccionando...`
 					);
-					// Si encontramos el chat en la lista, seleccionarlo y cargar mensajes
 					setSelectedChat(chat);
 					setShowChatList(false);
-
-					// Iniciar polling de mensajes
 					startMessagesPolling(chatId);
 				} else {
 					console.log(
 						`Chat ${chatId} no encontrado en la lista, cargando desde API...`
 					);
-					// Intentar cargar los mensajes directamente
 					try {
 						const result = await fetchChatMessages(chatId);
 
 						if (result) {
 							console.log(`Chat ${chatId} cargado correctamente desde API`);
 							setShowChatList(false);
-
-							// Iniciar polling de mensajes
 							startMessagesPolling(chatId);
 						} else {
 							console.warn(
 								`Chat ${chatId} no encontrado en API, mostrando lista de chats`
 							);
 
-							// Si hay demasiados intentos, mostrar página principal de chats
 							if (loadAttempts.current >= 3) {
 								navigate("/chats", {replace: true});
 							} else {
-								// Intentar recargar los chats y volver a intentar
 								const updatedChats = await fetchChats();
-
-								// Si sigue sin encontrar el chat, mostrar lista de chats
 								const updatedChat = updatedChats.find((c) => c.id === chatId);
 								if (updatedChat) {
 									setSelectedChat(updatedChat);
@@ -184,18 +174,15 @@ const UserChatPage: React.FC = () => {
 
 	// Cargar chat específico cuando cambia el ID en la URL
 	useEffect(() => {
-		// Si la carga inicial no está completa, esperar
 		if (!initialLoadComplete.current || !user?.id) {
 			return;
 		}
 
-		// En la navegación inicial, ya manejamos la carga en el useEffect anterior
 		if (isInitialNavRef.current) {
 			isInitialNavRef.current = false;
 			return;
 		}
 
-		// Evitar procesar el mismo chatId múltiples veces
 		if (chatIdParam === chatIdRef.current && selectedChat) {
 			return;
 		}
@@ -211,16 +198,13 @@ const UserChatPage: React.FC = () => {
 		if (chatIdParam) {
 			const chatId = parseInt(chatIdParam, 10);
 
-			// Si no es un número válido, redirigir a chats
 			if (isNaN(chatId)) {
 				navigate("/chats", {replace: true});
 				return;
 			}
 
-			// Cargar el chat específico
 			loadSpecificChat(chatId);
 		} else {
-			// Si no hay chatId, limpiar selección y mostrar lista
 			setSelectedChat(null);
 			setShowChatList(true);
 		}
@@ -245,7 +229,7 @@ const UserChatPage: React.FC = () => {
 			? chat.unreadCount && chat.unreadCount > 0
 			: true;
 
-		// Búsqueda por nombre de vendedor o producto
+		// Búsqueda por nombre de vendedor o producto - CORREGIDO
 		const matchesSearch =
 			searchTerm === "" ||
 			(chat.product?.name &&
@@ -257,7 +241,7 @@ const UserChatPage: React.FC = () => {
 	});
 
 	// Seleccionar un chat
-	const handleSelectChat = (chat: typeof selectedChat) => {
+	const handleSelectChat = (chat: Chat) => {
 		if (chat && chat.id) {
 			console.log(`Usuario seleccionó chat ${chat.id}`);
 
@@ -284,7 +268,6 @@ const UserChatPage: React.FC = () => {
 		const result = await sendMessage(content);
 
 		// Si el mensaje se envió correctamente, actualizar la lista de chats
-		// para reflejar el último mensaje
 		if (result && selectedChat) {
 			await fetchChatMessages(selectedChat.id!);
 		}

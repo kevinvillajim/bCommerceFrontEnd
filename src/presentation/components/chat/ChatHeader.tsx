@@ -1,3 +1,4 @@
+// src/presentation/components/chat/ChatHeader.tsx - CORREGIDO
 import React, {useState, useRef, useEffect} from "react";
 import {Link} from "react-router-dom";
 import {
@@ -32,6 +33,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
 	const [isUpdating, setIsUpdating] = useState(false);
 	const menuRef = useRef<HTMLDivElement>(null);
 
+	// Hook para estado de conexión (simplificado por ahora)
 	const useConnectionStatus = (userId: number | undefined) => {
 		const [isOnline, setIsOnline] = useState<boolean>(false);
 		const [lastSeen, setLastSeen] = useState<Date | null>(null);
@@ -43,32 +45,19 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
 				return;
 			}
 	
-			// Simular estado de conexión basado en actividad reciente
-			// En una implementación real, esto vendría de WebSockets o polling al servidor
-			const checkOnlineStatus = () => {
-				// Simular que algunos usuarios están online (para demo)
-				// En producción esto vendría del servidor
-				const isCurrentlyOnline = Math.random() > 0.6; // 40% de probabilidad de estar online
-				setIsOnline(isCurrentlyOnline);
-				
-				if (!isCurrentlyOnline) {
-					// Simular "visto por última vez" hace algunos minutos/horas
-					const minutesAgo = Math.floor(Math.random() * 120) + 1; // 1-120 minutos
-					const lastSeenTime = new Date();
-					lastSeenTime.setMinutes(lastSeenTime.getMinutes() - minutesAgo);
-					setLastSeen(lastSeenTime);
-				} else {
-					setLastSeen(null);
-				}
-			};
-	
-			// Verificar estado inicial
-			checkOnlineStatus();
-	
-			// Actualizar cada 30 segundos
-			const interval = setInterval(checkOnlineStatus, 30000);
-	
-			return () => clearInterval(interval);
+			// TODO: Implementar estado de conexión real
+			// Por ahora, simular que algunos usuarios están online
+			const isCurrentlyOnline = Math.random() > 0.7; // 30% de probabilidad
+			setIsOnline(isCurrentlyOnline);
+			
+			if (!isCurrentlyOnline) {
+				const minutesAgo = Math.floor(Math.random() * 120) + 1;
+				const lastSeenTime = new Date();
+				lastSeenTime.setMinutes(lastSeenTime.getMinutes() - minutesAgo);
+				setLastSeen(lastSeenTime);
+			} else {
+				setLastSeen(null);
+			}
 		}, [userId]);
 	
 		return { isOnline, lastSeen };
@@ -81,15 +70,18 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
 				avatar: chat.user?.avatar,
 				id: chat.userId,
 				icon: <User className="h-6 w-6 text-gray-500" />,
-				route: `/admin/users/${chat.userId}`, // Enlace al perfil del cliente
+				route: `/admin/users/${chat.userId}`,
 			}
 		: {
 				name: chat.seller?.storeName || `Vendedor #${chat.sellerId}`,
 				avatar: chat.seller?.avatar,
 				id: chat.sellerId,
 				icon: <Store className="h-6 w-6 text-gray-500" />,
-				route: `/sellers/${chat.sellerId}`, // Enlace al perfil del vendedor
+				route: `/sellers/${chat.sellerId}`,
 			};
+
+	// Estado de conexión del participante
+	const { isOnline, lastSeen } = useConnectionStatus(participant.id);
 
 	// Ruta al producto
 	const productRoute = isSeller
@@ -110,7 +102,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
 		};
 	}, []);
 
-	// Cerrar menú al hacer clic en cualquier parte
+	// Cerrar menú
 	const closeMenu = () => {
 		setIsMenuOpen(false);
 	};
@@ -138,11 +130,25 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
 		}
 	};
 
+	// Formatear última vez visto
+	const formatLastSeen = (date: Date): string => {
+		const now = new Date();
+		const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+		
+		if (diffInMinutes < 60) {
+			return `hace ${diffInMinutes} min`;
+		} else if (diffInMinutes < 1440) {
+			return `hace ${Math.floor(diffInMinutes / 60)} h`;
+		} else {
+			return `hace ${Math.floor(diffInMinutes / 1440)} d`;
+		}
+	};
+
 	return (
 		<div className="p-4 border-b border-gray-200 flex justify-between items-center">
 			<div className="flex items-center">
-				{/* Avatar */}
-				<div className="flex-shrink-0 mr-3">
+				{/* Avatar con indicador de estado */}
+				<div className="flex-shrink-0 mr-3 relative">
 					{participant.avatar ? (
 						<img
 							src={participant.avatar}
@@ -159,6 +165,19 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
 							{participant.icon}
 						</div>
 					)}
+					
+					{/* Indicador de estado online/offline */}
+					<div className="absolute -bottom-0.5 -right-0.5">
+						{isOnline ? (
+							<div className="w-3 h-3 bg-green-500 rounded-full border-2 border-white flex items-center justify-center">
+								<Wifi size={8} className="text-white" />
+							</div>
+						) : (
+							<div className="w-3 h-3 bg-gray-400 rounded-full border-2 border-white flex items-center justify-center">
+								<WifiOff size={8} className="text-white" />
+							</div>
+						)}
+					</div>
 				</div>
 
 				{/* Información del participante y producto */}
@@ -166,6 +185,25 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
 					<h2 className="text-lg font-medium text-gray-900">
 						{participant.name}
 					</h2>
+					
+					{/* Estado de conexión */}
+					<div className="flex items-center text-xs text-gray-500 mb-1">
+						{isOnline ? (
+							<>
+								<Circle className="w-2 h-2 mr-1 fill-green-500 text-green-500" />
+								<span className="text-green-600 font-medium">En línea</span>
+							</>
+						) : (
+							<>
+								<Circle className="w-2 h-2 mr-1 fill-gray-400 text-gray-400" />
+								<span>
+									{lastSeen ? `Visto ${formatLastSeen(lastSeen)}` : 'Desconectado'}
+								</span>
+							</>
+						)}
+					</div>
+					
+					{/* Información del producto */}
 					<div className="flex items-center text-sm text-gray-500">
 						<Link
 							to={productRoute}
@@ -181,7 +219,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
 				</div>
 			</div>
 
-			{/* Indicador de estado y menú de acciones */}
+			{/* Indicador de estado del chat y menú de acciones */}
 			<div className="flex items-center">
 				<span
 					className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mr-2 ${

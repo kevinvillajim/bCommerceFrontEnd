@@ -2,7 +2,7 @@
 import {useState, useEffect, useCallback, useRef} from "react";
 import {useAuth} from "./useAuth";
 import ChatService from "../../core/services/ChatService";
-import type {Chat, Message} from "../../core/domain/entities/Chat";
+import type {Chat, Message, ContentFilterResponse} from "../../core/domain/entities/Chat";
 import {extractErrorMessage} from "../../utils/errorHandler";
 import {API_ENDPOINTS} from "../../constants/apiEndpoints";
 import ApiClient from "../../infrastructure/api/apiClient";
@@ -20,16 +20,14 @@ export const useChat = (isSeller = false) => {
 	const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
 	const localChatsRef = useRef<Chat[]>([]);
 
-	// CORRECCIÓN 1: Almacenar el valor de isSeller en una ref y NO actualizarlo nunca
+	// Referencia fija para el rol
 	const isSellerRef = useRef<boolean>(isSeller);
-
-	// CORRECCIÓN 2: Referencia para almacenar instancia única del servicio
 	const chatServiceRef = useRef<ChatService | null>(null);
 
 	// Obtener el usuario actual del hook de autenticación
 	const {user} = useAuth();
 
-	// CORRECCIÓN 3: Crear una sola instancia del servicio de chat
+	// Crear una sola instancia del servicio de chat
 	const getChatService = useCallback(() => {
 		if (!chatServiceRef.current) {
 			console.log(
@@ -57,79 +55,43 @@ export const useChat = (isSeller = false) => {
 			const chatService = getChatService();
 			let response;
 
-			// Si es vendedor y tenemos el ID del usuario, intentar obtener primero el ID del vendedor
+			// Si es vendedor y tenemos el ID del usuario, intentar obtener el ID del vendedor
 			if (isSellerRef.current && user?.id) {
-				// Obtener el ID del vendedor asociado al usuario
 				const sellerId = await getSellerIdFromUser(user.id);
 
 				if (sellerId) {
-					console.log(
-						`Intentando obtener chats para vendedor con ID de vendedor: ${sellerId}`
-					);
 					try {
-						// Intentar primero con la ruta explícita usando el ID de vendedor
 						response = await chatService.getChatsBySellerIdExplicit(sellerId);
-						console.log(
-							`Respuesta de búsqueda explícita por ID de vendedor: `,
-							response
-						);
 					} catch (explicitError) {
-						console.warn(
-							`Error en búsqueda explícita por ID de vendedor, intentando con ID de usuario: `,
-							explicitError
-						);
-						// Si falla, intentar con el ID de usuario directamente
+						console.warn("Error en búsqueda explícita por ID de vendedor:", explicitError);
 						try {
 							response = await chatService.getChatsBySellerIdExplicit(user.id);
-							console.log(
-								`Respuesta de búsqueda explícita por ID de usuario: `,
-								response
-							);
 						} catch (userIdError) {
-							console.warn(
-								`Error en búsqueda explícita por ID de usuario, intentando ruta general: `,
-								userIdError
-							);
-							// Si ambos fallan, intentar con la ruta general
+							console.warn("Error en búsqueda explícita por ID de usuario:", userIdError);
 							response = await chatService.getChats();
 						}
 					}
 				} else {
-					console.log(
-						`No se encontró ID de vendedor para usuario ${user.id}, intentando con ID de usuario directamente`
-					);
 					try {
-						// Intentar con el ID de usuario directamente
 						response = await chatService.getChatsBySellerIdExplicit(user.id);
-						console.log(
-							`Respuesta de búsqueda explícita por ID de usuario: `,
-							response
-						);
 					} catch (error) {
-						console.warn(
-							`Error en búsqueda explícita por ID de usuario, intentando ruta general: `,
-							error
-						);
-						// Si falla, intentar con la ruta general
+						console.warn("Error en búsqueda explícita por ID de usuario:", error);
 						response = await chatService.getChats();
 					}
 				}
 			} else {
-				// Para usuarios normales, usar la ruta estándar
 				response = await chatService.getChats();
 			}
 
-			// Si no tenemos respuesta o la respuesta no tiene status "success", lanzar error
+			// Validar respuesta
 			if (!response || response.status !== "success") {
 				throw new Error("No se pudo obtener la lista de chats");
 			}
 
-			// Actualizar el estado con los chats obtenidos
 			const chatList = response.data || [];
 			setChats(chatList);
 			localChatsRef.current = chatList;
 
-			// Registrar en consola la carga exitosa
 			console.log(
 				`✅ Cargados ${chatList.length} chats ${isSellerRef.current ? "como vendedor" : "como usuario"}`
 			);
@@ -145,38 +107,22 @@ export const useChat = (isSeller = false) => {
 		}
 	}, [getChatService, user?.id]);
 
-	const getSellerIdFromUser = async (
-		userId: number
-	): Promise<number | null> => {
+	/**
+	 * Obtiene información del vendedor por ID de usuario
+	 */
+	const getSellerIdFromUser = async (userId: number): Promise<number | null> => {
 		try {
-			console.log(
-				`Intentando obtener información del vendedor para usuario ${userId}`
-			);
-			const response = await ApiClient.get(
-				API_ENDPOINTS.SELLERS.BY_USER_ID(userId)
-			);
+			const response = await ApiClient.get(API_ENDPOINTS.SELLERS.BY_USER_ID(userId));
 
-			if (response && response.data && response.data.id) {
-				console.log(
-					`Usuario ${userId} tiene ID de vendedor ${response.data.id}`
-				);
+			if (response?.data?.id) {
 				return response.data.id;
-			} else if (response && response.data && response.data.seller_id) {
-				console.log(
-					`Usuario ${userId} tiene ID de vendedor ${response.data.seller_id}`
-				);
+			} else if (response?.data?.seller_id) {
 				return response.data.seller_id;
 			}
 
-			console.warn(
-				`No se encontró información de vendedor para usuario ${userId}`
-			);
 			return null;
 		} catch (error) {
-			console.error(
-				`Error al obtener información del vendedor para usuario ${userId}:`,
-				error
-			);
+			console.error(`Error al obtener información del vendedor para usuario ${userId}:`, error);
 			return null;
 		}
 	};
@@ -186,32 +132,21 @@ export const useChat = (isSeller = false) => {
 	 */
 	const fetchChatMessages = useCallback(
 		async (chatId: number) => {
-			// Verificar si el chat existe y si ya se ha intentado cargar demasiadas veces
 			const attempts = chatFetchAttempts.current[chatId] || 0;
 			if (attempts > 2) {
-				console.warn(
-					`Demasiados intentos para cargar el chat ${chatId}, abortando`
-				);
+				console.warn(`Demasiados intentos para cargar el chat ${chatId}`);
 				setError(`No se pudo cargar el chat. Intente más tarde.`);
-
-				// Detener el polling si está activo para este chat
+				
 				if (refreshIntervalRef.current) {
-					console.log(
-						`Deteniendo polling para chat ${chatId} por demasiados intentos fallidos`
-					);
 					clearInterval(refreshIntervalRef.current);
 					refreshIntervalRef.current = null;
 				}
-
 				return null;
 			}
 
 			try {
-				// Evitar múltiples peticiones simultáneas
 				if (isLoadingRef.current) {
-					console.log(
-						`Petición bloqueada para chat ${chatId}, ya hay una en curso`
-					);
+					console.log(`Petición bloqueada para chat ${chatId}`);
 					return null;
 				}
 
@@ -220,63 +155,51 @@ export const useChat = (isSeller = false) => {
 				setLoading(true);
 				setError(null);
 
-				// Incrementar contador de intentos
 				chatFetchAttempts.current[chatId] = attempts + 1;
 
-				try {
-					const chatService = getChatService();
-					const response = await chatService.getChatDetails(chatId);
+				const chatService = getChatService();
+				const response = await chatService.getChatDetails(chatId);
 
-					if (response && response.status === "success") {
-						// Procesar chat y mensajes - verificando que no sean vacíos
-						let chat = response.data?.chat;
-						let responseMessages = response.data?.messages || [];
+				if (response && response.status === "success" && response.data?.chat) {
+					const chat = response.data.chat;
+					const responseMessages = response.data.messages || [];
 
-						// Validar que el chat tenga ID
-						if (chat && chat.id) {
-							console.log(
-								`Chat ${chatId} cargado correctamente con ${responseMessages.length} mensajes`
-							);
+					if (chat.id) {
+						console.log(`Chat ${chatId} cargado con ${responseMessages.length} mensajes`);
 
-							// Reiniciar contador de intentos al tener éxito
-							chatFetchAttempts.current[chatId] = 0;
+						// Reiniciar contador de intentos
+						chatFetchAttempts.current[chatId] = 0;
 
-							// Actualizar estados
-							setSelectedChat(chat);
-							setMessages(responseMessages);
+						setSelectedChat(chat);
+						setMessages(responseMessages);
 
-							// Añadir este chat a la lista si no existe
-							setChats((prevChats) => {
-								const exists = prevChats.some((c) => c.id === chat.id);
-								if (!exists) {
-									const updatedChats = [...prevChats, chat];
-									localChatsRef.current = updatedChats;
-									return updatedChats;
-								}
-
-								const updatedChats = prevChats.map((c) =>
-									c.id === chat.id ? {...c, ...chat} : c
-								);
+						// Actualizar lista de chats
+						setChats((prevChats) => {
+							const exists = prevChats.some((c) => c.id === chat.id);
+							if (!exists) {
+								const updatedChats = [...prevChats, chat];
 								localChatsRef.current = updatedChats;
 								return updatedChats;
-							});
+							}
 
-							return chat;
-						} else {
-							console.error(`Chat ${chatId} no tiene un formato válido:`, chat);
-							setError("Chat no encontrado o sin acceso");
-							return null;
-						}
-					} else {
-						console.error(`Error en respuesta para chat ${chatId}:`, response);
-						setError("Error al cargar los mensajes");
-						return null;
+							const updatedChats = prevChats.map((c) =>
+								c.id === chat.id ? {...c, ...chat} : c
+							);
+							localChatsRef.current = updatedChats;
+							return updatedChats;
+						});
+
+						return chat;
 					}
-				} catch (err) {
-					console.error(`Error al obtener mensajes del chat ${chatId}:`, err);
-					setError(extractErrorMessage(err, "Error al cargar los mensajes"));
-					return null;
 				}
+
+				console.error(`Error en respuesta para chat ${chatId}`);
+				setError("Error al cargar los mensajes");
+				return null;
+			} catch (err) {
+				console.error(`Error al obtener mensajes del chat ${chatId}:`, err);
+				setError(extractErrorMessage(err, "Error al cargar los mensajes"));
+				return null;
 			} finally {
 				isLoadingRef.current = false;
 				setLoading(false);
@@ -296,14 +219,11 @@ export const useChat = (isSeller = false) => {
 			}
 
 			try {
-				console.log(
-					`Creando chat con vendedor ${sellerId} para producto ${productId}...`
-				);
+				console.log(`Creando chat con vendedor ${sellerId} para producto ${productId}...`);
 				isLoadingRef.current = true;
 				setLoading(true);
 				setError(null);
 
-				// Enviar la petición al servidor
 				const chatService = getChatService();
 				const response = await chatService.createChat({
 					seller_id: sellerId,
@@ -356,31 +276,31 @@ export const useChat = (isSeller = false) => {
 				setLoading(true);
 				setError(null);
 
-				try {
-					const chatService = getChatService();
-					const response = await chatService.sendMessage(chatId, {
-						content: content.trim(),
-					});
+				const chatService = getChatService();
+				const response = await chatService.sendMessage(chatId, {
+					content: content.trim(),
+				});
 
-					if (response.status === "success") {
-						console.log(
-							"Mensaje para nuevo chat enviado correctamente:",
-							response.data
-						);
-
-						// Refrescar chat para sincronizar
-						await fetchChatMessages(chatId);
-						return true;
-					} else {
-						console.error("Error en respuesta al enviar mensaje:", response);
-						setError(response.message || "Error al enviar el mensaje");
-						return false;
-					}
-				} catch (err) {
-					console.error("Error al enviar mensaje a nuevo chat:", err);
-					setError(extractErrorMessage(err, "Error al enviar el mensaje"));
+				if (response.status === "success") {
+					console.log("Mensaje para nuevo chat enviado correctamente");
+					await fetchChatMessages(chatId);
+					return true;
+				} else {
+					console.error("Error en respuesta al enviar mensaje:", response);
+					setError(response.message || "Error al enviar el mensaje");
 					return false;
 				}
+			} catch (err: any) {
+				console.error("Error al enviar mensaje a nuevo chat:", err);
+
+				// Manejar errores específicos del filtro de chat
+				if (err?.response?.data?.status === 'error') {
+					// Re-lanzar el error para que lo maneje el componente
+					throw err;
+				}
+				
+				setError(extractErrorMessage(err, "Error al enviar el mensaje"));
+				return false;
 			} finally {
 				isLoadingRef.current = false;
 				setLoading(false);
@@ -395,9 +315,7 @@ export const useChat = (isSeller = false) => {
 	const sendMessage = useCallback(
 		async (content: string): Promise<boolean> => {
 			if (!selectedChat || !selectedChat.id || !content.trim()) {
-				console.error(
-					"No se puede enviar mensaje: Chat no seleccionado o contenido vacío"
-				);
+				console.error("No se puede enviar mensaje: Chat no seleccionado o contenido vacío");
 				return false;
 			}
 
@@ -407,45 +325,37 @@ export const useChat = (isSeller = false) => {
 			}
 
 			try {
-				console.log(
-					`Enviando mensaje a chat ${selectedChat.id} ${isSellerRef.current ? "como vendedor" : "como usuario"}...`
-				);
+				console.log(`Enviando mensaje a chat ${selectedChat.id} ${isSellerRef.current ? "como vendedor" : "como usuario"}...`);
 				isLoadingRef.current = true;
 				setLoading(true);
 				setError(null);
 
-				try {
-					const chatService = getChatService();
-					const response = await chatService.sendMessage(selectedChat.id, {
-						content: content.trim(),
-					});
+				const chatService = getChatService();
+				const response = await chatService.sendMessage(selectedChat.id, {
+					content: content.trim(),
+				});
 
-					if (response.status === "success") {
-						console.log("Mensaje enviado correctamente:", response.data);
-
-						// Recargar los mensajes para ver el nuevo mensaje
-						await fetchChatMessages(selectedChat.id);
-						return true;
-					} else {
-						console.error("Error en respuesta al enviar mensaje:", response);
-						setError(response.message || "Error al enviar el mensaje");
-						return false;
-					}
-				} catch (err: any) {
-					console.error("Error al enviar mensaje:", err);
-					
-					// Manejar errores específicos del filtro de chat
-					if (err?.response?.data?.status === 'error') {
-						const errorData = err.response.data;
-						
-						// Re-lanzar el error para que ChatInterface lo maneje
-						// con las notificaciones flotantes apropiadas
-						throw err;
-					}
-					
-					setError(extractErrorMessage(err, "Error al enviar el mensaje"));
+				if (response.status === "success") {
+					console.log("Mensaje enviado correctamente");
+					// Recargar los mensajes para ver el nuevo mensaje
+					await fetchChatMessages(selectedChat.id);
+					return true;
+				} else {
+					console.error("Error en respuesta al enviar mensaje:", response);
+					setError(response.message || "Error al enviar el mensaje");
 					return false;
 				}
+			} catch (err: any) {
+				console.error("Error al enviar mensaje:", err);
+				
+				// Manejar errores específicos del filtro de chat
+				if (err?.response?.data?.status === 'error') {
+					// Re-lanzar el error para que ChatInterface lo maneje
+					throw err;
+				}
+				
+				setError(extractErrorMessage(err, "Error al enviar el mensaje"));
+				return false;
 			} finally {
 				isLoadingRef.current = false;
 				setLoading(false);
@@ -455,7 +365,7 @@ export const useChat = (isSeller = false) => {
 	);
 
 	/**
-	 * Actualiza el estado de un chat (cerrar, archivar, reabrir)
+	 * Actualiza el estado de un chat
 	 */
 	const updateChatStatus = useCallback(
 		async (chatId: number, status: "active" | "closed" | "archived") => {
@@ -470,7 +380,7 @@ export const useChat = (isSeller = false) => {
 				setLoading(true);
 				setError(null);
 
-				// Actualizar optimistamente el estado en la UI mientras esperamos respuesta
+				// Actualizar optimistamente
 				setChats((prev) =>
 					prev.map((chat) => {
 						if (chat.id === chatId) {
@@ -484,41 +394,23 @@ export const useChat = (isSeller = false) => {
 					setSelectedChat((prev) => (prev ? {...prev, status} : null));
 				}
 
-				try {
-					const chatService = getChatService();
-					const response = await chatService.updateChatStatus(chatId, {
-						status,
-					});
+				const chatService = getChatService();
+				const response = await chatService.updateChatStatus(chatId, { status });
 
-					if (response.status === "success") {
-						console.log("Estado actualizado correctamente:", response.data);
-						return true;
-					} else {
-						console.error("Error en respuesta al actualizar estado:", response);
-
-						// Revertir cambios en la UI
-						await fetchChats();
-
-						setError(
-							response.message ||
-								`Error al ${status === "active" ? "reabrir" : status === "closed" ? "cerrar" : "archivar"} el chat`
-						);
-						return false;
-					}
-				} catch (err) {
-					console.error(`Error al actualizar estado del chat ${chatId}:`, err);
-
-					// Revertir cambios en la UI
-					await fetchChats();
-
-					setError(
-						extractErrorMessage(
-							err,
-							`Error al ${status === "active" ? "reabrir" : status === "closed" ? "cerrar" : "archivar"} el chat`
-						)
-					);
+				if (response.status === "success") {
+					console.log("Estado actualizado correctamente");
+					return true;
+				} else {
+					console.error("Error en respuesta al actualizar estado:", response);
+					await fetchChats(); // Revertir cambios
+					setError(response.message || `Error al ${status} el chat`);
 					return false;
 				}
+			} catch (err) {
+				console.error(`Error al actualizar estado del chat ${chatId}:`, err);
+				await fetchChats(); // Revertir cambios
+				setError(extractErrorMessage(err, `Error al ${status} el chat`));
+				return false;
 			} finally {
 				isLoadingRef.current = false;
 				setLoading(false);
@@ -532,20 +424,15 @@ export const useChat = (isSeller = false) => {
 	 */
 	const startMessagesPolling = useCallback(
 		(chatId: number, intervalMs = 15000) => {
-			// Limpiar cualquier intervalo existente
 			if (refreshIntervalRef.current) {
 				clearInterval(refreshIntervalRef.current);
 				refreshIntervalRef.current = null;
 			}
 
-			// Reiniciar contador de intentos al iniciar nuevo polling
 			chatFetchAttempts.current[chatId] = 0;
-
 			console.log(`Iniciando polling para chat ${chatId}...`);
 
-			// Crear un nuevo intervalo para el chat específico
 			refreshIntervalRef.current = setInterval(() => {
-				// Solo actualizar si no hay otra petición en curso
 				if (!isLoadingRef.current && chatId) {
 					console.log(`Actualizando mensajes del chat ${chatId} (polling)...`);
 					fetchChatMessages(chatId);
@@ -573,40 +460,32 @@ export const useChat = (isSeller = false) => {
 		}
 	}, []);
 
-	// CORRECCIÓN 4: Cargar chats al montar el componente, solo una vez
+	// Cargar chats al montar el componente
 	useEffect(() => {
 		const controller = new AbortController();
 
 		if (user?.id) {
-			// Asegurarse de que isSellerRef no cambie
-			console.log(
-				`Valor de isSellerRef.current fijado en: ${isSellerRef.current}`
-			);
-
-			// Crear instancia y cargar chats
+			console.log(`Valor de isSellerRef.current fijado en: ${isSellerRef.current}`);
 			getChatService();
 			fetchChats();
 		}
 
 		return () => {
 			controller.abort();
-			// Asegurarse de que no quedan referencias de carga activas
 			isLoadingRef.current = false;
-			// Detener cualquier polling activo
 			stopMessagesPolling();
-			// Limpiar estados al desmontar
 			setChats([]);
 			setSelectedChat(null);
 			setMessages([]);
 		};
 	}, [user?.id, fetchChats, stopMessagesPolling, getChatService]);
 
-	// CORRECCIÓN 5: Optimizar la función selectChat para evitar cambios innecesarios
+	/**
+	 * Selecciona un chat evitando cambios innecesarios
+	 */
 	const selectChat = useCallback(
 		(chat: Chat | null) => {
-			// CORRECCIÓN: Evitar actualizar estado si el chat es el mismo o ambos son null
 			if (!chat) {
-				// Solo actualizar si previamente había un chat seleccionado
 				if (selectedChat !== null) {
 					console.log("Seleccionando chat: null");
 					setSelectedChat(null);
@@ -618,9 +497,7 @@ export const useChat = (isSeller = false) => {
 
 			// Evitar actualizar si es el mismo chat
 			if (selectedChat && selectedChat.id === chat.id) {
-				console.log(
-					`Chat ${chat.id} ya está seleccionado, omitiendo cambio de estado.`
-				);
+				console.log(`Chat ${chat.id} ya está seleccionado`);
 				return;
 			}
 
@@ -629,7 +506,6 @@ export const useChat = (isSeller = false) => {
 
 			if (chat && chat.id) {
 				fetchChatMessages(chat.id);
-				// Iniciar polling de mensajes
 				startMessagesPolling(chat.id);
 			}
 		},
@@ -642,19 +518,15 @@ export const useChat = (isSeller = false) => {
 	const markAllAsRead = useCallback(
 		async (chatId: number): Promise<boolean> => {
 			if (!chatId) {
-				console.error(
-					"No se puede marcar mensajes como leídos: ID de chat no válido"
-				);
+				console.error("No se puede marcar mensajes como leídos: ID de chat no válido");
 				return false;
 			}
 
 			try {
-				console.log(
-					`Marcando todos los mensajes del chat ${chatId} como leídos...`
-				);
+				console.log(`Marcando todos los mensajes del chat ${chatId} como leídos...`);
 				setError(null);
 
-				// Marcar mensajes como leídos localmente de forma optimista
+				// Actualizar optimistamente
 				setMessages((prev) =>
 					prev.map((msg) => ({
 						...msg,
@@ -662,32 +534,22 @@ export const useChat = (isSeller = false) => {
 					}))
 				);
 
-				// Actualizar el conteo de no leídos en la lista de chats
 				setChats((prev) =>
 					prev.map((chat) => {
 						if (chat.id === chatId) {
-							return {
-								...chat,
-								unreadCount: 0,
-							};
+							return { ...chat, unreadCount: 0 };
 						}
 						return chat;
 					})
 				);
 
-				// Enviar la solicitud al servidor
 				const chatService = getChatService();
 				const response = await chatService.markAllMessagesAsRead(chatId);
 
 				return response.status === "success";
 			} catch (err) {
-				console.error(
-					`Error al marcar mensajes como leídos en chat ${chatId}:`,
-					err
-				);
-				setError(
-					extractErrorMessage(err, "Error al marcar mensajes como leídos")
-				);
+				console.error(`Error al marcar mensajes como leídos en chat ${chatId}:`, err);
+				setError(extractErrorMessage(err, "Error al marcar mensajes como leídos"));
 				return false;
 			}
 		},
@@ -705,29 +567,22 @@ export const useChat = (isSeller = false) => {
 			}
 
 			try {
-				console.log(
-					`Marcando mensaje ${messageId} del chat ${chatId} como leído...`
-				);
+				console.log(`Marcando mensaje ${messageId} del chat ${chatId} como leído...`);
 				setError(null);
 
-				// Marcar mensaje como leído localmente de forma optimista
+				// Actualizar optimistamente
 				setMessages((prev) =>
 					prev.map((msg) => {
 						if (msg.id === messageId) {
-							return {
-								...msg,
-								isRead: true,
-							};
+							return { ...msg, isRead: true };
 						}
 						return msg;
 					})
 				);
 
-				// Enviar la solicitud al servidor
 				const chatService = getChatService();
 				const response = await chatService.markMessageAsRead(chatId, messageId);
 
-				// Actualizar el conteo de no leídos en la lista de chats
 				if (response.status === "success") {
 					// Recalcular el conteo de no leídos
 					const unreadCount = messages.filter(
@@ -737,10 +592,7 @@ export const useChat = (isSeller = false) => {
 					setChats((prev) =>
 						prev.map((chat) => {
 							if (chat.id === chatId) {
-								return {
-									...chat,
-									unreadCount,
-								};
+								return { ...chat, unreadCount };
 							}
 							return chat;
 						})
@@ -749,13 +601,8 @@ export const useChat = (isSeller = false) => {
 
 				return response.status === "success";
 			} catch (err) {
-				console.error(
-					`Error al marcar mensaje ${messageId} como leído en chat ${chatId}:`,
-					err
-				);
-				setError(
-					extractErrorMessage(err, "Error al marcar mensaje como leído")
-				);
+				console.error(`Error al marcar mensaje ${messageId} como leído:`, err);
+				setError(extractErrorMessage(err, "Error al marcar mensaje como leído"));
 				return false;
 			}
 		},
@@ -766,39 +613,24 @@ export const useChat = (isSeller = false) => {
 	 * Carga más mensajes con paginación
 	 */
 	const loadMoreMessages = useCallback(
-		async (
-			chatId: number,
-			page: number,
-			limit: number = 20
-		): Promise<boolean> => {
-			if (!chatId) {
-				console.error("No se pueden cargar más mensajes: ID de chat no válido");
-				return false;
-			}
-
-			if (isLoadingRef.current) {
-				console.log("Carga bloqueada, hay una operación en curso");
+		async (chatId: number, page: number, limit: number = 20): Promise<boolean> => {
+			if (!chatId || isLoadingRef.current) {
 				return false;
 			}
 
 			try {
-				console.log(
-					`Cargando más mensajes para el chat ${chatId} (página ${page})...`
-				);
+				console.log(`Cargando más mensajes para el chat ${chatId} (página ${page})...`);
 				isLoadingRef.current = true;
 				setLoading(true);
 				setError(null);
 
-				// Obtener mensajes paginados
 				const chatService = getChatService();
 				const response = await chatService.getMessages(chatId, page, limit);
 
 				if (response.status === "success" && response.data.messages) {
 					const newMessages = response.data.messages;
 
-					// Agregar mensajes manteniendo el orden y evitando duplicados
 					setMessages((prev) => {
-						// Crear un mapa de IDs para evitar duplicados
 						const messageMap = new Map();
 						prev.forEach((msg) => messageMap.set(msg.id, msg));
 						newMessages.forEach((msg) => {
@@ -807,7 +639,6 @@ export const useChat = (isSeller = false) => {
 							}
 						});
 
-						// Convertir el mapa a array y ordenar por fecha
 						const combinedMessages = Array.from(messageMap.values());
 						return combinedMessages.sort((a, b) => {
 							const dateA = new Date(a.createdAt || 0);
@@ -821,10 +652,7 @@ export const useChat = (isSeller = false) => {
 
 				return false;
 			} catch (err) {
-				console.error(
-					`Error al cargar más mensajes para el chat ${chatId}:`,
-					err
-				);
+				console.error(`Error al cargar más mensajes para el chat ${chatId}:`, err);
 				setError(extractErrorMessage(err, "Error al cargar más mensajes"));
 				return false;
 			} finally {
@@ -850,17 +678,15 @@ export const useChat = (isSeller = false) => {
 				setLoading(true);
 				setError(null);
 
-				// Actualizar localmente de forma optimista
+				// Actualizar optimisticamente
 				setChats((prev) => prev.filter((chat) => chat.id !== chatId));
 
-				// Si el chat eliminado es el seleccionado, limpiar selección
 				if (selectedChat && selectedChat.id === chatId) {
 					setSelectedChat(null);
 					setMessages([]);
 					stopMessagesPolling();
 				}
 
-				// Enviar la solicitud al servidor
 				const chatService = getChatService();
 				const response = await chatService.deleteChat(chatId);
 
@@ -868,7 +694,7 @@ export const useChat = (isSeller = false) => {
 			} catch (err) {
 				console.error(`Error al eliminar chat ${chatId}:`, err);
 				setError(extractErrorMessage(err, "Error al eliminar chat"));
-
+				
 				// Revertir cambios si hay error
 				await fetchChats();
 				return false;
@@ -876,13 +702,7 @@ export const useChat = (isSeller = false) => {
 				setLoading(false);
 			}
 		},
-		[
-			selectedChat,
-			setSelectedChat,
-			stopMessagesPolling,
-			fetchChats,
-			getChatService,
-		]
+		[selectedChat, setSelectedChat, stopMessagesPolling, fetchChats, getChatService]
 	);
 
 	return {

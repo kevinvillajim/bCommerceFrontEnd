@@ -1,3 +1,4 @@
+// src/core/domain/entities/Message.ts - CORREGIDO
 /**
  * Message entity
  */
@@ -19,7 +20,7 @@ export interface Message {
 }
 
 /**
- * Chat entity
+ * Chat entity - CORREGIDO
  */
 export interface Chat {
   id?: number;
@@ -154,4 +155,24 @@ export interface ChatFilterParams {
   perPage?: number;
   sortBy?: string;
   sortDir?: 'asc' | 'desc';
+}
+
+// Enums para estados de mensaje
+export enum MessageStatus {
+  SENDING = 'sending',
+  SENT = 'sent',
+  DELIVERED = 'delivered',
+  READ = 'read',
+  ERROR = 'error'
+}
+
+// Interfaces para respuestas de filtro de contenido
+export interface ContentFilterResponse {
+  status: 'error' | 'success';
+  message: string;
+  data?: {
+    censored_content?: string;
+    strike_count?: number;
+    is_blocked?: boolean;
+  };
 }

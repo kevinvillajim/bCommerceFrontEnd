@@ -1,10 +1,10 @@
+// src/presentation/components/chat/ChatInterface.tsx - CORREGIDO
 import React, {useState, useEffect, useRef} from "react";
 import {MessageSquare, ArrowLeft, RefreshCw} from "lucide-react";
 import ChatList from "./ChatList";
 import ChatMessages from "./ChatMessages";
 import ChatHeader from "./ChatHeader";
 import MessageForm from "./MessageForm";
-import { useChatFilterNotifications } from "../notifications/ChatFilterToast";
 import type {Chat, Message} from "../../../core/domain/entities/Chat";
 
 /**
@@ -43,8 +43,7 @@ interface ChatInterfaceProps {
 }
 
 /**
- * Componente reutilizable ChatInterface que maneja la interfaz de chat
- * para ser usado en diferentes páginas (ej: UserChatPage, SellerMessagesPage)
+ * Componente reutilizable ChatInterface
  */
 const ChatInterface: React.FC<ChatInterfaceProps> = ({
 	// Datos de chat
@@ -120,8 +119,10 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
 			? chat.unreadCount && chat.unreadCount > 0
 			: true;
 
-		// Búsqueda
-		const searchTarget1 = isSeller ? chat.user?.name : chat.seller?.storeName;
+		// Búsqueda - CORREGIDO: usar las propiedades correctas
+		const searchTarget1 = isSeller 
+			? chat.user?.name 
+			: chat.seller?.storeName;
 		const searchTarget2 = chat.product?.name;
 
 		const matchesSearch =

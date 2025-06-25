@@ -1,3 +1,4 @@
+// src/presentation/components/product/ChatButton.tsx - CORREGIDO
 import React, {useState, useEffect} from "react";
 import {useNavigate} from "react-router-dom";
 import {MessageCircle, Send, Loader2} from "lucide-react";
@@ -124,7 +125,7 @@ const ChatButton: React.FC<ChatButtonProps> = ({
 			
 			setLoading(false);
 
-			// Permitir al usuario reintentar el envío después de algunos segundos
+			// Permitir al usuario reintentar después de algunos segundos
 			setTimeout(() => {
 				setError(null);
 			}, 3000);
