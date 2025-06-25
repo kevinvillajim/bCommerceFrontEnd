@@ -1,11 +1,19 @@
-// src/presentation/hooks/useChat.ts - VERSIÓN CORREGIDA
+// src/presentation/hooks/useChat.ts - ERRORES DE TYPESCRIPT CORREGIDOS
 import {useState, useEffect, useCallback, useRef} from "react";
 import {useAuth} from "./useAuth";
 import ChatService from "../../core/services/ChatService";
-import type {Chat, Message, ContentFilterResponse} from "../../core/domain/entities/Chat";
+import type {Chat, Message} from "../../core/domain/entities/Chat";
 import {extractErrorMessage} from "../../utils/errorHandler";
 import {API_ENDPOINTS} from "../../constants/apiEndpoints";
 import ApiClient from "../../infrastructure/api/apiClient";
+
+// Interfaces corregidas para las respuestas del API
+interface SellerResponse {
+	data?: {
+		id?: number;
+		seller_id?: number;
+	};
+}
 
 export const useChat = (isSeller = false) => {
 	const [chats, setChats] = useState<Chat[]>([]);
@@ -37,6 +45,26 @@ export const useChat = (isSeller = false) => {
 		}
 		return chatServiceRef.current;
 	}, []);
+
+	/**
+	 * Obtiene información del vendedor por ID de usuario - CORREGIDO
+	 */
+	const getSellerIdFromUser = async (userId: number): Promise<number | null> => {
+		try {
+			const response = await ApiClient.get<SellerResponse>(API_ENDPOINTS.SELLERS.BY_USER_ID(userId));
+
+			if (response?.data?.id) {
+				return response.data.id;
+			} else if (response?.data?.seller_id) {
+				return response.data.seller_id;
+			}
+
+			return null;
+		} catch (error) {
+			console.error(`Error al obtener información del vendedor para usuario ${userId}:`, error);
+			return null;
+		}
+	};
 
 	/**
 	 * Carga la lista de chats del usuario
@@ -106,26 +134,6 @@ export const useChat = (isSeller = false) => {
 			isLoadingRef.current = false;
 		}
 	}, [getChatService, user?.id]);
-
-	/**
-	 * Obtiene información del vendedor por ID de usuario
-	 */
-	const getSellerIdFromUser = async (userId: number): Promise<number | null> => {
-		try {
-			const response = await ApiClient.get(API_ENDPOINTS.SELLERS.BY_USER_ID(userId));
-
-			if (response?.data?.id) {
-				return response.data.id;
-			} else if (response?.data?.seller_id) {
-				return response.data.seller_id;
-			}
-
-			return null;
-		} catch (error) {
-			console.error(`Error al obtener información del vendedor para usuario ${userId}:`, error);
-			return null;
-		}
-	};
 
 	/**
 	 * Carga los mensajes de un chat específico
@@ -380,7 +388,7 @@ export const useChat = (isSeller = false) => {
 				setLoading(true);
 				setError(null);
 
-				// Actualizar optimistamente
+				// Actualizar optimisticamente
 				setChats((prev) =>
 					prev.map((chat) => {
 						if (chat.id === chatId) {
@@ -526,7 +534,7 @@ export const useChat = (isSeller = false) => {
 				console.log(`Marcando todos los mensajes del chat ${chatId} como leídos...`);
 				setError(null);
 
-				// Actualizar optimistamente
+				// Actualizar optimisticamente
 				setMessages((prev) =>
 					prev.map((msg) => ({
 						...msg,

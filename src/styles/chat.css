@@ -1,0 +1,319 @@
+/* src/styles/chat.css - Estilos adicionales para el chat estilo WhatsApp */
+
+/* Scrollbar personalizada para el contenedor de mensajes */
+.scrollbar-thin {
+    scrollbar-width: thin;
+  }
+  
+  .scrollbar-thumb-gray-300 {
+    scrollbar-color: #d1d5db transparent;
+  }
+  
+  .scrollbar-track-transparent {
+    scrollbar-track-color: transparent;
+  }
+  
+  /* Para navegadores webkit */
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: #d1d5db;
+    border-radius: 3px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background-color: #9ca3af;
+  }
+  
+  /* Ocultar scrollbar para el selector de emojis */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  
+  /* Animaciones para las burbujas de mensajes */
+  @keyframes messageSlideIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .message-bubble {
+    animation: messageSlideIn 0.3s ease-out;
+  }
+  
+  /* Animación para el emoji picker */
+  @keyframes slideInUp {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .emoji-picker {
+    animation: slideInUp 0.2s ease-out;
+  }
+  
+  /* Efecto de typing para el indicador de carga */
+  @keyframes typing {
+    0%, 20% {
+      opacity: 0.3;
+    }
+    50% {
+      opacity: 1;
+    }
+    80%, 100% {
+      opacity: 0.3;
+    }
+  }
+  
+  .typing-indicator {
+    animation: typing 1.5s infinite;
+  }
+  
+  /* Estados de mensaje con transiciones suaves */
+  .message-status {
+    transition: all 0.2s ease-in-out;
+  }
+  
+  .message-status.read {
+    color: #3b82f6; /* primary-500 */
+  }
+  
+  .message-status.delivered {
+    color: #6b7280; /* gray-500 */
+  }
+  
+  .message-status.sending {
+    opacity: 0.6;
+  }
+  
+  .message-status.error {
+    color: #ef4444; /* red-500 */
+  }
+  
+  /* Efectos hover para las burbujas de mensaje */
+  .message-bubble:hover {
+    transform: translateY(-1px);
+    transition: transform 0.2s ease-out;
+  }
+  
+  /* Separadores de fecha con efecto glassmorphism */
+  .date-separator {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Botón flotante para scroll */
+  .scroll-to-bottom {
+    position: fixed;
+    bottom: 120px;
+    right: 20px;
+    z-index: 10;
+    transition: all 0.3s ease;
+    transform: scale(0);
+  }
+  
+  .scroll-to-bottom.visible {
+    transform: scale(1);
+  }
+  
+  .scroll-to-bottom:hover {
+    transform: scale(1.1);
+  }
+  
+  /* Indicador de conexión en tiempo real */
+  .connection-indicator {
+    position: relative;
+  }
+  
+  .connection-indicator::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #10b981; /* green-500 */
+    border: 2px solid white;
+    animation: pulse 2s infinite;
+  }
+  
+  @keyframes pulse {
+    0% {
+      box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+    }
+    70% {
+      box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+    }
+  }
+  
+  .connection-indicator.offline::before {
+    background: #6b7280; /* gray-500 */
+    animation: none;
+  }
+  
+  /* Mejoras responsivas */
+  @media (max-width: 768px) {
+    .message-bubble {
+      max-width: 85%;
+    }
+    
+    .emoji-picker {
+      left: 8px;
+      right: 8px;
+    }
+    
+    .scroll-to-bottom {
+      bottom: 100px;
+      right: 16px;
+    }
+  }
+  
+  /* Estados de focus mejorados */
+  .chat-input:focus {
+    outline: none;
+    ring: 2px;
+    ring-color: #3b82f6;
+    border-color: #3b82f6;
+  }
+  
+  /* Transiciones suaves para todos los elementos interactivos */
+  .chat-button {
+    transition: all 0.2s ease-in-out;
+  }
+  
+  .chat-button:hover {
+    transform: translateY(-1px);
+  }
+  
+  .chat-button:active {
+    transform: translateY(0);
+  }
+  
+  /* Efectos de carga mejorados */
+  .loading-dots {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+  }
+  
+  .loading-dots > div {
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: currentColor;
+    animation: loadingBounce 1.4s ease-in-out infinite both;
+  }
+  
+  .loading-dots > div:nth-child(1) {
+    animation-delay: -0.32s;
+  }
+  
+  .loading-dots > div:nth-child(2) {
+    animation-delay: -0.16s;
+  }
+  
+  @keyframes loadingBounce {
+    0%, 80%, 100% {
+      transform: scale(0.6);
+      opacity: 0.5;
+    }
+    40% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+  
+  /* Notificaciones flotantes mejoradas */
+  .notification-toast {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+  
+  .notification-toast.animate-slide-in-right {
+    animation: slideInRight 0.3s ease-out;
+  }
+  
+  .notification-toast.animate-slide-out-right {
+    animation: slideOutRight 0.3s ease-in;
+  }
+  
+  @keyframes slideInRight {
+    from {
+      opacity: 0;
+      transform: translateX(100%);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+  
+  @keyframes slideOutRight {
+    from {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateX(100%);
+    }
+  }
+  
+  /* Mejoras de accesibilidad */
+  @media (prefers-reduced-motion: reduce) {
+    .message-bubble,
+    .emoji-picker,
+    .notification-toast,
+    .chat-button {
+      animation: none;
+      transition: none;
+    }
+    
+    .connection-indicator::before {
+      animation: none;
+    }
+  }
+  
+  /* Dark mode support (opcional) */
+  @media (prefers-color-scheme: dark) {
+    .date-separator {
+      background: rgba(31, 41, 55, 0.8);
+      border: 1px solid rgba(75, 85, 99, 0.2);
+    }
+    
+    .scrollbar-thumb-gray-300 {
+      scrollbar-color: #4b5563 transparent;
+    }
+    
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+      background-color: #4b5563;
+    }
+  }

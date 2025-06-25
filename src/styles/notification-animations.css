@@ -160,18 +160,3 @@
       @apply max-w-[calc(100vw-2rem)] mx-4;
     }
   }
-  
-  /* Dark mode support (opcional) */
-  @media (prefers-color-scheme: dark) {
-    .notification-toast {
-      @apply bg-gray-800 border-gray-700 text-white;
-    }
-    
-    .notification-unread {
-      @apply bg-blue-900 border-l-blue-400;
-    }
-    
-    .notification-read {
-      @apply bg-gray-800 border-l-gray-600;
-    }
-  }

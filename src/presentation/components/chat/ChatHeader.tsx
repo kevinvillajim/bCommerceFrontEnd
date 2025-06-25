@@ -1,4 +1,5 @@
-// src/presentation/components/chat/ChatHeader.tsx - CORREGIDO
+// src/presentation/components/chat/ChatHeader.tsx - ESTADO DE CONEXIÓN REAL
+
 import React, {useState, useRef, useEffect} from "react";
 import {Link} from "react-router-dom";
 import {
@@ -10,8 +11,10 @@ import {
 	MoreVertical,
 	Wifi,
 	WifiOff,
+	Clock,
 } from "lucide-react";
 import type {Chat} from "../../../core/domain/entities/Chat";
+import { useRealTimeChat } from "../../hooks/useRealTimeChat";
 
 interface ChatHeaderProps {
 	chat: Chat;
@@ -33,36 +36,6 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
 	const [isUpdating, setIsUpdating] = useState(false);
 	const menuRef = useRef<HTMLDivElement>(null);
 
-	// Hook para estado de conexión (simplificado por ahora)
-	const useConnectionStatus = (userId: number | undefined) => {
-		const [isOnline, setIsOnline] = useState<boolean>(false);
-		const [lastSeen, setLastSeen] = useState<Date | null>(null);
-	
-		useEffect(() => {
-			if (!userId) {
-				setIsOnline(false);
-				setLastSeen(null);
-				return;
-			}
-	
-			// TODO: Implementar estado de conexión real
-			// Por ahora, simular que algunos usuarios están online
-			const isCurrentlyOnline = Math.random() > 0.7; // 30% de probabilidad
-			setIsOnline(isCurrentlyOnline);
-			
-			if (!isCurrentlyOnline) {
-				const minutesAgo = Math.floor(Math.random() * 120) + 1;
-				const lastSeenTime = new Date();
-				lastSeenTime.setMinutes(lastSeenTime.getMinutes() - minutesAgo);
-				setLastSeen(lastSeenTime);
-			} else {
-				setLastSeen(null);
-			}
-		}, [userId]);
-	
-		return { isOnline, lastSeen };
-	};
-
 	// Determinar el participante según el rol
 	const participant = isSeller
 		? {
@@ -80,8 +53,15 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
 				route: `/sellers/${chat.sellerId}`,
 			};
 
-	// Estado de conexión del participante
-	const { isOnline, lastSeen } = useConnectionStatus(participant.id);
+	// Estados de conexión y escritura usando el hook real
+	const { onlineStatus } = useRealTimeChat({
+		chatId: chat.id,
+		participantId: participant.id,
+		pollInterval: 30000,
+		enableTypingIndicator: true
+	});
+
+	const { isOnline, lastSeen, isTyping } = onlineStatus;
 
 	// Ruta al producto
 	const productRoute = isSeller
@@ -135,163 +115,230 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
 		const now = new Date();
 		const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
 		
-		if (diffInMinutes < 60) {
+		if (diffInMinutes < 1) {
+			return 'hace un momento';
+		} else if (diffInMinutes < 60) {
 			return `hace ${diffInMinutes} min`;
 		} else if (diffInMinutes < 1440) {
-			return `hace ${Math.floor(diffInMinutes / 60)} h`;
+			const hours = Math.floor(diffInMinutes / 60);
+			return `hace ${hours} h`;
 		} else {
-			return `hace ${Math.floor(diffInMinutes / 1440)} d`;
+			const days = Math.floor(diffInMinutes / 1440);
+			if (days === 1) return 'ayer';
+			if (days < 7) return `hace ${days} días`;
+			return date.toLocaleDateString('es-EC', { day: 'numeric', month: 'short' });
 		}
 	};
 
 	return (
-		<div className="p-4 border-b border-gray-200 flex justify-between items-center">
-			<div className="flex items-center">
-				{/* Avatar con indicador de estado */}
-				<div className="flex-shrink-0 mr-3 relative">
-					{participant.avatar ? (
-						<img
-							src={participant.avatar}
-							alt={participant.name}
-							className="h-10 w-10 rounded-full"
-							onError={(e) => {
-								const target = e.target as HTMLImageElement;
-								target.onerror = null;
-								target.src = "https://via.placeholder.com/40?text=U";
-							}}
-						/>
-					) : (
-						<div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
-							{participant.icon}
+		<div className="p-4 border-b border-gray-200 bg-white shadow-sm">
+			<div className="flex items-center justify-between">
+				{/* Información del participante */}
+				<div className="flex items-center flex-1 min-w-0">
+					{/* Avatar con indicador de estado mejorado */}
+					<div className="flex-shrink-0 mr-3 relative">
+						{participant.avatar ? (
+							<img
+								src={participant.avatar}
+								alt={participant.name}
+								className="h-12 w-12 rounded-full border-2 border-white shadow-sm"
+								onError={(e) => {
+									const target = e.target as HTMLImageElement;
+									target.onerror = null;
+									target.src = "https://via.placeholder.com/48?text=U";
+								}}
+							/>
+						) : (
+							<div className="h-12 w-12 rounded-full bg-gray-200 flex items-center justify-center border-2 border-white shadow-sm">
+								{participant.icon}
+							</div>
+						)}
+						
+						{/* Indicador de estado online/offline mejorado */}
+						<div className={`absolute -bottom-1 -right-1 ${isOnline ? 'connection-indicator' : 'connection-indicator offline'}`}>
+							<div className={`w-4 h-4 rounded-full border-2 border-white shadow-sm flex items-center justify-center ${
+								isOnline ? 'bg-green-500' : 'bg-gray-400'
+							}`}>
+								{isOnline ? (
+									<Wifi size={8} className="text-white" />
+								) : (
+									<WifiOff size={8} className="text-white" />
+								)}
+							</div>
+						</div>
+					</div>
+
+					{/* Información del chat */}
+					<div className="flex-1 min-w-0">
+						<div className="flex items-center space-x-2 mb-1">
+							<Link
+								to={participant.route}
+								className="text-lg font-semibold text-gray-900 hover:text-primary-600 truncate transition-colors"
+							>
+								{participant.name}
+							</Link>
+							
+							{/* Badge de estado del chat */}
+							<span
+								className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+									chat.status === "active"
+										? "bg-green-100 text-green-800"
+										: chat.status === "closed"
+											? "bg-blue-100 text-blue-800"
+											: "bg-gray-100 text-gray-800"
+								}`}
+							>
+								<Circle className="w-1.5 h-1.5 mr-1" fill="currentColor" />
+								{chat.status === "active"
+									? "Activo"
+									: chat.status === "closed"
+										? "Cerrado"
+										: "Archivado"}
+							</span>
+						</div>
+						
+						{/* Estado de conexión y escritura */}
+						<div className="flex items-center text-sm mb-1">
+							{isTyping ? (
+								<div className="flex items-center text-primary-600 font-medium">
+									<div className="typing-indicator flex space-x-1 mr-2">
+										<div className="w-1 h-1 bg-current rounded-full"></div>
+										<div className="w-1 h-1 bg-current rounded-full"></div>
+										<div className="w-1 h-1 bg-current rounded-full"></div>
+									</div>
+									<span>escribiendo...</span>
+								</div>
+							) : (
+								<div className="flex items-center text-gray-500">
+									{isOnline ? (
+										<>
+											<Circle className="w-2 h-2 mr-2 fill-green-500 text-green-500" />
+											<span className="text-green-600 font-medium">En línea</span>
+										</>
+									) : (
+										<>
+											<Circle className="w-2 h-2 mr-2 fill-gray-400 text-gray-400" />
+											<span>
+												{lastSeen ? `Visto ${formatLastSeen(lastSeen)}` : 'Desconectado'}
+											</span>
+										</>
+									)}
+								</div>
+							)}
+						</div>
+						
+						{/* Información del producto */}
+						<div className="flex items-center text-sm text-gray-500">
+							<Link
+								to={productRoute}
+								className="text-primary-600 hover:text-primary-700 hover:underline flex items-center truncate"
+								title={chat.product?.name || `Producto #${chat.productId}`}
+							>
+								<Package className="h-3.5 w-3.5 mr-1 flex-shrink-0" />
+								<span className="truncate max-w-xs">
+									{chat.product?.name || `Producto #${chat.productId}`}
+								</span>
+								<ChevronRight size={14} className="ml-1 flex-shrink-0" />
+							</Link>
+						</div>
+					</div>
+				</div>
+
+				{/* Menú de acciones */}
+				<div className="flex items-center space-x-2">
+					{/* Indicador de carga */}
+					{(loading || isUpdating) && (
+						<div className="flex items-center text-gray-500">
+							<div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-gray-400 mr-2"></div>
+							<span className="text-sm">
+								{isUpdating ? 'Actualizando...' : 'Cargando...'}
+							</span>
 						</div>
 					)}
-					
-					{/* Indicador de estado online/offline */}
-					<div className="absolute -bottom-0.5 -right-0.5">
-						{isOnline ? (
-							<div className="w-3 h-3 bg-green-500 rounded-full border-2 border-white flex items-center justify-center">
-								<Wifi size={8} className="text-white" />
-							</div>
-						) : (
-							<div className="w-3 h-3 bg-gray-400 rounded-full border-2 border-white flex items-center justify-center">
-								<WifiOff size={8} className="text-white" />
-							</div>
-						)}
-					</div>
-				</div>
-
-				{/* Información del participante y producto */}
-				<div>
-					<h2 className="text-lg font-medium text-gray-900">
-						{participant.name}
-					</h2>
-					
-					{/* Estado de conexión */}
-					<div className="flex items-center text-xs text-gray-500 mb-1">
-						{isOnline ? (
-							<>
-								<Circle className="w-2 h-2 mr-1 fill-green-500 text-green-500" />
-								<span className="text-green-600 font-medium">En línea</span>
-							</>
-						) : (
-							<>
-								<Circle className="w-2 h-2 mr-1 fill-gray-400 text-gray-400" />
-								<span>
-									{lastSeen ? `Visto ${formatLastSeen(lastSeen)}` : 'Desconectado'}
-								</span>
-							</>
-						)}
-					</div>
-					
-					{/* Información del producto */}
-					<div className="flex items-center text-sm text-gray-500">
-						<Link
-							to={productRoute}
-							className="text-primary-600 hover:underline flex items-center"
-						>
-							<Package className="h-3.5 w-3.5 mr-1" />
-							<span className="truncate max-w-xs">
-								{chat.product?.name || `Producto #${chat.productId}`}
-							</span>
-							<ChevronRight size={14} />
-						</Link>
-					</div>
-				</div>
-			</div>
-
-			{/* Indicador de estado del chat y menú de acciones */}
-			<div className="flex items-center">
-				<span
-					className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mr-2 ${
-						chat.status === "active"
-							? "bg-green-100 text-green-800"
-							: chat.status === "closed"
-								? "bg-blue-100 text-blue-800"
-								: "bg-gray-100 text-gray-800"
-					}`}
-				>
-					<Circle className="w-1.5 h-1.5 mr-1" fill="currentColor" />
-					{chat.status === "active"
-						? "Activo"
-						: chat.status === "closed"
-							? "Cerrado"
-							: "Archivado"}
-				</span>
-
-				{/* Menú desplegable para acciones */}
-				<div className="relative" ref={menuRef}>
-					<button
-						onClick={() => setIsMenuOpen(!isMenuOpen)}
-						className="p-1 rounded-full hover:bg-gray-200 focus:outline-none"
-						disabled={loading || isUpdating}
-					>
-						<MoreVertical className="h-5 w-5 text-gray-600" />
-					</button>
 
 					{/* Menú desplegable */}
-					{isMenuOpen && (
-						<div className="absolute right-0 z-20 mt-2 w-48 bg-white rounded-md shadow-lg py-1 ring-1 ring-black ring-opacity-5">
-							{chat.status === "active" && (
-								<button
-									onClick={() => handleStatusChange("closed")}
-									className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-									disabled={loading || isUpdating}
-								>
-									Cerrar conversación
-								</button>
-							)}
+					<div className="relative" ref={menuRef}>
+						<button
+							onClick={() => setIsMenuOpen(!isMenuOpen)}
+							className="p-2 rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-colors"
+							disabled={loading || isUpdating}
+							title="Más opciones"
+						>
+							<MoreVertical className="h-5 w-5 text-gray-600" />
+						</button>
 
-							{chat.status === "closed" && (
-								<button
-									onClick={() => handleStatusChange("active")}
-									className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-									disabled={loading || isUpdating}
-								>
-									Reabrir conversación
-								</button>
-							)}
+						{/* Menú desplegable */}
+						{isMenuOpen && (
+							<div className="absolute right-0 z-20 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1">
+								{/* Información adicional */}
+								<div className="px-4 py-2 border-b border-gray-100">
+									<p className="text-xs text-gray-500">Chat ID: {chat.id}</p>
+									<p className="text-xs text-gray-500">
+										Creado: {chat.createdAt ? new Date(chat.createdAt).toLocaleDateString('es-EC') : 'N/A'}
+									</p>
+								</div>
 
-							{chat.status !== "archived" && (
-								<button
-									onClick={() => handleStatusChange("archived")}
-									className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-									disabled={loading || isUpdating}
-								>
-									Archivar conversación
-								</button>
-							)}
+								{/* Acciones de estado */}
+								{chat.status === "active" && (
+									<button
+										onClick={() => handleStatusChange("closed")}
+										className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+										disabled={loading || isUpdating}
+									>
+										<Clock className="inline h-4 w-4 mr-2" />
+										Cerrar conversación
+									</button>
+								)}
 
-							{chat.status === "archived" && (
-								<button
-									onClick={() => handleStatusChange("active")}
-									className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-									disabled={loading || isUpdating}
-								>
-									Desarchivar conversación
-								</button>
-							)}
-						</div>
-					)}
+								{chat.status === "closed" && (
+									<button
+										onClick={() => handleStatusChange("active")}
+										className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+										disabled={loading || isUpdating}
+									>
+										<Circle className="inline h-4 w-4 mr-2" />
+										Reabrir conversación
+									</button>
+								)}
+
+								{chat.status !== "archived" && (
+									<button
+										onClick={() => handleStatusChange("archived")}
+										className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+										disabled={loading || isUpdating}
+									>
+										📦 Archivar conversación
+									</button>
+								)}
+
+								{chat.status === "archived" && (
+									<button
+										onClick={() => handleStatusChange("active")}
+										className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+										disabled={loading || isUpdating}
+									>
+										📤 Desarchivar conversación
+									</button>
+								)}
+
+								{/* Enlaces adicionales */}
+								<div className="border-t border-gray-100 mt-1">
+									<Link
+										to={participant.route}
+										className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+									>
+										👤 Ver perfil
+									</Link>
+									<Link
+										to={productRoute}
+										className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+									>
+										📦 Ver producto
+									</Link>
+								</div>
+							</div>
+						)}
+					</div>
 				</div>
 			</div>
 		</div>

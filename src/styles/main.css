@@ -1,6 +1,8 @@
 /* Import Tailwind configuration */
 @import "./tailwind.css";
 @import "./dark-mode.css";
+@import "./chat.css";
+@import "./notification-animations.css";
 
 /* Additional global styles */
 :root {

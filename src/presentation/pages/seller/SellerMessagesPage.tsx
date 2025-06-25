@@ -1,4 +1,4 @@
-// src/presentation/pages/seller/SellerMessagesPage.tsx - CORREGIDO COMPLETAMENTE
+// src/presentation/pages/seller/SellerMessagesPage.tsx - LOADING INFINITO CORREGIDO
 
 import React, {useState, useEffect, useRef, useCallback} from "react";
 import {useParams, useNavigate} from "react-router-dom";
@@ -10,7 +10,7 @@ import ChatMessages from "../../components/chat/ChatMessages";
 import ChatHeader from "../../components/chat/ChatHeader";
 import MessageForm from "../../components/chat/MessageForm";
 import {useChatFilterNotifications} from "../../components/notifications/ChatFilterToast";
-import type { Chat } from "../../../core/domain/entities/Chat";
+import type {Chat} from "../../../core/domain/entities/Chat";
 
 const SellerMessagesPage: React.FC = () => {
 	const navigate = useNavigate();
@@ -29,9 +29,6 @@ const SellerMessagesPage: React.FC = () => {
 	const [loadingMessage, setLoadingMessage] = useState<string>(
 		"Cargando conversaciones..."
 	);
-
-	// CORRECCIÓN: Estado local independiente para el envío de mensajes
-	const [sendingMessage, setSendingMessage] = useState<boolean>(false);
 
 	// Referencias para evitar bucles infinitos
 	const initialLoadComplete = useRef<boolean>(false);
@@ -316,19 +313,18 @@ const SellerMessagesPage: React.FC = () => {
 		}
 	};
 
-	// CORRECCIÓN: Enviar mensaje con manejo completo de errores
+	// CORREGIDO: Enviar mensaje sin estado local de loading
 	const handleSendMessage = async (content: string): Promise<boolean> => {
-		if (sendingMessage) {
-			console.log("Ya se está enviando un mensaje, ignorando...");
-			return false;
-		}
-
 		console.log("Enviando mensaje como vendedor...");
-		setSendingMessage(true);
 
 		try {
 			const result = await sendMessage(content);
-			console.log("Mensaje enviado:", result ? "exitoso" : "fallido");
+			
+			if (result && selectedChat?.id) {
+				// Recargar mensajes después de enviar exitosamente
+				await fetchChatMessages(selectedChat.id);
+			}
+			
 			return result;
 		} catch (error: any) {
 			console.error("Error al enviar mensaje:", error);
@@ -356,8 +352,6 @@ const SellerMessagesPage: React.FC = () => {
 			}
 
 			return false;
-		} finally {
-			setSendingMessage(false);
 		}
 	};
 
@@ -420,6 +414,7 @@ const SellerMessagesPage: React.FC = () => {
 							messages={messages}
 							loading={loading}
 							noMessagesText="No hay mensajes todavía"
+							currentUserId={user?.id ?? undefined} // ← CORREGIDO: Manejar null como undefined
 						/>
 					</div>
 
@@ -431,7 +426,8 @@ const SellerMessagesPage: React.FC = () => {
 								? "Esta conversación está cerrada"
 								: "Esta conversación está archivada"
 						}
-						isLoading={sendingMessage} // CORRECCIÓN: Usar estado local
+						isLoading={loading}
+						chatId={selectedChat.id} // ← NUEVO: Para indicador de escritura
 					/>
 				</>
 			);

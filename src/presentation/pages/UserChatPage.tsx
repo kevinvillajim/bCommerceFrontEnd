@@ -1,4 +1,5 @@
 // src/presentation/pages/UserChatPage.tsx - CORREGIDO
+
 import React, {useState, useEffect, useRef, useCallback} from "react";
 import {useParams, useNavigate} from "react-router-dom";
 import {MessageSquare, ArrowLeft, RefreshCw} from "lucide-react";
@@ -8,6 +9,7 @@ import ChatList from "../components/chat/ChatList";
 import ChatMessages from "../components/chat/ChatMessages";
 import ChatHeader from "../components/chat/ChatHeader";
 import MessageForm from "../components/chat/MessageForm";
+import {useChatFilterNotifications} from "../components/notifications/ChatFilterToast";
 import type { Chat } from "../../core/domain/entities/Chat";
 
 const UserChatPage: React.FC = () => {
@@ -34,6 +36,12 @@ const UserChatPage: React.FC = () => {
 	const loadAttempts = useRef<number>(0);
 	const isInitialNavRef = useRef<boolean>(true);
 
+	// Hook para notificaciones de filtro
+	const {
+		showUserWarning,
+		NotificationComponent
+	} = useChatFilterNotifications();
+
 	// Obtener datos del chat usando el hook personalizado
 	const {
 		chats,
@@ -48,6 +56,7 @@ const UserChatPage: React.FC = () => {
 		setSelectedChat,
 		startMessagesPolling,
 		stopMessagesPolling,
+		markAllAsRead,
 	} = useChat();
 
 	// Función para detectar cambios en el tamaño de la ventana
@@ -120,6 +129,13 @@ const UserChatPage: React.FC = () => {
 					setSelectedChat(chat);
 					setShowChatList(false);
 					startMessagesPolling(chatId);
+
+					// Marcar como leído
+					if (chat.unreadCount && chat.unreadCount > 0) {
+						setTimeout(() => {
+							markAllAsRead(chatId).catch(console.error);
+						}, 1000);
+					}
 				} else {
 					console.log(
 						`Chat ${chatId} no encontrado en la lista, cargando desde API...`
@@ -131,6 +147,11 @@ const UserChatPage: React.FC = () => {
 							console.log(`Chat ${chatId} cargado correctamente desde API`);
 							setShowChatList(false);
 							startMessagesPolling(chatId);
+
+							// Marcar como leído
+							setTimeout(() => {
+								markAllAsRead(chatId).catch(console.error);
+							}, 1000);
 						} else {
 							console.warn(
 								`Chat ${chatId} no encontrado en API, mostrando lista de chats`
@@ -168,6 +189,7 @@ const UserChatPage: React.FC = () => {
 			setSelectedChat,
 			fetchChats,
 			startMessagesPolling,
+			markAllAsRead,
 			user?.id,
 		]
 	);
@@ -259,20 +281,45 @@ const UserChatPage: React.FC = () => {
 			if (isMobileView) {
 				setShowChatList(false);
 			}
+
+			// Marcar como leído
+			if (chat.unreadCount && chat.unreadCount > 0) {
+				setTimeout(() => {
+					if (chat.id !== undefined) {
+						markAllAsRead(chat.id).catch(console.error);
+					}
+				}, 1000);
+			}
 		}
 	};
 
-	// Enviar un mensaje
+	// CORREGIDO: Enviar un mensaje sin loading infinito
 	const handleSendMessage = async (content: string): Promise<boolean> => {
 		console.log("Enviando mensaje...");
-		const result = await sendMessage(content);
+		
+		try {
+			const result = await sendMessage(content);
 
-		// Si el mensaje se envió correctamente, actualizar la lista de chats
-		if (result && selectedChat) {
-			await fetchChatMessages(selectedChat.id!);
+			// Si el mensaje se envió correctamente, recargar mensajes
+			if (result && selectedChat?.id) {
+				await fetchChatMessages(selectedChat.id);
+			}
+
+			return result;
+		} catch (error: any) {
+			console.error("Error al enviar mensaje:", error);
+
+			// Manejar errores específicos del filtro de chat
+			if (error?.response?.data?.status === 'error') {
+				const errorData = error.response.data;
+				const censoredContent = errorData.data?.censored_content;
+				
+				// Para usuarios normales: solo advertencia
+				showUserWarning(errorData.message, censoredContent);
+			}
+
+			return false;
 		}
-
-		return result;
 	};
 
 	// Actualizar estado del chat
@@ -337,6 +384,7 @@ const UserChatPage: React.FC = () => {
 							messages={messages}
 							loading={loading}
 							noMessagesText="No hay mensajes todavía"
+							currentUserId={user?.id ?? undefined} // ← CORREGIDO: Manejar el caso null explícitamente
 						/>
 					</div>
 
@@ -350,6 +398,7 @@ const UserChatPage: React.FC = () => {
 								: "Esta conversación está archivada"
 						}
 						isLoading={loading}
+						chatId={selectedChat.id} // ← NUEVO: Para indicador de escritura
 					/>
 				</>
 			);
@@ -447,6 +496,9 @@ const UserChatPage: React.FC = () => {
 					</div>
 				)}
 			</div>
+
+			{/* Componente de notificaciones flotantes */}
+			<NotificationComponent />
 		</div>
 	);
 };
