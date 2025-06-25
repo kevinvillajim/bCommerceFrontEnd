@@ -4,6 +4,7 @@ import ChatList from "./ChatList";
 import ChatMessages from "./ChatMessages";
 import ChatHeader from "./ChatHeader";
 import MessageForm from "./MessageForm";
+import { useChatFilterNotifications } from "../notifications/ChatFilterToast";
 import type {Chat, Message} from "../../../core/domain/entities/Chat";
 
 /**

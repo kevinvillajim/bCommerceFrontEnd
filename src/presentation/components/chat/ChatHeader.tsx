@@ -7,6 +7,8 @@ import {
 	ChevronRight,
 	Circle,
 	MoreVertical,
+	Wifi,
+	WifiOff,
 } from "lucide-react";
 import type {Chat} from "../../../core/domain/entities/Chat";
 
@@ -29,6 +31,48 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
 	const [isMenuOpen, setIsMenuOpen] = useState(false);
 	const [isUpdating, setIsUpdating] = useState(false);
 	const menuRef = useRef<HTMLDivElement>(null);
+
+	const useConnectionStatus = (userId: number | undefined) => {
+		const [isOnline, setIsOnline] = useState<boolean>(false);
+		const [lastSeen, setLastSeen] = useState<Date | null>(null);
+	
+		useEffect(() => {
+			if (!userId) {
+				setIsOnline(false);
+				setLastSeen(null);
+				return;
+			}
+	
+			// Simular estado de conexión basado en actividad reciente
+			// En una implementación real, esto vendría de WebSockets o polling al servidor
+			const checkOnlineStatus = () => {
+				// Simular que algunos usuarios están online (para demo)
+				// En producción esto vendría del servidor
+				const isCurrentlyOnline = Math.random() > 0.6; // 40% de probabilidad de estar online
+				setIsOnline(isCurrentlyOnline);
+				
+				if (!isCurrentlyOnline) {
+					// Simular "visto por última vez" hace algunos minutos/horas
+					const minutesAgo = Math.floor(Math.random() * 120) + 1; // 1-120 minutos
+					const lastSeenTime = new Date();
+					lastSeenTime.setMinutes(lastSeenTime.getMinutes() - minutesAgo);
+					setLastSeen(lastSeenTime);
+				} else {
+					setLastSeen(null);
+				}
+			};
+	
+			// Verificar estado inicial
+			checkOnlineStatus();
+	
+			// Actualizar cada 30 segundos
+			const interval = setInterval(checkOnlineStatus, 30000);
+	
+			return () => clearInterval(interval);
+		}, [userId]);
+	
+		return { isOnline, lastSeen };
+	};
 
 	// Determinar el participante según el rol
 	const participant = isSeller

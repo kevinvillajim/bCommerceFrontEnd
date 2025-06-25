@@ -423,7 +423,7 @@ export const useChat = (isSeller = false) => {
 					if (response.status === "success") {
 						console.log("Mensaje enviado correctamente:", response.data);
 
-						// Recargar los mensajes
+						// Recargar los mensajes para ver el nuevo mensaje
 						await fetchChatMessages(selectedChat.id);
 						return true;
 					} else {
@@ -431,8 +431,18 @@ export const useChat = (isSeller = false) => {
 						setError(response.message || "Error al enviar el mensaje");
 						return false;
 					}
-				} catch (err) {
+				} catch (err: any) {
 					console.error("Error al enviar mensaje:", err);
+					
+					// Manejar errores específicos del filtro de chat
+					if (err?.response?.data?.status === 'error') {
+						const errorData = err.response.data;
+						
+						// Re-lanzar el error para que ChatInterface lo maneje
+						// con las notificaciones flotantes apropiadas
+						throw err;
+					}
+					
 					setError(extractErrorMessage(err, "Error al enviar el mensaje"));
 					return false;
 				}

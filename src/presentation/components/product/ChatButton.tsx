@@ -3,6 +3,7 @@ import {useNavigate} from "react-router-dom";
 import {MessageCircle, Send, Loader2} from "lucide-react";
 import {useChat} from "../../hooks/useChat";
 import {useAuth} from "../../hooks/useAuth";
+import {useChatFilterNotifications} from "../notifications/ChatFilterToast";
 
 interface ChatButtonProps {
 	productId: number;
@@ -28,6 +29,12 @@ const ChatButton: React.FC<ChatButtonProps> = ({
 	const [showMessageInput, setShowMessageInput] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [existingChatId, setExistingChatId] = useState<number | null>(null);
+
+	// Hook para notificaciones de filtro
+	const {
+		showUserWarning,
+		NotificationComponent
+	} = useChatFilterNotifications();
 
 	// Verificar si ya existe un chat con este vendedor para este producto
 	useEffect(() => {
@@ -96,14 +103,28 @@ const ChatButton: React.FC<ChatButtonProps> = ({
 			// 3. Redirigir al chat
 			console.log(`Redirigiendo a chat ${chatId}...`);
 			navigate(`/chats/${chatId}`);
-		} catch (err) {
+		} catch (err: any) {
 			console.error("Error al iniciar conversación:", err);
-			setError(
-				err instanceof Error ? err.message : "Error al iniciar la conversación"
-			);
+			
+			// Manejar errores específicos del filtro de chat
+			if (err?.response?.data?.status === 'error') {
+				const errorData = err.response.data;
+				const censoredContent = errorData.data?.censored_content;
+				
+				// Para usuarios normales: solo advertencia
+				showUserWarning(errorData.message, censoredContent);
+				
+				// Limpiar el mensaje para que puedan corregirlo
+				setMessage("");
+			} else {
+				setError(
+					err instanceof Error ? err.message : "Error al iniciar la conversación"
+				);
+			}
+			
 			setLoading(false);
 
-			// Permitir al usuario reintentar el envío
+			// Permitir al usuario reintentar el envío después de algunos segundos
 			setTimeout(() => {
 				setError(null);
 			}, 3000);
@@ -116,7 +137,7 @@ const ChatButton: React.FC<ChatButtonProps> = ({
 				<button
 					onClick={handleChatClick}
 					disabled={loading}
-					className={`flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 ${className}`}
+					className={`flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-colors ${className}`}
 					title={`Chatear con ${sellerName} sobre ${productName}`}
 				>
 					{loading ? (
@@ -131,55 +152,64 @@ const ChatButton: React.FC<ChatButtonProps> = ({
 					</span>
 				</button>
 			) : (
-				<div className="border border-gray-300 rounded-md p-3">
-					<div className="text-sm mb-2 text-gray-700">
+				<div className="border border-gray-300 rounded-md p-3 bg-white shadow-sm">
+					<div className="text-sm mb-2 text-gray-700 font-medium">
 						Envía un mensaje a {sellerName} sobre {productName}:
 					</div>
 
 					{error && (
-						<div className="text-sm text-red-600 mb-2 p-2 bg-red-50 rounded">
+						<div className="text-sm text-red-600 mb-2 p-2 bg-red-50 border border-red-200 rounded">
 							{error}
 						</div>
 					)}
 
-					<form onSubmit={handleSendMessage} className="flex">
-						<input
-							type="text"
+					<form onSubmit={handleSendMessage} className="space-y-3">
+						<textarea
 							value={message}
 							onChange={(e) => setMessage(e.target.value)}
 							placeholder="Escribe tu pregunta aquí..."
-							className="flex-1 border border-gray-300 rounded-l-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+							className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none"
+							rows={3}
 							autoFocus
 							disabled={loading}
 						/>
-						<button
-							type="submit"
-							disabled={loading || !message.trim()}
-							className={`px-3 py-2 flex items-center justify-center rounded-r-md ${
-								loading || !message.trim()
-									? "bg-gray-300 text-gray-600"
-									: "bg-primary-600 text-white hover:bg-primary-700"
-							}`}
-						>
-							{loading ? (
-								<Loader2 className="w-4 h-4 animate-spin" />
-							) : (
-								<Send className="w-4 h-4" />
-							)}
-						</button>
+						<div className="flex justify-between items-center">
+							<button
+								type="button"
+								onClick={() => setShowMessageInput(false)}
+								className="text-xs text-gray-500 hover:text-gray-700 underline"
+								disabled={loading}
+							>
+								Cancelar
+							</button>
+							<button
+								type="submit"
+								disabled={loading || !message.trim()}
+								className={`px-4 py-2 flex items-center justify-center rounded-md text-sm font-medium transition-colors ${
+									loading || !message.trim()
+										? "bg-gray-300 text-gray-600 cursor-not-allowed"
+										: "bg-primary-600 text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500"
+								}`}
+							>
+								{loading ? (
+									<>
+										<Loader2 className="w-4 h-4 mr-2 animate-spin" />
+										Enviando...
+									</>
+								) : (
+									<>
+										<Send className="w-4 h-4 mr-2" />
+										Enviar mensaje
+									</>
+								)}
+							</button>
+						</div>
 					</form>
-
-					<div className="flex justify-end mt-2">
-						<button
-							onClick={() => setShowMessageInput(false)}
-							className="text-xs text-gray-500 hover:text-gray-700"
-							disabled={loading}
-						>
-							Cancelar
-						</button>
-					</div>
 				</div>
 			)}
+
+			{/* Notificaciones flotantes para filtros */}
+			<NotificationComponent />
 		</div>
 	);
 };
