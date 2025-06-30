@@ -1,0 +1,539 @@
+// src/presentation/hooks/useAdminCategories.ts
+
+import {useState, useCallback} from "react";
+import {CategoryService} from "../../core/services/CategoryService";
+import CacheService from "../../infrastructure/services/CacheService";
+import appConfig from "../../config/appConfig";
+import type {
+	Category,
+	CategoryListResponse,
+	CategoryCreationData,
+	CategoryUpdateData,
+	CategoryFilterParams,
+} from "../../core/domain/entities/Category";
+
+// Instanciar el servicio de categorías (reutilizamos el existente)
+const categoryService = new CategoryService();
+
+/**
+ * Hook para gestión administrativa de categorías
+ * Solo para usuarios con rol de administrador
+ */
+export const useAdminCategories = () => {
+	const [loading, setLoading] = useState<boolean>(false);
+	const [error, setError] = useState<string | null>(null);
+	const [categories, setCategories] = useState<Category[]>([]);
+	const [mainCategories, setMainCategories] = useState<Category[]>([]);
+	const [categoryDetail, setCategoryDetail] = useState<Category | null>(null);
+
+	/**
+	 * Adaptador para normalizar los datos de categorías
+	 */
+	const adaptCategory = useCallback((apiCategory: any): Category => {
+		if (!apiCategory || typeof apiCategory !== "object") {
+			console.error("Categoría inválida para adaptar:", apiCategory);
+			return {} as Category;
+		}
+
+		return {
+			id: apiCategory.id,
+			name: apiCategory.name || "",
+			slug: apiCategory.slug || "",
+			description: apiCategory.description || "",
+			parent_id: apiCategory.parent_id,
+			icon: apiCategory.icon,
+			image: apiCategory.image,
+			order: apiCategory.order,
+			is_active: Boolean(apiCategory.is_active ?? true),
+			featured: Boolean(apiCategory.featured ?? false),
+			created_at: apiCategory.created_at,
+			updated_at: apiCategory.updated_at,
+			// API response specific fields
+			subcategories: Array.isArray(apiCategory.subcategories)
+				? apiCategory.subcategories.map((sub: any) => adaptCategory(sub))
+				: undefined,
+			product_count: apiCategory.product_count || 0,
+			full_path: apiCategory.full_path,
+			has_children: Boolean(apiCategory.has_children),
+			url: apiCategory.url,
+			parent: apiCategory.parent
+				? adaptCategory(apiCategory.parent)
+				: undefined,
+			image_url: apiCategory.image_url,
+			icon_url: apiCategory.icon_url,
+		};
+	}, []);
+
+	/**
+	 * Obtiene todas las categorías (como admin)
+	 */
+	const fetchAllCategories = useCallback(
+		async (
+			params?: CategoryFilterParams,
+			forceRefresh: boolean = false
+		): Promise<CategoryListResponse> => {
+			setLoading(true);
+			setError(null);
+
+			const cacheKey = `admin_categories_${JSON.stringify(params)}`;
+
+			try {
+				// Verificar caché si no se fuerza refresh
+				if (!forceRefresh) {
+					const cachedData = CacheService.getItem(cacheKey);
+					if (cachedData && cachedData.data) {
+						console.log("💾 useAdminCategories: Usando categorías en caché");
+						setCategories(cachedData.data || []);
+						setLoading(false);
+						return cachedData;
+					}
+				}
+
+				console.log("🌐 useAdminCategories: Obteniendo categorías desde API");
+				const response = await categoryService.getCategories({
+					...params,
+					// No filtrar por is_active para que admin vea todas
+				});
+
+				if (response && response.data && Array.isArray(response.data)) {
+					const adaptedCategories = response.data.map(adaptCategory);
+
+					const result = {
+						data: adaptedCategories,
+						meta: response.meta || {total: adaptedCategories.length},
+					};
+
+					// Guardar en caché
+					CacheService.setItem(
+						cacheKey,
+						result,
+						appConfig.cache.categoryCacheTime
+					);
+
+					setCategories(adaptedCategories);
+					return result;
+				} else {
+					console.warn(
+						"Respuesta de categorías no tiene el formato esperado:",
+						response
+					);
+					setCategories([]);
+					return {data: [], meta: {total: 0}};
+				}
+			} catch (err) {
+				const errorMessage =
+					err instanceof Error ? err.message : "Error al obtener categorías";
+				setError(errorMessage);
+				console.error("Error al obtener categorías:", err);
+				setCategories([]);
+				return {data: [], meta: {total: 0}};
+			} finally {
+				setLoading(false);
+			}
+		},
+		[adaptCategory]
+	);
+
+	/**
+	 * Obtiene categorías principales (como admin)
+	 */
+	const fetchMainCategories = useCallback(
+		async (
+			withCounts: boolean = true,
+			forceRefresh: boolean = false
+		): Promise<Category[]> => {
+			setLoading(true);
+			setError(null);
+
+			const cacheKey = `admin_main_categories_${withCounts ? "with_counts" : "no_counts"}`;
+
+			try {
+				// Verificar caché si no se fuerza refresh
+				if (!forceRefresh) {
+					const cachedData = CacheService.getItem(cacheKey);
+					if (cachedData) {
+						console.log(
+							"💾 useAdminCategories: Usando categorías principales en caché"
+						);
+						setMainCategories(cachedData);
+						setLoading(false);
+						return cachedData;
+					}
+				}
+
+				console.log(
+					"🌐 useAdminCategories: Obteniendo categorías principales desde API"
+				);
+				const response = await categoryService.getMainCategories(withCounts);
+
+				if (response && Array.isArray(response)) {
+					const adaptedCategories = response.map(adaptCategory);
+
+					// Guardar en caché
+					CacheService.setItem(
+						cacheKey,
+						adaptedCategories,
+						appConfig.cache.categoryCacheTime
+					);
+
+					setMainCategories(adaptedCategories);
+					return adaptedCategories;
+				} else {
+					console.warn(
+						"Respuesta de categorías principales no tiene el formato esperado:",
+						response
+					);
+					setMainCategories([]);
+					return [];
+				}
+			} catch (err) {
+				const errorMessage =
+					err instanceof Error
+						? err.message
+						: "Error al obtener categorías principales";
+				setError(errorMessage);
+				console.error("Error al obtener categorías principales:", err);
+				setMainCategories([]);
+				return [];
+			} finally {
+				setLoading(false);
+			}
+		},
+		[adaptCategory]
+	);
+
+	/**
+	 * Obtiene una categoría por ID (como admin)
+	 */
+	const fetchCategoryById = useCallback(
+		async (id: number): Promise<Category | null> => {
+			setLoading(true);
+			setError(null);
+
+			const cacheKey = `admin_category_${id}`;
+
+			try {
+				// Verificar caché primero
+				const cachedData = CacheService.getItem(cacheKey);
+				if (cachedData) {
+					console.log(`💾 useAdminCategories: Usando categoría ${id} en caché`);
+					setCategoryDetail(cachedData);
+					setLoading(false);
+					return cachedData;
+				}
+
+				console.log(
+					`🌐 useAdminCategories: Obteniendo categoría ${id} desde API`
+				);
+				const response = await categoryService.getCategoryById(id);
+
+				if (response) {
+					const adaptedCategory = adaptCategory(response);
+
+					// Guardar en caché
+					CacheService.setItem(
+						cacheKey,
+						adaptedCategory,
+						appConfig.cache.categoryCacheTime
+					);
+
+					setCategoryDetail(adaptedCategory);
+					return adaptedCategory;
+				}
+
+				setCategoryDetail(null);
+				return null;
+			} catch (err) {
+				const errorMessage =
+					err instanceof Error ? err.message : "Error al obtener categoría";
+				setError(errorMessage);
+				console.error("Error al obtener categoría:", err);
+				setCategoryDetail(null);
+				return null;
+			} finally {
+				setLoading(false);
+			}
+		},
+		[adaptCategory]
+	);
+
+	/**
+	 * Crea una nueva categoría (como admin)
+	 */
+	const createCategory = useCallback(
+		async (data: CategoryCreationData): Promise<Category | null> => {
+			setLoading(true);
+			setError(null);
+
+			try {
+				console.log("🌐 useAdminCategories: Creando nueva categoría:", data);
+				const response = await categoryService.createCategory(data);
+
+				if (response) {
+					const adaptedCategory = adaptCategory(response);
+
+					// Actualizar la lista de categorías
+					setCategories((prev) => [...prev, adaptedCategory]);
+
+					// Si es una categoría principal, también actualizar esa lista
+					if (!data.parent_id) {
+						setMainCategories((prev) => [...prev, adaptedCategory]);
+					}
+
+					// Limpiar caché relacionada
+					clearCategoryCache();
+
+					return adaptedCategory;
+				}
+
+				return null;
+			} catch (err) {
+				const errorMessage =
+					err instanceof Error ? err.message : "Error al crear categoría";
+				setError(errorMessage);
+				console.error("Error al crear categoría:", err);
+				return null;
+			} finally {
+				setLoading(false);
+			}
+		},
+		[adaptCategory]
+	);
+
+	/**
+	 * Actualiza una categoría (como admin)
+	 */
+	const updateCategory = useCallback(
+		async (data: CategoryUpdateData): Promise<Category | null> => {
+			setLoading(true);
+			setError(null);
+
+			try {
+				console.log(
+					`🌐 useAdminCategories: Actualizando categoría ${data.id}:`,
+					data
+				);
+				const response = await categoryService.updateCategory(data.id!, data);
+
+				if (response) {
+					const adaptedCategory = adaptCategory(response);
+
+					// Actualizar en las listas actuales
+					setCategories((prev) =>
+						prev.map((cat) => (cat.id === data.id ? adaptedCategory : cat))
+					);
+					setMainCategories((prev) =>
+						prev.map((cat) => (cat.id === data.id ? adaptedCategory : cat))
+					);
+
+					// Actualizar detalle si coincide
+					if (categoryDetail?.id === data.id) {
+						setCategoryDetail(adaptedCategory);
+					}
+
+					// Limpiar caché relacionada
+					clearCategoryCache();
+
+					return adaptedCategory;
+				}
+
+				return null;
+			} catch (err) {
+				const errorMessage =
+					err instanceof Error ? err.message : "Error al actualizar categoría";
+				setError(errorMessage);
+				console.error("Error al actualizar categoría:", err);
+				return null;
+			} finally {
+				setLoading(false);
+			}
+		},
+		[adaptCategory, categoryDetail]
+	);
+
+	/**
+	 * Elimina una categoría (como admin)
+	 */
+	const deleteCategory = useCallback(
+		async (id: number): Promise<boolean> => {
+			setLoading(true);
+			setError(null);
+
+			try {
+				console.log(`🌐 useAdminCategories: Eliminando categoría ${id}`);
+				const result = await categoryService.deleteCategory(id);
+
+				if (result) {
+					// Remover de las listas actuales
+					setCategories((prev) => prev.filter((cat) => cat.id !== id));
+					setMainCategories((prev) => prev.filter((cat) => cat.id !== id));
+
+					// Limpiar detalle si coincide
+					if (categoryDetail?.id === id) {
+						setCategoryDetail(null);
+					}
+
+					// Limpiar caché relacionada
+					clearCategoryCache();
+
+					return true;
+				}
+
+				return false;
+			} catch (err) {
+				const errorMessage =
+					err instanceof Error ? err.message : "Error al eliminar categoría";
+				setError(errorMessage);
+				console.error("Error al eliminar categoría:", err);
+				return false;
+			} finally {
+				setLoading(false);
+			}
+		},
+		[categoryDetail]
+	);
+
+	/**
+	 * Alterna el estado activo de una categoría
+	 */
+	const toggleActive = useCallback(
+		async (id: number, is_active: boolean): Promise<boolean> => {
+			setLoading(true);
+			setError(null);
+
+			try {
+				console.log(
+					`🌐 useAdminCategories: Cambiando estado activo de categoría ${id} a ${is_active}`
+				);
+				const result = await categoryService.updateCategory(id, {
+					id,
+					is_active,
+				});
+
+				if (result) {
+					const adaptedCategory = adaptCategory(result);
+
+					// Actualizar en las listas actuales
+					setCategories((prev) =>
+						prev.map((cat) => (cat.id === id ? adaptedCategory : cat))
+					);
+					setMainCategories((prev) =>
+						prev.map((cat) => (cat.id === id ? adaptedCategory : cat))
+					);
+
+					// Limpiar caché relacionada
+					clearCategoryCache();
+
+					return true;
+				}
+
+				return false;
+			} catch (err) {
+				const errorMessage =
+					err instanceof Error ? err.message : "Error al cambiar estado activo";
+				setError(errorMessage);
+				console.error("Error al cambiar estado activo:", err);
+				return false;
+			} finally {
+				setLoading(false);
+			}
+		},
+		[adaptCategory]
+	);
+
+	/**
+	 * Alterna el estado destacado de una categoría
+	 */
+	const toggleFeatured = useCallback(
+		async (id: number, featured: boolean): Promise<boolean> => {
+			setLoading(true);
+			setError(null);
+
+			try {
+				console.log(
+					`🌐 useAdminCategories: Cambiando estado destacado de categoría ${id} a ${featured}`
+				);
+				const result = await categoryService.updateCategory(id, {id, featured});
+
+				if (result) {
+					const adaptedCategory = adaptCategory(result);
+
+					// Actualizar en las listas actuales
+					setCategories((prev) =>
+						prev.map((cat) => (cat.id === id ? adaptedCategory : cat))
+					);
+					setMainCategories((prev) =>
+						prev.map((cat) => (cat.id === id ? adaptedCategory : cat))
+					);
+
+					// Limpiar caché relacionada
+					clearCategoryCache();
+
+					return true;
+				}
+
+				return false;
+			} catch (err) {
+				const errorMessage =
+					err instanceof Error
+						? err.message
+						: "Error al cambiar estado destacado";
+				setError(errorMessage);
+				console.error("Error al cambiar estado destacado:", err);
+				return false;
+			} finally {
+				setLoading(false);
+			}
+		},
+		[adaptCategory]
+	);
+
+	/**
+	 * Limpia la caché de categorías de admin
+	 */
+	const clearCategoryCache = useCallback(() => {
+		const allKeys = Object.keys(localStorage);
+		const adminCategoryKeys = allKeys.filter(
+			(key) =>
+				key.startsWith("admin_categories_") ||
+				key.startsWith("admin_category_") ||
+				key.startsWith("admin_main_categories_") ||
+				key.startsWith("category_") ||
+				key.startsWith("categories_")
+		);
+
+		adminCategoryKeys.forEach((key) => {
+			CacheService.removeItem(key);
+		});
+
+		console.log(
+			`🗑️ ${adminCategoryKeys.length} claves de caché de categorías de admin eliminadas`
+		);
+	}, []);
+
+	return {
+		// Estado
+		loading,
+		error,
+		categories,
+		mainCategories,
+		categoryDetail,
+
+		// Métodos
+		fetchAllCategories,
+		fetchMainCategories,
+		fetchCategoryById,
+		createCategory,
+		updateCategory,
+		deleteCategory,
+		toggleActive,
+		toggleFeatured,
+		clearCategoryCache,
+
+		// Utilidades
+		setError: (error: string | null) => setError(error),
+		setLoading: (loading: boolean) => setLoading(loading),
+	};
+};
+
+export default useAdminCategories;

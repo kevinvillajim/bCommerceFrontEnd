@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from "react";
+import React, {useState, useEffect, useCallback} from "react";
 import Table from "../../components/dashboard/Table";
 import {
 	Folder,
@@ -13,282 +13,212 @@ import {
 	ArrowUpRight,
 	FolderTree,
 	Plus,
+	Search,
 } from "lucide-react";
 import {Link} from "react-router-dom";
 import type {Category} from "../../../core/domain/entities/Category";
 
-// Datos simulados para categorías
-const mockCategories: Category[] = [
-	{
-		id: 1,
-		name: "Electrónica",
-		slug: "electronica",
-		description: "Categoría principal de productos electrónicos",
-		parent_id: null || 0,
-		icon: "device",
-		image: "electronics.jpg",
-		order: 1,
-		is_active: true,
-		featured: true,
-		created_at: "2023-01-10T10:00:00Z",
-		updated_at: "2023-11-01T14:30:00Z",
-		product_count: 156,
-		has_children: true,
-	},
-	{
-		id: 2,
-		name: "Móviles y Tablets",
-		slug: "moviles-y-tablets",
-		description: "Smartphones, tablets y accesorios",
-		parent_id: 1,
-		icon: "phone",
-		image: "mobile.jpg",
-		order: 1,
-		is_active: true,
-		featured: true,
-		created_at: "2023-01-12T11:20:00Z",
-		updated_at: "2023-10-15T09:40:00Z",
-		product_count: 48,
-		has_children: false,
-	},
-	{
-		id: 3,
-		name: "Informática",
-		slug: "informatica",
-		description: "Ordenadores, componentes y periféricos",
-		parent_id: 1,
-		icon: "laptop",
-		image: "computers.jpg",
-		order: 2,
-		is_active: true,
-		featured: false,
-		created_at: "2023-01-15T14:00:00Z",
-		updated_at: "2023-10-20T16:15:00Z",
-		product_count: 72,
-		has_children: true,
-	},
-	{
-		id: 4,
-		name: "Audio",
-		slug: "audio",
-		description: "Equipos de audio, auriculares y accesorios",
-		parent_id: 1,
-		icon: "headphones",
-		image: "audio.jpg",
-		order: 3,
-		is_active: true,
-		featured: false,
-		created_at: "2023-01-18T09:30:00Z",
-		updated_at: "2023-09-05T11:10:00Z",
-		product_count: 36,
-		has_children: false,
-	},
-	{
-		id: 5,
-		name: "Accesorios",
-		slug: "accesorios",
-		description: "Accesorios para dispositivos electrónicos",
-		parent_id: 1,
-		icon: "cable",
-		image: "accessories.jpg",
-		order: 4,
-		is_active: true,
-		featured: false,
-		created_at: "2023-01-20T15:45:00Z",
-		updated_at: "2023-10-10T08:20:00Z",
-		product_count: 94,
-		has_children: false,
-	},
-	{
-		id: 6,
-		name: "Moda",
-		slug: "moda",
-		description: "Ropa, calzado y accesorios de moda",
-		parent_id: null || 0,
-		icon: "shirt",
-		image: "fashion.jpg",
-		order: 2,
-		is_active: true,
-		featured: true,
-		created_at: "2023-02-05T10:15:00Z",
-		updated_at: "2023-10-18T13:25:00Z",
-		product_count: 210,
-		has_children: true,
-	},
-	{
-		id: 7,
-		name: "Ropa Hombre",
-		slug: "ropa-hombre",
-		description: "Ropa y calzado para hombre",
-		parent_id: 6,
-		icon: "man",
-		image: "menswear.jpg",
-		order: 1,
-		is_active: true,
-		featured: false,
-		created_at: "2023-02-08T11:30:00Z",
-		updated_at: "2023-09-12T14:40:00Z",
-		product_count: 85,
-		has_children: false,
-	},
-	{
-		id: 8,
-		name: "Ropa Mujer",
-		slug: "ropa-mujer",
-		description: "Ropa y calzado para mujer",
-		parent_id: 6,
-		icon: "woman",
-		image: "womenswear.jpg",
-		order: 2,
-		is_active: true,
-		featured: false,
-		created_at: "2023-02-10T09:20:00Z",
-		updated_at: "2023-09-15T16:50:00Z",
-		product_count: 125,
-		has_children: false,
-	},
-	{
-		id: 9,
-		name: "Portátiles",
-		slug: "portatiles",
-		description: "Ordenadores portátiles y accesorios",
-		parent_id: 3,
-		icon: "laptop",
-		image: "laptops.jpg",
-		order: 1,
-		is_active: true,
-		featured: false,
-		created_at: "2023-03-15T13:40:00Z",
-		updated_at: "2023-10-05T15:20:00Z",
-		product_count: 45,
-		has_children: false,
-	},
-	{
-		id: 10,
-		name: "Componentes PC",
-		slug: "componentes-pc",
-		description: "Componentes para ordenadores de sobremesa",
-		parent_id: 3,
-		icon: "cpu",
-		image: "components.jpg",
-		order: 2,
-		is_active: false,
-		featured: false,
-		created_at: "2023-03-20T10:30:00Z",
-		updated_at: "2023-08-25T09:15:00Z",
-		product_count: 27,
-		has_children: false,
-	},
-];
+// Hook personalizado
+import {useAdminCategories} from "../../hooks/useAdminCategories";
 
 const AdminCategoriesPage: React.FC = () => {
-	const [categories, setCategories] = useState<Category[]>([]);
-	const [loading, setLoading] = useState(true);
+	// Hook de administración de categorías
+	const {
+		loading,
+		error,
+		categories,
+		mainCategories,
+		fetchAllCategories,
+		fetchMainCategories,
+		deleteCategory,
+		toggleActive,
+		toggleFeatured,
+		clearCategoryCache,
+	} = useAdminCategories();
+
+	// Estado local para filtros y paginación
 	const [parentFilter, setParentFilter] = useState<number | null>(null); // null = Todas
 	const [statusFilter, setStatusFilter] = useState<string>("all");
+	const [searchTerm, setSearchTerm] = useState<string>("");
 	const [viewMode, setViewMode] = useState<"all" | "tree">("all");
-	const [pagination, setPagination] = useState({
-		currentPage: 1,
-		totalPages: 1,
-		totalItems: 0,
-		itemsPerPage: 10,
-	});
+	const [currentPage, setCurrentPage] = useState<number>(1);
+	const [itemsPerPage] = useState<number>(15);
 
-	// Cargar datos de categorías
+	// Estado para mostrar confirmaciones
+	const [loadingAction, setLoadingAction] = useState<number | null>(null);
+
+	// Cargar datos iniciales
 	useEffect(() => {
-		const fetchCategories = () => {
-			setLoading(true);
-			// Simulación de llamada a API
-			setTimeout(() => {
-				setCategories(mockCategories);
-				setPagination({
-					currentPage: 1,
-					totalPages: 1,
-					totalItems: mockCategories.length,
-					itemsPerPage: 10,
-				});
-				setLoading(false);
-			}, 500);
-		};
-
-		fetchCategories();
+		loadData();
 	}, []);
 
-	// Filtrar categorías
-	const filteredCategories = categories.filter((category) => {
-		const matchesParent =
-			parentFilter === null || category.parent_id === parentFilter;
-		const matchesStatus =
-			statusFilter === "all" ||
-			(statusFilter === "active" && category.is_active) ||
-			(statusFilter === "inactive" && !category.is_active);
+	// Recargar datos cuando cambien los filtros
+	useEffect(() => {
+		loadData();
+	}, [parentFilter, statusFilter, searchTerm]);
 
-		return matchesParent && matchesStatus;
+	/**
+	 * Carga las categorías
+	 */
+	const loadData = useCallback(async () => {
+		try {
+			// Preparar filtros
+			const filters: any = {};
+
+			if (parentFilter !== null) {
+				filters.parent_id = parentFilter;
+			}
+
+			if (statusFilter !== "all") {
+				filters.is_active = statusFilter === "active";
+			}
+
+			if (searchTerm) {
+				filters.term = searchTerm;
+			}
+
+			// Cargar datos
+			await fetchAllCategories(filters);
+
+			// También cargar categorías principales para el filtro
+			if (mainCategories.length === 0) {
+				await fetchMainCategories(true);
+			}
+		} catch (error) {
+			console.error("Error al cargar categorías:", error);
+		}
+	}, [
+		fetchAllCategories,
+		fetchMainCategories,
+		parentFilter,
+		statusFilter,
+		searchTerm,
+		mainCategories.length,
+	]);
+
+	/**
+	 * Filtrar categorías localmente (para funcionalidad adicional)
+	 */
+	const filteredCategories = categories.filter((category) => {
+		// Filtro de búsqueda local adicional si es necesario
+		if (
+			searchTerm &&
+			!category.name.toLowerCase().includes(searchTerm.toLowerCase())
+		) {
+			return false;
+		}
+
+		return true;
 	});
 
-	// Obtener categorías padres para el filtro
-	const parentCategories = categories.filter(
-		(category) => category.parent_id === null
+	/**
+	 * Maneja el cambio de estado destacado
+	 */
+	const handleToggleFeatured = useCallback(
+		async (categoryId: number, currentFeatured: boolean) => {
+			setLoadingAction(categoryId);
+			try {
+				const success = await toggleFeatured(categoryId, !currentFeatured);
+				if (!success) {
+					alert("Error al cambiar estado destacado de la categoría");
+				}
+			} catch (error) {
+				console.error("Error al cambiar estado destacado:", error);
+				alert("Error al cambiar estado destacado de la categoría");
+			} finally {
+				setLoadingAction(null);
+			}
+		},
+		[toggleFeatured]
 	);
 
-	// Destacar/Quitar destacado de categoría
-	const toggleFeatured = (categoryId: number) => {
-		setCategories((prevCategories) =>
-			prevCategories.map((category) => {
-				if (category.id === categoryId) {
-					return {...category, featured: !category.featured};
+	/**
+	 * Maneja el cambio de estado activo
+	 */
+	const handleToggleActive = useCallback(
+		async (categoryId: number, currentActive: boolean) => {
+			setLoadingAction(categoryId);
+			try {
+				const success = await toggleActive(categoryId, !currentActive);
+				if (!success) {
+					alert("Error al cambiar estado activo de la categoría");
 				}
-				return category;
-			})
-		);
-	};
+			} catch (error) {
+				console.error("Error al cambiar estado activo:", error);
+				alert("Error al cambiar estado activo de la categoría");
+			} finally {
+				setLoadingAction(null);
+			}
+		},
+		[toggleActive]
+	);
 
-	// Cambiar estado de activación
-	const toggleActive = (categoryId: number) => {
-		setCategories((prevCategories) =>
-			prevCategories.map((category) => {
-				if (category.id === categoryId) {
-					return {...category, is_active: !category.is_active};
+	/**
+	 * Maneja la eliminación de una categoría
+	 */
+	const handleDeleteCategory = useCallback(
+		async (categoryId: number, categoryName: string) => {
+			// Verificar si hay categorías hijas
+			const hasChildren = categories.some(
+				(cat) => cat.parent_id === categoryId
+			);
+
+			if (hasChildren) {
+				alert(
+					"Esta categoría tiene subcategorías. Debes eliminar primero las subcategorías."
+				);
+				return;
+			}
+
+			const confirmed = window.confirm(
+				`¿Estás seguro de que deseas eliminar la categoría "${categoryName}"?`
+			);
+
+			if (confirmed) {
+				setLoadingAction(categoryId);
+				try {
+					const success = await deleteCategory(categoryId);
+					if (success) {
+						// Recargar datos
+						loadData();
+					} else {
+						alert("Error al eliminar la categoría");
+					}
+				} catch (error) {
+					console.error("Error al eliminar categoría:", error);
+					alert("Error al eliminar la categoría");
+				} finally {
+					setLoadingAction(null);
 				}
-				return category;
-			})
-		);
-	};
+			}
+		},
+		[deleteCategory, categories, loadData]
+	);
 
-	// Eliminar categoría
-	const deleteCategory = (categoryId: number) => {
-		// Verificar si hay categorías hijas
-		const hasChildren = categories.some((cat) => cat.parent_id === categoryId);
+	/**
+	 * Refrescar datos
+	 */
+	const refreshData = useCallback(() => {
+		clearCategoryCache();
+		loadData();
+	}, [clearCategoryCache, loadData]);
 
-		if (hasChildren) {
-			alert(
-				"Esta categoría tiene subcategorías. Debes eliminar primero las subcategorías."
-			);
-			return;
-		}
+	/**
+	 * Manejar cambio de página
+	 */
+	const handlePageChange = useCallback((page: number) => {
+		setCurrentPage(page);
+	}, []);
 
-		if (
-			window.confirm("¿Estás seguro de que deseas eliminar esta categoría?")
-		) {
-			setCategories((prevCategories) =>
-				prevCategories.filter((category) => category.id !== categoryId)
-			);
-		}
-	};
-
-	// Manejar cambio de página
-	const handlePageChange = (page: number) => {
-		setPagination((prev) => ({...prev, currentPage: page}));
-		// En una app real, aquí obtendrías los datos para la nueva página
-	};
-
-	// Refrescar datos
-	const refreshData = () => {
-		setLoading(true);
-		// Simular recarga de datos
-		setTimeout(() => {
-			setLoading(false);
-		}, 500);
+	/**
+	 * Obtener el nombre de la categoría padre
+	 */
+	const getParentCategoryName = (parentId?: number): string => {
+		if (!parentId) return "Sin categoría padre";
+		const parent =
+			categories.find((c) => c.id === parentId) ||
+			mainCategories.find((c) => c.id === parentId);
+		return parent ? parent.name : "Categoría padre desconocida";
 	};
 
 	// Definir columnas de la tabla
@@ -300,9 +230,9 @@ const AdminCategoriesPage: React.FC = () => {
 			render: (category: Category) => (
 				<div className="flex items-center">
 					<div className="flex-shrink-0 h-10 w-10 rounded-md bg-gray-200 flex items-center justify-center overflow-hidden">
-						{category.image ? (
+						{category.image_url || category.image ? (
 							<img
-								src={`/images/categories/${category.image}`}
+								src={category.image_url || category.image || ""}
 								alt={category.name}
 								className="h-10 w-10 object-cover"
 								onError={(e) => {
@@ -327,9 +257,7 @@ const AdminCategoriesPage: React.FC = () => {
 							ID: {category.id}
 							{category.parent_id && (
 								<span className="ml-2">
-									Padre:{" "}
-									{categories.find((c) => c.id === category.parent_id)?.name ||
-										"Desconocido"}
+									Padre: {getParentCategoryName(category.parent_id)}
 								</span>
 							)}
 						</div>
@@ -342,9 +270,7 @@ const AdminCategoriesPage: React.FC = () => {
 			header: "Slug",
 			sortable: true,
 			render: (category: Category) => (
-				<div className="text-sm text-gray-500 font-mono">
-					{category.slug}
-				</div>
+				<div className="text-sm text-gray-500 font-mono">{category.slug}</div>
 			),
 		},
 		{
@@ -389,18 +315,15 @@ const AdminCategoriesPage: React.FC = () => {
 			render: (category: Category) => (
 				<div>
 					{category.has_children ? (
-						<Link
-							to="#"
+						<button
 							onClick={() => setParentFilter(category.id || null)}
 							className="text-primary-600 hover:text-primary-800 underline flex items-center"
 						>
 							<FolderTree className="h-4 w-4 mr-1" />
 							Ver subcategorías
-						</Link>
+						</button>
 					) : (
-						<span className="text-gray-500 text-sm">
-							Sin subcategorías
-						</span>
+						<span className="text-gray-500 text-sm">Sin subcategorías</span>
 					)}
 				</div>
 			),
@@ -417,7 +340,7 @@ const AdminCategoriesPage: React.FC = () => {
 			key: "actions",
 			header: "Acciones",
 			render: (category: Category) => (
-				<div className="flex justify-end space-x-2">
+				<div className="flex justify-end space-x-1">
 					{/* Botón para ver página de categoría */}
 					<Link
 						to={`/categories/${category.slug}`}
@@ -425,7 +348,7 @@ const AdminCategoriesPage: React.FC = () => {
 						className="p-1 text-blue-600 hover:bg-blue-100 rounded-md"
 						title="Ver en tienda"
 					>
-						<ArrowUpRight size={18} />
+						<ArrowUpRight size={16} />
 					</Link>
 
 					{/* Botón para editar categoría */}
@@ -434,35 +357,41 @@ const AdminCategoriesPage: React.FC = () => {
 						className="p-1 text-yellow-600 hover:bg-yellow-100 rounded-md"
 						title="Editar categoría"
 					>
-						<Edit size={18} />
+						<Edit size={16} />
 					</Link>
 
 					{/* Botón para destacar/quitar destacado */}
 					<button
-						onClick={() => toggleFeatured(category.id || 0)}
-						className={`p-1 rounded-md ${
+						onClick={() =>
+							handleToggleFeatured(category.id!, category.featured!)
+						}
+						disabled={loadingAction === category.id}
+						className={`p-1 rounded-md transition-colors ${
 							category.featured
 								? "text-yellow-600 hover:bg-yellow-100"
 								: "text-gray-600 hover:bg-gray-100"
-						}`}
+						} ${loadingAction === category.id ? "opacity-50 cursor-not-allowed" : ""}`}
 						title={
 							category.featured ? "Quitar destacado" : "Destacar categoría"
 						}
 					>
-						<Star size={18} />
+						<Star size={16} />
 					</button>
 
 					{/* Botón para activar/desactivar */}
 					<button
-						onClick={() => toggleActive(category.id || 0)}
-						className={`p-1 rounded-md ${
+						onClick={() =>
+							handleToggleActive(category.id!, category.is_active!)
+						}
+						disabled={loadingAction === category.id}
+						className={`p-1 rounded-md transition-colors ${
 							category.is_active
 								? "text-green-600 hover:bg-green-100"
 								: "text-red-600 hover:bg-red-100"
-						}`}
+						} ${loadingAction === category.id ? "opacity-50 cursor-not-allowed" : ""}`}
 						title={category.is_active ? "Desactivar" : "Activar"}
 					>
-						{category.is_active ? <Eye size={18} /> : <EyeOff size={18} />}
+						{category.is_active ? <Eye size={16} /> : <EyeOff size={16} />}
 					</button>
 
 					{/* Botón para añadir subcategoría */}
@@ -471,89 +400,96 @@ const AdminCategoriesPage: React.FC = () => {
 						className="p-1 text-green-600 hover:bg-green-100 rounded-md"
 						title="Añadir subcategoría"
 					>
-						<Plus size={18} />
+						<Plus size={16} />
 					</Link>
 
 					{/* Botón para eliminar */}
 					<button
-						onClick={() => deleteCategory(category.id || 0)}
-						className="p-1 text-red-600 hover:bg-red-100 rounded-md"
+						onClick={() => handleDeleteCategory(category.id!, category.name)}
+						disabled={loadingAction === category.id}
+						className={`p-1 text-red-600 hover:bg-red-100 rounded-md transition-colors ${
+							loadingAction === category.id
+								? "opacity-50 cursor-not-allowed"
+								: ""
+						}`}
 						title="Eliminar categoría"
 					>
-						<Trash2 size={18} />
+						<Trash2 size={16} />
 					</button>
 				</div>
 			),
 		},
 	];
 
-	// Renderizado condicional dependiendo del modo de vista (para futura implementación)
-	const renderCategoriesView = () => {
-		if (viewMode === "tree") {
-			// En una implementación real, aquí renderizaríamos una vista de árbol
-			return (
-				<div className="bg-white rounded-lg shadow-sm p-4">
-					<h3 className="text-lg font-medium mb-4">
-						Vista de árbol de categorías
-					</h3>
-					<p className="text-gray-500">
-						Esta vista está en desarrollo. Por favor, utilice la vista de tabla.
-					</p>
-				</div>
-			);
-		}
-
-		// Vista de tabla por defecto
-		return (
-			<Table
-				data={filteredCategories}
-				columns={columns}
-				searchFields={["name", "slug", "description"]}
-				loading={loading}
-				emptyMessage="No se encontraron categorías"
-				pagination={{
-					currentPage: pagination.currentPage,
-					totalPages: pagination.totalPages,
-					totalItems: pagination.totalItems,
-					itemsPerPage: pagination.itemsPerPage,
-					onPageChange: handlePageChange,
-				}}
-			/>
-		);
-	};
+	// Calcular paginación
+	const totalPages = Math.ceil(filteredCategories.length / itemsPerPage);
+	const startIndex = (currentPage - 1) * itemsPerPage;
+	const paginatedCategories = filteredCategories.slice(
+		startIndex,
+		startIndex + itemsPerPage
+	);
 
 	return (
 		<div className="space-y-6">
+			{/* Header */}
 			<div className="flex justify-between items-center">
-				<h1 className="text-2xl font-bold text-gray-900">
-					Gestión de Categorías
-				</h1>
+				<div>
+					<h1 className="text-2xl font-bold text-gray-900">
+						Gestión de Categorías
+					</h1>
+					<p className="text-sm text-gray-600 mt-1">
+						{filteredCategories.length} categorías encontradas
+					</p>
+				</div>
 				<div className="flex space-x-2">
 					<Link
 						to="/admin/categories/create"
-						className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+						className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center"
 					>
-						<FolderPlus className="inline w-5 h-5 mr-1" />
+						<FolderPlus className="w-4 h-4 mr-2" />
 						Nueva Categoría
 					</Link>
 					<button
 						onClick={refreshData}
-						className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+						disabled={loading}
+						className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center disabled:opacity-50"
 					>
-						<RefreshCw size={18} className="inline mr-2" />
+						<RefreshCw
+							size={16}
+							className={`mr-2 ${loading ? "animate-spin" : ""}`}
+						/>
 						Actualizar
 					</button>
 				</div>
 			</div>
 
+			{/* Mostrar errores */}
+			{error && (
+				<div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+					Error: {error}
+				</div>
+			)}
+
 			{/* Filtros */}
 			<div className="bg-white rounded-lg shadow-sm p-4">
-				<div className="flex flex-col md:flex-row gap-4">
+				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+					{/* Búsqueda */}
+					<div className="flex items-center space-x-2">
+						<Search className="h-5 w-5 text-gray-500" />
+						<input
+							type="text"
+							placeholder="Buscar categorías..."
+							value={searchTerm}
+							onChange={(e) => setSearchTerm(e.target.value)}
+							className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 flex-1"
+						/>
+					</div>
+
 					{/* Filtro de Categoría Padre */}
 					<div className="flex items-center space-x-2">
 						<Filter className="h-5 w-5 text-gray-500" />
 						<select
-							className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+							className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 flex-1"
 							value={parentFilter === null ? "null" : parentFilter}
 							onChange={(e) =>
 								setParentFilter(
@@ -562,8 +498,8 @@ const AdminCategoriesPage: React.FC = () => {
 							}
 						>
 							<option value="null">Todas las categorías</option>
-							<option value="null">Categorías principales</option>
-							{parentCategories.map((category) => (
+							<option value={0}>Categorías principales</option>
+							{mainCategories.map((category) => (
 								<option key={category.id} value={category.id}>
 									Subcategorías de {category.name}
 								</option>
@@ -574,7 +510,7 @@ const AdminCategoriesPage: React.FC = () => {
 					{/* Filtro de Estado */}
 					<div className="flex items-center space-x-2">
 						<select
-							className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+							className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 flex-1"
 							value={statusFilter}
 							onChange={(e) => setStatusFilter(e.target.value)}
 						>
@@ -585,8 +521,8 @@ const AdminCategoriesPage: React.FC = () => {
 					</div>
 
 					{/* Selector de modo de vista */}
-					<div className="flex items-center space-x-2 ml-auto">
-						<span className="text-sm text-gray-600">
+					<div className="flex items-center space-x-2">
+						<span className="text-sm text-gray-600 whitespace-nowrap">
 							Vista:
 						</span>
 						<div className="flex border border-gray-300 rounded-lg overflow-hidden">
@@ -616,7 +552,31 @@ const AdminCategoriesPage: React.FC = () => {
 			</div>
 
 			{/* Vista de Categorías */}
-			{renderCategoriesView()}
+			{viewMode === "tree" ? (
+				<div className="bg-white rounded-lg shadow-sm p-4">
+					<h3 className="text-lg font-medium mb-4">
+						Vista de árbol de categorías
+					</h3>
+					<p className="text-gray-500">
+						Esta vista está en desarrollo. Por favor, utilice la vista de tabla.
+					</p>
+				</div>
+			) : (
+				<Table
+					data={paginatedCategories}
+					columns={columns}
+					searchFields={[]} // Búsqueda se maneja externamente
+					loading={loading}
+					emptyMessage="No se encontraron categorías"
+					pagination={{
+						currentPage: currentPage,
+						totalPages: totalPages,
+						totalItems: filteredCategories.length,
+						itemsPerPage: itemsPerPage,
+						onPageChange: handlePageChange,
+					}}
+				/>
+			)}
 		</div>
 	);
 };

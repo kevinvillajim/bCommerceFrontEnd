@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from "react";
+import React, {useState, useEffect, useCallback} from "react";
 import Table from "../../components/dashboard/Table";
 import {
 	Package,
@@ -12,339 +12,231 @@ import {
 	Archive,
 	Clock,
 	CheckCircle,
+	Plus,
+	Search,
+	Download,
 } from "lucide-react";
 import {Link} from "react-router-dom";
 import type {Product} from "../../../core/domain/entities/Product";
+import type {Category} from "../../../core/domain/entities/Category";
+import type {ExtendedProductFilterParams} from "../../types/ProductFilterParams";
 
-// Datos simulados para productos
-const mockProducts: Product[] = [
-	{
-		id: 1,
-		name: "Laptop HP Pavilion",
-		slug: "laptop-hp-pavilion",
-		description: "Laptop con procesador i7, 16GB RAM y 512GB SSD",
-		price: 899.99,
-		stock: 25,
-		featured: true,
-		published: true,
-		status: "active",
-		viewCount: 1245,
-		salesCount: 87,
-		discountPercentage: 10,
-		finalPrice: 809.99,
-		isInStock: true,
-		rating: 4.5,
-		rating_count: 38,
-		categoryId: 3,
-		images: [
-			"https://picsum.photos/seed/laptophp/600/400",
-			"https://picsum.photos/seed/hp-pavilion/600/400",
-		],
-	},
-	{
-		id: 2,
-		name: "Smartphone Samsung Galaxy S22",
-		slug: "smartphone-samsung-galaxy-s22",
-		description: "Smartphone con pantalla AMOLED, 128GB de almacenamiento",
-		price: 799.99,
-		stock: 42,
-		featured: true,
-		published: true,
-		status: "active",
-		viewCount: 2300,
-		salesCount: 156,
-		discountPercentage: 5,
-		finalPrice: 759.99,
-		isInStock: true,
-		rating: 4.7,
-		rating_count: 84,
-		categoryId: 2,
-		images: ["https://picsum.photos/seed/samsunggalaxy/600/400"],
-	},
-	{
-		id: 3,
-		name: "Audífonos Sony WH-1000XM4",
-		slug: "audifonos-sony-wh-1000xm4",
-		description: "Audífonos inalámbricos con cancelación de ruido",
-		price: 349.99,
-		stock: 15,
-		featured: false,
-		published: true,
-		status: "active",
-		viewCount: 980,
-		salesCount: 45,
-		discountPercentage: 0,
-		finalPrice: 349.99,
-		isInStock: true,
-		rating: 4.8,
-		rating_count: 27,
-		categoryId: 4,
-		images: ["https://picsum.photos/seed/sonyheadphones/600/400"],
-	},
-	{
-		id: 4,
-		name: "Monitor LG UltraWide",
-		slug: "monitor-lg-ultrawide",
-		description: "Monitor curvo de 34 pulgadas, resolución 4K",
-		price: 499.99,
-		stock: 8,
-		featured: false,
-		published: true,
-		status: "active",
-		viewCount: 560,
-		salesCount: 23,
-		discountPercentage: 15,
-		finalPrice: 424.99,
-		isInStock: true,
-		rating: 4.6,
-		rating_count: 19,
-		categoryId: 3,
-		images: ["https://picsum.photos/seed/monitorlg/600/400"],
-	},
-	{
-		id: 5,
-		name: "Teclado Mecánico Logitech G Pro",
-		slug: "teclado-mecanico-logitech-g-pro",
-		description: "Teclado mecánico para gaming con retroiluminación RGB",
-		price: 129.99,
-		stock: 30,
-		featured: false,
-		published: true,
-		status: "active",
-		viewCount: 850,
-		salesCount: 67,
-		discountPercentage: 0,
-		finalPrice: 129.99,
-		isInStock: true,
-		rating: 4.5,
-		rating_count: 32,
-		categoryId: 5,
-		images: ["https://picsum.photos/seed/logitechkeyboard/600/400"],
-	},
-	{
-		id: 6,
-		name: "Tablet iPad Pro 11",
-		slug: "tablet-ipad-pro-11",
-		description:
-			"Tablet con pantalla Liquid Retina, chip M2 y almacenamiento de 256GB",
-		price: 899.99,
-		stock: 0,
-		featured: true,
-		published: true,
-		status: "active",
-		viewCount: 1800,
-		salesCount: 110,
-		discountPercentage: 0,
-		finalPrice: 899.99,
-		isInStock: false,
-		rating: 4.9,
-		rating_count: 65,
-		categoryId: 2,
-		images: ["https://picsum.photos/seed/ipadpro/600/400"],
-	},
-	{
-		id: 7,
-		name: "Impresora Canon PIXMA",
-		slug: "impresora-canon-pixma",
-		description: "Impresora multifuncional a color con Wi-Fi",
-		price: 179.99,
-		stock: 12,
-		featured: false,
-		published: false,
-		status: "draft",
-		viewCount: 240,
-		salesCount: 8,
-		discountPercentage: 0,
-		finalPrice: 179.99,
-		isInStock: true,
-		rating: 4.2,
-		rating_count: 11,
-		categoryId: 3,
-		images: ["https://picsum.photos/seed/canonprinter/600/400"],
-	},
-	{
-		id: 8,
-		name: "Cámara Sony Alpha a7 III",
-		slug: "camara-sony-alpha-a7-iii",
-		description: "Cámara mirrorless con sensor full-frame de 24.2MP",
-		price: 1999.99,
-		stock: 5,
-		featured: true,
-		published: true,
-		status: "active",
-		viewCount: 760,
-		salesCount: 14,
-		discountPercentage: 8,
-		finalPrice: 1839.99,
-		isInStock: true,
-		rating: 4.8,
-		rating_count: 23,
-		categoryId: 7,
-		images: ["https://picsum.photos/seed/sonycamera/600/400"],
-	},
-	{
-		id: 9,
-		name: "Mouse Gaming Razer DeathAdder",
-		slug: "mouse-gaming-razer-deathadder",
-		description: "Mouse gaming con sensor óptico y 7 botones programables",
-		price: 69.99,
-		stock: 48,
-		featured: false,
-		published: true,
-		status: "active",
-		viewCount: 1100,
-		salesCount: 92,
-		discountPercentage: 0,
-		finalPrice: 69.99,
-		isInStock: true,
-		rating: 4.7,
-		rating_count: 48,
-		categoryId: 5,
-		images: ["https://picsum.photos/seed/razermouse/600/400"],
-	},
-	{
-		id: 10,
-		name: "Smartwatch Apple Watch Series 8",
-		slug: "smartwatch-apple-watch-series-8",
-		description:
-			"Smartwatch con detección de caídas, GPS y sensor de oxígeno en sangre",
-		price: 429.99,
-		stock: 22,
-		featured: true,
-		published: true,
-		status: "active",
-		viewCount: 950,
-		salesCount: 37,
-		discountPercentage: 0,
-		finalPrice: 429.99,
-		isInStock: true,
-		rating: 4.6,
-		rating_count: 29,
-		categoryId: 6,
-		images: ["https://picsum.photos/seed/applewatch/600/400"],
-	},
-];
-
-
-
-// Datos para los filtros de categorías
-const categories = [
-	{id: 1, name: "Todas"},
-	{id: 2, name: "Móviles y Tablets"},
-	{id: 3, name: "Informática"},
-	{id: 4, name: "Audio"},
-	{id: 5, name: "Accesorios"},
-	{id: 6, name: "Wearables"},
-	{id: 7, name: "Fotografía"},
-];
+// Hooks personalizados
+import {useAdminProducts} from "../../hooks/useAdminProducts";
+import {useAdminCategories} from "../../hooks/useAdminCategories";
 
 const AdminProductsPage: React.FC = () => {
-	const [products, setProducts] = useState<Product[]>([]);
-	const [loading, setLoading] = useState(true);
-	const [categoryFilter, setCategoryFilter] = useState<number>(1); // 1 = Todas
+	// Hooks de administración
+	const {
+		loading: productsLoading,
+		error: productsError,
+		products,
+		meta,
+		fetchAllProducts,
+		deleteProduct,
+		toggleFeatured,
+		togglePublished,
+		updateStatus,
+		clearProductCache,
+	} = useAdminProducts();
+
+	const {
+		loading: categoriesLoading,
+		categories,
+		fetchAllCategories,
+	} = useAdminCategories();
+
+	// Estado local para filtros y paginación
+	const [categoryFilter, setCategoryFilter] = useState<number>(0); // 0 = Todas
 	const [statusFilter, setStatusFilter] = useState<string>("all");
 	const [stockFilter, setStockFilter] = useState<string>("all");
-	const [pagination, setPagination] = useState({
-		currentPage: 1,
-		totalPages: 1,
-		totalItems: 0,
-		itemsPerPage: 10,
-	});
+	const [searchTerm, setSearchTerm] = useState<string>("");
+	const [currentPage, setCurrentPage] = useState<number>(1);
+	const [itemsPerPage] = useState<number>(15);
 
-	// Cargar datos de productos
+	// Estado para mostrar confirmaciones
+	const [loadingAction, setLoadingAction] = useState<number | null>(null);
+
+	// Cargar datos iniciales
 	useEffect(() => {
-		const fetchProducts = () => {
-			setLoading(true);
-			// Simulación de llamada a API
-			setTimeout(() => {
-				setProducts(mockProducts);
-				setPagination({
-					currentPage: 1,
-					totalPages: 1,
-					totalItems: mockProducts.length,
-					itemsPerPage: 10,
-				});
-				setLoading(false);
-			}, 500);
-		};
-
-		fetchProducts();
+		loadData();
+		loadCategories();
 	}, []);
 
-	// Filtrar productos
-	const filteredProducts = products.filter((product) => {
-		const matchesCategory =
-			categoryFilter === 1 || product.categoryId === categoryFilter;
+	// Cargar datos cuando cambien los filtros
+	useEffect(() => {
+		loadData();
+	}, [categoryFilter, statusFilter, stockFilter, searchTerm, currentPage]);
 
-		const matchesStatus =
-			statusFilter === "all" ||
-			(statusFilter === "active" &&
-				product.status === "active" &&
-				product.published) ||
-			(statusFilter === "draft" && product.status === "draft") ||
-			(statusFilter === "inactive" && product.status === "inactive") ||
-			!product.published;
-
-		const matchesStock =
-			stockFilter === "all" ||
-			(stockFilter === "inStock" && product.stock > 0) ||
-			(stockFilter === "lowStock" &&
-				product.stock > 0 &&
-				product.stock <= 10) ||
-			(stockFilter === "outOfStock" && product.stock === 0);
-
-		return matchesCategory && matchesStatus && matchesStock;
-	});
-
-	// Destacar/Quitar destacado de producto
-	const toggleFeatured = (productId: number) => {
-		setProducts((prevProducts) =>
-			prevProducts.map((product) => {
-				if (product.id === productId) {
-					return {...product, featured: !product.featured};
-				}
-				return product;
-			})
-		);
-	};
-
-	// Cambiar estado de publicación
-	const togglePublished = (productId: number) => {
-		setProducts((prevProducts) =>
-			prevProducts.map((product) => {
-				if (product.id === productId) {
-					return {...product, published: !product.published};
-				}
-				return product;
-			})
-		);
-	};
-
-	// Eliminar producto
-	const deleteProduct = (productId: number) => {
-		if (window.confirm("¿Estás seguro de que deseas eliminar este producto?")) {
-			setProducts((prevProducts) =>
-				prevProducts.filter((product) => product.id !== productId)
-			);
+	/**
+	 * Carga las categorías
+	 */
+	const loadCategories = useCallback(async () => {
+		try {
+			await fetchAllCategories({with_counts: true});
+		} catch (error) {
+			console.error("Error al cargar categorías:", error);
 		}
-	};
+	}, [fetchAllCategories]);
 
-	// Manejar cambio de página
-	const handlePageChange = (page: number) => {
-		setPagination((prev) => ({...prev, currentPage: page}));
-		// En una app real, aquí obtendrías los datos para la nueva página
-	};
+	/**
+	 * Carga los productos con filtros aplicados
+	 */
+	const loadData = useCallback(async () => {
+		try {
+			const filterParams: ExtendedProductFilterParams = {
+				limit: itemsPerPage,
+				offset: (currentPage - 1) * itemsPerPage,
+				// NO incluir filtros por defecto - admin debe ver TODOS los productos
+			};
 
-	// Refrescar datos
-	const refreshData = () => {
-		setLoading(true);
-		// Simular recarga de datos
-		setTimeout(() => {
-			setLoading(false);
-		}, 500);
-	};
+			// Aplicar filtros
+			if (searchTerm) {
+				filterParams.term = searchTerm;
+			}
 
-	// Formatear moneda
+			if (categoryFilter && categoryFilter > 0) {
+				filterParams.categoryId = categoryFilter;
+			}
+
+			// Filtros de estado - SOLO si se especifica explícitamente
+			switch (statusFilter) {
+				case "active":
+					filterParams.status = "active";
+					filterParams.published = true;
+					break;
+				case "draft":
+					filterParams.status = "draft";
+					break;
+				case "inactive":
+					filterParams.published = false;
+					break;
+				// "all" NO añade filtros - admin ve todo
+			}
+
+			// Filtros de stock
+			switch (stockFilter) {
+				case "inStock":
+					filterParams.inStock = true;
+					break;
+				case "lowStock":
+					filterParams.inStock = true;
+					// Este filtro se podría implementar en el backend
+					break;
+				case "outOfStock":
+					filterParams.inStock = false;
+					break;
+				// "all" no añade filtros
+			}
+
+			console.log(
+				"🔧 AdminProductsPage: Cargando productos con filtros:",
+				filterParams
+			);
+			await fetchAllProducts(filterParams);
+		} catch (error) {
+			console.error("Error al cargar productos:", error);
+		}
+	}, [
+		fetchAllProducts,
+		categoryFilter,
+		statusFilter,
+		stockFilter,
+		searchTerm,
+		currentPage,
+		itemsPerPage,
+	]);
+
+	/**
+	 * Maneja la eliminación de un producto
+	 */
+	const handleDeleteProduct = useCallback(
+		async (productId: number, productName: string) => {
+			const confirmed = window.confirm(
+				`¿Estás seguro de que deseas eliminar el producto "${productName}"?`
+			);
+
+			if (confirmed) {
+				setLoadingAction(productId);
+				try {
+					const success = await deleteProduct(productId);
+					if (success) {
+						// Recargar datos para reflejar cambios
+						loadData();
+					} else {
+						alert("Error al eliminar el producto");
+					}
+				} catch (error) {
+					console.error("Error al eliminar producto:", error);
+					alert("Error al eliminar el producto");
+				} finally {
+					setLoadingAction(null);
+				}
+			}
+		},
+		[deleteProduct, loadData]
+	);
+
+	/**
+	 * Maneja el cambio de estado destacado
+	 */
+	const handleToggleFeatured = useCallback(
+		async (productId: number, currentFeatured: boolean) => {
+			setLoadingAction(productId);
+			try {
+				const success = await toggleFeatured(productId, !currentFeatured);
+				if (!success) {
+					alert("Error al cambiar estado destacado");
+				}
+			} catch (error) {
+				console.error("Error al cambiar estado destacado:", error);
+				alert("Error al cambiar estado destacado");
+			} finally {
+				setLoadingAction(null);
+			}
+		},
+		[toggleFeatured]
+	);
+
+	/**
+	 * Maneja el cambio de estado de publicación
+	 */
+	const handleTogglePublished = useCallback(
+		async (productId: number, currentPublished: boolean) => {
+			setLoadingAction(productId);
+			try {
+				const success = await togglePublished(productId, !currentPublished);
+				if (!success) {
+					alert("Error al cambiar estado de publicación");
+				}
+			} catch (error) {
+				console.error("Error al cambiar estado de publicación:", error);
+				alert("Error al cambiar estado de publicación");
+			} finally {
+				setLoadingAction(null);
+			}
+		},
+		[togglePublished]
+	);
+
+	/**
+	 * Refrescar datos
+	 */
+	const refreshData = useCallback(() => {
+		clearProductCache();
+		loadData();
+	}, [clearProductCache, loadData]);
+
+	/**
+	 * Manejar cambio de página
+	 */
+	const handlePageChange = useCallback((page: number) => {
+		setCurrentPage(page);
+	}, []);
+
+	/**
+	 * Formatear moneda
+	 */
 	const formatCurrency = (amount: number) => {
 		return new Intl.NumberFormat("es-ES", {
 			style: "currency",
@@ -352,6 +244,24 @@ const AdminProductsPage: React.FC = () => {
 			minimumFractionDigits: 2,
 		}).format(amount);
 	};
+
+	/**
+	 * Obtener el nombre de la categoría por ID
+	 */
+	const getCategoryName = (categoryId?: number): string => {
+		if (!categoryId) return "Sin categoría";
+		const category = categories.find((c) => c.id === categoryId);
+		return category ? category.name : "Categoría desconocida";
+	};
+
+	// Filtrar productos localmente para manejar filtros adicionales
+	const filteredProducts = products.filter((product) => {
+		// Filtro de stock bajo (ya que no se implementó en backend)
+		if (stockFilter === "lowStock") {
+			return product.stock > 0 && product.stock <= 10;
+		}
+		return true;
+	});
 
 	// Definir columnas de la tabla
 	const columns = [
@@ -396,15 +306,29 @@ const AdminProductsPage: React.FC = () => {
 			key: "category",
 			header: "Categoría",
 			sortable: true,
-			render: (product: Product) => {
-				const category = categories.find((c) => c.id === product.categoryId);
-				return (
-					<span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-						<Tag className="w-3 h-3 mr-1" />
-						{category ? category.name : "Sin categoría"}
-					</span>
-				);
-			},
+			render: (product: Product) => (
+				<span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+					<Tag className="w-3 h-3 mr-1" />
+					{getCategoryName(product.categoryId)}
+				</span>
+			),
+		},
+		{
+			key: "seller",
+			header: "Vendedor",
+			sortable: true,
+			render: (product: Product) => (
+				<div className="text-sm">
+					<div className="font-medium text-gray-900">
+						{product.seller?.name ||
+							product.user?.name ||
+							"Usuario desconocido"}
+					</div>
+					<div className="text-xs text-gray-500">
+						ID: {product.sellerId || product.userId || "N/A"}
+					</div>
+				</div>
+			),
 		},
 		{
 			key: "price",
@@ -412,7 +336,7 @@ const AdminProductsPage: React.FC = () => {
 			sortable: true,
 			render: (product: Product) => (
 				<div>
-					{product.discountPercentage ? (
+					{product.discountPercentage && product.discountPercentage > 0 ? (
 						<div>
 							<span className="text-gray-500 line-through text-xs mr-1">
 								{formatCurrency(product.price)}
@@ -467,23 +391,19 @@ const AdminProductsPage: React.FC = () => {
 				let StatusIcon = CheckCircle;
 
 				if (!product.published) {
-					statusColor =
-						"bg-yellow-100 text-yellow-800";
+					statusColor = "bg-yellow-100 text-yellow-800";
 					statusText = "No publicado";
 					StatusIcon = Clock;
 				} else if (product.status === "draft") {
-					statusColor =
-						"bg-gray-100 text-gray-800";
+					statusColor = "bg-gray-100 text-gray-800";
 					statusText = "Borrador";
 					StatusIcon = Archive;
 				} else if (product.status === "active") {
-					statusColor =
-						"bg-green-100 text-green-800";
+					statusColor = "bg-green-100 text-green-800";
 					statusText = "Activo";
 					StatusIcon = CheckCircle;
 				} else {
-					statusColor =
-						"bg-red-100 text-red-800";
+					statusColor = "bg-red-100 text-red-800";
 					statusText = "Inactivo";
 					StatusIcon = Archive;
 				}
@@ -509,13 +429,11 @@ const AdminProductsPage: React.FC = () => {
 							<Star className="h-4 w-4 text-yellow-500 mr-1" />
 							<span>{(product.rating ?? 0).toFixed(1)}</span>
 							<span className="text-xs text-gray-500 ml-1">
-								({product.rating_count ?? 0})
+								({product.ratingCount ?? 0})
 							</span>
 						</>
 					) : (
-						<span className="text-xs text-gray-500">
-							Sin valoraciones
-						</span>
+						<span className="text-xs text-gray-500">Sin valoraciones</span>
 					)}
 				</div>
 			),
@@ -530,102 +448,146 @@ const AdminProductsPage: React.FC = () => {
 			key: "actions",
 			header: "Acciones",
 			render: (product: Product) => (
-				<div className="flex justify-end space-x-2">
-					{/* Botón para ver producto */}
+				<div className="flex justify-end space-x-1">
+					{/* Botón para ver producto en la tienda */}
 					<Link
-						to={`/admin/products/${product.id}`}
+						to={`/products/${product.slug}`}
+						target="_blank"
 						className="p-1 text-blue-600 hover:bg-blue-100 rounded-md"
-						title="Ver producto"
+						title="Ver en tienda"
 					>
-						<Eye size={18} />
+						<Eye size={16} />
 					</Link>
 
-					{/* Botón para editar producto */}
+					{/* Botón para editar producto - USAR ID NO SLUG */}
 					<Link
 						to={`/admin/products/edit/${product.id}`}
 						className="p-1 text-yellow-600 hover:bg-yellow-100 rounded-md"
 						title="Editar producto"
 					>
-						<Edit size={18} />
+						<Edit size={16} />
 					</Link>
 
 					{/* Botón para destacar/quitar destacado */}
 					<button
-						onClick={() => toggleFeatured(product.id || 0)}
-						className={`p-1 rounded-md ${
+						onClick={() => handleToggleFeatured(product.id!, product.featured!)}
+						disabled={loadingAction === product.id}
+						className={`p-1 rounded-md transition-colors ${
 							product.featured
 								? "text-yellow-600 hover:bg-yellow-100"
 								: "text-gray-600 hover:bg-gray-100"
-						}`}
+						} ${loadingAction === product.id ? "opacity-50 cursor-not-allowed" : ""}`}
 						title={product.featured ? "Quitar destacado" : "Destacar producto"}
 					>
-						<Star size={18} />
+						<Star size={16} />
 					</button>
 
 					{/* Botón para publicar/despublicar */}
 					<button
-						onClick={() => togglePublished(product.id || 0)}
-						className={`p-1 rounded-md ${
+						onClick={() =>
+							handleTogglePublished(product.id!, product.published!)
+						}
+						disabled={loadingAction === product.id}
+						className={`p-1 rounded-md transition-colors ${
 							product.published
 								? "text-green-600 hover:bg-green-100"
 								: "text-gray-600 hover:bg-gray-100"
-						}`}
+						} ${loadingAction === product.id ? "opacity-50 cursor-not-allowed" : ""}`}
 						title={product.published ? "Despublicar" : "Publicar"}
 					>
-						<CheckCircle size={18} />
+						<CheckCircle size={16} />
 					</button>
 
 					{/* Botón para eliminar */}
 					<button
-						onClick={() => deleteProduct(product.id || 0)}
-						className="p-1 text-red-600 hover:bg-red-100 rounded-md"
+						onClick={() => handleDeleteProduct(product.id!, product.name)}
+						disabled={loadingAction === product.id}
+						className={`p-1 text-red-600 hover:bg-red-100 rounded-md transition-colors ${
+							loadingAction === product.id
+								? "opacity-50 cursor-not-allowed"
+								: ""
+						}`}
 						title="Eliminar producto"
 					>
-						<Trash2 size={18} />
+						<Trash2 size={16} />
 					</button>
 				</div>
 			),
 		},
 	];
 
+	const loading = productsLoading || categoriesLoading;
+
 	return (
 		<div className="space-y-6">
+			{/* Header */}
 			<div className="flex justify-between items-center">
-				<h1 className="text-2xl font-bold text-gray-900">
-					Gestión de Productos
-				</h1>
+				<div>
+					<h1 className="text-2xl font-bold text-gray-900">
+						Gestión de Productos
+					</h1>
+					{meta && (
+						<p className="text-sm text-gray-600 mt-1">
+							{meta.total} productos encontrados
+						</p>
+					)}
+				</div>
 				<div className="flex space-x-2">
 					<Link
 						to="/admin/products/create"
-						className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+						className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center"
 					>
-						<Package className="inline w-5 h-5 mr-1" />
+						<Plus className="w-4 h-4 mr-2" />
 						Nuevo Producto
 					</Link>
 					<button
 						onClick={refreshData}
-						className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+						disabled={loading}
+						className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center disabled:opacity-50"
 					>
-						<RefreshCw size={18} className="inline mr-2" />
+						<RefreshCw
+							size={16}
+							className={`mr-2 ${loading ? "animate-spin" : ""}`}
+						/>
 						Actualizar
 					</button>
 				</div>
 			</div>
 
+			{/* Mostrar errores */}
+			{productsError && (
+				<div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+					Error: {productsError}
+				</div>
+			)}
+
 			{/* Filtros */}
 			<div className="bg-white rounded-lg shadow-sm p-4">
-				<div className="flex flex-col md:flex-row gap-4">
+				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+					{/* Búsqueda */}
+					<div className="flex items-center space-x-2">
+						<Search className="h-5 w-5 text-gray-500" />
+						<input
+							type="text"
+							placeholder="Buscar productos..."
+							value={searchTerm}
+							onChange={(e) => setSearchTerm(e.target.value)}
+							className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 flex-1"
+						/>
+					</div>
+
 					{/* Filtro de Categoría */}
 					<div className="flex items-center space-x-2">
 						<Filter className="h-5 w-5 text-gray-500" />
 						<select
-							className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+							className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 flex-1"
 							value={categoryFilter}
 							onChange={(e) => setCategoryFilter(Number(e.target.value))}
 						>
+							<option value={0}>Todas las categorías</option>
 							{categories.map((category) => (
 								<option key={category.id} value={category.id}>
-									{category.name}
+									{category.name} ({category.product_count || 0})
 								</option>
 							))}
 						</select>
@@ -634,7 +596,7 @@ const AdminProductsPage: React.FC = () => {
 					{/* Filtro de Estado */}
 					<div className="flex items-center space-x-2">
 						<select
-							className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+							className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 flex-1"
 							value={statusFilter}
 							onChange={(e) => setStatusFilter(e.target.value)}
 						>
@@ -648,13 +610,13 @@ const AdminProductsPage: React.FC = () => {
 					{/* Filtro de Stock */}
 					<div className="flex items-center space-x-2">
 						<select
-							className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+							className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 flex-1"
 							value={stockFilter}
 							onChange={(e) => setStockFilter(e.target.value)}
 						>
 							<option value="all">Todo el Stock</option>
 							<option value="inStock">En stock</option>
-							<option value="lowStock">Stock bajo</option>
+							<option value="lowStock">Stock bajo (≤10)</option>
 							<option value="outOfStock">Sin stock</option>
 						</select>
 					</div>
@@ -665,14 +627,14 @@ const AdminProductsPage: React.FC = () => {
 			<Table
 				data={filteredProducts}
 				columns={columns}
-				searchFields={["name", "description", "sku"]}
+				searchFields={[]} // Búsqueda se maneja externamente
 				loading={loading}
 				emptyMessage="No se encontraron productos"
 				pagination={{
-					currentPage: pagination.currentPage,
-					totalPages: pagination.totalPages,
-					totalItems: pagination.totalItems,
-					itemsPerPage: pagination.itemsPerPage,
+					currentPage: currentPage,
+					totalPages: Math.ceil((meta?.total || 0) / itemsPerPage),
+					totalItems: meta?.total || 0,
+					itemsPerPage: itemsPerPage,
 					onPageChange: handlePageChange,
 				}}
 			/>
