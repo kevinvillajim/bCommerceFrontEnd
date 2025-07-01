@@ -655,12 +655,12 @@ const SellerInvoicesPage: React.FC = () => {
 			<Table
 				data={filteredInvoices}
 				columns={columns}
-				searchFields={[
-					"invoiceNumber",
-					"order.orderNumber",
-					"user.name",
-					"user.email",
-				]}
+        searchFields={[
+          "invoiceNumber",
+          "orderId",
+          "userId",
+          "status"
+        ]}
 				loading={loading}
 				emptyMessage="No se encontraron facturas con los filtros aplicados"
 				pagination={{

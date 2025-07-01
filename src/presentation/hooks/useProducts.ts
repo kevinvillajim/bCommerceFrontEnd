@@ -8,7 +8,6 @@ import { DebugUtils } from "../../utils/debugUtils";
 import type {
 	Product,
 	ProductDetail,
-	ProductFilterParams,
 	ProductListResponse,
 } from "../../core/domain/entities/Product";
 import type { ExtendedProductFilterParams } from "../types/ProductFilterParams";

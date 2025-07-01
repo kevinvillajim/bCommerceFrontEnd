@@ -1,17 +1,41 @@
-// src/utils/unifiedImageUtils.ts
+// src/utils/unifiedImageUtils.ts - VERSIÓN CORREGIDA
 import environment from "../config/environment";
+
+/**
+ * Placeholder como Data URI (imagen SVG embebida) - No requiere conexión externa
+ */
+const PLACEHOLDER_DATA_URI = `data:image/svg+xml,${encodeURIComponent(`
+<svg width="300" height="300" xmlns="http://www.w3.org/2000/svg">
+  <rect width="300" height="300" fill="#e5e7eb"/>
+  <text x="150" y="150" font-family="Arial, sans-serif" font-size="16" fill="#6b7280" text-anchor="middle" dy="0.3em">
+    Sin imagen
+  </text>
+</svg>
+`)}`;
+
+/**
+ * Placeholder pequeño para miniaturas
+ */
+const SMALL_PLACEHOLDER_DATA_URI = `data:image/svg+xml,${encodeURIComponent(`
+<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg">
+  <rect width="100" height="100" fill="#f3f4f6"/>
+  <text x="50" y="50" font-family="Arial, sans-serif" font-size="12" fill="#9ca3af" text-anchor="middle" dy="0.3em">
+    Sin img
+  </text>
+</svg>
+`)}`;
 
 /**
  * Configuración global para imágenes
  */
 const IMAGE_CONFIG = {
-  placeholder: "https://via.placeholder.com/300x300/e0e0e0/666666?text=Sin+imagen2",
+  placeholder: PLACEHOLDER_DATA_URI,
+  smallPlaceholder: SMALL_PLACEHOLDER_DATA_URI,
   defaultProduct: "/images/default-product.jpg"
 };
 
 /**
  * Obtiene la URL base de la API dinámicamente
- * Evita dependencias de process.env para compatibilidad con navegadores
  */
 function getApiBaseUrl(): string {
   if (typeof window === 'undefined') {
@@ -33,10 +57,10 @@ function getApiBaseUrl(): string {
  * Función principal unificada para obtener URLs de imágenes
  * Esta es la ÚNICA función que debe usarse en toda la aplicación
  */
-export function getImageUrl(imagePath?: string | null): string {
+export function getImageUrl(imagePath?: string | null, useSmallPlaceholder: boolean = false): string {
   // Caso 1: Sin imagen - retornar placeholder
   if (!imagePath || imagePath.trim() === '') {
-    return IMAGE_CONFIG.placeholder;
+    return useSmallPlaceholder ? IMAGE_CONFIG.smallPlaceholder : IMAGE_CONFIG.placeholder;
   }
 
   const path = imagePath.trim();
@@ -46,7 +70,12 @@ export function getImageUrl(imagePath?: string | null): string {
     return path;
   }
 
-  // Caso 3: Usar configuración de environment si está disponible
+  // Caso 3: Data URI - retornar tal como está
+  if (path.startsWith('data:')) {
+    return path;
+  }
+
+  // Caso 4: Usar configuración de environment si está disponible
   if (environment?.imageBaseUrl) {
     // Eliminar /storage/ del inicio si ya está incluido para evitar duplicación
     let normalizedPath = path;
@@ -59,7 +88,7 @@ export function getImageUrl(imagePath?: string | null): string {
     return `${environment.imageBaseUrl}${normalizedPath}`;
   }
 
-  // Caso 4: Fallback usando detección automática de API base
+  // Caso 5: Fallback usando detección automática de API base
   const apiBaseUrl = getApiBaseUrl();
   
   // Si comienza con 'products/', construir URL de storage
@@ -70,6 +99,11 @@ export function getImageUrl(imagePath?: string | null): string {
   // Si comienza con 'storage/', construir la URL
   if (path.startsWith('storage/')) {
     return `${apiBaseUrl}/${path}`;
+  }
+
+  // Si comienza con '/', asumir que es una ruta absoluta
+  if (path.startsWith('/')) {
+    return `${apiBaseUrl}${path}`;
   }
 
   // Para cualquier otra ruta, asumir que es relativa al storage
@@ -92,19 +126,19 @@ export function getDefaultImageUrl(): string {
  * Extrae la imagen principal de un producto
  * Maneja diferentes estructuras de datos de imágenes
  */
-export function getProductMainImage(product: any): string {
+export function getProductMainImage(product: any, useSmallPlaceholder: boolean = false): string {
   if (!product) {
-    return getImageUrl(null);
+    return getImageUrl(null, useSmallPlaceholder);
   }
 
   // Prioridad 1: main_image desde la API
   if (product.main_image) {
-    return getImageUrl(product.main_image);
+    return getImageUrl(product.main_image, useSmallPlaceholder);
   }
 
   // Prioridad 2: image (singular) desde la API
   if (product.image) {
-    return getImageUrl(product.image);
+    return getImageUrl(product.image, useSmallPlaceholder);
   }
 
   // Prioridad 3: primer elemento del array images
@@ -113,7 +147,7 @@ export function getProductMainImage(product: any): string {
     
     // Si es un string, usarlo directamente
     if (typeof firstImage === 'string') {
-      return getImageUrl(firstImage);
+      return getImageUrl(firstImage, useSmallPlaceholder);
     }
     
     // Si es un objeto, extraer la URL apropiada
@@ -123,12 +157,12 @@ export function getProductMainImage(product: any): string {
                      firstImage.medium || 
                      firstImage.thumbnail || 
                      '';
-      return getImageUrl(imageUrl);
+      return getImageUrl(imageUrl, useSmallPlaceholder);
     }
   }
 
-  // Fallback: imagen por defecto
-  return getImageUrl(null);
+  // Fallback: placeholder
+  return getImageUrl(null, useSmallPlaceholder);
 }
 
 /**
@@ -167,10 +201,13 @@ export function getProductImages(product: any): string[] {
  */
 export function validateImageUrl(url: string): Promise<boolean> {
   return new Promise((resolve) => {
+    // Si es un data URI, considerarlo válido
+    if (url.startsWith('data:')) {
+      resolve(true);
+      return;
+    }
+
     const img = new Image();
-    
-    img.onload = () => resolve(true);
-    img.onerror = () => resolve(false);
     
     // Timeout después de 3 segundos
     const timeout = setTimeout(() => {
@@ -192,14 +229,78 @@ export function validateImageUrl(url: string): Promise<boolean> {
 }
 
 /**
- * Hook de React para manejar carga de imágenes con estado
- * Solo disponible en entornos React
+ * Componente de imagen con fallback mejorado
  */
-export function useImageLoader(initialSrc: string) {
+export interface ImageWithFallbackProps {
+  src: string;
+  alt: string;
+  className?: string;
+  fallbackSrc?: string;
+  useSmallPlaceholder?: boolean;
+  onError?: (error: Event) => void;
+  [key: string]: any;
+}
+
+export function createImageWithFallback(React: any) {
+  return function ImageWithFallback({ 
+    src, 
+    alt, 
+    className = '',
+    fallbackSrc,
+    useSmallPlaceholder = false,
+    onError,
+    ...props 
+  }: ImageWithFallbackProps) {
+    const [imageSrc, setImageSrc] = React.useState(getImageUrl(src, useSmallPlaceholder));
+    const [hasError, setHasError] = React.useState(false);
+    const [errorCount, setErrorCount] = React.useState(0);
+
+    React.useEffect(() => {
+      setImageSrc(getImageUrl(src, useSmallPlaceholder));
+      setHasError(false);
+      setErrorCount(0);
+    }, [src, useSmallPlaceholder]);
+
+    const handleError = React.useCallback((error: Event) => {
+      console.warn('Error cargando imagen:', imageSrc);
+      
+      if (onError) {
+        onError(error);
+      }
+
+      // Evitar loops infinitos de error
+      if (errorCount >= 2) {
+        console.warn('Demasiados errores de imagen, usando placeholder final');
+        return;
+      }
+
+      setErrorCount((prev: number) => prev + 1);
+
+      if (!hasError) {
+        setHasError(true);
+        
+        // Intentar con fallback personalizado primero
+        if (fallbackSrc && errorCount === 0) {
+          setImageSrc(getImageUrl(fallbackSrc, useSmallPlaceholder));
+        } else {
+          // Usar placeholder como último recurso
+          setImageSrc(getImageUrl(null, useSmallPlaceholder));
+        }
+      }
+    }, [imageSrc, hasError, fallbackSrc, useSmallPlaceholder, errorCount, onError]);
+
+    
+  };
+}
+
+/**
+ * Hook de React para manejar carga de imágenes con estado
+ */
+export function useImageLoader(initialSrc: string, useSmallPlaceholder: boolean = false) {
   // Verificar si React está disponible
   if (typeof window === 'undefined' || !(window as any).React) {
     return {
-      src: getImageUrl(initialSrc),
+      src: getImageUrl(initialSrc, useSmallPlaceholder),
       isLoading: false,
       hasError: false,
       loadImage: () => {}
@@ -207,30 +308,43 @@ export function useImageLoader(initialSrc: string) {
   }
 
   const React = (window as any).React;
-  const [src, setSrc] = React.useState(getImageUrl(initialSrc));
-  const [isLoading, setIsLoading] = React.useState(true);
+  const [src, setSrc] = React.useState(getImageUrl(initialSrc, useSmallPlaceholder));
+  const [isLoading, setIsLoading] = React.useState(Boolean(initialSrc));
   const [hasError, setHasError] = React.useState(false);
 
   const loadImage = React.useCallback((newSrc: string) => {
+    const imageUrl = getImageUrl(newSrc, useSmallPlaceholder);
+    
+    // Si es un data URI, no necesita validación
+    if (imageUrl.startsWith('data:')) {
+      setSrc(imageUrl);
+      setIsLoading(false);
+      setHasError(false);
+      return;
+    }
+
     setIsLoading(true);
     setHasError(false);
     
-    validateImageUrl(getImageUrl(newSrc)).then(isValid => {
+    validateImageUrl(imageUrl).then(isValid => {
       if (isValid) {
-        setSrc(getImageUrl(newSrc));
+        setSrc(imageUrl);
       } else {
-        setSrc(getImageUrl(null));
+        setSrc(getImageUrl(null, useSmallPlaceholder));
         setHasError(true);
       }
       setIsLoading(false);
     });
-  }, []);
+  }, [useSmallPlaceholder]);
 
   React.useEffect(() => {
     if (initialSrc) {
       loadImage(initialSrc);
+    } else {
+      setSrc(getImageUrl(null, useSmallPlaceholder));
+      setIsLoading(false);
     }
-  }, [initialSrc, loadImage]);
+  }, [initialSrc, loadImage, useSmallPlaceholder]);
 
   return { src, isLoading, hasError, loadImage };
 }
@@ -242,7 +356,8 @@ export const ImageUtils = {
   getProductMainImage,
   getProductImages,
   validateImageUrl,
-  useImageLoader
+  useImageLoader,
+  createImageWithFallback
 };
 
 // Export por defecto para compatibilidad

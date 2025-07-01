@@ -9,13 +9,10 @@ import {
 	ArrowRight,
 	Wallet,
 	PieChart,
-	ShoppingBag,
-	Package,
-	Star,
+
 	BarChart2,
 } from "lucide-react";
 import { formatCurrency } from "../../../utils/formatters/formatCurrency";
-import RatingStars from "@/presentation/components/common/RatingStars";
 import DashboardCardList from "@/presentation/components/dashboard/DashboardCardList";
 
 // Tipos
@@ -83,13 +80,21 @@ const SellerEarningsPage: React.FC = () => {
     // Simulación de carga desde API
     setTimeout(() => {
       // Datos de ejemplo
-      const mockStats: EarningsStats = {
-        paymentMethods: [
-          { method: "Tarjeta de Crédito", amount: 7548.27, percentage: 60, color: "bg-blue-500" },
-          { method: "Transferencia", amount: 2516.09, percentage: 20, color: "bg-green-500" },
-          { method: "PayPal", amount: 1887.07, percentage: 15, color: "bg-indigo-500" },
-          { method: "Otros", amount: 629.02, percentage: 5, color: "bg-gray-500" }
-        ],
+	  const mockStats: EarningsStats = {
+		totalEarnings: 12580.45,
+		pendingPayments: 1458.32,
+		salesThisMonth: 3450.8,
+		salesGrowth: 12.5,
+		commissionsThisMonth: 517.62,
+		commissionsPercentage: 15,
+		netEarningsThisMonth: 2933.18,
+		earningsGrowth: 8.2,
+		paymentMethods: [
+		  { method: "Tarjeta de Crédito", amount: 7548.27, percentage: 60, color: "bg-blue-500" },
+		  { method: "Transferencia", amount: 2516.09, percentage: 20, color: "bg-green-500" },
+		  { method: "PayPal", amount: 1887.07, percentage: 15, color: "bg-indigo-500" },
+		  { method: "Otros", amount: 629.02, percentage: 5, color: "bg-gray-500" }
+		],
         monthlySales: [
           { month: "Enero", sales: 1850.50, commissions: 277.58, net: 1572.92 },
           { month: "Febrero", sales: 2105.30, commissions: 315.80, net: 1789.50 },
@@ -342,9 +347,9 @@ const SellerEarningsPage: React.FC = () => {
 												d={path}
 												fill={fillColor}
 												className="hover:opacity-80 transition-opacity"
-												onMouseOver={(e) => {
-													// Si quieres añadir interactividad como destacar al pasar el mouse
-												}}
+												// onMouseOver={(e) => {
+												// 	// Si quieres añadir interactividad como destacar al pasar el mouse
+												// }}
 											/>
 											{/* Tooltip svg nativo */}
 											<title>

@@ -1,5 +1,5 @@
 import {AdminOrderService} from "../services/AdminOrderService";
-import type {Order, OrderStatus} from "../domain/entities/Order";
+import type {OrderStatus} from "../domain/entities/Order";
 
 // Interface para las estadísticas en la UI
 export interface AdminOrderStatUI {

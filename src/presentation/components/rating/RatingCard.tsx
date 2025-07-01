@@ -37,7 +37,6 @@ const RatingCard: React.FC<RatingCardProps> = ({
 	userAvatar,
 	isVerifiedPurchase = false,
 	sellerResponse,
-	status = "approved",
 	reportReason,
 	onReply,
 	onReport,

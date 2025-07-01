@@ -1,6 +1,5 @@
 import type { 
   User,
-  UserRegistrationData,
   UserProfileUpdateData,
   UserPasswordUpdateData,
   UserListResponse

@@ -281,27 +281,30 @@ export class OrderServiceAdapter {
 					...response,
 
 					// Adaptaciones necesarias:
-					userId: response.user_id,
-					sellerId: response.seller_id,
-					paymentId: response.payment_id,
-					paymentMethod: response.payment_method,
-					paymentStatus: response.payment_status,
-					createdAt: response.created_at,
-					updatedAt: response.updated_at,
-					orderNumber: response.order_number,
-					shippingData: response.shipping_data,
+					userId: response.userId,
+					sellerId: response.sellerId,
+					paymentId: response.paymentId,
+					paymentMethod: response.paymentMethod,
+					paymentStatus: response.paymentStatus,
+					createdAt: response.createdAt,
+					updatedAt: response.updatedAt,
+					orderNumber: response.orderNumber,
+					shippingData: response.shippingData,
 
 					// Procesar items con el formato esperado
 					items:
 						response.items?.map((item) => ({
 							...item,
-							productId: item.product_id,
-							product: item.product || {
-								id: item.product_id,
-								name: item.product_name,
-								image: item.product_image,
-								sku: item.product_sku,
+							productId: item.productId,
+							product: {
+								name: item.product?.name || item.product_name || 'Unknown Product',
+								image: item.product?.image || item.product_image,
+								slug: item.product?.slug,
+								sku: item.product?.sku || item.product_sku,
 							},
+							product_name: item.product_name,
+							product_sku: item.product_sku,
+							product_image: item.product_image
 						})) || [],
 				};
 

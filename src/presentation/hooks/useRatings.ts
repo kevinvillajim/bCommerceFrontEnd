@@ -2,8 +2,6 @@
 import {useState, useCallback} from "react";
 import RatingService from "../../core/services/RatingService";
 import type {
-	Rating,
-	PendingRatingItem,
 	ProductRatingRequest,
 	SellerRatingRequest,
 	ProblemReportRequest,

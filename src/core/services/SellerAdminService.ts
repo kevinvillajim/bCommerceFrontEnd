@@ -1,7 +1,6 @@
 // src/core/services/SellerAdminService.ts
 import ApiClient from "../../infrastructure/api/apiClient";
 import {API_ENDPOINTS} from "../../constants/apiEndpoints";
-import type {Seller} from "../domain/entities/Seller";
 import SellerAdapter from "../../infrastructure/adapters/SellerAdapter";
 
 // Interfaces para los datos de creación y actualización

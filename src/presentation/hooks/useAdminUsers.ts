@@ -1,5 +1,5 @@
 // src/presentation/hooks/useAdminUsers.ts
-import {useState, useCallback, useEffect} from "react";
+import {useState, useCallback} from "react";
 import AdminUserService from "../../core/services/AdminUserService";
 import {extractErrorMessage} from "../../utils/errorHandler";
 

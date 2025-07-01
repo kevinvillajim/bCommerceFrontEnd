@@ -1,17 +1,11 @@
 // src/presentation/hooks/useAuth.ts
-import { useState, useEffect, useCallback, useContext } from 'react';
+import { useState, useCallback, useContext } from 'react';
 import { AuthContext } from '../contexts/AuthContext';
-import { AuthService } from '../../core/services/AuthService';
 import LoginUseCase from '../../core/useCases/user/LoginUseCase';
 import RegisterUseCase from '../../core/useCases/user/RegisterUseCase';
 import UpdateProfileUseCase from '../../core/useCases/user/UpdateProfileUseCase';
 import type { UserLoginData, UserRegistrationData, UserProfileUpdateData } from '../../core/domain/entities/User';
-import { LocalStorageService } from '../../infrastructure/services/LocalStorageService';
-import appConfig from '../../config/appConfig';
-
 // Crear instancias de servicios y casos de uso
-const authService = new AuthService();
-const storageService = new LocalStorageService();
 const loginUseCase = new LoginUseCase();
 const registerUseCase = new RegisterUseCase();
 const updateProfileUseCase = new UpdateProfileUseCase();

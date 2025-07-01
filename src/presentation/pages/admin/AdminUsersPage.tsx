@@ -1,5 +1,5 @@
 // src/presentation/pages/admin/AdminUsersPage.tsx
-import React, {useState, useEffect, useRef} from "react";
+import React, {useState, useEffect} from "react";
 import Table from "../../components/dashboard/Table";
 import {
 	User,
@@ -21,7 +21,6 @@ import type {AdminUserData} from "../../hooks/useAdminUsers";
  */
 const AdminUsersPage: React.FC = () => {
 	const {
-		users,
 		loading,
 		error,
 		pagination,

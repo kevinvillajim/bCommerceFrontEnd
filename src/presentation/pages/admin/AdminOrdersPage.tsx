@@ -17,7 +17,6 @@ import {
 	AlertTriangle,
 } from "lucide-react";
 import {Link} from "react-router-dom";
-import type {Order} from "../../../core/domain/entities/Order";
 import type {
 	AdminOrderUI,
 } from "../../../core/adapters/AdminOrderServiceAdapter";

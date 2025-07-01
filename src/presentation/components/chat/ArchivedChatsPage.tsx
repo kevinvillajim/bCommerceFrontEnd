@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Archive, MessageSquare, RefreshCw, ArrowLeft, RotateCcw, User, Store, Package } from 'lucide-react';
 
 interface Chat {

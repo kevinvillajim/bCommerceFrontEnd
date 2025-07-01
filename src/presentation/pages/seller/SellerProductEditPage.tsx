@@ -200,7 +200,7 @@ const SellerProductEditPage: React.FC = () => {
 						...prev,
 						name: product.name || "",
 						description: product.description || "",
-						short_description: product.short_description || "",
+						short_description: product.shortDescription || "",
 						price: product.price ? product.price.toString() : "",
 						stock: product.stock ? product.stock.toString() : "",
 						discount_percentage: product.discount_percentage

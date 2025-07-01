@@ -5,7 +5,6 @@ import appConfig from "../../config/appConfig";
 import {CategoryService} from "../../core/services/CategoryService";
 import type {
 	Category,
-	CategoryListResponse,
 } from "../../core/domain/entities/Category";
 
 // Instanciar el servicio de categorías

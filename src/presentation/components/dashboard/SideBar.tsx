@@ -1,6 +1,6 @@
 import React from "react";
 import type { ReactNode } from "react";
-import {NavLink, useLocation} from "react-router-dom";
+import {NavLink} from "react-router-dom";
 import {X} from "lucide-react";
 
 interface SidebarLinkProps {
@@ -84,7 +84,6 @@ const Sidebar: React.FC<SidebarProps> = ({
 	isOpen = true,
 	toggleSidebar = () => {},
 }) => {
-	const location = useLocation();
 
 	return (
 		<aside

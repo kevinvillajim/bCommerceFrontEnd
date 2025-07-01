@@ -22,7 +22,7 @@ import type {ExtendedProductFilterParams} from "../../types/ProductFilterParams"
 import {useAdminProducts} from "../../hooks/useAdminProducts";
 import {useAdminCategories} from "../../hooks/useAdminCategories";
 
-// Utilities corregidas
+// Utilities corregidas - USAR SOLO UNA FUENTE
 import {getProductMainImage} from "../../../utils/unifiedImageUtils";
 import {formatCurrency} from "../../../utils/formatters/formatCurrency";
 
@@ -255,6 +255,58 @@ const AdminProductsPage: React.FC = () => {
 		return category ? category.name : "Categoría desconocida";
 	};
 
+	/**
+	 * Componente de imagen mejorado con manejo de errores
+	 */
+	const ProductImage: React.FC<{product: Product}> = ({product}) => {
+		const [imageSrc, setImageSrc] = useState<string>(
+			getProductMainImage(product, true)
+		);
+		const [hasError, setHasError] = useState<boolean>(false);
+		const [errorCount, setErrorCount] = useState<number>(0);
+
+		useEffect(() => {
+			setImageSrc(getProductMainImage(product, true));
+			setHasError(false);
+			setErrorCount(0);
+		}, [product]);
+
+		const handleImageError = useCallback(() => {
+			console.warn(
+				`Error cargando imagen para producto ${product.id}:`,
+				imageSrc
+			);
+
+			// Evitar loops infinitos de error
+			if (errorCount >= 2) {
+				console.warn(
+					`Demasiados errores para producto ${product.id}, manteniendo placeholder`
+				);
+				return;
+			}
+
+			setErrorCount((prev) => prev + 1);
+
+			if (!hasError) {
+				setHasError(true);
+				// Intentar con placeholder pequeño
+				setImageSrc(getProductMainImage(null, true));
+			}
+		}, [imageSrc, hasError, errorCount, product.id]);
+
+		return (
+			<div className="flex-shrink-0 h-10 w-10 rounded-md bg-gray-200 flex items-center justify-center overflow-hidden">
+				<img
+					src={imageSrc}
+					alt={product.name}
+					className="h-10 w-10 object-cover"
+					onError={handleImageError}
+					loading="lazy"
+				/>
+			</div>
+		);
+	};
+
 	// Filtrar productos localmente para manejar filtros adicionales
 	const filteredProducts = products.filter((product) => {
 		// Filtro de stock bajo (ya que no se implementó en backend)
@@ -272,17 +324,7 @@ const AdminProductsPage: React.FC = () => {
 			sortable: true,
 			render: (product: Product) => (
 				<div className="flex items-center">
-					<div className="flex-shrink-0 h-10 w-10 rounded-md bg-gray-200 flex items-center justify-center overflow-hidden">
-						<img
-							src={getProductMainImage(product)}
-							alt={product.name}
-							className="h-10 w-10 object-cover"
-							onError={(e) => {
-								(e.target as HTMLImageElement).src =
-									"https://via.placeholder.com/100?text=Producto";
-							}}
-						/>
-					</div>
+					<ProductImage product={product} />
 					<div className="ml-4">
 						<div className="text-sm font-medium text-gray-900 flex items-center">
 							{product.name}
@@ -497,9 +539,7 @@ const AdminProductsPage: React.FC = () => {
 						} ${loadingAction === product.id ? "opacity-50 cursor-not-allowed" : ""}`}
 						title={product.published ? "Despublicar" : "Publicar"}
 					>
-						<CheckCircle
-							size={16}
-						/>
+						<CheckCircle size={16} />
 					</button>
 
 					{/* Botón para eliminar */}

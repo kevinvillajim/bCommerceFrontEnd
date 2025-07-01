@@ -1,4 +1,4 @@
-import React, {useState, useRef, useEffect} from "react";
+import React, {useState, useEffect} from "react";
 import {useNavigate} from "react-router-dom";
 import {useCart} from "../../hooks/useCart";
 import {DatafastService} from "../../../core/services/DatafastService";
@@ -393,57 +393,6 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 			NotificationType.INFO,
 			"Complete los datos de su tarjeta en el formulario y haga clic en 'Pagar'. Nota: En Fase 1, las transacciones son simuladas."
 		);
-	};
-
-	// Manejar resultado real del widget (cuando viene un resourcePath real)
-	const handleWidgetResult = async (resourcePath: string) => {
-		if (!checkoutData) {
-			showNotification(NotificationType.ERROR, "No hay datos de checkout");
-			return;
-		}
-
-		setIsLoading(true);
-		try {
-			console.log("Procesando resultado real del widget...");
-
-			const verifyResponse = await datafastService.handleDatafastResult(
-				resourcePath,
-				checkoutData.transaction_id
-			);
-
-			console.log("Respuesta de verificación real:", verifyResponse);
-
-			if (verifyResponse.success && verifyResponse.data) {
-				// Pago exitoso
-				clearCart();
-				setShowWidget(false);
-
-				showNotification(
-					NotificationType.SUCCESS,
-					"¡Pago completado exitosamente!"
-				);
-
-				onSuccess?.(verifyResponse.data);
-				navigate("/orders");
-			} else if (verifyResponse.is_phase_1_error) {
-				// Error típico de Fase 1 - mostrar mensaje informativo
-				showNotification(
-					NotificationType.INFO,
-					verifyResponse.message ||
-						"No se completó un pago real. Use 'Simular Pago Exitoso' para probar el flujo."
-				);
-			} else {
-				throw new Error(verifyResponse.message || "Pago no completado");
-			}
-		} catch (error) {
-			console.error("Error al procesar resultado del widget:", error);
-			const errorMessage =
-				error instanceof Error ? error.message : "Error al verificar pago";
-			showNotification(NotificationType.ERROR, errorMessage);
-			onError?.(errorMessage);
-		} finally {
-			setIsLoading(false);
-		}
 	};
 
 	if (showWidget) {

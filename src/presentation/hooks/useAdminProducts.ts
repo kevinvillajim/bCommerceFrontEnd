@@ -87,23 +87,17 @@ export const useAdminProducts = () => {
 			return {} as Product;
 		}
 
-		console.log("🔄 Adaptando producto desde API:", {
-			id: apiProduct.id,
-			name: apiProduct.name,
-			featured: apiProduct.featured,
-			published: apiProduct.published,
-			featured_type: typeof apiProduct.featured,
-			published_type: typeof apiProduct.published,
-		});
+		console.log("🔄 Adaptando producto desde API:", apiProduct);
 
-		// Procesar imágenes
+		// Procesar imágenes - CORREGIDO para el formato real del backend
 		let processedImages: string[] = [];
+
+		// Prioridad 1: main_image (formato actual del backend)
 		if (apiProduct.main_image) {
 			processedImages = [apiProduct.main_image];
-		} else if (
-			Array.isArray(apiProduct.images) &&
-			apiProduct.images.length > 0
-		) {
+		}
+		// Prioridad 2: array images si existe
+		else if (Array.isArray(apiProduct.images) && apiProduct.images.length > 0) {
 			processedImages = apiProduct.images
 				.map((img: any) => {
 					if (typeof img === "string") return img;
@@ -120,16 +114,19 @@ export const useAdminProducts = () => {
 					return "";
 				})
 				.filter(Boolean);
-		} else if (apiProduct.image) {
+		}
+		// Prioridad 3: campo image individual
+		else if (apiProduct.image) {
 			processedImages = [apiProduct.image];
 		}
 
-		// Procesar tags
+		// Procesar tags - el backend devuelve arrays con strings JSON
 		let processedTags: string[] = [];
 		if (Array.isArray(apiProduct.tags)) {
 			apiProduct.tags.forEach((tag: any) => {
 				if (typeof tag === "string") {
 					try {
+						// Si es un string JSON, parsearlo
 						const parsed = JSON.parse(tag);
 						if (Array.isArray(parsed)) {
 							processedTags.push(...parsed);
@@ -137,24 +134,12 @@ export const useAdminProducts = () => {
 							processedTags.push(tag);
 						}
 					} catch {
+						// Si no es JSON válido, agregarlo directamente
 						processedTags.push(tag);
 					}
 				}
 			});
 		}
-
-		// CORREGIR: Asegurar que featured y published sean booleanos
-		const featured = Boolean(
-			apiProduct.featured === true ||
-				apiProduct.featured === 1 ||
-				apiProduct.featured === "1"
-		);
-		const published = Boolean(
-			apiProduct.published === true ||
-				apiProduct.published === 1 ||
-				apiProduct.published === "1" ||
-				apiProduct.published !== false
-		);
 
 		const adaptedProduct: Product = {
 			id: apiProduct.id,
@@ -179,11 +164,8 @@ export const useAdminProducts = () => {
 			sku: apiProduct.sku,
 			attributes: apiProduct.attributes,
 			images: processedImages,
-
-			// CORREGIR: Usar las variables procesadas
-			featured: featured,
-			published: published,
-
+			featured: Boolean(apiProduct.featured),
+			published: Boolean(apiProduct.published ?? true), // Por defecto true si no viene
 			status: apiProduct.status || "active",
 			viewCount: apiProduct.view_count || 0,
 			salesCount: apiProduct.sales_count || 0,
@@ -208,10 +190,8 @@ export const useAdminProducts = () => {
 		console.log("✅ Producto adaptado:", {
 			id: adaptedProduct.id,
 			name: adaptedProduct.name,
-			featured: adaptedProduct.featured,
 			published: adaptedProduct.published,
-			featured_type: typeof adaptedProduct.featured,
-			published_type: typeof adaptedProduct.published,
+			featured: adaptedProduct.featured,
 			status: adaptedProduct.status,
 			images: adaptedProduct.images,
 			tags: adaptedProduct.tags,
@@ -474,17 +454,10 @@ export const useAdminProducts = () => {
 					setProducts((prev) =>
 						prev.map((p) => (p.id === id ? {...p, featured} : p))
 					);
-
-					// Actualizar detalle si coincide
-					if (productDetail?.id === id) {
-						setProductDetail((prev) => (prev ? {...prev, featured} : prev));
-					}
-
-					// NO llamar a loadData() aquí ya que actualizamos el estado directamente
-					// clearProductCache(); // Solo limpiar caché
-
+					// Limpiar caché relacionada
+					clearProductCache();
 					console.log(
-						`✅ Featured actualizado correctamente para producto ${id} a ${featured}`
+						`✅ Featured actualizado correctamente para producto ${id}`
 					);
 				} else {
 					console.error(`❌ Error al actualizar featured para producto ${id}`);
@@ -502,7 +475,7 @@ export const useAdminProducts = () => {
 				return false;
 			}
 		},
-		[productDetail]
+		[]
 	);
 
 	/**
@@ -525,17 +498,10 @@ export const useAdminProducts = () => {
 					setProducts((prev) =>
 						prev.map((p) => (p.id === id ? {...p, published} : p))
 					);
-
-					// Actualizar detalle si coincide
-					if (productDetail?.id === id) {
-						setProductDetail((prev) => (prev ? {...prev, published} : prev));
-					}
-
-					// NO llamar a loadData() aquí ya que actualizamos el estado directamente
-					// clearProductCache(); // Solo limpiar caché
-
+					// Limpiar caché relacionada
+					clearProductCache();
 					console.log(
-						`✅ Published actualizado correctamente para producto ${id} a ${published}`
+						`✅ Published actualizado correctamente para producto ${id}`
 					);
 				} else {
 					console.error(`❌ Error al actualizar published para producto ${id}`);
@@ -553,7 +519,7 @@ export const useAdminProducts = () => {
 				return false;
 			}
 		},
-		[productDetail]
+		[]
 	);
 
 	/**
@@ -573,17 +539,10 @@ export const useAdminProducts = () => {
 					setProducts((prev) =>
 						prev.map((p) => (p.id === id ? {...p, status} : p))
 					);
-
-					// Actualizar detalle si coincide
-					if (productDetail?.id === id) {
-						setProductDetail((prev) => (prev ? {...prev, status} : prev));
-					}
-
-					// NO llamar a loadData() aquí ya que actualizamos el estado directamente
-					// clearProductCache(); // Solo limpiar caché
-
+					// Limpiar caché relacionada
+					clearProductCache();
 					console.log(
-						`✅ Status actualizado correctamente para producto ${id} a ${status}`
+						`✅ Status actualizado correctamente para producto ${id}`
 					);
 				} else {
 					console.error(`❌ Error al actualizar status para producto ${id}`);
@@ -599,7 +558,7 @@ export const useAdminProducts = () => {
 				return false;
 			}
 		},
-		[productDetail]
+		[]
 	);
 
 	/**

@@ -1,7 +1,6 @@
 import React, {useState} from "react";
 import {Link} from "react-router-dom";
 import {
-	Star,
 	Clock,
 	Search,
 	Filter,
@@ -18,7 +17,6 @@ import {
 import Table from "../../components/dashboard/Table";
 import RatingStars from "../../components/common/RatingStars";
 import {formatDate} from "../../../utils/formatters/formatDate";
-import RatingCard from "../../components/rating/RatingCard";
 import RatingsSummary from "../../components/rating/RatingsSummary";
 import {useSellerRatings} from "../../hooks/useSellerRatings";
 import type {ExtendedRating} from "../../types/ratingTypes";

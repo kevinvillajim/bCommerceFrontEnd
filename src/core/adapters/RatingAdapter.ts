@@ -1,4 +1,3 @@
-import type {Rating, RatingResponse} from "../services/RatingService";
 import type {
 	ExtendedRating,
 	RatingResponse as UIRatingResponse,

@@ -1,9 +1,8 @@
 // src/presentation/pages/account/PendingRatingsPage.tsx
 import React, {useEffect, useState} from "react";
 import {Link} from "react-router-dom";
-import {Star, Package, Store, ShoppingBag, Clock, Search} from "lucide-react";
+import {ShoppingBag, Search} from "lucide-react";
 
-import RatingService from "../../../core/services/RatingService";
 import PendingRatingsAdapter from "../../../core/adapters/PendingRatingsAdapter";
 import type {PendingRatingItem} from "../../../core/services/RatingService";
 import type {OrderGroup} from "../../../core/adapters/PendingRatingsAdapter";

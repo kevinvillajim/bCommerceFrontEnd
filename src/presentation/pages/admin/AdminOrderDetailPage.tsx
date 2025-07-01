@@ -8,7 +8,6 @@ import {
 	Truck,
 	Clock,
 	CreditCard,
-	FileText,
 	CheckCircle,
 	XCircle,
 	ArrowLeft,

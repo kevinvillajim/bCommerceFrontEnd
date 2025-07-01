@@ -1,7 +1,7 @@
 import {useState, useCallback, useEffect} from "react";
 import SellerAdminService from "../../core/services/SellerAdminService";
 import type {
-	SellerFilters,
+	SellerFilter,
 	CreateSellerData,
 	UpdateSellerData,
 } from "../../core/services/SellerAdminService";
@@ -25,7 +25,7 @@ export const useSellerAdmin = () => {
 	 * Obtener la lista de vendedores
 	 */
 	const fetchSellers = useCallback(
-		async (filters: SellerFilters = {}) => {
+		async (filters: SellerFilter = {}) => {
 			setLoading(true);
 			setError(null);
 

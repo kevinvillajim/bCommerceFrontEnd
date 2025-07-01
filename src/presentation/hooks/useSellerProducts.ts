@@ -18,7 +18,7 @@ const productService = new ProductService();
  * Hook personalizado para gestionar los productos del vendedor
  */
 export const useSellerProducts = () => {
-	const {user, roleInfo} = useAuth();
+	const {user} = useAuth();
 	const [loading, setLoading] = useState<boolean>(false);
 	const [error, setError] = useState<string | null>(null);
 	const [products, setProducts] = useState<Product[]>([]);
@@ -136,8 +136,8 @@ export const useSellerProducts = () => {
 				formData.append("description", data.description);
 
 				// Añadir descripción corta si existe
-				if (data.short_description) {
-					formData.append("short_description", data.short_description);
+				if (data.shortDescription) {
+					formData.append("short_description", data.shortDescription);
 				}
 
 				// Convertir números a string explícitamente
@@ -282,8 +282,8 @@ export const useSellerProducts = () => {
 				// Añadir campos básicos si existen
 				if (data.name) formData.append("name", data.name);
 				if (data.description) formData.append("description", data.description);
-				if (data.short_description)
-					formData.append("short_description", data.short_description);
+				if (data.shortDescription)
+					formData.append("short_description", data.shortDescription);
 
 				// Convertir números a string explícitamente
 				if (data.price !== undefined)

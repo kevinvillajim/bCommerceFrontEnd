@@ -1,7 +1,7 @@
 // src/core/services/ChatService.ts - VERSIÓN CORREGIDA
 import ApiClient from "../../infrastructure/api/apiClient";
 import {API_ENDPOINTS} from "../../constants/apiEndpoints";
-import type {Chat, Message, ContentFilterResponse} from "../domain/entities/Chat";
+import type {Chat, Message} from "../domain/entities/Chat";
 
 /**
  * Interfaces para respuestas de API - CORREGIDAS
