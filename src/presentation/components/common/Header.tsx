@@ -23,7 +23,7 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({
 	logo = {
 		img: undefined,
-		name: "B-Commerce",
+		name: "Comersia",
 	},
 	navLinks = [
 		{text: "Inicio", to: "/"},

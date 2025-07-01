@@ -64,8 +64,8 @@ const ContactPage = () => {
       icon: <Mail size={24} />,
       title: "Escríbenos",
       details: [
-        "info@bcommerce.com",
-        "soporte@bcommerce.com"
+        "info@comersia.com",
+        "soporte@comersia.com"
       ]
     },
     {

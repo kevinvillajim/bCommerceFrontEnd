@@ -5,7 +5,7 @@ import {environment} from './environment';
 
 // App configuration
 const appConfig = {
-  appName: 'BCommerce',
+  appName: 'Comersia',
   api: {
     baseUrl: environment.apiBaseUrl,
     timeout: 15000, // 15 segundos de espera maxima

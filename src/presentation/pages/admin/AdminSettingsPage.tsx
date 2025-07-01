@@ -145,11 +145,11 @@ const AdminSettingsPage: React.FC = () => {
 
 	// Estado para los formularios
 	const [generalSettings, setGeneralSettings] = useState({
-		siteName: "B-Commerce",
+		siteName: "Comersia",
 		siteDescription:
 			"Plataforma de comercio electrónico especializada en Ecuador",
-		contactEmail: "admin@bcommerce.com",
-		adminEmail: "admin@bcommerce.com",
+		contactEmail: "admin@comersia.app",
+		adminEmail: "admin@comersia.app",
 		itemsPerPage: "12",
 		maintenanceMode: false,
 		enableRegistration: true,
@@ -161,11 +161,11 @@ const AdminSettingsPage: React.FC = () => {
 	const [emailSettings, setEmailSettings] = useState({
 		smtpHost: "smtp.mailserver.com",
 		smtpPort: "587",
-		smtpUsername: "noreply@bcommerce.com",
+		smtpUsername: "noreply@comersia.app",
 		smtpPassword: "************",
 		smtpEncryption: "tls",
-		senderName: "B-Commerce System",
-		senderEmail: "noreply@bcommerce.com",
+		senderName: "Commersia System",
+		senderEmail: "noreply@comersia.app",
 		notificationEmails: true,
 		welcomeEmail: true,
 		orderConfirmationEmail: true,
@@ -412,10 +412,10 @@ const AdminSettingsPage: React.FC = () => {
 
 			// Reset settings to default values (in a real app, you'd get these from your backend)
 			setGeneralSettings({
-				siteName: "B-Commerce",
+				siteName: "Comersia",
 				siteDescription: "Plataforma de comercio electrónico",
-				contactEmail: "contact@bcommerce.com",
-				adminEmail: "admin@bcommerce.com",
+				contactEmail: "contact@comersia.com",
+				adminEmail: "admin@comersia.com",
 				itemsPerPage: "12",
 				maintenanceMode: false,
 				enableRegistration: true,

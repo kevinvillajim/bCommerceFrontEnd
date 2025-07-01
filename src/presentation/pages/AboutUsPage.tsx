@@ -265,8 +265,8 @@ const AboutUs: React.FC = () => {
             }}>
               <Mail size={32} className="text-primary-600 mb-4" />
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Email</h3>
-              <p className="text-gray-600 text-center">info@bcommerce.com</p>
-              <p className="text-gray-600 text-center">soporte@bcommerce.com</p>
+              <p className="text-gray-600 text-center">info@comersia.com</p>
+              <p className="text-gray-600 text-center">soporte@comersia.com</p>
             </div>
           </div>
         </div>

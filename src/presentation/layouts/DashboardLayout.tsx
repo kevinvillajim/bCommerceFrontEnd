@@ -30,7 +30,7 @@ const DashboardLayout: React.FC = () => {
       >
         <div className="p-4 border-b border-primary-700">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold">B-Commerce</h2>
+            <h2 className="text-xl font-bold">Comersia</h2>
             <button 
               className="md:hidden text-white p-2" 
               onClick={toggleSidebar}

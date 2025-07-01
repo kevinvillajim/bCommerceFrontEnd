@@ -1,5 +1,5 @@
 /**
- * API endpoints for BCommerce Backend
+ * API endpoints for Comersia Backend
  * Base URL configured in environment.ts
  */
 

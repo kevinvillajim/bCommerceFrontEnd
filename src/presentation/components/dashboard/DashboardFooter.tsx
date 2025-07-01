@@ -29,13 +29,13 @@ const DashboardFooter: React.FC<DashboardFooterProps> = ({
 	const getFooterText = () => {
 		switch (type) {
 			case "admin":
-				return "Panel de Administración BCommerce";
+				return "Panel de Administración Comersia";
 			case "seller":
-				return "Portal de Vendedor BCommerce";
+				return "Portal de Vendedor Comersia";
 			case "customer":
-				return "BCommerce";
+				return "Comersia";
 			default:
-				return "BCommerce";
+				return "Comersia";
 		}
 	};
 

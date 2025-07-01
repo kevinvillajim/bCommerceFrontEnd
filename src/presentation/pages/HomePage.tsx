@@ -29,7 +29,7 @@ const HomePage: React.FC = () => {
 
   const slidesData = [
   {
-    title: "Bienvenido a B-Commerce",
+    title: "Bienvenido a Comersia",
     description: "Su solución integral para todas tus necesidades tecnológicas.",
     buttonText: "Comprar Ahora",
     buttonAction: () => console.log("Shop Now clicked"),

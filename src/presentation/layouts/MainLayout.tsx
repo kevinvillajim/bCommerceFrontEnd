@@ -10,8 +10,8 @@ import Footer from '../components/common/Footer.jsx'
 const MainLayout: React.FC = () => {
 
   const logo = {
-    img: "https://bconnect-ec.com/logo.png",
-    name: "B-Commerce"
+    img: "",
+    name: "Comersia"
   }
   const navLinks = [
     { text: "Inicio", to: "/" },

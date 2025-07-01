@@ -21,7 +21,7 @@ interface FooterProps {
 const Footer: React.FC<FooterProps> = ({
   logo = {
     img: undefined,
-    name: "B-Commerce"
+    name: "Comersia"
   },
   quickLinks = [
     { text: "Inicio", to: "/" },
@@ -146,7 +146,7 @@ const Footer: React.FC<FooterProps> = ({
                 </li>
                 <li className="flex items-center">
                   <Mail size={20} className="text-primary-500 mr-3 flex-shrink-0" />
-                  <span className="text-gray-400">info@bcommerce.com</span>
+                  <span className="text-gray-400">info@comersia.app</span>
                 </li>
               </ul>
               

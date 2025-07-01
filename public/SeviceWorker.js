@@ -1,5 +1,5 @@
 // Service Worker para mejorar rendimiento y experiencia offline
-const CACHE_NAME = "bcommerce-cache-v1";
+const CACHE_NAME = "comersia-cache-v1";
 
 // Recursos estáticos para cachear en instalación
 const STATIC_ASSETS = [

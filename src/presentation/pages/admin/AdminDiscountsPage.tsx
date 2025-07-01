@@ -236,7 +236,7 @@ const AdminDiscountsPage: React.FC = () => {
 
 	// Generar código aleatorio
 	const generateRandomCode = () => {
-		const prefix = ["PROMO", "DESCUENTO", "OFERTA", "REGALO", "BCOMMERCE"][
+		const prefix = ["PROMO", "DESCUENTO", "OFERTA", "REGALO", "COMERSIA"][
 			Math.floor(Math.random() * 5)
 		];
 		const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
