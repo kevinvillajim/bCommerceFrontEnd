@@ -85,6 +85,15 @@ const ProductItemPage: React.FC = () => {
 	};
 
 	const handleAddToCart = async () => {
+		// ✅ VERIFICACIÓN DE NULL AGREGADA
+		if (!product) {
+			showNotification(
+				NotificationType.ERROR,
+				"Error: No se pudo cargar la información del producto"
+			);
+			return;
+		}
+
 		console.log(`Añadido al carrito: ${quantity} unidades de ${product.name}`);
 
 		if (!product.is_in_stock) {
@@ -119,6 +128,15 @@ const ProductItemPage: React.FC = () => {
 	};
 
 	const handleAddToWishlist = async () => {
+		// ✅ VERIFICACIÓN DE NULL AGREGADA
+		if (!product) {
+			showNotification(
+				NotificationType.ERROR,
+				"Error: No se pudo cargar la información del producto"
+			);
+			return;
+		}
+
 		console.log(`Añadido a favoritos: ${product.name}`);
 
 		try {
@@ -145,6 +163,15 @@ const ProductItemPage: React.FC = () => {
 	};
 
 	const handleChatWithSeller = async () => {
+		// ✅ VERIFICACIÓN DE NULL AGREGADA
+		if (!product) {
+			showNotification(
+				NotificationType.ERROR,
+				"Error: No se pudo cargar la información del producto"
+			);
+			return;
+		}
+
 		try {
 			let sellerId;
 
@@ -154,7 +181,7 @@ const ProductItemPage: React.FC = () => {
 				console.log(`Usando seller_id directo del producto: ${sellerId}`);
 			}
 			// Caso 2: El producto tiene objeto seller con id
-			else if (product.seller && product.seller.id) {
+			else if (product.seller?.id) {
 				sellerId = product.seller.id;
 				console.log(`Usando seller.id del producto: ${sellerId}`);
 			}
@@ -170,12 +197,12 @@ const ProductItemPage: React.FC = () => {
 						`/sellers/by-user/${product.user_id}`
 					);
 
-					if (response && response.data && response.data.id) {
+					if (response?.data?.id) {
 						sellerId = response.data.id;
 						console.log(
 							`Convertido user_id ${product.user_id} a seller_id ${sellerId}`
 						);
-					} else if (response && response.data && response.data.seller_id) {
+					} else if (response?.data?.seller_id) {
 						sellerId = response.data.seller_id;
 						console.log(
 							`Convertido user_id ${product.user_id} a seller_id ${sellerId}`
@@ -404,9 +431,7 @@ const ProductItemPage: React.FC = () => {
 								{product.seller && (
 									<div className="flex items-center mb-2">
 										<span className="text-sm bg-primary-50 text-primary-700 px-2 py-0.5 rounded font-medium">
-											{product.seller.name ||
-												product.seller.storeName ||
-												"Vendedor"}
+											{product.seller.name || "Vendedor"}
 										</span>
 									</div>
 								)}

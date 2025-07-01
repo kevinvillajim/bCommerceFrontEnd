@@ -10,9 +10,11 @@ import SellerOrderServiceAdapter from "../../../core/adapters/SellerOrderService
 import ShippingServiceAdapter from "../../../core/adapters/ShippingServiceAdapter";
 import ShippingFormModal from "../../components/shipping/ShippingFormModal";
 import type {ShippingFormData} from "../../components/shipping/ShippingFormModal";
-import type {
-	OrderDetail,
-	OrderStatus,
+import {
+	canTransitionTo,
+	isValidOrderStatus,
+	type OrderDetail,
+	type OrderStatus,
 } from "../../../core/domain/entities/Order";
 
 const OrderDetailPage: React.FC = () => {
@@ -54,6 +56,12 @@ const OrderDetailPage: React.FC = () => {
 	const handleStatusChange = async (newStatus: OrderStatus) => {
 		if (!id || !order) return;
 
+		// ✅ VALIDACIÓN DE TRANSICIÓN AGREGADA
+		if (!canTransitionTo(order.status, newStatus)) {
+			setError(`No se puede cambiar de "${order.status}" a "${newStatus}"`);
+			return;
+		}
+
 		// Si el nuevo estado es "shipped", abrir el modal de envío en lugar de procesar directamente
 		if (newStatus === "shipped") {
 			setIsShippingModalOpen(true);
@@ -65,6 +73,11 @@ const OrderDetailPage: React.FC = () => {
 		setError(null);
 
 		try {
+			// ✅ VERIFICACIÓN DE TIPO ANTES DE LLAMAR AL ADAPTADOR
+			if (!isValidOrderStatus(newStatus)) {
+				throw new Error(`Estado inválido: ${newStatus}`);
+			}
+
 			// Usar el método updateOrderStatus del adaptador de vendedores
 			const success = await sellerOrderAdapter.updateOrderStatus(id, newStatus);
 
@@ -165,6 +178,8 @@ const OrderDetailPage: React.FC = () => {
 				return "bg-green-100 text-green-800";
 			case "cancelled":
 				return "bg-red-100 text-red-800";
+			case "rejected": // ✅ CASO AGREGADO
+				return "bg-red-200 text-red-900";
 			default:
 				return "bg-gray-100 text-gray-800";
 		}
@@ -186,6 +201,8 @@ const OrderDetailPage: React.FC = () => {
 				return "Completado";
 			case "cancelled":
 				return "Cancelado";
+			case "rejected": // ✅ CASO AGREGADO
+				return "Rechazado";
 			default:
 				return "Desconocido";
 		}
@@ -221,19 +238,19 @@ const OrderDetailPage: React.FC = () => {
 		}
 	};
 
-	const canUpdateToStatus = (currentStatus: string, newStatus: string) => {
-		// Lógica para determinar si se puede cambiar de un estado a otro
-		const statusFlow: Record<string, string[]> = {
-			pending: ["processing", "cancelled"],
-			processing: ["shipped", "cancelled"],
-			shipped: ["delivered", "cancelled"],
-			delivered: ["completed"],
-			completed: [],
-			cancelled: [],
-			paid: ["processing", "cancelled"],
-		};
+	const canUpdateToStatus = (
+		currentStatus: string,
+		newStatus: string
+	): boolean => {
+		// ✅ USAR LA FUNCIÓN HELPER IMPORTADA
+		if (!isValidOrderStatus(currentStatus) || !isValidOrderStatus(newStatus)) {
+			return false;
+		}
 
-		return statusFlow[currentStatus]?.includes(newStatus) || false;
+		return canTransitionTo(
+			currentStatus as OrderStatus,
+			newStatus as OrderStatus
+		);
 	};
 
 	// Función para calcular subtotal

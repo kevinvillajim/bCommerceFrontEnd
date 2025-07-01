@@ -176,29 +176,44 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 				const cartData: ShoppingCart = {
 					id: response.data.id,
 					total: response.data.total,
-					items: response.data.items.map((item) => ({
-						id: item.id,
-						productId: item.product.id,
-						quantity: item.quantity,
-						price: item.price,
-						subtotal: item.subtotal,
-						attributes: item.attributes,
-						product: {
-							// ✅ CORREGIDO - Usar valores seguros con fallbacks
-							id: item.product.id,
-							name: item.product.name,
-							slug: item.product.slug,
-							price: item.product.price,
-							final_price: item.product.final_price || item.product.price, // ✅ CORREGIDO
-							discount_percentage: item.product.discount_percentage || 0, // ✅ CORREGIDO
-							rating: item.product.rating || 0, // ✅ CORREGIDO
-							rating_count: item.product.rating_count || 0, // ✅ CORREGIDO
-							image: item.product.main_image || item.product.image,
-							stockAvailable: item.product.stock,
-							sellerId: item.product.seller_id || item.product.sellerId,
-							seller_id: item.product.seller_id,
-						},
-					})),
+					items: response.data.items.map((item) => {
+						// ✅ ACCESO DEFENSIVO A LAS PROPIEDADES DEL PRODUCTO
+						const product = item.product || {};
+
+						return {
+							id: item.id,
+							productId: product.id || 0,
+							quantity: item.quantity,
+							price: item.price,
+							subtotal: item.subtotal,
+							attributes: item.attributes,
+							product: {
+								id: product.id || 0,
+								name: product.name || "Producto sin nombre",
+								slug: product.slug,
+								price: product.price || 0,
+								// ✅ ACCESO SEGURO CON VERIFICACIONES EXPLÍCITAS
+								final_price: (product as any).final_price ?? product.price ?? 0,
+								discount_percentage: (product as any).discount_percentage ?? 0,
+								rating: (product as any).rating ?? 0,
+								rating_count: (product as any).rating_count ?? 0,
+								// ✅ GESTIÓN SEGURA DE IMÁGENES
+								image: (product as any).main_image || product.image || "",
+								main_image: (product as any).main_image || product.image || "",
+								stockAvailable: product.stock || 0,
+								// ✅ GESTIÓN SEGURA DE SELLER ID
+								sellerId:
+									product.seller_id ||
+									product.sellerId ||
+									(product as any).user_id,
+								seller_id: product.seller_id || (product as any).user_id,
+								seller: product.seller,
+								user_id: (product as any).user_id,
+								stock: product.stock || 0,
+								is_in_stock: (product as any).is_in_stock ?? true,
+							},
+						};
+					}),
 					item_count: response.data.item_count || 0,
 				};
 

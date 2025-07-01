@@ -27,6 +27,7 @@ export interface CartItem {
 		name: string;
 		slug?: string;
 		price: number;
+		// ✅ PROPIEDADES NECESARIAS PARA EL CARRITO
 		final_price?: number;
 		discount_percentage?: number;
 		rating?: number;
@@ -41,7 +42,9 @@ export interface CartItem {
 			storeName?: string;
 		};
 		user_id?: number;
-		stock?: number; // AGREGADO
+		stock?: number;
+		// ✅ CAMPOS ADICIONALES PARA COMPATIBILIDAD
+		is_in_stock?: boolean;
 	};
 }
 
@@ -83,21 +86,27 @@ export interface ShoppingCartResponse {
 export interface CartItemResponse {
 	id: number;
 	product: {
-		main_image: string | undefined;
 		id: number;
 		name: string;
 		price: number;
+		// ✅ CAMPOS OBLIGATORIOS AGREGADOS
+		final_price?: number;
+		discount_percentage?: number;
+		rating?: number;
+		rating_count?: number;
+		// ✅ CAMPOS DE IMAGEN
+		main_image?: string;
 		image?: string;
+		// ✅ CAMPOS DE STOCK Y VENDEDOR
 		slug?: string;
 		stock?: number;
-		sellerId?: number; // Añadido para asegurar que el seller_id esté disponible
-		seller_id?: number; // Alternativa en snake_case por si la API lo devuelve así
+		sellerId?: number;
+		seller_id?: number;
 		seller?: {
-			// Estructura alternativa por si la API incluye un objeto seller
 			id: number;
 			storeName?: string;
 		};
-		user_id?: number; // Algunos sistemas usan user_id como seller_id
+		user_id?: number;
 	};
 	quantity: number;
 	price: number;

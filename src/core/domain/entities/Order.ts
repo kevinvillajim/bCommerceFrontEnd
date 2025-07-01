@@ -155,12 +155,51 @@ export interface OrderStats {
 export type OrderStatus =
 	| "pending"
 	| "processing"
-	| "paid" // Añadido para compatibilidad
+	| "paid"
 	| "shipped"
 	| "delivered"
 	| "completed"
 	| "cancelled"
-	| "rejected"; // ✅ AÑADIDO - Estado faltante
+	| "rejected";
+
+export const isValidOrderStatus = (status: string): status is OrderStatus => {
+	const validStatuses: OrderStatus[] = [
+		"pending",
+		"processing",
+		"paid",
+		"shipped",
+		"delivered",
+		"completed",
+		"cancelled",
+		"rejected",
+	];
+	return validStatuses.includes(status as OrderStatus);
+};
+
+export const getValidTransitions = (
+	currentStatus: OrderStatus
+): OrderStatus[] => {
+	const transitions: Record<OrderStatus, OrderStatus[]> = {
+		pending: ["processing", "cancelled", "rejected"],
+		processing: ["shipped", "cancelled", "rejected"],
+		paid: ["processing", "shipped", "cancelled", "rejected"],
+		shipped: ["delivered", "cancelled"],
+		delivered: ["completed"],
+		completed: [],
+		cancelled: [],
+		rejected: [],
+	};
+
+	return transitions[currentStatus] || [];
+};
+
+// ✅ FUNCIÓN HELPER PARA VERIFICAR SI UNA TRANSICIÓN ES VÁLIDA
+export const canTransitionTo = (
+	currentStatus: OrderStatus,
+	newStatus: OrderStatus
+): boolean => {
+	return getValidTransitions(currentStatus).includes(newStatus);
+};
 
 /**
  * Payment method type
