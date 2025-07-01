@@ -5,7 +5,7 @@ import { API_ENDPOINTS } from "../../constants/apiEndpoints";
 import type {
 	Product,
 	ProductDetail,
-	ProductFilterParams,
+	ProductCreationData,
 	ProductListResponse,
 } from "../domain/entities/Product";
 import type { ExtendedProductFilterParams } from "../../presentation/types/ProductFilterParams";
@@ -18,15 +18,18 @@ export class ProductService {
 		filterParams?: ExtendedProductFilterParams
 	): Promise<ProductListResponse | null> {
 		try {
-			console.log("📤 ProductService: Enviando petición con parámetros:", filterParams);
-			
+			console.log(
+				"📤 ProductService: Enviando petición con parámetros:",
+				filterParams
+			);
+
 			const response = await ApiClient.get<ProductListResponse>(
 				API_ENDPOINTS.PRODUCTS.LIST,
 				filterParams
 			);
-			
+
 			console.log("📥 ProductService: Respuesta del servidor:", response);
-			
+
 			return response;
 		} catch (error) {
 			console.error("❌ Error en ProductService.getProducts:", error);
@@ -35,11 +38,98 @@ export class ProductService {
 	}
 
 	/**
+	 * Crea un nuevo producto
+	 */
+	async createProduct(data: ProductCreationData): Promise<Product> {
+		try {
+			console.log("📤 ProductService: Creando producto:", data);
+
+			const formData = new FormData();
+
+			// Campos básicos
+			formData.append("name", data.name);
+			formData.append("description", data.description);
+			formData.append("price", String(data.price));
+			formData.append("stock", String(data.stock));
+			formData.append("category_id", String(data.category_id));
+
+			// Campos opcionales
+			if (data.shortDescription)
+				formData.append("short_description", data.shortDescription);
+			if (data.weight !== undefined)
+				formData.append("weight", String(data.weight));
+			if (data.width !== undefined)
+				formData.append("width", String(data.width));
+			if (data.height !== undefined)
+				formData.append("height", String(data.height));
+			if (data.depth !== undefined)
+				formData.append("depth", String(data.depth));
+			if (data.dimensions) formData.append("dimensions", data.dimensions);
+			if (data.sku) formData.append("sku", data.sku);
+			if (data.status) formData.append("status", data.status);
+			if (data.featured !== undefined)
+				formData.append("featured", String(data.featured));
+			if (data.published !== undefined)
+				formData.append("published", String(data.published));
+			if (data.discount_percentage !== undefined) {
+				formData.append(
+					"discount_percentage",
+					String(data.discount_percentage)
+				);
+			}
+
+			// Arrays
+			if (data.colors) {
+				const colorsValue =
+					typeof data.colors === "string"
+						? data.colors
+						: JSON.stringify(data.colors);
+				formData.append("colors", colorsValue);
+			}
+			if (data.sizes) {
+				const sizesValue =
+					typeof data.sizes === "string"
+						? data.sizes
+						: JSON.stringify(data.sizes);
+				formData.append("sizes", sizesValue);
+			}
+			if (data.tags) {
+				const tagsValue =
+					typeof data.tags === "string" ? data.tags : JSON.stringify(data.tags);
+				formData.append("tags", tagsValue);
+			}
+
+			// Atributos
+			if (data.attributes && Object.keys(data.attributes).length > 0) {
+				formData.append("attributes", JSON.stringify(data.attributes));
+			}
+
+			// Imágenes
+			if (data.images && data.images.length > 0) {
+				data.images.forEach((file, index) => {
+					formData.append(`images[${index}]`, file);
+				});
+			}
+
+			const response = await ApiClient.uploadFile<Product>(
+				API_ENDPOINTS.PRODUCTS.CREATE,
+				formData
+			);
+
+			console.log("✅ ProductService: Producto creado:", response);
+			return response;
+		} catch (error) {
+			console.error("❌ Error en ProductService.createProduct:", error);
+			throw error;
+		}
+	}
+
+	/**
 	 * Obtiene un producto por ID
 	 */
 	async getProductById(id: number): Promise<ProductDetail | null> {
 		try {
-			const response = await ApiClient.get<{ data: ProductDetail }>(
+			const response = await ApiClient.get<{data: ProductDetail}>(
 				API_ENDPOINTS.PRODUCTS.DETAILS(id)
 			);
 			return response?.data || null;
@@ -54,7 +144,7 @@ export class ProductService {
 	 */
 	async getProductBySlug(slug: string): Promise<ProductDetail | null> {
 		try {
-			const response = await ApiClient.get<{ data: ProductDetail }>(
+			const response = await ApiClient.get<{data: ProductDetail}>(
 				API_ENDPOINTS.PRODUCTS.DETAILS_BY_SLUG(slug)
 			);
 			return response?.data || null;
@@ -71,7 +161,7 @@ export class ProductService {
 		try {
 			const response = await ApiClient.get<ProductListResponse>(
 				API_ENDPOINTS.PRODUCTS.FEATURED,
-				{ limit }
+				{limit}
 			);
 			return response?.data || [];
 		} catch (error) {
@@ -91,7 +181,7 @@ export class ProductService {
 			// Obtener productos de la misma categoría o similares
 			const response = await ApiClient.get<ProductListResponse>(
 				API_ENDPOINTS.PRODUCTS.LIST,
-				{ limit, excludeId: productId }
+				{limit, excludeId: productId}
 			);
 			return response?.data || [];
 		} catch (error) {
@@ -125,12 +215,9 @@ export class ProductService {
 	 */
 	async trackProductView(productId: number): Promise<void> {
 		try {
-			await ApiClient.post(
-				API_ENDPOINTS.PRODUCTS.INCREMENT_VIEW(productId),
-				{
-					timestamp: new Date().toISOString(),
-				}
-			);
+			await ApiClient.post(API_ENDPOINTS.PRODUCTS.INCREMENT_VIEW(productId), {
+				timestamp: new Date().toISOString(),
+			});
 		} catch (error) {
 			console.error("❌ Error en ProductService.trackProductView:", error);
 		}
@@ -147,7 +234,7 @@ export class ProductService {
 		try {
 			const response = await ApiClient.get<ProductListResponse>(
 				API_ENDPOINTS.PRODUCTS.BY_CATEGORY(categoryId),
-				{ limit, offset }
+				{limit, offset}
 			);
 			return response;
 		} catch (error) {

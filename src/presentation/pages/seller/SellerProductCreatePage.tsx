@@ -28,7 +28,6 @@ const SellerProductCreatePage: React.FC = () => {
 	const {
 		parentCategoryOptions,
 		subcategoryOptions,
-		selectedParentId,
 		setSelectedParentId,
 		loading: loadingCategories,
 	} = useCategoriesSelect();
@@ -137,12 +136,6 @@ const SellerProductCreatePage: React.FC = () => {
 				return newErrors;
 			});
 		}
-	};
-
-	// Handle checkbox changes
-	const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const {name, checked} = e.target;
-		setFormData((prev) => ({...prev, [name]: checked}));
 	};
 
 	// Handle image upload

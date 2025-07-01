@@ -1,7 +1,6 @@
 import React, {useState, useEffect, useCallback} from "react";
 import Table from "../../components/dashboard/Table";
 import {
-	Package,
 	Tag,
 	Eye,
 	Edit,
@@ -14,11 +13,9 @@ import {
 	CheckCircle,
 	Plus,
 	Search,
-	Download,
 } from "lucide-react";
 import {Link} from "react-router-dom";
 import type {Product} from "../../../core/domain/entities/Product";
-import type {Category} from "../../../core/domain/entities/Category";
 import type {ExtendedProductFilterParams} from "../../types/ProductFilterParams";
 
 // Hooks personalizados
@@ -40,7 +37,6 @@ const AdminProductsPage: React.FC = () => {
 		deleteProduct,
 		toggleFeatured,
 		togglePublished,
-		updateStatus,
 		clearProductCache,
 	} = useAdminProducts();
 
@@ -188,11 +184,14 @@ const AdminProductsPage: React.FC = () => {
 		async (productId: number, currentFeatured: boolean) => {
 			setLoadingAction(productId);
 			try {
-				const success = await toggleFeatured(productId, !currentFeatured);
-				if (success) {
-					// Recargar datos para reflejar cambios
-					await loadData();
-				} else {
+				// PASAR EL VALOR OPUESTO PARA HACER EL TOGGLE
+				const newFeaturedValue = !currentFeatured;
+				console.log(
+					`🌟 Toggling featured for product ${productId}: ${currentFeatured} -> ${newFeaturedValue}`
+				);
+
+				const success = await toggleFeatured(productId, newFeaturedValue);
+				if (!success) {
 					alert("Error al cambiar estado destacado");
 				}
 			} catch (error) {
@@ -202,7 +201,7 @@ const AdminProductsPage: React.FC = () => {
 				setLoadingAction(null);
 			}
 		},
-		[toggleFeatured, loadData]
+		[toggleFeatured]
 	);
 
 	/**
@@ -212,11 +211,14 @@ const AdminProductsPage: React.FC = () => {
 		async (productId: number, currentPublished: boolean) => {
 			setLoadingAction(productId);
 			try {
-				const success = await togglePublished(productId, !currentPublished);
-				if (success) {
-					// Recargar datos para reflejar cambios
-					await loadData();
-				} else {
+				// PASAR EL VALOR OPUESTO PARA HACER EL TOGGLE
+				const newPublishedValue = !currentPublished;
+				console.log(
+					`📢 Toggling published for product ${productId}: ${currentPublished} -> ${newPublishedValue}`
+				);
+
+				const success = await togglePublished(productId, newPublishedValue);
+				if (!success) {
 					alert("Error al cambiar estado de publicación");
 				}
 			} catch (error) {
@@ -226,7 +228,7 @@ const AdminProductsPage: React.FC = () => {
 				setLoadingAction(null);
 			}
 		},
-		[togglePublished, loadData]
+		[togglePublished]
 	);
 
 	/**
@@ -465,22 +467,27 @@ const AdminProductsPage: React.FC = () => {
 
 					{/* Botón para destacar/quitar destacado */}
 					<button
-						onClick={() => handleToggleFeatured(product.id!, product.featured!)}
+						onClick={() =>
+							handleToggleFeatured(product.id!, product.featured || false)
+						}
 						disabled={loadingAction === product.id}
 						className={`p-1 rounded-md transition-colors ${
 							product.featured
-								? "text-yellow-600 hover:bg-yellow-100"
+								? "text-yellow-500 hover:bg-yellow-100"
 								: "text-gray-600 hover:bg-gray-100"
 						} ${loadingAction === product.id ? "opacity-50 cursor-not-allowed" : ""}`}
 						title={product.featured ? "Quitar destacado" : "Destacar producto"}
 					>
-						<Star size={16} />
+						<Star
+							size={16}
+							className={product.featured ? "fill-current" : ""}
+						/>
 					</button>
 
 					{/* Botón para publicar/despublicar */}
 					<button
 						onClick={() =>
-							handleTogglePublished(product.id!, product.published!)
+							handleTogglePublished(product.id!, product.published || false)
 						}
 						disabled={loadingAction === product.id}
 						className={`p-1 rounded-md transition-colors ${
@@ -490,7 +497,9 @@ const AdminProductsPage: React.FC = () => {
 						} ${loadingAction === product.id ? "opacity-50 cursor-not-allowed" : ""}`}
 						title={product.published ? "Despublicar" : "Publicar"}
 					>
-						<CheckCircle size={16} />
+						<CheckCircle
+							size={16}
+						/>
 					</button>
 
 					{/* Botón para eliminar */}

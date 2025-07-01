@@ -24,7 +24,7 @@ const DatafastResultPage: React.FC = () => {
 	const [isProcessing, setIsProcessing] = useState(true);
 	const [result, setResult] = useState<ProcessingResult | null>(null);
 	const [error, setError] = useState<string | null>(null);
-	const [countdown, setCountdown] = useState(5);
+	const [countdown] = useState(5);
 
 	const datafastService = new DatafastService();
 

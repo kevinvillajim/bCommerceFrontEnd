@@ -1,6 +1,6 @@
 // src/presentation/hooks/useAdminProducts.ts
 
-import {useState, useCallback, useEffect} from "react";
+import {useState, useCallback} from "react";
 import {AdminProductService} from "../../core/services/AdminProductService";
 import CacheService from "../../infrastructure/services/CacheService";
 import appConfig from "../../config/appConfig";
@@ -87,17 +87,23 @@ export const useAdminProducts = () => {
 			return {} as Product;
 		}
 
-		console.log("🔄 Adaptando producto desde API:", apiProduct);
+		console.log("🔄 Adaptando producto desde API:", {
+			id: apiProduct.id,
+			name: apiProduct.name,
+			featured: apiProduct.featured,
+			published: apiProduct.published,
+			featured_type: typeof apiProduct.featured,
+			published_type: typeof apiProduct.published,
+		});
 
-		// Procesar imágenes - CORREGIDO para el formato real del backend
+		// Procesar imágenes
 		let processedImages: string[] = [];
-
-		// Prioridad 1: main_image (formato actual del backend)
 		if (apiProduct.main_image) {
 			processedImages = [apiProduct.main_image];
-		}
-		// Prioridad 2: array images si existe
-		else if (Array.isArray(apiProduct.images) && apiProduct.images.length > 0) {
+		} else if (
+			Array.isArray(apiProduct.images) &&
+			apiProduct.images.length > 0
+		) {
 			processedImages = apiProduct.images
 				.map((img: any) => {
 					if (typeof img === "string") return img;
@@ -114,19 +120,16 @@ export const useAdminProducts = () => {
 					return "";
 				})
 				.filter(Boolean);
-		}
-		// Prioridad 3: campo image individual
-		else if (apiProduct.image) {
+		} else if (apiProduct.image) {
 			processedImages = [apiProduct.image];
 		}
 
-		// Procesar tags - el backend devuelve arrays con strings JSON
+		// Procesar tags
 		let processedTags: string[] = [];
 		if (Array.isArray(apiProduct.tags)) {
 			apiProduct.tags.forEach((tag: any) => {
 				if (typeof tag === "string") {
 					try {
-						// Si es un string JSON, parsearlo
 						const parsed = JSON.parse(tag);
 						if (Array.isArray(parsed)) {
 							processedTags.push(...parsed);
@@ -134,12 +137,24 @@ export const useAdminProducts = () => {
 							processedTags.push(tag);
 						}
 					} catch {
-						// Si no es JSON válido, agregarlo directamente
 						processedTags.push(tag);
 					}
 				}
 			});
 		}
+
+		// CORREGIR: Asegurar que featured y published sean booleanos
+		const featured = Boolean(
+			apiProduct.featured === true ||
+				apiProduct.featured === 1 ||
+				apiProduct.featured === "1"
+		);
+		const published = Boolean(
+			apiProduct.published === true ||
+				apiProduct.published === 1 ||
+				apiProduct.published === "1" ||
+				apiProduct.published !== false
+		);
 
 		const adaptedProduct: Product = {
 			id: apiProduct.id,
@@ -164,8 +179,11 @@ export const useAdminProducts = () => {
 			sku: apiProduct.sku,
 			attributes: apiProduct.attributes,
 			images: processedImages,
-			featured: Boolean(apiProduct.featured),
-			published: Boolean(apiProduct.published ?? true), // Por defecto true si no viene
+
+			// CORREGIR: Usar las variables procesadas
+			featured: featured,
+			published: published,
+
 			status: apiProduct.status || "active",
 			viewCount: apiProduct.view_count || 0,
 			salesCount: apiProduct.sales_count || 0,
@@ -190,8 +208,10 @@ export const useAdminProducts = () => {
 		console.log("✅ Producto adaptado:", {
 			id: adaptedProduct.id,
 			name: adaptedProduct.name,
-			published: adaptedProduct.published,
 			featured: adaptedProduct.featured,
+			published: adaptedProduct.published,
+			featured_type: typeof adaptedProduct.featured,
+			published_type: typeof adaptedProduct.published,
 			status: adaptedProduct.status,
 			images: adaptedProduct.images,
 			tags: adaptedProduct.tags,
@@ -454,10 +474,17 @@ export const useAdminProducts = () => {
 					setProducts((prev) =>
 						prev.map((p) => (p.id === id ? {...p, featured} : p))
 					);
-					// Limpiar caché relacionada
-					clearProductCache();
+
+					// Actualizar detalle si coincide
+					if (productDetail?.id === id) {
+						setProductDetail((prev) => (prev ? {...prev, featured} : prev));
+					}
+
+					// NO llamar a loadData() aquí ya que actualizamos el estado directamente
+					// clearProductCache(); // Solo limpiar caché
+
 					console.log(
-						`✅ Featured actualizado correctamente para producto ${id}`
+						`✅ Featured actualizado correctamente para producto ${id} a ${featured}`
 					);
 				} else {
 					console.error(`❌ Error al actualizar featured para producto ${id}`);
@@ -475,7 +502,7 @@ export const useAdminProducts = () => {
 				return false;
 			}
 		},
-		[]
+		[productDetail]
 	);
 
 	/**
@@ -498,10 +525,17 @@ export const useAdminProducts = () => {
 					setProducts((prev) =>
 						prev.map((p) => (p.id === id ? {...p, published} : p))
 					);
-					// Limpiar caché relacionada
-					clearProductCache();
+
+					// Actualizar detalle si coincide
+					if (productDetail?.id === id) {
+						setProductDetail((prev) => (prev ? {...prev, published} : prev));
+					}
+
+					// NO llamar a loadData() aquí ya que actualizamos el estado directamente
+					// clearProductCache(); // Solo limpiar caché
+
 					console.log(
-						`✅ Published actualizado correctamente para producto ${id}`
+						`✅ Published actualizado correctamente para producto ${id} a ${published}`
 					);
 				} else {
 					console.error(`❌ Error al actualizar published para producto ${id}`);
@@ -519,7 +553,7 @@ export const useAdminProducts = () => {
 				return false;
 			}
 		},
-		[]
+		[productDetail]
 	);
 
 	/**
@@ -539,10 +573,17 @@ export const useAdminProducts = () => {
 					setProducts((prev) =>
 						prev.map((p) => (p.id === id ? {...p, status} : p))
 					);
-					// Limpiar caché relacionada
-					clearProductCache();
+
+					// Actualizar detalle si coincide
+					if (productDetail?.id === id) {
+						setProductDetail((prev) => (prev ? {...prev, status} : prev));
+					}
+
+					// NO llamar a loadData() aquí ya que actualizamos el estado directamente
+					// clearProductCache(); // Solo limpiar caché
+
 					console.log(
-						`✅ Status actualizado correctamente para producto ${id}`
+						`✅ Status actualizado correctamente para producto ${id} a ${status}`
 					);
 				} else {
 					console.error(`❌ Error al actualizar status para producto ${id}`);
@@ -558,7 +599,7 @@ export const useAdminProducts = () => {
 				return false;
 			}
 		},
-		[]
+		[productDetail]
 	);
 
 	/**

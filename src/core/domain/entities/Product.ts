@@ -182,8 +182,16 @@ export interface ProductFilterParams {
    * Datos para actualización de producto
    */
   export interface ProductUpdateData extends Partial<ProductCreationData> {
-	id: number;
-  }
+		id: number;
+		// Campos específicos para actualización de imágenes - AGREGADOS
+		replace_images?: boolean; // Si true, reemplaza todas las imágenes
+		remove_images?: string[]; // URLs de imágenes a eliminar
+
+		// Campos que pueden ser undefined en actualización
+		category_id?: number;
+		user_id?: number;
+		seller_id?: number;
+	}
   
   /**
    * Interfaz para reseñas de productos
