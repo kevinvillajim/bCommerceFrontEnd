@@ -140,6 +140,9 @@ const DatafastResultPage = lazy(
 	() => import("../presentation/pages/DatafastResultPage")
 );
 
+const AdminCreateCategoryPage = lazy(()=> import("../presentation/pages/admin/AdminCreateCategoryPage")) ;
+const AdminEditCategoryPage = lazy(()=> import("../presentation/pages/admin/AdminEditCategoryPage")) ;
+
 //Route Guards
 import PrivateRoute from "./PrivateRoute";
 import PublicRoute from "./PublicRoute";
@@ -491,6 +494,18 @@ const appRoutes: RouteObject[] = [
 			{
 				path: "categories",
 				element: <AdminCategoriesPage />,
+			},
+			{
+				path: "categories",
+				element: <AdminCategoriesPage />,
+			},
+			{
+				path: "categories/create",
+				element: <AdminCreateCategoryPage />,
+			},
+			{
+				path: "categories/edit/:id",
+				element:< AdminEditCategoryPage />,
 			},
 			// Order Management
 			{

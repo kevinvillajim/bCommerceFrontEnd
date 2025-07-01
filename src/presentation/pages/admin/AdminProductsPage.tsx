@@ -25,6 +25,10 @@ import type {ExtendedProductFilterParams} from "../../types/ProductFilterParams"
 import {useAdminProducts} from "../../hooks/useAdminProducts";
 import {useAdminCategories} from "../../hooks/useAdminCategories";
 
+// Utilities corregidas
+import {getProductMainImage} from "../../../utils/unifiedImageUtils";
+import {formatCurrency} from "../../../utils/formatters/formatCurrency";
+
 const AdminProductsPage: React.FC = () => {
 	// Hooks de administración
 	const {
@@ -185,7 +189,10 @@ const AdminProductsPage: React.FC = () => {
 			setLoadingAction(productId);
 			try {
 				const success = await toggleFeatured(productId, !currentFeatured);
-				if (!success) {
+				if (success) {
+					// Recargar datos para reflejar cambios
+					await loadData();
+				} else {
 					alert("Error al cambiar estado destacado");
 				}
 			} catch (error) {
@@ -195,7 +202,7 @@ const AdminProductsPage: React.FC = () => {
 				setLoadingAction(null);
 			}
 		},
-		[toggleFeatured]
+		[toggleFeatured, loadData]
 	);
 
 	/**
@@ -206,7 +213,10 @@ const AdminProductsPage: React.FC = () => {
 			setLoadingAction(productId);
 			try {
 				const success = await togglePublished(productId, !currentPublished);
-				if (!success) {
+				if (success) {
+					// Recargar datos para reflejar cambios
+					await loadData();
+				} else {
 					alert("Error al cambiar estado de publicación");
 				}
 			} catch (error) {
@@ -216,7 +226,7 @@ const AdminProductsPage: React.FC = () => {
 				setLoadingAction(null);
 			}
 		},
-		[togglePublished]
+		[togglePublished, loadData]
 	);
 
 	/**
@@ -233,17 +243,6 @@ const AdminProductsPage: React.FC = () => {
 	const handlePageChange = useCallback((page: number) => {
 		setCurrentPage(page);
 	}, []);
-
-	/**
-	 * Formatear moneda
-	 */
-	const formatCurrency = (amount: number) => {
-		return new Intl.NumberFormat("es-ES", {
-			style: "currency",
-			currency: "EUR",
-			minimumFractionDigits: 2,
-		}).format(amount);
-	};
 
 	/**
 	 * Obtener el nombre de la categoría por ID
@@ -272,19 +271,15 @@ const AdminProductsPage: React.FC = () => {
 			render: (product: Product) => (
 				<div className="flex items-center">
 					<div className="flex-shrink-0 h-10 w-10 rounded-md bg-gray-200 flex items-center justify-center overflow-hidden">
-						{product.images && product.images.length > 0 ? (
-							<img
-								src={product.images[0]}
-								alt={product.name}
-								className="h-10 w-10 object-cover"
-								onError={(e) => {
-									(e.target as HTMLImageElement).src =
-										"https://via.placeholder.com/100?text=Producto";
-								}}
-							/>
-						) : (
-							<Package className="h-6 w-6 text-gray-500" />
-						)}
+						<img
+							src={getProductMainImage(product)}
+							alt={product.name}
+							className="h-10 w-10 object-cover"
+							onError={(e) => {
+								(e.target as HTMLImageElement).src =
+									"https://via.placeholder.com/100?text=Producto";
+							}}
+						/>
 					</div>
 					<div className="ml-4">
 						<div className="text-sm font-medium text-gray-900 flex items-center">
@@ -449,9 +444,9 @@ const AdminProductsPage: React.FC = () => {
 			header: "Acciones",
 			render: (product: Product) => (
 				<div className="flex justify-end space-x-1">
-					{/* Botón para ver producto en la tienda */}
+					{/* Botón para ver producto en la tienda - USAR ID EN LUGAR DE SLUG */}
 					<Link
-						to={`/products/${product.slug}`}
+						to={`/products/${product.id}`}
 						target="_blank"
 						className="p-1 text-blue-600 hover:bg-blue-100 rounded-md"
 						title="Ver en tienda"

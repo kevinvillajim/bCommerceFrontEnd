@@ -281,7 +281,7 @@ export class AdminProductService {
 	}
 
 	/**
-	 * Cambia el estado destacado de un producto
+	 * Cambia el estado destacado de un producto - CORREGIDO
 	 */
 	async toggleFeatured(id: number, featured: boolean): Promise<boolean> {
 		try {
@@ -289,21 +289,16 @@ export class AdminProductService {
 				`📤 AdminProductService: Cambiando featured del producto ${id} a ${featured}`
 			);
 
-			// Crear datos simple en lugar de FormData para evitar problemas
-			const data = {
-				featured: featured,
-			};
-
-			const response = await ApiClient.put(
+			// Usar PATCH en lugar de PUT para actualizaciones parciales
+			const response = await ApiClient.patch(
 				API_ENDPOINTS.PRODUCTS.UPDATE(id),
-				data
+				{featured: featured}
 			);
 
 			console.log("✅ AdminProductService: Featured actualizado:", response);
 			return true;
 		} catch (error) {
 			console.error("❌ Error en AdminProductService.toggleFeatured:", error);
-			// Loggear detalles del error
 			if (error instanceof Error) {
 				console.error("Error message:", error.message);
 			}
@@ -312,7 +307,7 @@ export class AdminProductService {
 	}
 
 	/**
-	 * Cambia el estado de publicación de un producto
+	 * Cambia el estado de publicación de un producto - CORREGIDO
 	 */
 	async togglePublished(id: number, published: boolean): Promise<boolean> {
 		try {
@@ -320,21 +315,16 @@ export class AdminProductService {
 				`📤 AdminProductService: Cambiando published del producto ${id} a ${published}`
 			);
 
-			// Crear datos simple en lugar de FormData para evitar problemas
-			const data = {
-				published: published,
-			};
-
-			const response = await ApiClient.put(
+			// Usar PATCH en lugar de PUT para actualizaciones parciales
+			const response = await ApiClient.patch(
 				API_ENDPOINTS.PRODUCTS.UPDATE(id),
-				data
+				{published: published}
 			);
 
 			console.log("✅ AdminProductService: Published actualizado:", response);
 			return true;
 		} catch (error) {
 			console.error("❌ Error en AdminProductService.togglePublished:", error);
-			// Loggear detalles del error
 			if (error instanceof Error) {
 				console.error("Error message:", error.message);
 			}
@@ -343,7 +333,7 @@ export class AdminProductService {
 	}
 
 	/**
-	 * Cambia el estado de un producto
+	 * Cambia el estado de un producto - CORREGIDO
 	 */
 	async updateStatus(id: number, status: string): Promise<boolean> {
 		try {
@@ -351,21 +341,16 @@ export class AdminProductService {
 				`📤 AdminProductService: Cambiando status del producto ${id} a ${status}`
 			);
 
-			// Crear datos simple en lugar de FormData para evitar problemas
-			const data = {
-				status: status,
-			};
-
-			const response = await ApiClient.put(
+			// Usar PATCH en lugar de PUT para actualizaciones parciales
+			const response = await ApiClient.patch(
 				API_ENDPOINTS.PRODUCTS.UPDATE(id),
-				data
+				{status: status}
 			);
 
 			console.log("✅ AdminProductService: Status actualizado:", response);
 			return true;
 		} catch (error) {
 			console.error("❌ Error en AdminProductService.updateStatus:", error);
-			// Loggear detalles del error
 			if (error instanceof Error) {
 				console.error("Error message:", error.message);
 			}

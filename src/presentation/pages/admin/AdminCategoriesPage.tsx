@@ -119,7 +119,10 @@ const AdminCategoriesPage: React.FC = () => {
 			setLoadingAction(categoryId);
 			try {
 				const success = await toggleFeatured(categoryId, !currentFeatured);
-				if (!success) {
+				if (success) {
+					// Recargar datos para reflejar cambios
+					await loadData();
+				} else {
 					alert("Error al cambiar estado destacado de la categoría");
 				}
 			} catch (error) {
@@ -129,7 +132,7 @@ const AdminCategoriesPage: React.FC = () => {
 				setLoadingAction(null);
 			}
 		},
-		[toggleFeatured]
+		[toggleFeatured, loadData]
 	);
 
 	/**
@@ -140,7 +143,10 @@ const AdminCategoriesPage: React.FC = () => {
 			setLoadingAction(categoryId);
 			try {
 				const success = await toggleActive(categoryId, !currentActive);
-				if (!success) {
+				if (success) {
+					// Recargar datos para reflejar cambios
+					await loadData();
+				} else {
 					alert("Error al cambiar estado activo de la categoría");
 				}
 			} catch (error) {
@@ -150,7 +156,7 @@ const AdminCategoriesPage: React.FC = () => {
 				setLoadingAction(null);
 			}
 		},
-		[toggleActive]
+		[toggleActive, loadData]
 	);
 
 	/**
@@ -229,20 +235,9 @@ const AdminCategoriesPage: React.FC = () => {
 			sortable: true,
 			render: (category: Category) => (
 				<div className="flex items-center">
-					<div className="flex-shrink-0 h-10 w-10 rounded-md bg-gray-200 flex items-center justify-center overflow-hidden">
-						{category.image_url || category.image ? (
-							<img
-								src={category.image_url || category.image || ""}
-								alt={category.name}
-								className="h-10 w-10 object-cover"
-								onError={(e) => {
-									(e.target as HTMLImageElement).src =
-										"https://via.placeholder.com/100?text=Categoría";
-								}}
-							/>
-						) : (
-							<Folder className="h-6 w-6 text-gray-500" />
-						)}
+					{/* Icono de carpeta en lugar de imagen */}
+					<div className="flex-shrink-0 h-10 w-10 rounded-md bg-blue-100 flex items-center justify-center">
+						<Folder className="h-6 w-6 text-blue-600" />
 					</div>
 					<div className="ml-4">
 						<div className="text-sm font-medium text-gray-900 flex items-center">
@@ -271,6 +266,15 @@ const AdminCategoriesPage: React.FC = () => {
 			sortable: true,
 			render: (category: Category) => (
 				<div className="text-sm text-gray-500 font-mono">{category.slug}</div>
+			),
+		},
+		{
+			key: "description",
+			header: "Descripción",
+			render: (category: Category) => (
+				<div className="text-sm text-gray-600 max-w-xs truncate">
+					{category.description || "Sin descripción"}
+				</div>
 			),
 		},
 		{

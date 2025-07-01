@@ -438,21 +438,19 @@ export const useAdminProducts = () => {
 	}, []);
 
 	/**
-	 * Alterna el estado destacado de un producto
+	 * Alterna el estado destacado de un producto - CORREGIDO
 	 */
 	const toggleFeatured = useCallback(
 		async (id: number, featured: boolean): Promise<boolean> => {
-			setLoading(true);
 			setError(null);
 
 			try {
 				console.log(`🌟 Cambiando featured del producto ${id} a ${featured}`);
 
-				// Usar directamente el servicio de admin en lugar del use case
-				const result = await adminProductService.toggleFeatured(id, featured);
+				const result = await toggleProductFeaturedUseCase.execute(id, featured);
 
 				if (result) {
-					// Actualizar producto en la lista actual
+					// Actualizar producto en la lista actual INMEDIATAMENTE
 					setProducts((prev) =>
 						prev.map((p) => (p.id === id ? {...p, featured} : p))
 					);
@@ -463,6 +461,7 @@ export const useAdminProducts = () => {
 					);
 				} else {
 					console.error(`❌ Error al actualizar featured para producto ${id}`);
+					setError("Error al cambiar estado destacado del producto");
 				}
 
 				return result;
@@ -474,29 +473,28 @@ export const useAdminProducts = () => {
 				console.error("❌ Error en toggleFeatured:", err);
 				setError(errorMessage);
 				return false;
-			} finally {
-				setLoading(false);
 			}
 		},
 		[]
 	);
 
 	/**
-	 * Alterna el estado de publicación de un producto
+	 * Alterna el estado de publicación de un producto - CORREGIDO
 	 */
 	const togglePublished = useCallback(
 		async (id: number, published: boolean): Promise<boolean> => {
-			setLoading(true);
 			setError(null);
 
 			try {
 				console.log(`📢 Cambiando published del producto ${id} a ${published}`);
 
-				// Usar directamente el servicio de admin en lugar del use case
-				const result = await adminProductService.togglePublished(id, published);
+				const result = await toggleProductPublishedUseCase.execute(
+					id,
+					published
+				);
 
 				if (result) {
-					// Actualizar producto en la lista actual
+					// Actualizar producto en la lista actual INMEDIATAMENTE
 					setProducts((prev) =>
 						prev.map((p) => (p.id === id ? {...p, published} : p))
 					);
@@ -507,6 +505,7 @@ export const useAdminProducts = () => {
 					);
 				} else {
 					console.error(`❌ Error al actualizar published para producto ${id}`);
+					setError("Error al cambiar estado de publicación del producto");
 				}
 
 				return result;
@@ -518,29 +517,25 @@ export const useAdminProducts = () => {
 				console.error("❌ Error en togglePublished:", err);
 				setError(errorMessage);
 				return false;
-			} finally {
-				setLoading(false);
 			}
 		},
 		[]
 	);
 
 	/**
-	 * Actualiza el estado de un producto
+	 * Actualiza el estado de un producto - CORREGIDO
 	 */
 	const updateStatus = useCallback(
 		async (id: number, status: string): Promise<boolean> => {
-			setLoading(true);
 			setError(null);
 
 			try {
 				console.log(`🔄 Cambiando status del producto ${id} a ${status}`);
 
-				// Usar directamente el servicio de admin en lugar del use case
-				const result = await adminProductService.updateStatus(id, status);
+				const result = await updateProductStatusUseCase.execute(id, status);
 
 				if (result) {
-					// Actualizar producto en la lista actual
+					// Actualizar producto en la lista actual INMEDIATAMENTE
 					setProducts((prev) =>
 						prev.map((p) => (p.id === id ? {...p, status} : p))
 					);
@@ -551,6 +546,7 @@ export const useAdminProducts = () => {
 					);
 				} else {
 					console.error(`❌ Error al actualizar status para producto ${id}`);
+					setError("Error al actualizar estado del producto");
 				}
 
 				return result;
@@ -560,8 +556,6 @@ export const useAdminProducts = () => {
 				console.error("❌ Error en updateStatus:", err);
 				setError(errorMessage);
 				return false;
-			} finally {
-				setLoading(false);
 			}
 		},
 		[]
