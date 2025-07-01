@@ -1,3 +1,5 @@
+// src/presentation/pages/admin/AdminEditCategoryPage.tsx - ERRORES CORREGIDOS
+
 import React, {useState, useEffect} from "react";
 import {useNavigate, useParams} from "react-router-dom";
 import {
@@ -38,11 +40,11 @@ const AdminEditCategoryPage: React.FC = () => {
 		setError,
 	} = useAdminCategories();
 
-	// Estado del formulario
+	// Estado del formulario - CORREGIDO: valores iniciales definidos
 	const [formData, setFormData] = useState<CategoryUpdateData>({
 		id: categoryId,
-		name: "",
-		slug: "",
+		name: "", // CORREGIDO: siempre string
+		slug: "", // CORREGIDO: siempre string
 		description: "",
 		parent_id: undefined,
 		icon: "",
@@ -88,20 +90,20 @@ const AdminEditCategoryPage: React.FC = () => {
 				return;
 			}
 
-			// Llenar el formulario con los datos de la categoría
+			// Llenar el formulario con los datos de la categoría - CORREGIDO
 			setFormData({
 				id: category.id!,
-				name: category.name,
-				slug: category.slug,
+				name: category.name || "", // CORREGIDO: fallback a string vacío
+				slug: category.slug || "", // CORREGIDO: fallback a string vacío
 				description: category.description || "",
 				parent_id: category.parent_id || undefined,
 				icon: category.icon || "",
 				order: category.order || 0,
-				is_active: category.is_active,
-				featured: category.featured,
+				is_active: category.is_active ?? true, // CORREGIDO: usar nullish coalescing
+				featured: category.featured ?? false, // CORREGIDO: usar nullish coalescing
 			});
 
-			setOriginalSlug(category.slug);
+			setOriginalSlug(category.slug || ""); // CORREGIDO: fallback
 		} catch (error) {
 			console.error("Error al cargar datos de categoría:", error);
 			setError("Error al cargar los datos de la categoría");
@@ -157,8 +159,8 @@ const AdminEditCategoryPage: React.FC = () => {
 			[name]: processedValue,
 		}));
 
-		// Generar slug automáticamente cuando cambie el nombre (solo si el slug no se ha modificado manualmente)
-		if (name === "name" && value && formData.slug === originalSlug) {
+		// Generar slug automáticamente cuando cambie el nombre - CORREGIDO
+		if (name === "name" && value && (formData.slug || "") === originalSlug) {
 			const autoSlug = generateSlug(value);
 			setFormData((prev) => ({
 				...prev,
@@ -181,27 +183,30 @@ const AdminEditCategoryPage: React.FC = () => {
 	const validateForm = (): boolean => {
 		const errors: Record<string, string> = {};
 
-		// Validar nombre
-		if (!formData.name.trim()) {
+		// Validar nombre - CORREGIDO: verificar que formData.name esté definido
+		const name = formData.name || "";
+		if (!name.trim()) {
 			errors.name = "El nombre es obligatorio";
-		} else if (formData.name.length < 2) {
+		} else if (name.length < 2) {
 			errors.name = "El nombre debe tener al menos 2 caracteres";
-		} else if (formData.name.length > 100) {
+		} else if (name.length > 100) {
 			errors.name = "El nombre no puede tener más de 100 caracteres";
 		}
 
-		// Validar slug
-		if (!formData.slug.trim()) {
+		// Validar slug - CORREGIDO: verificar que formData.slug esté definido
+		const slug = formData.slug || "";
+		if (!slug.trim()) {
 			errors.slug = "El slug es obligatorio";
-		} else if (!/^[a-z0-9-]+$/.test(formData.slug)) {
+		} else if (!/^[a-z0-9-]+$/.test(slug)) {
 			errors.slug =
 				"El slug solo puede contener letras minúsculas, números y guiones";
-		} else if (formData.slug.length > 150) {
+		} else if (slug.length > 150) {
 			errors.slug = "El slug no puede tener más de 150 caracteres";
 		}
 
 		// Validar descripción (opcional pero con límite)
-		if (formData.description && formData.description.length > 500) {
+		const description = formData.description || "";
+		if (description && description.length > 500) {
 			errors.description =
 				"La descripción no puede tener más de 500 caracteres";
 		}
@@ -237,12 +242,14 @@ const AdminEditCategoryPage: React.FC = () => {
 		setError(null);
 
 		try {
-			// Preparar datos para envío
+			// Preparar datos para envío - CORREGIDO: asegurar que los campos string no sean undefined
 			const dataToSubmit: CategoryUpdateData = {
 				...formData,
-				// Limpiar campos vacíos
-				description: formData.description?.trim() || undefined,
-				icon: formData.icon?.trim() || undefined,
+				// Limpiar campos vacíos y asegurar tipos correctos
+				name: (formData.name || "").trim(),
+				slug: (formData.slug || "").trim(),
+				description: (formData.description || "").trim() || undefined,
+				icon: (formData.icon || "").trim() || undefined,
 				parent_id: formData.parent_id === 0 ? undefined : formData.parent_id,
 			};
 
@@ -360,7 +367,7 @@ const AdminEditCategoryPage: React.FC = () => {
 									type="text"
 									id="name"
 									name="name"
-									value={formData.name}
+									value={formData.name || ""}
 									onChange={handleInputChange}
 									className={`block w-full pl-10 pr-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 ${
 										validationErrors.name ? "border-red-300" : "border-gray-300"
@@ -391,7 +398,7 @@ const AdminEditCategoryPage: React.FC = () => {
 									type="text"
 									id="slug"
 									name="slug"
-									value={formData.slug}
+									value={formData.slug || ""}
 									onChange={handleInputChange}
 									className={`block w-full pl-10 pr-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 ${
 										validationErrors.slug ? "border-red-300" : "border-gray-300"
@@ -460,7 +467,7 @@ const AdminEditCategoryPage: React.FC = () => {
 									type="number"
 									id="order"
 									name="order"
-									value={formData.order}
+									value={formData.order || 0}
 									onChange={handleInputChange}
 									className={`block w-full pl-10 pr-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 ${
 										validationErrors.order
@@ -552,13 +559,13 @@ const AdminEditCategoryPage: React.FC = () => {
 								type="checkbox"
 								id="is_active"
 								name="is_active"
-								checked={formData.is_active}
+								checked={formData.is_active ?? true}
 								onChange={handleInputChange}
 								className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
 							/>
 							<label
 								htmlFor="is_active"
-								className="ml-2 block text-sm text-gray-900 flex items-center"
+								className="ml-2 text-sm text-gray-900 flex items-center"
 							>
 								<Eye className="h-4 w-4 mr-1" />
 								Categoría activa
@@ -574,13 +581,13 @@ const AdminEditCategoryPage: React.FC = () => {
 								type="checkbox"
 								id="featured"
 								name="featured"
-								checked={formData.featured}
+								checked={formData.featured ?? false}
 								onChange={handleInputChange}
 								className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
 							/>
 							<label
 								htmlFor="featured"
-								className="ml-2 block text-sm text-gray-900 flex items-center"
+								className="ml-2 text-sm text-gray-900 flex items-center"
 							>
 								<Star className="h-4 w-4 mr-1" />
 								Categoría destacada

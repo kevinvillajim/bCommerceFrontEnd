@@ -1,9 +1,19 @@
-// src/presentation/hooks/useAdminCategories.ts
+// src/presentation/hooks/useAdminCategories.ts - ACTUALIZADO
 
 import {useState, useCallback} from "react";
-import {CategoryService} from "../../core/services/CategoryService";
+import {AdminCategoryService} from "../../core/services/AdminCategoryService";
 import CacheService from "../../infrastructure/services/CacheService";
 import appConfig from "../../config/appConfig";
+
+// Use Cases
+import {GetAllCategoriesUseCase} from "../../core/useCases/admin/category/GetAllCategoriesUseCase";
+import {CreateCategoryAsAdminUseCase} from "../../core/useCases/admin/category/CreateCategoryAsAdminUseCase";
+import {UpdateAnyCategoryUseCase} from "../../core/useCases/admin/category/UpdateAnyCategoryUseCase";
+import {DeleteAnyCategoryUseCase} from "../../core/useCases/admin/category/DeleteAnyCategoryUseCase";
+import {ToggleCategoryActiveUseCase} from "../../core/useCases/admin/category/ToggleCategoryActiveUseCase";
+import {ToggleCategoryFeaturedUseCase} from "../../core/useCases/admin/category/ToggleCategoryFeaturedUseCase";
+import {GetCategoryByIdUseCase} from "../../core/useCases/admin/category/GetCategoryByIdUseCase";
+
 import type {
 	Category,
 	CategoryListResponse,
@@ -12,8 +22,28 @@ import type {
 	CategoryFilterParams,
 } from "../../core/domain/entities/Category";
 
-// Instanciar el servicio de categorías (reutilizamos el existente)
-const categoryService = new CategoryService();
+// Instanciar el servicio y use cases
+const adminCategoryService = new AdminCategoryService();
+
+const getAllCategoriesUseCase = new GetAllCategoriesUseCase(
+	adminCategoryService
+);
+const createCategoryAsAdminUseCase = new CreateCategoryAsAdminUseCase(
+	adminCategoryService
+);
+const updateAnyCategoryUseCase = new UpdateAnyCategoryUseCase(
+	adminCategoryService
+);
+const deleteAnyCategoryUseCase = new DeleteAnyCategoryUseCase(
+	adminCategoryService
+);
+const toggleCategoryActiveUseCase = new ToggleCategoryActiveUseCase(
+	adminCategoryService
+);
+const toggleCategoryFeaturedUseCase = new ToggleCategoryFeaturedUseCase(
+	adminCategoryService
+);
+const getCategoryByIdUseCase = new GetCategoryByIdUseCase(adminCategoryService);
 
 /**
  * Hook para gestión administrativa de categorías
@@ -90,7 +120,8 @@ export const useAdminCategories = () => {
 				}
 
 				console.log("🌐 useAdminCategories: Obteniendo categorías desde API");
-				const response = await categoryService.getCategories({
+				// USAR USE CASE
+				const response = await getAllCategoriesUseCase.execute({
 					...params,
 					// No filtrar por is_active para que admin vea todas
 				});
@@ -164,7 +195,9 @@ export const useAdminCategories = () => {
 				console.log(
 					"🌐 useAdminCategories: Obteniendo categorías principales desde API"
 				);
-				const response = await categoryService.getMainCategories(withCounts);
+				// USAR SERVICIO ADMIN
+				const response =
+					await adminCategoryService.getMainCategories(withCounts);
 
 				if (response && Array.isArray(response)) {
 					const adaptedCategories = response.map(adaptCategory);
@@ -225,7 +258,8 @@ export const useAdminCategories = () => {
 				console.log(
 					`🌐 useAdminCategories: Obteniendo categoría ${id} desde API`
 				);
-				const response = await categoryService.getCategoryById(id);
+				// USAR USE CASE
+				const response = await getCategoryByIdUseCase.execute(id);
 
 				if (response) {
 					const adaptedCategory = adaptCategory(response);
@@ -267,7 +301,8 @@ export const useAdminCategories = () => {
 
 			try {
 				console.log("🌐 useAdminCategories: Creando nueva categoría:", data);
-				const response = await categoryService.createCategory(data);
+				// USAR USE CASE
+				const response = await createCategoryAsAdminUseCase.execute(data);
 
 				if (response) {
 					const adaptedCategory = adaptCategory(response);
@@ -313,7 +348,8 @@ export const useAdminCategories = () => {
 					`🌐 useAdminCategories: Actualizando categoría ${data.id}:`,
 					data
 				);
-				const response = await categoryService.updateCategory(data.id!, data);
+				// USAR USE CASE
+				const response = await updateAnyCategoryUseCase.execute(data);
 
 				if (response) {
 					const adaptedCategory = adaptCategory(response);
@@ -361,7 +397,8 @@ export const useAdminCategories = () => {
 
 			try {
 				console.log(`🌐 useAdminCategories: Eliminando categoría ${id}`);
-				const result = await categoryService.deleteCategory(id);
+				// USAR USE CASE
+				const result = await deleteAnyCategoryUseCase.execute(id);
 
 				if (result) {
 					// Remover de las listas actuales
@@ -405,21 +442,21 @@ export const useAdminCategories = () => {
 				console.log(
 					`🌐 useAdminCategories: Cambiando estado activo de categoría ${id} a ${is_active}`
 				);
-				const result = await categoryService.updateCategory(id, {
-					id,
-					is_active,
-				});
+				// USAR USE CASE
+				const result = await toggleCategoryActiveUseCase.execute(id, is_active);
 
 				if (result) {
-					const adaptedCategory = adaptCategory(result);
-
 					// Actualizar en las listas actuales
-					setCategories((prev) =>
-						prev.map((cat) => (cat.id === id ? adaptedCategory : cat))
-					);
-					setMainCategories((prev) =>
-						prev.map((cat) => (cat.id === id ? adaptedCategory : cat))
-					);
+					const updateCategory = (cat: Category) =>
+						cat.id === id ? {...cat, is_active} : cat;
+
+					setCategories((prev) => prev.map(updateCategory));
+					setMainCategories((prev) => prev.map(updateCategory));
+
+					// Actualizar detalle si coincide
+					if (categoryDetail?.id === id) {
+						setCategoryDetail((prev) => (prev ? {...prev, is_active} : prev));
+					}
 
 					// Limpiar caché relacionada
 					clearCategoryCache();
@@ -438,7 +475,7 @@ export const useAdminCategories = () => {
 				setLoading(false);
 			}
 		},
-		[adaptCategory]
+		[categoryDetail]
 	);
 
 	/**
@@ -453,18 +490,24 @@ export const useAdminCategories = () => {
 				console.log(
 					`🌐 useAdminCategories: Cambiando estado destacado de categoría ${id} a ${featured}`
 				);
-				const result = await categoryService.updateCategory(id, {id, featured});
+				// USAR USE CASE
+				const result = await toggleCategoryFeaturedUseCase.execute(
+					id,
+					featured
+				);
 
 				if (result) {
-					const adaptedCategory = adaptCategory(result);
-
 					// Actualizar en las listas actuales
-					setCategories((prev) =>
-						prev.map((cat) => (cat.id === id ? adaptedCategory : cat))
-					);
-					setMainCategories((prev) =>
-						prev.map((cat) => (cat.id === id ? adaptedCategory : cat))
-					);
+					const updateCategory = (cat: Category) =>
+						cat.id === id ? {...cat, featured} : cat;
+
+					setCategories((prev) => prev.map(updateCategory));
+					setMainCategories((prev) => prev.map(updateCategory));
+
+					// Actualizar detalle si coincide
+					if (categoryDetail?.id === id) {
+						setCategoryDetail((prev) => (prev ? {...prev, featured} : prev));
+					}
 
 					// Limpiar caché relacionada
 					clearCategoryCache();
@@ -485,7 +528,7 @@ export const useAdminCategories = () => {
 				setLoading(false);
 			}
 		},
-		[adaptCategory]
+		[categoryDetail]
 	);
 
 	/**

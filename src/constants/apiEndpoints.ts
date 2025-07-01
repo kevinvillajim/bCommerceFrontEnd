@@ -26,7 +26,7 @@ export const API_ENDPOINTS = {
 	},
 
 	USER: {
-		ORDERS: "/user/orders", // Esta es la correcta para clientes
+		ORDERS: "/user/orders",
 		ORDER_DETAILS: (id: number) => `/user/orders/${id}`,
 		ORDER_STATS: "/user/orders/stats",
 		REORDER: (id: number) => `/user/orders/${id}/reorder`,
@@ -276,6 +276,23 @@ export const API_ENDPOINTS = {
 			SHOW: (key: string) => `/admin/configurations/${key}`,
 			UPDATE: "/admin/configurations/update",
 			RATINGS: "/admin/configurations/ratings",
+		},
+		CATEGORIES: {
+			LIST: "/categories", // Admin usa la misma lista pública
+			DETAILS: (id: string | number) => `/categories/${id}`,
+			CREATE: "/admin/categories", // RUTA ADMIN ESPECÍFICA
+			UPDATE: (id: string | number) => `/admin/categories/${id}`, // RUTA ADMIN ESPECÍFICA
+			PARTIAL_UPDATE: (id: string | number) => `/admin/categories/${id}`, // PATCH
+			DELETE: (id: string | number) => `/admin/categories/${id}`, // RUTA ADMIN ESPECÍFICA
+		},
+		PRODUCTS: {
+			LIST: "/products", // Admin usa la misma lista pública pero con permisos especiales
+			DETAILS: (id: string | number) => `/products/${id}`,
+			CREATE: "/admin/products", // RUTA ADMIN ESPECÍFICA
+			UPDATE: (id: string | number) => `/admin/products/${id}`, // RUTA ADMIN ESPECÍFICA
+			PARTIAL_UPDATE: (id: string | number) => `/admin/products/${id}`, // PATCH
+			DELETE: (id: string | number) => `/admin/products/${id}`, // RUTA ADMIN ESPECÍFICA
+			STATS: "/admin/products/stats",
 		},
 	},
 

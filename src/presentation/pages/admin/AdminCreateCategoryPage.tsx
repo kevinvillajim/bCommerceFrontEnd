@@ -1,3 +1,5 @@
+// src/presentation/pages/admin/AdminCreateCategoryPage.tsx - NUEVA PÁGINA
+
 import React, {useState, useEffect} from "react";
 import {useNavigate, useSearchParams} from "react-router-dom";
 import {
@@ -23,7 +25,7 @@ import type {CategoryCreationData} from "../../../core/domain/entities/Category"
 const AdminCreateCategoryPage: React.FC = () => {
 	const navigate = useNavigate();
 	const [searchParams] = useSearchParams();
-	const parentId = searchParams.get("parent");
+	const parentIdFromUrl = searchParams.get("parent");
 
 	// Hook de administración de categorías
 	const {
@@ -40,34 +42,24 @@ const AdminCreateCategoryPage: React.FC = () => {
 		name: "",
 		slug: "",
 		description: "",
-		parent_id: parentId ? Number(parentId) : undefined,
+		parent_id: parentIdFromUrl ? Number(parentIdFromUrl) : undefined,
 		icon: "",
 		order: 0,
 		is_active: true,
 		featured: false,
 	});
 
-	// Estado de validación
+	// Estado de validación y carga
 	const [validationErrors, setValidationErrors] = useState<
 		Record<string, string>
 	>({});
 	const [isSubmitting, setIsSubmitting] = useState(false);
+	const [slugGenerated, setSlugGenerated] = useState(false);
 
-	// Cargar datos iniciales
+	// Cargar categorías principales
 	useEffect(() => {
-		loadMainCategories();
-	}, []);
-
-	/**
-	 * Carga las categorías principales para el selector de padre
-	 */
-	const loadMainCategories = async () => {
-		try {
-			await fetchMainCategories(true);
-		} catch (error) {
-			console.error("Error al cargar categorías principales:", error);
-		}
-	};
+		fetchMainCategories(true);
+	}, [fetchMainCategories]);
 
 	/**
 	 * Genera el slug automáticamente a partir del nombre
@@ -108,7 +100,7 @@ const AdminCreateCategoryPage: React.FC = () => {
 
 		// Manejar números
 		if (name === "order" || name === "parent_id") {
-			processedValue = value === "" ? 0 : Number(value);
+			processedValue = value === "" ? undefined : Number(value);
 		}
 
 		setFormData((prev) => ({
@@ -116,13 +108,18 @@ const AdminCreateCategoryPage: React.FC = () => {
 			[name]: processedValue,
 		}));
 
-		// Generar slug automáticamente cuando cambie el nombre
-		if (name === "name" && value) {
+		// Generar slug automáticamente cuando cambie el nombre (solo si no se ha modificado manualmente)
+		if (name === "name" && value && !slugGenerated) {
 			const autoSlug = generateSlug(value);
 			setFormData((prev) => ({
 				...prev,
 				slug: autoSlug,
 			}));
+		}
+
+		// Marcar que el slug fue modificado manualmente
+		if (name === "slug") {
+			setSlugGenerated(true);
 		}
 
 		// Limpiar error de validación
@@ -197,10 +194,13 @@ const AdminCreateCategoryPage: React.FC = () => {
 				// Limpiar campos vacíos
 				description: formData.description?.trim() || undefined,
 				icon: formData.icon?.trim() || undefined,
-				parent_id: formData.parent_id === 0 ? undefined : formData.parent_id,
+				parent_id:
+					formData.parent_id === 0 || formData.parent_id === undefined
+						? undefined
+						: formData.parent_id,
 			};
 
-			console.log("📤 Enviando datos de categoría:", dataToSubmit);
+			console.log("📤 Enviando datos de nueva categoría:", dataToSubmit);
 
 			const result = await createCategory(dataToSubmit);
 
@@ -208,7 +208,9 @@ const AdminCreateCategoryPage: React.FC = () => {
 				console.log("✅ Categoría creada exitosamente:", result);
 				// Redirigir a la lista de categorías
 				navigate("/admin/categories", {
-					state: {message: `Categoría "${result.name}" creada exitosamente`},
+					state: {
+						message: `Categoría "${result.name}" creada exitosamente`,
+					},
 				});
 			} else {
 				setError("Error al crear la categoría. Inténtalo de nuevo.");
@@ -226,7 +228,7 @@ const AdminCreateCategoryPage: React.FC = () => {
 	};
 
 	/**
-	 * Obtiene el nombre de la categoría padre
+	 * Obtiene el nombre de la categoría padre seleccionada
 	 */
 	const getParentCategoryName = (parentId?: number): string => {
 		if (!parentId) return "Sin categoría padre";
@@ -250,9 +252,10 @@ const AdminCreateCategoryPage: React.FC = () => {
 						<h1 className="text-2xl font-bold text-gray-900">
 							Nueva Categoría
 						</h1>
-						{parentId && (
+						{formData.parent_id && (
 							<p className="text-sm text-gray-600 mt-1">
-								Subcategoría de: {getParentCategoryName(Number(parentId))}
+								Creando subcategoría de:{" "}
+								{getParentCategoryName(formData.parent_id)}
 							</p>
 						)}
 					</div>
@@ -337,8 +340,8 @@ const AdminCreateCategoryPage: React.FC = () => {
 								</p>
 							)}
 							<p className="mt-1 text-xs text-gray-500">
-								Se genera automáticamente desde el nombre. Solo letras
-								minúsculas, números y guiones.
+								Solo letras minúsculas, números y guiones. Se genera
+								automáticamente del nombre.
 							</p>
 						</div>
 
@@ -353,17 +356,26 @@ const AdminCreateCategoryPage: React.FC = () => {
 							<select
 								id="parent_id"
 								name="parent_id"
-								value={formData.parent_id || 0}
+								value={formData.parent_id || ""}
 								onChange={handleInputChange}
-								className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+								className={`block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 ${
+									validationErrors.parent_id
+										? "border-red-300"
+										: "border-gray-300"
+								}`}
 							>
-								<option value={0}>Sin categoría padre (principal)</option>
+								<option value="">Sin categoría padre (principal)</option>
 								{mainCategories.map((category) => (
 									<option key={category.id} value={category.id}>
 										{category.name}
 									</option>
 								))}
 							</select>
+							{validationErrors.parent_id && (
+								<p className="mt-1 text-sm text-red-600">
+									{validationErrors.parent_id}
+								</p>
+							)}
 						</div>
 
 						{/* Orden */}
@@ -380,7 +392,7 @@ const AdminCreateCategoryPage: React.FC = () => {
 									type="number"
 									id="order"
 									name="order"
-									value={formData.order}
+									value={formData.order || ""}
 									onChange={handleInputChange}
 									className={`block w-full pl-10 pr-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 ${
 										validationErrors.order
@@ -478,7 +490,7 @@ const AdminCreateCategoryPage: React.FC = () => {
 							/>
 							<label
 								htmlFor="is_active"
-								className="ml-2 block text-sm text-gray-900 flex items-center"
+								className="ml-2 text-sm text-gray-900 flex items-center"
 							>
 								<Eye className="h-4 w-4 mr-1" />
 								Categoría activa
@@ -500,7 +512,7 @@ const AdminCreateCategoryPage: React.FC = () => {
 							/>
 							<label
 								htmlFor="featured"
-								className="ml-2 block text-sm text-gray-900 flex items-center"
+								className="ml-2 text-sm text-gray-900 flex items-center"
 							>
 								<Star className="h-4 w-4 mr-1" />
 								Categoría destacada

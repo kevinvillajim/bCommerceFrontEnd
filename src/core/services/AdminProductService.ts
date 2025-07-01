@@ -1,4 +1,4 @@
-// src/core/services/AdminProductService.ts
+// src/core/services/AdminProductService.ts - CORREGIDO
 
 import ApiClient from "../../infrastructure/api/apiClient";
 import {API_ENDPOINTS} from "../../constants/apiEndpoints";
@@ -28,13 +28,10 @@ export class AdminProductService {
 				filterParams
 			);
 
-			// Limpiar parámetros específicos de frontend que el backend no reconoce
-			const cleanParams = {...filterParams};
-			delete cleanParams.admin_view; // Remover este parámetro que no existe en el backend
-
+			// Usar la ruta pública pero con permisos de admin
 			const response = await ApiClient.get<ProductListResponse>(
 				API_ENDPOINTS.PRODUCTS.LIST,
-				cleanParams
+				filterParams
 			);
 
 			console.log("📥 AdminProductService: Respuesta del servidor:", response);
@@ -147,8 +144,9 @@ export class AdminProductService {
 				});
 			}
 
+			// USAR RUTA ADMIN ESPECÍFICA
 			const response = await ApiClient.uploadFile<Product>(
-				API_ENDPOINTS.PRODUCTS.CREATE,
+				API_ENDPOINTS.ADMIN.PRODUCTS.CREATE,
 				formData
 			);
 
@@ -246,8 +244,9 @@ export class AdminProductService {
 				});
 			}
 
+			// USAR RUTA ADMIN ESPECÍFICA
 			const response = await ApiClient.updateFile<Product>(
-				API_ENDPOINTS.PRODUCTS.UPDATE(data.id),
+				API_ENDPOINTS.ADMIN.PRODUCTS.UPDATE(data.id),
 				formData
 			);
 
@@ -268,8 +267,9 @@ export class AdminProductService {
 				`📤 AdminProductService: Eliminando producto ${id} como admin`
 			);
 
+			// USAR RUTA ADMIN ESPECÍFICA
 			const response = await ApiClient.delete(
-				API_ENDPOINTS.PRODUCTS.DELETE(id)
+				API_ENDPOINTS.ADMIN.PRODUCTS.DELETE(id)
 			);
 
 			console.log("✅ AdminProductService: Producto eliminado:", response);
@@ -281,7 +281,7 @@ export class AdminProductService {
 	}
 
 	/**
-	 * Cambia el estado destacado de un producto - CORREGIDO
+	 * Cambia el estado destacado de un producto - USAR PATCH
 	 */
 	async toggleFeatured(id: number, featured: boolean): Promise<boolean> {
 		try {
@@ -289,9 +289,9 @@ export class AdminProductService {
 				`📤 AdminProductService: Cambiando featured del producto ${id} a ${featured}`
 			);
 
-			// Usar PATCH en lugar de PUT para actualizaciones parciales
+			// USAR RUTA ADMIN PATCH ESPECÍFICA
 			const response = await ApiClient.patch(
-				API_ENDPOINTS.PRODUCTS.UPDATE(id),
+				API_ENDPOINTS.ADMIN.PRODUCTS.PARTIAL_UPDATE(id),
 				{featured: featured}
 			);
 
@@ -307,7 +307,7 @@ export class AdminProductService {
 	}
 
 	/**
-	 * Cambia el estado de publicación de un producto - CORREGIDO
+	 * Cambia el estado de publicación de un producto - USAR PATCH
 	 */
 	async togglePublished(id: number, published: boolean): Promise<boolean> {
 		try {
@@ -315,9 +315,9 @@ export class AdminProductService {
 				`📤 AdminProductService: Cambiando published del producto ${id} a ${published}`
 			);
 
-			// Usar PATCH en lugar de PUT para actualizaciones parciales
+			// USAR RUTA ADMIN PATCH ESPECÍFICA
 			const response = await ApiClient.patch(
-				API_ENDPOINTS.PRODUCTS.UPDATE(id),
+				API_ENDPOINTS.ADMIN.PRODUCTS.PARTIAL_UPDATE(id),
 				{published: published}
 			);
 
@@ -333,7 +333,7 @@ export class AdminProductService {
 	}
 
 	/**
-	 * Cambia el estado de un producto - CORREGIDO
+	 * Cambia el estado de un producto - USAR PATCH
 	 */
 	async updateStatus(id: number, status: string): Promise<boolean> {
 		try {
@@ -341,9 +341,9 @@ export class AdminProductService {
 				`📤 AdminProductService: Cambiando status del producto ${id} a ${status}`
 			);
 
-			// Usar PATCH en lugar de PUT para actualizaciones parciales
+			// USAR RUTA ADMIN PATCH ESPECÍFICA
 			const response = await ApiClient.patch(
-				API_ENDPOINTS.PRODUCTS.UPDATE(id),
+				API_ENDPOINTS.ADMIN.PRODUCTS.PARTIAL_UPDATE(id),
 				{status: status}
 			);
 
@@ -367,8 +367,8 @@ export class AdminProductService {
 				"📤 AdminProductService: Obteniendo estadísticas de productos"
 			);
 
-			// Este endpoint podría necesitar ser creado en el backend
-			const response = await ApiClient.get("/admin/products/stats");
+			// USAR RUTA ADMIN ESPECÍFICA
+			const response = await ApiClient.get(API_ENDPOINTS.ADMIN.PRODUCTS.STATS);
 
 			console.log("✅ AdminProductService: Estadísticas obtenidas:", response);
 			return response;
