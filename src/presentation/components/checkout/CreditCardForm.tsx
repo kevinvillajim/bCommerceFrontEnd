@@ -1,8 +1,13 @@
 // src/presentation/components/checkout/CreditCardForm.tsx
+import type { PaymentInfo } from "../../../core/services/CheckoutService";
 import React from "react";
 
 interface CreditCardFormProps {
-	content: React.ReactNode;
+	// CORREGIDO: Agregar paymentInfo a las props
+	paymentInfo: PaymentInfo;
+	errors: Record<string, string>;
+	onChange: (field: keyof PaymentInfo, value: string) => void;
+	content?: React.ReactNode; // AGREGADO para el content
 }
 
 const CreditCardForm: React.FC<CreditCardFormProps> = ({content}) => {

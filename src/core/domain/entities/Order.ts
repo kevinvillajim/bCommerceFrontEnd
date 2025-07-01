@@ -1,6 +1,6 @@
 /**
  * Archivo: src/core/domain/entities/Order.ts
- * Entidades relacionadas con órdenes de compra y sus tipos
+ * Entidades relacionadas con órdenes de compra y sus tipos - CORREGIDO
  */
 export interface Order {
 	id?: number;
@@ -150,7 +150,7 @@ export interface OrderStats {
 }
 
 /**
- * Order status type - Actualizada para incluir 'paid'
+ * Order status type - ✅ CORREGIDO para incluir 'rejected'
  */
 export type OrderStatus =
 	| "pending"
@@ -160,7 +160,7 @@ export type OrderStatus =
 	| "delivered"
 	| "completed"
 	| "cancelled"
-	| "rejected";
+	| "rejected"; // ✅ AÑADIDO - Estado faltante
 
 /**
  * Payment method type
@@ -175,7 +175,12 @@ export type PaymentMethod =
 /**
  * Payment status type
  */
-export type PaymentStatus = "pending" | "completed" | "failed" | "rejected" | null;
+export type PaymentStatus =
+	| "pending"
+	| "completed"
+	| "failed"
+	| "rejected"
+	| null;
 
 /**
  * Shipping data type

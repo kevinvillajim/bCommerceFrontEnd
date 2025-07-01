@@ -2,7 +2,6 @@
 import ApiClient from "../../infrastructure/api/apiClient";
 import {API_ENDPOINTS} from "../../constants/apiEndpoints";
 import SellerAdapter from "../../infrastructure/adapters/SellerAdapter";
-import type { Seller } from "../../core/domain/entities/Seller";
 
 // Interfaces para los datos de creación y actualización
 export interface CreateSellerData {
@@ -21,6 +20,7 @@ export interface UpdateSellerData {
 	verification_level?: "none" | "basic" | "verified" | "premium";
 	commission_rate?: number;
 	is_featured?: boolean;
+	user_id?: number; // AGREGADO para compatibilidad con SellerFormModal
 }
 
 export interface SellerFilter {
@@ -33,8 +33,15 @@ export interface SellerFilter {
 }
 
 export interface SellerAdminResponse {
-	sellers: Seller[];
-	pagination: {
+	data: any[]; // AGREGADO: propiedad data que faltaba
+	sellers?: any[]; // Mantener por compatibilidad
+	meta: {
+		total: number;
+		current_page: number;
+		last_page: number;
+		per_page: number;
+	};
+	pagination?: {
 		currentPage: number;
 		totalPages: number;
 		totalItems: number;
@@ -71,6 +78,66 @@ export class SellerAdminService {
 			throw new Error(response?.message || "Error al obtener vendedores");
 		} catch (error) {
 			console.error("Error al obtener vendedores:", error);
+			throw error;
+		}
+	}
+
+	/**
+	 * Actualiza el nivel de verificación de un vendedor
+	 */
+	async updateVerificationLevel(
+		id: number,
+		level: "none" | "basic" | "verified" | "premium"
+	) {
+		try {
+			const response = await ApiClient.patch<any>(
+				API_ENDPOINTS.ADMIN.SELLERS + `/${id}`,
+				{
+					verification_level: level,
+				}
+			);
+
+			if (response?.status === "success") {
+				return SellerAdapter.toEntity(response.data);
+			}
+
+			throw new Error(
+				response?.message ||
+					"Error al actualizar nivel de verificación del vendedor"
+			);
+		} catch (error) {
+			console.error(
+				`Error al actualizar nivel de verificación del vendedor ${id}:`,
+				error
+			);
+			throw error;
+		}
+	}
+
+	/**
+	 * Cambia el estado destacado de un vendedor
+	 */
+	async toggleFeatured(id: number, isFeatured: boolean) {
+		try {
+			const response = await ApiClient.patch<any>(
+				API_ENDPOINTS.ADMIN.SELLERS + `/${id}`,
+				{
+					is_featured: isFeatured,
+				}
+			);
+
+			if (response?.status === "success") {
+				return SellerAdapter.toEntity(response.data);
+			}
+
+			throw new Error(
+				response?.message || "Error al cambiar estado destacado del vendedor"
+			);
+		} catch (error) {
+			console.error(
+				`Error al cambiar estado destacado del vendedor ${id}:`,
+				error
+			);
 			throw error;
 		}
 	}

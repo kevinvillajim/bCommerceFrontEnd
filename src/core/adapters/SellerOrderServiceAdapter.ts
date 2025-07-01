@@ -20,6 +20,7 @@ export interface SellerOrderUI {
 		quantity: number;
 		price: number;
 		subtotal: number;
+		name?: string; // AGREGADO
 	}>;
 	status:
 		| "pending"
@@ -32,12 +33,11 @@ export interface SellerOrderUI {
 	paymentStatus: "pending" | "completed" | "failed" | "rejected";
 	shippingAddress?: string;
 }
-
 export interface SellerOrderStatUI {
 	label: string;
 	value: number | string;
 	isCurrency?: boolean;
-	color?: string;
+	color: string; // CORREGIDO: requerido, no opcional
 	icon?: React.ReactNode;
 }
 

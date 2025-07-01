@@ -3,13 +3,13 @@ import {ProductService} from "../../core/services/ProductService";
 import type {
 	Product,
 	ProductDetail,
-	ProductFilterParams,
 	ProductCreationData,
 	ProductUpdateData,
 } from "../../core/domain/entities/Product";
 import {useAuth} from "../contexts/AuthContext";
 import ApiClient from "../../infrastructure/api/apiClient";
-import {API_ENDPOINTS} from "../../constants/apiEndpoints";
+import { API_ENDPOINTS } from "../../constants/apiEndpoints";
+import type {ExtendedProductFilterParams} from "../types/ProductFilterParams";
 
 // Instancia del servicio de productos
 const productService = new ProductService();
@@ -38,34 +38,30 @@ export const useSellerProducts = () => {
 			setError(null);
 
 			try {
-				// Modo depuración para verificar información del vendedor
 				console.log("Usuario actual:", user);
 
-				// Usamos el ID del vendedor desde la información del rol
 				const sellerId = user?.id;
 				if (!sellerId) {
 					throw new Error("No se pudo obtener el ID del vendedor");
 				}
 
 				// Crear parámetros de filtro para productos del vendedor
-				const filterParams: ProductFilterParams = {
+				const filterParams: ExtendedProductFilterParams = {
+					// CORREGIDO: usar ExtendedProductFilterParams
 					limit,
 					offset: (page - 1) * limit,
 					page,
 					sellerId: sellerId,
 					sortBy: "created_at",
 					sortDir: "desc",
-					// Añadir propiedades adicionales para satisfacer el tipo
 					featured: undefined,
 					status: undefined,
 				};
 
 				const response = await productService.getProducts(filterParams);
 
-				// Adaptar los productos a la estructura esperada
 				if (response) {
 					if (Array.isArray(response.data)) {
-						// Si tiene una propiedad data que es un array
 						setProducts(response.data);
 						setTotalProducts(response.meta?.total || response.data.length);
 					} else {

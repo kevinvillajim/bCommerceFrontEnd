@@ -132,9 +132,7 @@ const SellerFormModal: React.FC<SellerFormModalProps> = ({
 				<div className="flex justify-between items-center mb-4">
 					<div className="flex items-center">
 						<Store className="h-6 w-6 mr-2 text-primary-600" />
-						<h3 className="text-xl font-semibold text-gray-900">
-							{title}
-						</h3>
+						<h3 className="text-xl font-semibold text-gray-900">{title}</h3>
 					</div>
 					<button
 						onClick={onClose}
@@ -159,7 +157,7 @@ const SellerFormModal: React.FC<SellerFormModalProps> = ({
 							</label>
 							<select
 								name="user_id"
-								value={formData.user_id}
+								value={(formData as CreateSellerData).user_id || 0} // CORREGIDO: cast explícito y valor por defecto
 								onChange={handleChange}
 								required
 								className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"

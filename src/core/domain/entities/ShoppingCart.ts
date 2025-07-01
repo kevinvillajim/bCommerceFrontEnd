@@ -41,6 +41,7 @@ export interface CartItem {
 			storeName?: string;
 		};
 		user_id?: number;
+		stock?: number; // AGREGADO
 	};
 }
 

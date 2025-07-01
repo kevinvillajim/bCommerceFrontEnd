@@ -184,18 +184,18 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 						subtotal: item.subtotal,
 						attributes: item.attributes,
 						product: {
-							// ✅ INCLUIR TODOS LOS CAMPOS NECESARIOS
+							// ✅ CORREGIDO - Usar valores seguros con fallbacks
 							id: item.product.id,
 							name: item.product.name,
 							slug: item.product.slug,
 							price: item.product.price,
-							final_price: item.product.final_price || item.product.price,
-							discount_percentage: item.product.discount_percentage || 0,
-							rating: item.product.rating || 0,
-							rating_count: item.product.rating_count || 0,
+							final_price: item.product.final_price || item.product.price, // ✅ CORREGIDO
+							discount_percentage: item.product.discount_percentage || 0, // ✅ CORREGIDO
+							rating: item.product.rating || 0, // ✅ CORREGIDO
+							rating_count: item.product.rating_count || 0, // ✅ CORREGIDO
 							image: item.product.main_image || item.product.image,
 							stockAvailable: item.product.stock,
-							sellerId: item.product.seller_id,
+							sellerId: item.product.seller_id || item.product.sellerId,
 							seller_id: item.product.seller_id,
 						},
 					})),
@@ -661,7 +661,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 				notification,
 				showNotification,
 				hideNotification,
-				cartItemCount: itemCount, 
+				cartItemCount: itemCount,
 			}}
 		>
 			{children}

@@ -96,7 +96,7 @@ export const adaptProduct = (apiProduct: any): Product => {
 		isInStock:
 			apiProduct.isInStock || apiProduct.is_in_stock || apiProduct.stock > 0,
 		rating: parseFloat(rating) || 0,
-		rating_count: parseFloat(rating_count) || 0,
+		ratingCount: parseFloat(rating_count) || 0, // CORREGIDO: usar ratingCount en lugar de rating_count
 		createdAt: apiProduct.createdAt || apiProduct.created_at,
 		updatedAt: apiProduct.updatedAt || apiProduct.updated_at,
 	};

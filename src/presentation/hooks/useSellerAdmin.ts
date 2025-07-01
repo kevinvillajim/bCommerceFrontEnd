@@ -30,7 +30,6 @@ export const useSellerAdmin = () => {
 			setError(null);
 
 			try {
-				// Asegurarnos de que page esté presente en los filtros
 				const filtersWithPage = {
 					...filters,
 					page: filters.page || currentPage,
@@ -39,13 +38,23 @@ export const useSellerAdmin = () => {
 
 				const response = await sellerService.getSellers(filtersWithPage);
 
-				setSellers(response.data);
-				setTotalItems(response.meta.total);
-				setCurrentPage(response.meta.current_page);
-				setTotalPages(response.meta.last_page);
-				setItemsPerPage(response.meta.per_page);
+				// CORREGIDO: Acceder a la estructura correcta de la respuesta
+				if (response && response.sellers) {
+					setSellers(response.sellers);
 
-				return response.data;
+					// Usar pagination si existe, sino usar meta
+					if (response.pagination) {
+						setTotalItems(response.pagination.totalItems);
+						setCurrentPage(response.pagination.currentPage);
+						setTotalPages(response.pagination.totalPages);
+						setItemsPerPage(response.pagination.itemsPerPage);
+					}
+
+					return response.sellers;
+				} else {
+					setSellers([]);
+					return [];
+				}
 			} catch (err) {
 				const errorMessage = extractErrorMessage(
 					err,

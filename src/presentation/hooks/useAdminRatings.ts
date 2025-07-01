@@ -286,20 +286,18 @@ export const useAdminRatings = () => {
 			const response = await adminRatingService.flagRating(ratingId, reason);
 
 			if (response.status === "success") {
-				// Actualizar el estado local con el nuevo estado
+				// CORREGIDO: Verificar si data existe antes de acceder a newStatus
 				if (response.data && response.data.newStatus) {
 					setRatings((prevRatings) =>
 						prevRatings.map((rating) =>
 							rating.id === ratingId
-								? {...rating, status: response.data.newStatus}
+								? {...rating, status: response.data!.newStatus as any} // CORREGIDO: non-null assertion y cast
 								: rating
 						)
 					);
 				}
 
-				// Actualizar estadísticas
 				fetchStats();
-
 				return true;
 			} else {
 				throw new Error(

@@ -30,7 +30,9 @@ export class AdminProductService {
 
 			// Limpiar parámetros específicos de frontend que el backend no reconoce
 			const cleanParams = {...filterParams};
-			delete cleanParams.admin_view; // Remover este parámetro que no existe en el backend
+			if (cleanParams && "admin_view" in cleanParams) {
+				delete cleanParams.admin_view; // CORREGIDO: verificar si existe antes de eliminar
+			}
 
 			const response = await ApiClient.get<ProductListResponse>(
 				API_ENDPOINTS.PRODUCTS.LIST,

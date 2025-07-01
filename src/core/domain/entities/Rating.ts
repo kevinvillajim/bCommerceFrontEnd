@@ -2,25 +2,30 @@
  * Rating entity
  */
 export interface Rating {
-  id?: number;
-  userId: number;
-  sellerId?: number;
-  orderId?: number;
-  productId?: number;
-  rating: number;
-  title?: string;
-  comment?: string;
-  status: 'pending' | 'approved' | 'rejected';
-  type: 'product' | 'seller' | 'user';
-  createdAt?: string;
-  updatedAt?: string;
-  // Campos adicionales útiles para el frontend
-  user?: {
-    id: number;
-    name: string;
-    avatar?: string;
-  };
-  isVerifiedPurchase?: boolean;
+	id?: number;
+	userId: number;
+	sellerId?: number;
+	orderId?: number;
+	productId?: number;
+	rating: number;
+	title?: string;
+	comment?: string;
+	status: "pending" | "approved" | "rejected" | "flagged"; // AGREGADO 'flagged'
+	type: "product" | "seller" | "user";
+	createdAt?: string;
+	updatedAt?: string;
+	user?: {
+		id: number;
+		name: string;
+		avatar?: string;
+	};
+	isVerifiedPurchase?: boolean;
+	seller_response?: {
+		id: number;
+		text: string;
+		created_at: string;
+	};
+	is_verified_purchase?: boolean; // AGREGADO para compatibilidad API
 }
 
 /**

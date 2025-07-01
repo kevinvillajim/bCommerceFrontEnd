@@ -72,7 +72,6 @@ const AdminRatingsPage: React.FC = () => {
     ratings,
     loading,
     error,
-    statsLoading,
     stats,
     statusFilter,
     typeFilter,

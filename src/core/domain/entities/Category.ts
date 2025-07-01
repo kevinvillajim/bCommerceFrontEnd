@@ -8,14 +8,15 @@ export interface Category {
 	name: string;
 	slug: string;
 	description?: string;
-	parent_id?: number; // Note: snake_case from API
+	parent_id?: number;
+	parentId?: number; // AGREGADO para compatibilidad
 	icon?: string;
 	image?: string;
 	order?: number;
-	is_active: boolean; // Note: snake_case from API
+	is_active: boolean;
 	featured: boolean;
-	created_at?: string; // Note: snake_case from API
-	updated_at?: string; // Note: snake_case from API
+	created_at?: string;
+	updated_at?: string;
 
 	// API response specific fields
 	subcategories?: Category[];

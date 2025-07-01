@@ -5,7 +5,7 @@ export interface StatItem {
 	label: string;
 	value: string | number;
 	icon: React.ReactNode;
-	color: "blue" | "green" | "indigo" | "red" | "yellow" | "purple" | "gray";
+	color: string;
 	isCurrency?: boolean;
 }
 

@@ -19,6 +19,10 @@ export interface AdminRatingResponse {
 export interface AdminActionResponse {
 	status: string;
 	message: string;
+	data?: {
+		newStatus?: string;
+		[key: string]: any;
+	};
 }
 
 export interface AdminRatingFilters {

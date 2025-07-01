@@ -242,55 +242,72 @@ export interface ImageWithFallbackProps {
 }
 
 export function createImageWithFallback(React: any) {
-  return function ImageWithFallback({ 
-    src, 
-    alt, 
-    className = '',
-    fallbackSrc,
-    useSmallPlaceholder = false,
-    onError,
-    ...props 
-  }: ImageWithFallbackProps) {
-    const [imageSrc, setImageSrc] = React.useState(getImageUrl(src, useSmallPlaceholder));
-    const [hasError, setHasError] = React.useState(false);
-    const [errorCount, setErrorCount] = React.useState(0);
+	return function ImageWithFallback({
+		src,
+		alt,
+		className = "",
+		fallbackSrc,
+		useSmallPlaceholder = false,
+		onError,
+		...props // CORREGIDO: mantener solo si se usa
+	}: ImageWithFallbackProps) {
+		const [imageSrc, setImageSrc] = React.useState(
+			getImageUrl(src, useSmallPlaceholder)
+		);
+		const [hasError, setHasError] = React.useState(false);
+		const [errorCount, setErrorCount] = React.useState(0);
 
-    React.useEffect(() => {
-      setImageSrc(getImageUrl(src, useSmallPlaceholder));
-      setHasError(false);
-      setErrorCount(0);
-    }, [src, useSmallPlaceholder]);
+		React.useEffect(() => {
+			setImageSrc(getImageUrl(src, useSmallPlaceholder));
+			setHasError(false);
+			setErrorCount(0);
+		}, [src, useSmallPlaceholder]);
 
-    const handleError = React.useCallback((error: Event) => {
-      console.warn('Error cargando imagen:', imageSrc);
-      
-      if (onError) {
-        onError(error);
-      }
+		const handleError = React.useCallback(
+			(error: Event) => {
+				console.warn("Error cargando imagen:", imageSrc);
 
-      // Evitar loops infinitos de error
-      if (errorCount >= 2) {
-        console.warn('Demasiados errores de imagen, usando placeholder final');
-        return;
-      }
+				if (onError) {
+					onError(error);
+				}
 
-      setErrorCount((prev: number) => prev + 1);
+				if (errorCount >= 2) {
+					console.warn(
+						"Demasiados errores de imagen, usando placeholder final"
+					);
+					return;
+				}
 
-      if (!hasError) {
-        setHasError(true);
-        
-        // Intentar con fallback personalizado primero
-        if (fallbackSrc && errorCount === 0) {
-          setImageSrc(getImageUrl(fallbackSrc, useSmallPlaceholder));
-        } else {
-          // Usar placeholder como último recurso
-          setImageSrc(getImageUrl(null, useSmallPlaceholder));
-        }
-      }
-    }, [imageSrc, hasError, fallbackSrc, useSmallPlaceholder, errorCount, onError]);
+				setErrorCount((prev: number) => prev + 1);
 
-    
-  };
+				if (!hasError) {
+					setHasError(true);
+
+					if (fallbackSrc && errorCount === 0) {
+						setImageSrc(getImageUrl(fallbackSrc, useSmallPlaceholder));
+					} else {
+						setImageSrc(getImageUrl(null, useSmallPlaceholder));
+					}
+				}
+			},
+			[
+				imageSrc,
+				hasError,
+				fallbackSrc,
+				useSmallPlaceholder,
+				errorCount,
+				onError,
+			]
+		);
+
+		return React.createElement("img", {
+			src: imageSrc,
+			alt,
+			className,
+			onError: handleError,
+			...props, // Usar props aquí si es necesario
+		});
+	};
 }
 
 /**

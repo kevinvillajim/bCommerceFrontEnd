@@ -21,6 +21,55 @@ import {
 import useSellerProducts from "../../hooks/useSellerProducts";
 import useCategoriesSelect from "../../hooks/useCategoriesSelect";
 import appConfig from "../../../config/appConfig";
+import type {ProductImage} from "../../../core/domain/entities/Product";
+
+// ✅ CORREGIDO - Interfaz de estado del formulario corregida
+interface FormDataState {
+	// Información básica (requerida)
+	name: string;
+	description: string;
+	short_description: string;
+
+	// Categorización
+	parentCategory: string;
+	category: string;
+	tags: string[];
+	currentTag: string;
+
+	// Precios y stock
+	price: string;
+	stock: string;
+	discount_percentage: string;
+
+	// Características físicas
+	weight: string;
+	width: string;
+	height: string;
+	depth: string;
+	dimensions: string;
+
+	// Variaciones
+	colors: string[];
+	currentColor: string;
+	sizes: string[];
+	currentSize: string;
+
+	// Atributos personalizados
+	attributes: Array<{key: string; value: string}>;
+	currentAttributeKey: string;
+	currentAttributeValue: string;
+
+	// Multimedia - ✅ CORREGIDO
+	images: File[];
+	existingImages: ProductImage[]; // Usar ProductImage en lugar de tipo inline
+	previewImages: string[];
+	imagesToRemove: number[];
+
+	// Configuración avanzada
+	status: string;
+	featured: boolean;
+	published: boolean;
+}
 
 const SellerProductEditPage: React.FC = () => {
 	const navigate = useNavigate();
@@ -50,8 +99,8 @@ const SellerProductEditPage: React.FC = () => {
 		advanced: false,
 	});
 
-	// Estado del formulario con todos los campos posibles
-	const [formData, setFormData] = useState({
+	// ✅ CORREGIDO - Estado del formulario con tipo explícito
+	const [formData, setFormData] = useState<FormDataState>({
 		// Información básica (requerida)
 		name: "",
 		description: "",
@@ -60,7 +109,7 @@ const SellerProductEditPage: React.FC = () => {
 		// Categorización
 		parentCategory: "",
 		category: "",
-		tags: [] as string[],
+		tags: [],
 		currentTag: "",
 
 		// Precios y stock
@@ -76,28 +125,21 @@ const SellerProductEditPage: React.FC = () => {
 		dimensions: "",
 
 		// Variaciones
-		colors: [] as string[],
+		colors: [],
 		currentColor: "",
-		sizes: [] as string[],
+		sizes: [],
 		currentSize: "",
 
 		// Atributos personalizados
-		attributes: [] as Array<{key: string; value: string}>,
+		attributes: [],
 		currentAttributeKey: "",
 		currentAttributeValue: "",
 
 		// Multimedia
-		images: [] as File[],
-		// Primero, corregir el tipo de existingImages en formData
-		existingImages: [] as {
-			id?: number;
-			original: string;
-			thumbnail: string;
-			medium: string;
-			large: string;
-		}[],
-		previewImages: [] as string[],
-		imagesToRemove: [] as number[],
+		images: [],
+		existingImages: [],
+		previewImages: [],
+		imagesToRemove: [],
 
 		// Configuración avanzada
 		status: "active",
@@ -131,39 +173,29 @@ const SellerProductEditPage: React.FC = () => {
 				console.log("Category ID:", product.category_id);
 				console.log("Category:", product.category);
 
+				// ✅ CORREGIDO - Manejar parent_id de categoria apropiadamente
 				let parentCategoryId = product.category?.parent_id;
 				let categoryId = product.category_id;
-      
+
 				// Si la categoría no tiene padre, entonces es una categoría principal
 				if (!parentCategoryId) {
 					parentCategoryId = categoryId;
 				}
-      
+
 				console.log("⭐ Valores de categoría actualizados:", {
 					parentCategoryId,
 					categoryId,
 					categoryIdType: typeof categoryId,
-					parentCategoryIdType: typeof parentCategoryId
+					parentCategoryIdType: typeof parentCategoryId,
 				});
-				
+
 				// Importante: Actualizar selectedParentId antes de establecer formData
-				setSelectedParentId(Number(parentCategoryId));
-      
-				// Pequeña pausa para permitir que selectedParentId se actualice
-				await new Promise(resolve => setTimeout(resolve, 10));
-
-				//////////////////////////////////////////////////////////
-
-				// Actualizar selectedParentId para filtrar subcategorías
 				if (parentCategoryId) {
-					setSelectedParentId(parentCategoryId);
+					setSelectedParentId(Number(parentCategoryId));
 				}
 
-				console.log("Estableciendo categorías:", {
-					parentCategoryId,
-					categoryId,
-					subcategoryOptions,
-				});
+				// Pequeña pausa para permitir que selectedParentId se actualice
+				await new Promise((resolve) => setTimeout(resolve, 10));
 
 				// Procesar arrays que vienen como strings (colores, tamaños, etiquetas)
 				const processArray = (data: any[]): string[] => {
@@ -189,13 +221,13 @@ const SellerProductEditPage: React.FC = () => {
 						.filter(Boolean);
 				};
 
-				// Configurar el estado inicial con los datos del producto
-				setFormData(prev => {
+				// ✅ CORREGIDO - Configurar el estado inicial con tipos seguros
+				setFormData((prev) => {
 					console.log("Actualizando formData con valores:", {
 						parentCategory: String(parentCategoryId),
-						category: String(categoryId)
+						category: String(categoryId),
 					});
-        
+
 					return {
 						...prev,
 						name: product.name || "",
@@ -225,52 +257,61 @@ const SellerProductEditPage: React.FC = () => {
 							? product.attributes
 							: typeof product.attributes === "string" && product.attributes
 								? (() => {
-									try {
-										return JSON.parse(product.attributes);
-									} catch (e) {
-										console.error("Error al parsear atributos:", e);
-										return [];
-									}
-								})()
+										try {
+											return JSON.parse(product.attributes);
+										} catch (e) {
+											console.error("Error al parsear atributos:", e);
+											return [];
+										}
+									})()
 								: [],
+						// ✅ CORREGIDO - Procesar imágenes existentes de manera segura
 						existingImages: Array.isArray(product.images)
-							? product.images.map((img) => {
-								if (typeof img === "string") {
-									return {
-										original: img,
-										thumbnail: img,
-										medium: img,
-										large: img,
-									};
-								} else {
-									return img;
-								}
-							})
+							? product.images.map((img): ProductImage => {
+									if (typeof img === "string") {
+										return {
+											original: img,
+											thumbnail: img,
+											medium: img,
+											large: img,
+										};
+									} else {
+										// img ya es ProductImage, asegurar que tiene todas las propiedades
+										return {
+											id: img.id,
+											original: img.original || "",
+											thumbnail: img.thumbnail || img.original || "",
+											medium: img.medium || img.original || "",
+											large: img.large || img.original || "",
+											alt: img.alt,
+											position: img.position,
+										};
+									}
+								})
 							: [],
 						images: [],
 						previewImages: Array.isArray(product.images)
 							? product.images.map((img) => {
-								const baseUrl = appConfig.imageBaseUrl; // URL base para imágenes
-								let imagePath;
+									const baseUrl = appConfig.imageBaseUrl; // URL base para imágenes
+									let imagePath;
 
-								if (typeof img === "string") {
-									imagePath = img;
-								} else {
-									// Obtener ruta de imagen
-									imagePath = img.original || img.medium || img.thumbnail;
-								}
+									if (typeof img === "string") {
+										imagePath = img;
+									} else {
+										// Obtener ruta de imagen
+										imagePath = img.original || img.medium || img.thumbnail;
+									}
 
-								// Asegurarnos de que la ruta esté completa
-								if (imagePath && !imagePath.startsWith("http")) {
-									return `${baseUrl}${imagePath}`;
-								}
-								return imagePath;
-							})
+									// Asegurarnos de que la ruta esté completa
+									if (imagePath && !imagePath.startsWith("http")) {
+										return `${baseUrl}${imagePath}`;
+									}
+									return imagePath || "";
+								})
 							: [],
 						imagesToRemove: [],
-					}
+					};
 				});
-
 			} catch (error) {
 				console.error("Error al cargar los datos del producto:", error);
 				alert("No se pudo cargar el producto. Inténtalo de nuevo más tarde.");
@@ -312,21 +353,25 @@ const SellerProductEditPage: React.FC = () => {
 			HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
 		>
 	) => {
-		const { name, value, type } = e.target;
+		const {name, value, type} = e.target;
 
 		// Manejar checkboxes
 		if (type === "checkbox") {
 			const checked = (e.target as HTMLInputElement).checked;
 			setFormData((prev) => {
-				const updatedFormData = { ...prev, [name]: checked };
-				console.log("handleInputChange - Checkbox actualizado:", updatedFormData);
+				const updatedFormData = {...prev, [name]: checked};
+				console.log(
+					"handleInputChange - Checkbox actualizado:",
+					updatedFormData
+				);
 				return updatedFormData;
 			});
 			return;
 		}
 
+		// ✅ CORREGIDO - Usar type assertion para acceder a propiedades del estado
 		setFormData((prev) => {
-			const updatedFormData = { ...prev, [name]: value };
+			const updatedFormData = {...prev, [name as keyof FormDataState]: value};
 			console.log("handleInputChange - Input actualizado:", updatedFormData);
 			return updatedFormData;
 		});
@@ -336,8 +381,11 @@ const SellerProductEditPage: React.FC = () => {
 			setSelectedParentId(parseInt(value));
 			// Resetear la selección de subcategoría
 			setFormData((prev) => {
-				const updatedFormData = { ...prev, category: "" };
-				console.log("handleInputChange - parentCategory cambiado, subcategoría reseteada:", updatedFormData);
+				const updatedFormData = {...prev, category: ""};
+				console.log(
+					"handleInputChange - parentCategory cambiado, subcategoría reseteada:",
+					updatedFormData
+				);
 				return updatedFormData;
 			});
 		}
@@ -345,9 +393,12 @@ const SellerProductEditPage: React.FC = () => {
 		// Limpiar errores de validación al cambiar un campo
 		if (validationErrors[name]) {
 			setValidationErrors((prev) => {
-				const newErrors = { ...prev };
+				const newErrors = {...prev};
 				delete newErrors[name];
-				console.log("handleInputChange - Error de validación eliminado para:", name);
+				console.log(
+					"handleInputChange - Error de validación eliminado para:",
+					name
+				);
 				return newErrors;
 			});
 		}
@@ -550,7 +601,8 @@ const SellerProductEditPage: React.FC = () => {
 
 		// Validar campos requeridos
 		requiredFields.forEach((field) => {
-			if (!formData[field as keyof typeof formData]) {
+			const value = formData[field as keyof FormDataState];
+			if (!value) {
 				errors[field] = `El campo ${field} es obligatorio`;
 			}
 		});
@@ -583,8 +635,8 @@ const SellerProductEditPage: React.FC = () => {
 		}
 
 		// Validar dimensiones numéricas si se proporcionan
-		["weight", "width", "height", "depth"].forEach((field) => {
-			const value = formData[field as keyof typeof formData] as string;
+		(["weight", "width", "height", "depth"] as const).forEach((field) => {
+			const value = formData[field];
 			if (value && isNaN(Number(value))) {
 				errors[field] = `El campo ${field} debe ser un número`;
 			}
@@ -603,7 +655,7 @@ const SellerProductEditPage: React.FC = () => {
 			const firstErrorField = Object.keys(validationErrors)[0];
 			const errorElement = document.getElementById(firstErrorField);
 			if (errorElement) {
-				errorElement.scrollIntoView({ behavior: "smooth", block: "center" });
+				errorElement.scrollIntoView({behavior: "smooth", block: "center"});
 				errorElement.focus();
 			}
 			return;
@@ -644,7 +696,10 @@ const SellerProductEditPage: React.FC = () => {
 			const result = await updateProduct(productData);
 
 			if (result) {
-				console.log("Respuesta del servidor después de la actualización:", result);
+				console.log(
+					"Respuesta del servidor después de la actualización:",
+					result
+				);
 				navigate("/seller/products");
 			} else {
 				throw new Error("No se pudo actualizar el producto");
@@ -674,9 +729,7 @@ const SellerProductEditPage: React.FC = () => {
 		>
 			<div className="flex items-center">
 				<Icon className="w-5 h-5 text-primary-600 mr-2" />
-				<h3 className="text-lg font-medium text-gray-900">
-					{title}
-				</h3>
+				<h3 className="text-lg font-medium text-gray-900">{title}</h3>
 			</div>
 			{expandedSections[section] ? (
 				<ChevronUp className="w-5 h-5 text-gray-500" />
@@ -691,9 +744,7 @@ const SellerProductEditPage: React.FC = () => {
 		return (
 			<div className="flex flex-col items-center justify-center h-64">
 				<Loader className="w-12 h-12 text-primary-600 animate-spin mb-4" />
-				<p className="text-gray-600 text-lg">
-					Cargando datos del producto...
-				</p>
+				<p className="text-gray-600 text-lg">Cargando datos del producto...</p>
 			</div>
 		);
 	}
@@ -759,9 +810,7 @@ const SellerProductEditPage: React.FC = () => {
 									value={formData.name}
 									onChange={handleInputChange}
 									className={`w-full px-3 py-2 border ${
-										validationErrors.name
-											? "border-red-500"
-											: "border-gray-300"
+										validationErrors.name ? "border-red-500" : "border-gray-300"
 									} rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500`}
 								/>
 								{validationErrors.name && (
@@ -978,13 +1027,7 @@ const SellerProductEditPage: React.FC = () => {
 										>
 											<option value="">Seleccionar Categoría Principal</option>
 											{parentCategoryOptions.map((option) => (
-												<option
-													key={option.value}
-													value={option.value}
-													selected={
-														String(option.value) === formData.parentCategory
-													}
-												>
+												<option key={option.value} value={option.value}>
 													{option.label}
 												</option>
 											))}
@@ -1017,7 +1060,6 @@ const SellerProductEditPage: React.FC = () => {
 												: "border-gray-300"
 										} rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 disabled:bg-gray-100 disabled:cursor-not-allowed`}
 									>
-										{/* Eliminar la primera opción condicional complicada y usar esto: */}
 										{!formData.category && (
 											<option value="">
 												{!formData.parentCategory
@@ -1488,9 +1530,10 @@ const SellerProductEditPage: React.FC = () => {
 											const baseUrl = appConfig.imageBaseUrl;
 											let imagePath =
 												image.original || image.medium || image.thumbnail;
-											const imageUrl = imagePath.startsWith("http")
-												? imagePath
-												: `${baseUrl}${imagePath}`;
+											const imageUrl =
+												imagePath && imagePath.startsWith("http")
+													? imagePath
+													: `${baseUrl}${imagePath}`;
 
 											return (
 												<div

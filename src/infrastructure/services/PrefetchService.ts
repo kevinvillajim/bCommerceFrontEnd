@@ -3,7 +3,7 @@ import ApiClient from '../api/apiClient';
 import CacheService from './CacheService';
 import appConfig from '../../config/appConfig';
 import { API_ENDPOINTS } from '../../constants/apiEndpoints';
-import type { ProductFilterParams } from '../../core/domain/entities/Product';
+import type { ExtendedProductFilterParams } from "../../presentation/types/ProductFilterParams";
 
 // Instancia del servicio de productos
 const productService = new ProductService();
@@ -60,7 +60,6 @@ export class PrefetchService {
 	static async prefetchFeaturedProducts(limit: number = 8): Promise<void> {
 		const cacheKey = `featured_products_${limit}`;
 
-		// Verificar si ya están en caché
 		if (CacheService.hasValidItem(cacheKey)) {
 			console.log("Los productos destacados ya están en caché");
 			return;
@@ -68,7 +67,8 @@ export class PrefetchService {
 
 		try {
 			console.log("Precargando productos destacados...");
-			const featuredParams: ProductFilterParams = {
+			const featuredParams: ExtendedProductFilterParams = {
+				// CORREGIDO: usar ExtendedProductFilterParams
 				limit,
 				featured: true,
 				sortBy: "featured",
@@ -78,7 +78,6 @@ export class PrefetchService {
 			const response = await productService.getProducts(featuredParams);
 
 			if (response) {
-				// Guardar en caché
 				CacheService.setItem(
 					cacheKey,
 					response,
@@ -102,7 +101,6 @@ export class PrefetchService {
 	): Promise<void> {
 		const cacheKey = `category_products_${categoryId}_${limit}`;
 
-		// Verificar si ya están en caché
 		if (CacheService.hasValidItem(cacheKey)) {
 			console.log(
 				`Los productos de la categoría ${categoryId} ya están en caché`
@@ -112,7 +110,8 @@ export class PrefetchService {
 
 		try {
 			console.log(`Precargando productos de la categoría ${categoryId}...`);
-			const params: ProductFilterParams = {
+			const params: ExtendedProductFilterParams = {
+				// CORREGIDO: usar ExtendedProductFilterParams
 				categoryId,
 				limit,
 				sortBy: "featured",
@@ -122,7 +121,6 @@ export class PrefetchService {
 			const response = await productService.getProducts(params);
 
 			if (response) {
-				// Guardar en caché
 				CacheService.setItem(
 					cacheKey,
 					response,

@@ -265,7 +265,7 @@ const PendingRatingsPage: React.FC = () => {
 			{selectedEntity && (
 				<RatingModal
 					type={modalType}
-					entityId={selectedEntity.id || selectedEntity.seller_id}
+					entityId={(selectedEntity.id ?? selectedEntity.seller_id) ?? 0}
 					entityName={
 						selectedEntity.name ||
 						`Vendedor #${selectedEntity.seller_id || selectedEntity.id}`

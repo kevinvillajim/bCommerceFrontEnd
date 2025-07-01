@@ -14,14 +14,16 @@ import {
 	MessageSquare,
 } from "lucide-react";
 import {ProductService} from "../../core/services/ProductService";
-import type {ProductDetail} from "../../core/domain/entities/Product";
-import { getImageUrl } from "../../utils/imageUtils";
+import type {
+	ProductDetail,
+	ProductImage,
+} from "../../core/domain/entities/Product";
+import {getImageUrl} from "../../utils/imageUtils";
 import {useCart} from "../hooks/useCart";
 import {useFavorites} from "../hooks/useFavorites";
 import {useChat} from "../hooks/useChat";
-import { NotificationType } from "../contexts/CartContext";
+import {NotificationType} from "../contexts/CartContext";
 import ApiClient from "../../infrastructure/api/apiClient";
-
 
 const ProductItemPage: React.FC = () => {
 	const {id} = useParams<{id: string}>();
@@ -33,7 +35,7 @@ const ProductItemPage: React.FC = () => {
 	const [activeImage, setActiveImage] = useState(0);
 	const [activeTab, setActiveTab] = useState<
 		"description" | "specifications" | "reviews"
-		>("description");
+	>("description");
 	const {addToCart, showNotification} = useCart();
 	const {toggleFavorite} = useFavorites();
 	const {createChat} = useChat();
@@ -41,37 +43,39 @@ const ProductItemPage: React.FC = () => {
 	// Initialize service
 	const productService = new ProductService();
 
-useEffect(() => {
-	const fetchProductData = async () => {
-		if (!id) return;
+	useEffect(() => {
+		const fetchProductData = async () => {
+			if (!id) return;
 
-		try {
-			setLoading(true);
-			setError(null);
+			try {
+				setLoading(true);
+				setError(null);
 
-			// Call the service to get product details
-			const productId = parseInt(id);
-			const productData = await productService.getProductById(productId);
+				// Call the service to get product details
+				const productId = parseInt(id);
+				const productData = await productService.getProductById(productId);
 
-			console.log("Product data from API:", productData);
+				console.log("Product data from API:", productData);
 
-			// Set the product state with the fetched data
-			setProduct(productData);
+				// Set the product state with the fetched data
+				setProduct(productData);
 
-			// Track product view
-			productService
-				.trackProductView(productId)
-				.catch((e) => console.error("Error tracking product view:", e));
-		} catch (err) {
-			console.error("Error fetching product:", err);
-			setError("No se pudo cargar el producto. Por favor, intente nuevamente.");
-		} finally {
-			setLoading(false);
-		}
-	};
+				// Track product view
+				productService
+					.trackProductView(productId)
+					.catch((e) => console.error("Error tracking product view:", e));
+			} catch (err) {
+				console.error("Error fetching product:", err);
+				setError(
+					"No se pudo cargar el producto. Por favor, intente nuevamente."
+				);
+			} finally {
+				setLoading(false);
+			}
+		};
 
-	fetchProductData();
-}, [id]);
+		fetchProductData();
+	}, [id]);
 
 	// Funciones de utilidad
 	const handleQuantityChange = (newQuantity: number) => {
@@ -83,7 +87,7 @@ useEffect(() => {
 	const handleAddToCart = async () => {
 		console.log(`Añadido al carrito: ${quantity} unidades de ${product.name}`);
 
-		if (!product.inStock) {
+		if (!product.is_in_stock) {
 			showNotification(
 				NotificationType.ERROR,
 				"Lo sentimos, este producto está agotado"
@@ -114,32 +118,32 @@ useEffect(() => {
 		}
 	};
 
-	 const handleAddToWishlist = async () => {
-			console.log(`Añadido a favoritos: ${product.name}`);
+	const handleAddToWishlist = async () => {
+		console.log(`Añadido a favoritos: ${product.name}`);
 
-			try {
-				const result = await toggleFavorite(Number(id));
+		try {
+			const result = await toggleFavorite(Number(id));
 
-				if (result) {
-					showNotification(
-						NotificationType.SUCCESS,
-						"Producto añadido a favoritos"
-					);
-				} else {
-					showNotification(
-						NotificationType.INFO,
-						"Producto eliminado de favoritos"
-					);
-				}
-			} catch (error) {
-				console.error("Error al manejar favorito:", error);
+			if (result) {
 				showNotification(
-					NotificationType.ERROR,
-					"Error al gestionar favoritos. Inténtalo de nuevo."
+					NotificationType.SUCCESS,
+					"Producto añadido a favoritos"
+				);
+			} else {
+				showNotification(
+					NotificationType.INFO,
+					"Producto eliminado de favoritos"
 				);
 			}
+		} catch (error) {
+			console.error("Error al manejar favorito:", error);
+			showNotification(
+				NotificationType.ERROR,
+				"Error al gestionar favoritos. Inténtalo de nuevo."
+			);
+		}
 	};
-	
+
 	const handleChatWithSeller = async () => {
 		try {
 			let sellerId;
@@ -277,15 +281,19 @@ useEffect(() => {
 
 	// Process product data for display
 	const categories = product.category ? [product.category.name] : [];
-	const mainImage =
-		product.images && product.images.length > 0
-			? product.images[0].original ||
-				product.images[0].medium ||
-				product.images[0].thumbnail
-			: "";
-	// const productImages =
-	// 	product.images?.map((img) => img.original || img.medium || img.thumbnail) ||
-	// 	[];
+
+	// ✅ CORREGIDO - Función helper para obtener URL de imagen
+	const getImageUrlFromProduct = (image: string | ProductImage): string => {
+		if (typeof image === "string") {
+			return getImageUrl(image);
+		}
+		return getImageUrl(image.original || image.medium || image.thumbnail);
+	};
+
+	// ✅ CORREGIDO - Eliminar variable no utilizada mainImage
+	// const mainImage = product.images && product.images.length > 0
+	// 	? getImageUrlFromProduct(product.images[0])
+	// 	: getImageUrl(null);
 
 	// Parse colors, sizes, and tags
 	const parseStringArrays = (value: any): string[] => {
@@ -358,15 +366,13 @@ useEffect(() => {
 						{/* Product Images */}
 						<div className="space-y-6">
 							<div className="bg-gray-50 rounded-xl overflow-hidden h-96 lg:h-[500px]">
-								<img
-									src={getImageUrl(
-										product.images[activeImage].large ||
-											product.images[activeImage].medium ||
-											product.images[activeImage].original
-									)}
-									alt={product.name}
-									className="w-full h-full object-cover transition-all duration-300"
-								/>
+								{product.images && product.images.length > 0 && (
+									<img
+										src={getImageUrlFromProduct(product.images[activeImage])}
+										alt={product.name}
+										className="w-full h-full object-cover transition-all duration-300"
+									/>
+								)}
 							</div>
 							{product.images && product.images.length > 1 && (
 								<div className="grid grid-cols-4 gap-3">
@@ -381,9 +387,7 @@ useEffect(() => {
 											onClick={() => setActiveImage(index)}
 										>
 											<img
-												src={getImageUrl(
-													image.thumbnail || image.medium || image.original
-												)}
+												src={getImageUrlFromProduct(image)}
 												alt={`${product.name} thumbnail ${index + 1}`}
 												className="w-full h-full object-cover"
 											/>
@@ -400,7 +404,9 @@ useEffect(() => {
 								{product.seller && (
 									<div className="flex items-center mb-2">
 										<span className="text-sm bg-primary-50 text-primary-700 px-2 py-0.5 rounded font-medium">
-											{product.seller.name || "Vendedor"}
+											{product.seller.name ||
+												product.seller.storeName ||
+												"Vendedor"}
 										</span>
 									</div>
 								)}
@@ -770,9 +776,12 @@ useEffect(() => {
 											src={getImageUrl(
 												relatedProduct.images &&
 													relatedProduct.images.length > 0
-													? relatedProduct.images[0].original ||
-															relatedProduct.images[0].medium
-													: "/placeholder-image.jpg"
+													? typeof relatedProduct.images[0] === "string"
+														? relatedProduct.images[0]
+														: (relatedProduct.images[0] as ProductImage)
+																.original ||
+															(relatedProduct.images[0] as ProductImage).medium
+													: null
 											)}
 											alt={relatedProduct.name}
 											className="max-h-full max-w-full object-contain"

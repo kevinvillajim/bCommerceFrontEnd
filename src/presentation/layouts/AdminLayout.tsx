@@ -4,7 +4,7 @@ import {Shield, AlertTriangle} from "lucide-react";
 import {DashboardProvider} from "../components/dashboard/DashboardContext";
 import BaseDashboardLayout from "../components/dashboard/BaseDashboardLayout";
 import adminGroups from "./groups/adminGroups";
-import type {Notification, PendingActions} from "../components/dashboard";
+import type {PendingActions} from "../components/dashboard";
 
 /**
  * Componente de Layout para el Panel de Administración
@@ -16,7 +16,8 @@ const AdminLayout: React.FC = () => {
 		sellerRequests: 0,
 	});
 
-	const [notifications, setNotifications] = useState<Notification[]>([]);
+	// ✅ CORREGIDO - Eliminar variable no utilizada 'notifications'
+	// const [notifications, setNotifications] = useState<Notification[]>([]);
 
 	// Títulos dinámicos basados en rutas
 	const pageTitles: {[key: string]: string} = {
@@ -53,32 +54,33 @@ const AdminLayout: React.FC = () => {
 					sellerRequests: Math.floor(Math.random() * 3),
 				});
 
-				// Cargar notificaciones de ejemplo
-				setNotifications([
-					{
-						id: "1",
-						title: "Nueva solicitud de verificación de vendedor",
-						description: 'El vendedor "TechGadgets" necesita aprobación',
-						time: "Hace 5 minutos",
-						read: false,
-						type: "warning",
-					},
-					{
-						id: "2",
-						title: "Reseña necesita moderación",
-						description:
-							'Nueva valoración de 1 estrella para "Auriculares Inalámbricos"',
-						time: "Hace 30 minutos",
-						read: true,
-					},
-					{
-						id: "3",
-						title: "Alerta del sistema",
-						description: "Problemas de conectividad con la pasarela de pago",
-						time: "Hace 1 hora",
-						read: true,
-					},
-				]);
+				// ✅ CORREGIDO - Si se necesita usar notificaciones más adelante,
+				// descomentar esta línea:
+				// setNotifications([
+				// 	{
+				// 		id: "1",
+				// 		title: "Nueva solicitud de verificación de vendedor",
+				// 		description: 'El vendedor "TechGadgets" necesita aprobación',
+				// 		time: "Hace 5 minutos",
+				// 		read: false,
+				// 		type: "warning",
+				// 	},
+				// 	{
+				// 		id: "2",
+				// 		title: "Reseña necesita moderación",
+				// 		description:
+				// 			'Nueva valoración de 1 estrella para "Auriculares Inalámbricos"',
+				// 		time: "Hace 30 minutos",
+				// 		read: true,
+				// 	},
+				// 	{
+				// 		id: "3",
+				// 		title: "Alerta del sistema",
+				// 		description: "Problemas de conectividad con la pasarela de pago",
+				// 		time: "Hace 1 hora",
+				// 		read: true,
+				// 	},
+				// ]);
 			} catch (error) {
 				console.error("Error al obtener datos:", error);
 			}
