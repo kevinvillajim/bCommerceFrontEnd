@@ -25,6 +25,18 @@ import {useChat} from "../hooks/useChat";
 import {NotificationType} from "../contexts/CartContext";
 import ApiClient from "../../infrastructure/api/apiClient";
 
+interface SellerApiResponse {
+	status?: string;
+	success?: boolean;
+	data?: {
+		id?: number;
+		seller_id?: number;
+		name?: string;
+		email?: string;
+	};
+	message?: string;
+}
+
 const ProductItemPage: React.FC = () => {
 	const {id} = useParams<{id: string}>();
 	const navigate = useNavigate();
@@ -163,7 +175,7 @@ const ProductItemPage: React.FC = () => {
 	};
 
 	const handleChatWithSeller = async () => {
-		// ✅ VERIFICACIÓN DE NULL AGREGADA
+		// Verificación de null
 		if (!product) {
 			showNotification(
 				NotificationType.ERROR,
@@ -192,25 +204,34 @@ const ProductItemPage: React.FC = () => {
 				);
 
 				try {
-					// Usar el endpoint específico para obtener seller_id a partir de user_id
-					const response = await ApiClient.get(
+					// ✅ CORRECCIÓN - Tipar la respuesta de la API
+					const response = await ApiClient.get<SellerApiResponse>(
 						`/sellers/by-user/${product.user_id}`
 					);
 
-					if (response?.data?.id) {
-						sellerId = response.data.id;
-						console.log(
-							`Convertido user_id ${product.user_id} a seller_id ${sellerId}`
-						);
-					} else if (response?.data?.seller_id) {
-						sellerId = response.data.seller_id;
-						console.log(
-							`Convertido user_id ${product.user_id} a seller_id ${sellerId}`
-						);
+					// ✅ ACCESO SEGURO A LAS PROPIEDADES
+					if (response && response.data) {
+						if (response.data.id) {
+							sellerId = response.data.id;
+							console.log(
+								`Convertido user_id ${product.user_id} a seller_id ${sellerId}`
+							);
+						} else if (response.data.seller_id) {
+							sellerId = response.data.seller_id;
+							console.log(
+								`Convertido user_id ${product.user_id} a seller_id ${sellerId}`
+							);
+						} else {
+							// Si no podemos obtener el seller_id, usamos el user_id como fallback
+							console.warn(
+								`No se pudo obtener seller_id, usando user_id como fallback`
+							);
+							sellerId = product.user_id;
+						}
 					} else {
-						// Si no podemos obtener el seller_id, usamos el user_id como fallback
+						// Respuesta vacía o sin data
 						console.warn(
-							`No se pudo obtener seller_id, usando user_id como fallback`
+							`Respuesta de API vacía o sin data, usando user_id como fallback`
 						);
 						sellerId = product.user_id;
 					}

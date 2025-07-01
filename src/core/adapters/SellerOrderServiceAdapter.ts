@@ -2,6 +2,7 @@
 import ApiClient from "../../infrastructure/api/apiClient";
 import { API_ENDPOINTS } from "../../constants/apiEndpoints";
 import type {ServiceResponse} from "../../presentation/types/admin/ProductFilterParams";
+import type {OrderStatus} from "../domain/entities/Order";
 
 // Definición de interfaces para los datos de la UI
 export interface SellerOrderUI {
@@ -20,19 +21,13 @@ export interface SellerOrderUI {
 		quantity: number;
 		price: number;
 		subtotal: number;
-		name?: string; // AGREGADO
+		name?: string;
 	}>;
-	status:
-		| "pending"
-		| "processing"
-		| "paid"
-		| "shipped"
-		| "delivered"
-		| "completed"
-		| "cancelled";
+	status: OrderStatus; // ✅ CAMBIADO - Usar el tipo del dominio
 	paymentStatus: "pending" | "completed" | "failed" | "rejected";
 	shippingAddress?: string;
 }
+
 export interface SellerOrderStatUI {
 	label: string;
 	value: number | string;
@@ -216,7 +211,7 @@ export default class SellerOrderServiceAdapter {
 	 */
 	public async updateOrderStatus(
 		orderId: string,
-		status: SellerOrderUI["status"]
+		status: OrderStatus // ✅ CAMBIADO - Usar OrderStatus del dominio
 	): Promise<boolean> {
 		try {
 			console.log(

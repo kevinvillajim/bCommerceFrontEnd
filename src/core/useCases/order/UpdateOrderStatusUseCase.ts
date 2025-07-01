@@ -1,5 +1,9 @@
 import {OrderService} from "../../services/OrderService";
-import type {Order, OrderStatus} from "../../domain/entities/Order";
+import {
+	isValidOrderStatus,
+	type Order,
+	type OrderStatus,
+} from "../../domain/entities/Order";
 
 /**
  * Caso de uso para actualizar el estado de una orden
@@ -23,8 +27,8 @@ export class UpdateOrderStatusUseCase {
 				throw new Error("ID de orden inválido");
 			}
 
-			// Validar el estado
-			if (!this.isValidStatus(status)) {
+			// ✅ USAR LA FUNCIÓN HELPER IMPORTADA
+			if (!isValidOrderStatus(status)) {
 				throw new Error(`Estado de orden '${status}' no válido`);
 			}
 
@@ -41,20 +45,12 @@ export class UpdateOrderStatusUseCase {
 		}
 	}
 
-	/**
-	 * Verifica si un estado es válido
-	 */
-	private isValidStatus(status: string): boolean {
-		const validStatuses: OrderStatus[] = [
-			"pending",
-			"processing",
-			"paid",
-			"shipped",
-			"delivered",
-			"completed",
-			"cancelled",
-		];
-
-		return validStatuses.includes(status as OrderStatus);
-	}
+	// /**
+	//  * Verifica si un estado es válido
+	//  * @deprecated Usar isValidOrderStatus del dominio en su lugar
+	//  */
+	// private isValidStatus(status: string): boolean {
+	// 	// ✅ USAR LA FUNCIÓN DEL DOMINIO
+	// 	return isValidOrderStatus(status);
+	// }
 }

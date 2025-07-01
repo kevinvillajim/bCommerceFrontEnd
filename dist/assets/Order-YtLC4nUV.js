@@ -1,0 +1,2 @@
+const c=e=>["pending","processing","paid","shipped","delivered","completed","cancelled","rejected"].includes(e),s=e=>({pending:["processing","cancelled","rejected"],processing:["shipped","cancelled","rejected"],paid:["processing","shipped","cancelled","rejected"],shipped:["delivered","cancelled"],delivered:["completed"],completed:[],cancelled:[],rejected:[]})[e]||[],n=(e,d)=>s(e).includes(d);export{n as c,c as i};
+//# sourceMappingURL=Order-YtLC4nUV.js.map
