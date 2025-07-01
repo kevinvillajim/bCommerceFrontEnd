@@ -134,3 +134,22 @@ export interface ExtendedProductFilterParams extends ProductFilterParams {
 	requires?: string[]; // Requiere productos específicos
 	works_with?: string[]; // Funciona con productos específicos
 }
+
+
+// Interfaces para respuestas de servicios
+export interface ServiceResponse<T = any> {
+  success: boolean;
+  status?: string;
+  message?: string;
+  data?: T;
+}
+
+export interface AdminActionResponse {
+  success: boolean;
+  status?: string;
+  message?: string;
+  data?: {
+    newStatus?: string;
+    [key: string]: any;
+  };
+}

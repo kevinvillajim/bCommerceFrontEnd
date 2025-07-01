@@ -201,17 +201,16 @@ const AdminOrdersPage: React.FC = () => {
 		try {
 			const success = await orderAdapter.updateOrderStatus(
 				orderId,
-				newStatus as any
+				newStatus as AdminOrderUI["status"] // Cast explícito
 			);
 
 			if (success) {
-				// Actualizar el estado localmente o recargar los datos
 				setOrders((prevOrders) =>
 					prevOrders.map((order) => {
 						if (order.id === orderId) {
 							return {
 								...order,
-								status: newStatus,
+								status: newStatus as AdminOrderUI["status"], // Cast explícito
 								updatedAt: new Date().toISOString(),
 							};
 						}
@@ -219,7 +218,6 @@ const AdminOrdersPage: React.FC = () => {
 					})
 				);
 			} else {
-				// Mostrar mensaje de error
 				alert("Error al actualizar el estado de la orden");
 			}
 		} catch (error) {
@@ -650,7 +648,7 @@ const AdminOrdersPage: React.FC = () => {
 			<Table
 				data={orders}
 				columns={columns}
-				searchFields={["orderNumber", "customer.name", "customer.email"]}
+				searchFields={["orderNumber", "customer"]}
 				loading={loading}
 				emptyMessage="No se encontraron pedidos"
 				pagination={{

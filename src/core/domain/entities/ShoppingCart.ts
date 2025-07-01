@@ -15,32 +15,33 @@ export interface ShoppingCart {
  * Cart Item entity
  */
 export interface CartItem {
-    id: number;
-    cartId?: number;
-    productId: number;
-    quantity: number;
-    price: number;
-    subtotal: number;
-    attributes?: Record<string, any>;
-    product?: {
-        id: number;                        // ✅ AGREGADO
-        name: string;
-        slug?: string;
-        price: number;                     // ✅ AGREGADO
-        final_price: number;               // ✅ AGREGADO - CAMPO CLAVE
-        discount_percentage: number;       // ✅ AGREGADO - CAMPO CLAVE
-        rating?: number;                   // ✅ AGREGADO
-        rating_count?: number;             // ✅ AGREGADO
-        image?: string;
-        stockAvailable?: number;
-        sellerId?: number;
-        seller_id?: number;
-        seller?: {
-            id: number;
-            storeName?: string;
-        };
-        user_id?: number;
-    };
+	id: number;
+	cartId?: number;
+	productId: number;
+	quantity: number;
+	price: number;
+	subtotal: number;
+	attributes?: Record<string, any>;
+	product?: {
+		id: number;
+		name: string;
+		slug?: string;
+		price: number;
+		final_price?: number;
+		discount_percentage?: number;
+		rating?: number;
+		rating_count?: number;
+		image?: string;
+		main_image?: string;
+		stockAvailable?: number;
+		sellerId?: number;
+		seller_id?: number;
+		seller?: {
+			id: number;
+			storeName?: string;
+		};
+		user_id?: number;
+	};
 }
 
 /**

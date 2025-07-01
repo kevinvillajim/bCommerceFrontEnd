@@ -107,7 +107,7 @@ const OrderDetailClientPage: React.FC = () => {
 							<span>Volver a mis pedidos</span>
 						</button>
 						<h1 className="text-2xl font-bold text-gray-800">
-							Pedido #{order.orderNumber || order.order_number}
+							Pedido #{order.orderNumber || order.orderNumber}
 						</h1>
 					</div>
 
@@ -136,40 +136,32 @@ const OrderDetailClientPage: React.FC = () => {
 							</h2>
 							<div className="space-y-3">
 								<div className="flex justify-between items-center">
-									<span className="text-gray-600">
-										Estado:
-									</span>
+									<span className="text-gray-600">Estado:</span>
 									<OrderStatusBadge status={order.status} />
 								</div>
 								<div className="flex justify-between items-center">
-									<span className="text-gray-600">
-										Pago:
-									</span>
+									<span className="text-gray-600">Pago:</span>
 									<OrderStatusBadge
-										status={order.payment_status}
+										status={order.paymentStatus}
 										type="payment"
 									/>
 								</div>
 								<div className="flex justify-between items-center">
-									<span className="text-gray-600">
-										Método de pago:
-									</span>
+									<span className="text-gray-600">Método de pago:</span>
 									<span className="text-gray-900">
-										{order.payment_method === "credit_card" &&
+										{order.paymentMethod === "credit_card" &&
 											"Tarjeta de crédito"}
-										{order.payment_method === "paypal" && "PayPal"}
-										{order.payment_method === "transfer" && "Transferencia"}
-										{order.payment_method === "other" && "Otro"}
-										{!order.payment_method && "No especificado"}
+										{order.paymentMethod === "paypal" && "PayPal"}
+										{order.paymentMethod === "transfer" && "Transferencia"}
+										{order.paymentMethod === "other" && "Otro"}
+										{!order.paymentMethod && "No especificado"}
 									</span>
 								</div>
 								<div className="flex justify-between items-center">
-									<span className="text-gray-600">
-										Fecha:
-									</span>
+									<span className="text-gray-600">Fecha:</span>
 									<span className="text-gray-900">
-										{order.created_at
-											? formatDate(order.created_at)
+										{order.createdAt
+											? formatDate(order.createdAt)
 											: "Sin fecha"}
 									</span>
 								</div>
@@ -182,60 +174,60 @@ const OrderDetailClientPage: React.FC = () => {
 								Información de envío
 							</h2>
 							<div className="space-y-3">
-								{order.shipping_data ? (
+								{order.shippingData ? (
 									<>
 										<div>
 											<span className="block text-sm font-medium text-gray-600 mb-1">
 												Dirección de envío:
 											</span>
 											<p className="text-gray-900">
-												{order.shipping_data.address}
+												{order.shippingData.address}
 											</p>
 											<p className="text-gray-900">
-												{order.shipping_data.city}, {order.shipping_data.state}
+												{order.shippingData.city}, {order.shippingData.state}
 											</p>
 											<p className="text-gray-900">
-												{order.shipping_data.country},{" "}
-												{order.shipping_data.postal_code}
+												{order.shippingData.country},{" "}
+												{order.shippingData.postalCode}
 											</p>
 										</div>
-										{order.shipping_data.phone && (
+										{order.shippingData.phone && (
 											<div>
 												<span className="block text-sm font-medium text-gray-600">
 													Teléfono:
 												</span>
 												<p className="text-gray-900">
-													{order.shipping_data.phone}
+													{order.shippingData.phone}
 												</p>
 											</div>
 										)}
-										{order.shipping_data.tracking_number && (
+										{order.shippingData.tracking_number && (
 											<div>
 												<span className="block text-sm font-medium text-gray-600">
 													Número de seguimiento:
 												</span>
 												<p className="text-primary-600 font-medium">
-													{order.shipping_data.tracking_number}
+													{order.shippingData.tracking_number}
 												</p>
 											</div>
 										)}
-										{order.shipping_data.shipping_company && (
+										{order.shippingData.shipping_company && (
 											<div>
 												<span className="block text-sm font-medium text-gray-600">
 													Empresa de transporte:
 												</span>
 												<p className="text-gray-900">
-													{order.shipping_data.shipping_company}
+													{order.shippingData.shipping_company}
 												</p>
 											</div>
 										)}
-										{order.shipping_data.estimated_delivery && (
+										{order.shippingData.estimated_delivery && (
 											<div>
 												<span className="block text-sm font-medium text-gray-600">
 													Entrega estimada:
 												</span>
 												<p className="text-gray-900">
-													{formatDate(order.shipping_data.estimated_delivery)}
+													{formatDate(order.shippingData.estimated_delivery)}
 												</p>
 											</div>
 										)}
@@ -346,9 +338,9 @@ const OrderDetailClientPage: React.FC = () => {
 																{item.product_name || "Producto"}
 															</div>
 															{/* Link al producto si es necesario */}
-															{item.product_id && (
+															{item.productId && (
 																<Link
-																	to={`/products/${item.product_id}`}
+																	to={`/products/${item.productId}`}
 																	className="text-xs text-primary-600 hover:underline"
 																>
 																	Ver producto
@@ -380,26 +372,20 @@ const OrderDetailClientPage: React.FC = () => {
 							</h2>
 							<div className="space-y-3">
 								<div className="flex justify-between items-center pb-2">
-									<span className="text-gray-600">
-										Subtotal:
-									</span>
+									<span className="text-gray-600">Subtotal:</span>
 									<span className="text-gray-900">
 										{formatCurrency(calculateSubtotal())}
 									</span>
 								</div>
 								{/* Mostrar impuestos */}
 								<div className="flex justify-between items-center pb-2">
-									<span className="text-gray-600">
-										IVA (15%):
-									</span>
+									<span className="text-gray-600">IVA (15%):</span>
 									<span className="text-gray-900">
 										{formatCurrency(calculateTax())}
 									</span>
 								</div>
 								<div className="flex justify-between items-center pt-3 border-t border-gray-200 font-medium">
-									<span className="text-gray-900">
-										Total:
-									</span>
+									<span className="text-gray-900">Total:</span>
 									<span className="text-lg text-gray-900">
 										{formatCurrency(calculateTotal())}
 									</span>

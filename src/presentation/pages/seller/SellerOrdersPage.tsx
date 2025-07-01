@@ -404,7 +404,6 @@ const SellerOrdersPage: React.FC = () => {
 							"bg-yellow-100 text-yellow-800";
 						paymentText = "Pendiente";
 						break;
-					case "paid":
 					case "completed": // Manejar "completed" como "Pagado"
 						paymentClass =
 							"bg-green-100 text-green-800";

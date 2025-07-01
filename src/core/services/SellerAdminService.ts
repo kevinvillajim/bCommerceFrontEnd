@@ -2,6 +2,7 @@
 import ApiClient from "../../infrastructure/api/apiClient";
 import {API_ENDPOINTS} from "../../constants/apiEndpoints";
 import SellerAdapter from "../../infrastructure/adapters/SellerAdapter";
+import type { Seller } from "../../core/domain/entities/Seller";
 
 // Interfaces para los datos de creación y actualización
 export interface CreateSellerData {
@@ -29,6 +30,16 @@ export interface SellerFilter {
 	sort_dir?: "asc" | "desc";
 	per_page?: number;
 	page?: number;
+}
+
+export interface SellerAdminResponse {
+	sellers: Seller[];
+	pagination: {
+		currentPage: number;
+		totalPages: number;
+		totalItems: number;
+		itemsPerPage: number;
+	};
 }
 
 export class SellerAdminService {

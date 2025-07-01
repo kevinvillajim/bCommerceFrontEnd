@@ -159,7 +159,8 @@ export type OrderStatus =
 	| "shipped"
 	| "delivered"
 	| "completed"
-	| "cancelled";
+	| "cancelled"
+	| "rejected";
 
 /**
  * Payment method type
@@ -174,7 +175,7 @@ export type PaymentMethod =
 /**
  * Payment status type
  */
-export type PaymentStatus = "pending" | "completed" | "failed" | null;
+export type PaymentStatus = "pending" | "completed" | "failed" | "rejected" | null;
 
 /**
  * Shipping data type

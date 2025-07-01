@@ -4,20 +4,16 @@ import {
 	ShoppingCart,
 	Heart,
 	Share2,
-	ChevronDown,
-	ChevronUp,
 	Star,
 	Truck,
 	Shield,
 	RotateCcw,
 	Minus,
 	Plus,
-	CheckCircle,
 	Loader,
 	MessageSquare,
 } from "lucide-react";
 import {ProductService} from "../../core/services/ProductService";
-import {adaptProduct} from "../../utils/productAdapter";
 import type {ProductDetail} from "../../core/domain/entities/Product";
 import { getImageUrl } from "../../utils/imageUtils";
 import {useCart} from "../hooks/useCart";

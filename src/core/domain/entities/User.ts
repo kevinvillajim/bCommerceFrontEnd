@@ -2,20 +2,29 @@
  * User entity
  */
 export interface User {
-  id?: number | null;
-  name: string;
-  email: string;
-  password?: string;
-  age?: number | null;
-  gender?: string | null;
-  location?: string | null;
-  isBlocked: boolean;
-  emailVerifiedAt?: string | null;
-  rememberToken?: string | null;
-  createdAt?: string | null;
-  updatedAt?: string | null;
-  strikes?: UserStrike[];
-  role?: "admin" | "seller" | "user" | string;
+	id?: number | null;
+	name: string;
+	email: string;
+	password?: string;
+	age?: number | null;
+	gender?: string | null;
+	location?: string | null;
+	isBlocked: boolean;
+	emailVerifiedAt?: string | null;
+	rememberToken?: string | null;
+	createdAt?: string | null;
+	updatedAt?: string | null;
+	strikes?: UserStrike[];
+	role?: "admin" | "seller" | "user" | string;
+
+	address?: string;
+	city?: string;
+	state?: string;
+	province?: string;
+	country?: string;
+	postal_code?: string;
+	zip_code?: string;
+	phone?: string;
 }
 
 /**

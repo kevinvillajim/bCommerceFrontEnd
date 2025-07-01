@@ -100,12 +100,12 @@ export class CategoryService {
 	/**
 	 * Obtiene categorías destacadas (solo lectura)
 	 */
-	async getFeaturedCategories(): Promise<Category[]> {
+	async getFeaturedCategories(limit: number = 8): Promise<Category[]> {
 		try {
 			console.log("📤 CategoryService: Obteniendo categorías destacadas");
 
 			const response = await ApiClient.get<Category[]>(
-				API_ENDPOINTS.CATEGORIES.FEATURED
+				API_ENDPOINTS.CATEGORIES.FEATURED, {limit}
 			);
 
 			console.log(

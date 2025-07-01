@@ -34,6 +34,9 @@ export interface PendingRatingItem {
 	order_id: number;
 	order_number: string;
 	order_date: string;
+	seller_id?: number;
+	productId?: number;
+	sellerId?: number;
 }
 
 export interface PendingSellerItem {

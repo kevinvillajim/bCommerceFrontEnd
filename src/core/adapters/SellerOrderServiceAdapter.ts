@@ -1,6 +1,7 @@
 // src/core/adapters/SellerOrderServiceAdapter.ts
 import ApiClient from "../../infrastructure/api/apiClient";
-import {API_ENDPOINTS} from "../../constants/apiEndpoints";
+import { API_ENDPOINTS } from "../../constants/apiEndpoints";
+import type {ServiceResponse} from "../../presentation/types/admin/ProductFilterParams";
 
 // Definición de interfaces para los datos de la UI
 export interface SellerOrderUI {
@@ -177,20 +178,6 @@ export default class SellerOrderServiceAdapter {
 			};
 		}
 
-		// Procesar shippingAddress si es un string JSON
-		let shippingAddressObj = {};
-		if (order.shippingAddress) {
-			try {
-				if (typeof order.shippingAddress === "string") {
-					shippingAddressObj = JSON.parse(order.shippingAddress);
-				} else {
-					shippingAddressObj = order.shippingAddress;
-				}
-			} catch (e) {
-				console.error("Error al parsear shippingAddress:", e);
-			}
-		}
-
 		// Extraer datos del usuario
 		const userName = order.customer?.name || "Cliente";
 		const userEmail = order.customer?.email || "sin@email.com";
@@ -237,7 +224,7 @@ export default class SellerOrderServiceAdapter {
 			);
 
 			// Usar PUT según la documentación de la API
-			const response = await ApiClient.put(
+			const response = await ApiClient.put<ServiceResponse>(
 				API_ENDPOINTS.ORDERS.UPDATE_STATUS(Number(orderId)),
 				{
 					status,

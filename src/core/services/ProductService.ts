@@ -9,6 +9,7 @@ import type {
 	ProductListResponse,
 } from "../domain/entities/Product";
 import type { ExtendedProductFilterParams } from "../../presentation/types/ProductFilterParams";
+import type { ServiceResponse } from "../../presentation/types/admin/ProductFilterParams";
 
 export class ProductService {
 	/**
@@ -36,7 +37,21 @@ export class ProductService {
 			return null;
 		}
 	}
-
+	
+	/**
+	 * Elimina un producto
+	 */
+	async deleteProduct(id: number): Promise<boolean> {
+		try {
+			const response = await ApiClient.delete<ServiceResponse>(
+				API_ENDPOINTS.PRODUCTS.DELETE(id)
+			);
+			return response?.success === true;
+		} catch (error) {
+			console.error(`Error al eliminar producto ${id}:`, error);
+			return false;
+		}
+	}
 	/**
 	 * Crea un nuevo producto
 	 */
