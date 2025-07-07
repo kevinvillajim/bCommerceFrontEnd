@@ -23,7 +23,7 @@ import {useAdminProducts} from "../../hooks/useAdminProducts";
 import {useAdminCategories} from "../../hooks/useAdminCategories";
 
 // Utilities corregidas - USAR SOLO UNA FUENTE
-import {getProductMainImage} from "../../../utils/unifiedImageUtils";
+import {getProductMainImage} from "../../../utils/imageManager";
 import {formatCurrency} from "../../../utils/formatters/formatCurrency";
 
 const AdminProductsPage: React.FC = () => {
@@ -260,13 +260,13 @@ const AdminProductsPage: React.FC = () => {
 	 */
 	const ProductImage: React.FC<{product: Product}> = ({product}) => {
 		const [imageSrc, setImageSrc] = useState<string>(
-			getProductMainImage(product, true)
+			getProductMainImage(product)
 		);
 		const [hasError, setHasError] = useState<boolean>(false);
 		const [errorCount, setErrorCount] = useState<number>(0);
 
 		useEffect(() => {
-			setImageSrc(getProductMainImage(product, true));
+			setImageSrc(getProductMainImage(product));
 			setHasError(false);
 			setErrorCount(0);
 		}, [product]);
@@ -290,7 +290,7 @@ const AdminProductsPage: React.FC = () => {
 			if (!hasError) {
 				setHasError(true);
 				// Intentar con placeholder pequeño
-				setImageSrc(getProductMainImage(null, true));
+				setImageSrc(getProductMainImage(null));
 			}
 		}, [imageSrc, hasError, errorCount, product.id]);
 

@@ -14,7 +14,7 @@ import {useAuth} from "../hooks/useAuth";
 import {useCart} from "../hooks/useCart";
 import {formatCurrency} from "../../utils/formatters/formatCurrency";
 // IMPORTAR EL HELPER DE IMÁGENES CORREGIDO
-import { getImageUrl } from "../../utils/imageUtils";
+import { getImageUrl } from "../../utils/imageManager";
 
 // Tipo para los datos del producto favorito
 interface FavoriteProduct {

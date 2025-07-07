@@ -1,17 +1,15 @@
-// src/presentation/hooks/useCategories.ts
+// src/presentation/hooks/useCategories.ts - CORREGIDO
 import {useState, useCallback, useEffect} from "react";
 import CacheService from "../../infrastructure/services/CacheService";
 import appConfig from "../../config/appConfig";
 import {CategoryService} from "../../core/services/CategoryService";
-import type {
-	Category,
-} from "../../core/domain/entities/Category";
+import type {Category} from "../../core/domain/entities/Category";
 
 // Instanciar el servicio de categorías
 const categoryService = new CategoryService();
 
 /**
- * Hook para gestionar operaciones con categorías
+ * Hook para gestionar operaciones con categorías (solo lectura)
  */
 export const useCategories = () => {
 	const [loading, setLoading] = useState<boolean>(false);
@@ -70,14 +68,16 @@ export const useCategories = () => {
 			}
 
 			// Verificar si hay categorías principales en caché
-			const cachedMainCategories = CacheService.getItem("categories_main");
+			const cachedMainCategories = CacheService.getItem(
+				"categories_main_with_counts"
+			);
 			if (cachedMainCategories) {
 				setMainCategories(cachedMainCategories);
 			}
 
 			// Verificar si hay categorías destacadas en caché
 			const cachedFeaturedCategories = CacheService.getItem(
-				"categories_featured"
+				"categories_featured_8"
 			);
 			if (cachedFeaturedCategories) {
 				setFeaturedCategories(cachedFeaturedCategories);
@@ -102,22 +102,29 @@ export const useCategories = () => {
 				if (!forceRefresh) {
 					const cachedData = CacheService.getItem(cacheKey);
 					if (cachedData && cachedData.data) {
-						console.log("Usando categorías en caché");
+						console.log("💾 useCategories: Usando categorías en caché");
 						setCategories(cachedData.data || []);
 						setLoading(false);
 						return cachedData;
 					}
 				}
 
-				console.log("Obteniendo categorías desde API con withCounts:", withCounts);
-				
+				console.log(
+					"🌐 useCategories: Obteniendo categorías desde API con withCounts:",
+					withCounts
+				);
+
 				// Hacer la petición a la API
 				const response = await categoryService.getCategories({
 					with_counts: withCounts,
-					is_active: true
+					is_active: true,
+					with_children: true, // ✅ AGREGADO: solicitar subcategorías
 				});
 
-				console.log("Respuesta de categorías desde API:", response);
+				console.log(
+					"📥 useCategories: Respuesta de categorías desde API:",
+					response
+				);
 
 				if (response && response.data && Array.isArray(response.data)) {
 					// Adaptar datos
@@ -138,7 +145,10 @@ export const useCategories = () => {
 					setCategories(adaptedCategories);
 					return result;
 				} else {
-					console.warn("Respuesta de categorías no tiene el formato esperado:", response);
+					console.warn(
+						"⚠️ useCategories: Respuesta de categorías no tiene el formato esperado:",
+						response
+					);
 					setCategories([]);
 					return {data: [], meta: {total: 0}};
 				}
@@ -146,7 +156,7 @@ export const useCategories = () => {
 				const errorMessage =
 					err instanceof Error ? err.message : "Error al obtener categorías";
 				setError(errorMessage);
-				console.error("Error al obtener categorías:", err);
+				console.error("❌ useCategories: Error al obtener categorías:", err);
 				setCategories([]);
 				return {data: [], meta: {total: 0}};
 			} finally {
@@ -171,23 +181,31 @@ export const useCategories = () => {
 				if (!forceRefresh) {
 					const cachedData = CacheService.getItem(cacheKey);
 					if (cachedData) {
-						console.log("Usando categorías principales en caché");
+						console.log(
+							"💾 useCategories: Usando categorías principales en caché"
+						);
 						setMainCategories(cachedData);
 						setLoading(false);
 						return cachedData;
 					}
 				}
 
-				console.log("Obteniendo categorías principales desde API");
-				
+				console.log(
+					"🌐 useCategories: Obteniendo categorías principales desde API"
+				);
+
 				// Hacer la petición a la API para categorías principales
 				const response = await categoryService.getMainCategories(withCounts);
 
-				console.log("Respuesta de categorías principales desde API:", response);
+				console.log(
+					"📥 useCategories: Respuesta de categorías principales desde API:",
+					response
+				);
 
-				if (response && Array.isArray(response)) {
-					// Adaptar datos si es necesario
-					const adaptedCategories = response.map(adaptCategory);
+				// ✅ CORREGIDO: Verificar la estructura correcta {data: [...], meta: {...}}
+				if (response && response.data && Array.isArray(response.data)) {
+					// Adaptar datos del array dentro de data
+					const adaptedCategories = response.data.map(adaptCategory);
 
 					// Guardar en caché
 					CacheService.setItem(
@@ -197,9 +215,16 @@ export const useCategories = () => {
 					);
 
 					setMainCategories(adaptedCategories);
+					console.log(
+						"✅ useCategories: Categorías principales procesadas correctamente:",
+						adaptedCategories.length
+					);
 					return adaptedCategories;
 				} else {
-					console.warn("Respuesta de categorías principales no tiene el formato esperado:", response);
+					console.warn(
+						"⚠️ useCategories: Respuesta de categorías principales no tiene el formato esperado:",
+						response
+					);
 					setMainCategories([]);
 					return [];
 				}
@@ -209,7 +234,10 @@ export const useCategories = () => {
 						? err.message
 						: "Error al obtener categorías principales";
 				setError(errorMessage);
-				console.error("Error al obtener categorías principales:", err);
+				console.error(
+					"❌ useCategories: Error al obtener categorías principales:",
+					err
+				);
 				setMainCategories([]);
 				return [];
 			} finally {
@@ -234,23 +262,38 @@ export const useCategories = () => {
 				if (!forceRefresh) {
 					const cachedData = CacheService.getItem(cacheKey);
 					if (cachedData) {
-						console.log("Usando categorías destacadas en caché");
+						console.log(
+							"💾 useCategories: Usando categorías destacadas en caché"
+						);
 						setFeaturedCategories(cachedData);
 						setLoading(false);
 						return cachedData;
 					}
 				}
 
-				console.log("Obteniendo categorías destacadas desde API");
-				
+				console.log(
+					"🌐 useCategories: Obteniendo categorías destacadas desde API"
+				);
+
 				// Hacer la petición a la API
 				const response = await categoryService.getFeaturedCategories(limit);
 
-				console.log("Respuesta de categorías destacadas desde API:", response);
+				console.log(
+					"📥 useCategories: Respuesta de categorías destacadas desde API:",
+					response
+				);
 
-				if (response && Array.isArray(response)) {
-					// Adaptar datos si es necesario
-					const adaptedCategories = response.map(adaptCategory);
+				// ✅ CORREGIDO: Verificar si es array directamente O si tiene estructura {data: [...]}
+				let categoriesToProcess = [];
+				if (Array.isArray(response)) {
+					categoriesToProcess = response;
+				} else if (response && response.data && Array.isArray(response.data)) {
+					categoriesToProcess = response.data;
+				}
+
+				if (categoriesToProcess.length > 0) {
+					// Adaptar datos
+					const adaptedCategories = categoriesToProcess.map(adaptCategory);
 
 					// Guardar en caché
 					CacheService.setItem(
@@ -260,9 +303,16 @@ export const useCategories = () => {
 					);
 
 					setFeaturedCategories(adaptedCategories);
+					console.log(
+						"✅ useCategories: Categorías destacadas procesadas correctamente:",
+						adaptedCategories.length
+					);
 					return adaptedCategories;
 				} else {
-					console.warn("Respuesta de categorías destacadas no tiene el formato esperado:", response);
+					console.warn(
+						"⚠️ useCategories: Respuesta de categorías destacadas no tiene el formato esperado:",
+						response
+					);
 					setFeaturedCategories([]);
 					return [];
 				}
@@ -272,7 +322,10 @@ export const useCategories = () => {
 						? err.message
 						: "Error al obtener categorías destacadas";
 				setError(errorMessage);
-				console.error("Error al obtener categorías destacadas:", err);
+				console.error(
+					"❌ useCategories: Error al obtener categorías destacadas:",
+					err
+				);
 				setFeaturedCategories([]);
 				return [];
 			} finally {
@@ -298,7 +351,7 @@ export const useCategories = () => {
 
 				if (cachedData) {
 					console.log(
-						`Usando subcategorías en caché para categoría ${categoryId}`
+						`💾 useCategories: Usando subcategorías en caché para categoría ${categoryId}`
 					);
 					setLoading(false);
 					return cachedData;
@@ -308,13 +361,21 @@ export const useCategories = () => {
 				const response = await categoryService.getSubcategories(categoryId);
 
 				console.log(
-					`Respuesta de subcategorías para categoría ${categoryId}:`,
+					`📥 useCategories: Respuesta de subcategorías para categoría ${categoryId}:`,
 					response
 				);
 
-				if (response && response.length > 0) {
-					// Adaptar datos si es necesario
-					const adaptedCategories = response.map(adaptCategory);
+				// ✅ CORREGIDO: Verificar si es array directamente O si tiene estructura {data: [...]}
+				let categoriesToProcess = [];
+				if (Array.isArray(response)) {
+					categoriesToProcess = response;
+				} else if (response && response.data && Array.isArray(response.data)) {
+					categoriesToProcess = response.data;
+				}
+
+				if (categoriesToProcess.length > 0) {
+					// Adaptar datos
+					const adaptedCategories = categoriesToProcess.map(adaptCategory);
 
 					// Guardar en caché
 					CacheService.setItem(
@@ -323,6 +384,10 @@ export const useCategories = () => {
 						appConfig.cache.categoryCacheTime
 					);
 
+					console.log(
+						`✅ useCategories: Subcategorías procesadas correctamente para categoría ${categoryId}:`,
+						adaptedCategories.length
+					);
 					return adaptedCategories;
 				}
 
@@ -331,7 +396,7 @@ export const useCategories = () => {
 				const errorMessage =
 					err instanceof Error ? err.message : "Error al obtener subcategorías";
 				setError(errorMessage);
-				console.error("Error al obtener subcategorías:", err);
+				console.error("❌ useCategories: Error al obtener subcategorías:", err);
 				return [];
 			} finally {
 				setLoading(false);
@@ -355,7 +420,9 @@ export const useCategories = () => {
 				const cachedData = CacheService.getItem(cacheKey);
 
 				if (cachedData) {
-					console.log(`Usando categoría en caché para slug ${slug}`);
+					console.log(
+						`💾 useCategories: Usando categoría en caché para slug ${slug}`
+					);
 					setCategoryDetail(cachedData);
 					setLoading(false);
 					return cachedData;
@@ -364,10 +431,13 @@ export const useCategories = () => {
 				// Si no hay caché, hacer la petición a la API
 				const response = await categoryService.getCategoryBySlug(slug);
 
-				console.log(`Respuesta de categoría con slug ${slug}:`, response);
+				console.log(
+					`📥 useCategories: Respuesta de categoría con slug ${slug}:`,
+					response
+				);
 
 				if (response) {
-					// Adaptar datos si es necesario
+					// Adaptar datos
 					const adaptedCategory = adaptCategory(response);
 
 					// Guardar en caché
@@ -389,7 +459,10 @@ export const useCategories = () => {
 						? err.message
 						: "Error al obtener categoría por slug";
 				setError(errorMessage);
-				console.error("Error al obtener categoría por slug:", err);
+				console.error(
+					"❌ useCategories: Error al obtener categoría por slug:",
+					err
+				);
 				setCategoryDetail(null);
 				return null;
 			} finally {
@@ -414,23 +487,31 @@ export const useCategories = () => {
 		});
 
 		console.log(
-			`${categoryKeys.length} claves de caché de categorías eliminadas`
+			`🗑️ useCategories: ${categoryKeys.length} claves de caché de categorías eliminadas`
 		);
 	}, []);
 
 	return {
+		// Estados
 		loading,
 		error,
 		categories,
 		mainCategories,
 		featuredCategories,
 		categoryDetail,
+		isInitialized,
+
+		// Métodos
 		fetchCategories,
 		fetchMainCategories,
 		fetchFeaturedCategories,
 		fetchSubcategories,
 		fetchCategoryBySlug,
 		clearCategoryCache,
+
+		// Utilidades
+		setError: (error: string | null) => setError(error),
+		setLoading: (loading: boolean) => setLoading(loading),
 	};
 };
 
