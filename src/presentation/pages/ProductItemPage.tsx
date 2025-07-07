@@ -18,7 +18,7 @@ import type {
 	ProductDetail,
 	ProductImage,
 } from "../../core/domain/entities/Product";
-import {getImageUrl} from "../../utils/imageUtils";
+import {getImageUrl} from "../../utils/imageManager";
 import {useCart} from "../hooks/useCart";
 import {useFavorites} from "../hooks/useFavorites";
 import {useChat} from "../hooks/useChat";

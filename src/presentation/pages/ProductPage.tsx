@@ -26,7 +26,7 @@ import {calculateProductCountByCategory} from "../../utils/categoryUtils";
 import appConfig from "../../config/appConfig";
 
 // IMPORTAR LA FUNCIÓN DE IMAGEN CORRECTA (la que funcionaba)
-import { getImageUrl} from "../../utils/imageUtils";
+import { getImageUrl} from "../../utils/imageManager";
 
 import type {Category} from "../../core/domain/entities/Category";
 

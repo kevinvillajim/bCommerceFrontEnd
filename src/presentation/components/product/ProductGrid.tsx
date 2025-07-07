@@ -3,6 +3,7 @@ import ProductCardCompact from "./ProductCardCompact";
 import type {Product} from "../../../core/domain/entities/Product";
 import type {Category} from "../../../core/domain/entities/Category";
 import {adaptProduct} from "../../../utils/productAdapter";
+import {getProductMainImage} from "../../../utils/imageManager";
 
 interface ProductGridProps {
 	products: Product[];
@@ -104,28 +105,21 @@ const ProductGrid: React.FC<ProductGridProps> = ({
 					// Adaptar producto para asegurar compatibilidad
 					const adaptedProduct = adaptProduct(product);
 
-					// OBTENER IMAGEN DE MANERA SIMPLIFICADA
-					// El hook useProducts ya procesó las imágenes, solo usar la primera
-					let imageUrl = "";
-
+					// 🔍 DEBUG: Analizar estructura del producto
 					console.group(`🎨 ProductGrid - Producto ${product.id}`);
-					console.log("📦 Producto completo:", product);
-					console.log("🖼️ Imágenes disponibles:", product.images);
+					console.log("📦 Producto RAW desde API:", {
+						id: product.id,
+						name: product.name,
+						images: product.images,
+						main_image: product.main_image,
+						image: product.image,
+					});
 
-					if (Array.isArray(product.images) && product.images.length > 0) {
-						// Usar la primera imagen del array ya procesado por el hook
-						imageUrl = typeof product.images[0] === "string" ? product.images[0] : product.images[0]?.url || "";
-						console.log("✅ Imagen seleccionada:", imageUrl);
-					} else {
-						console.warn("⚠️ No hay imágenes disponibles para el producto");
-					}
+					// ✅ USAR EL NUEVO GESTOR DE IMÁGENES
+					const imageUrl = getProductMainImage(product);
 
+					console.log(`🔗 URL final de imagen:`, imageUrl);
 					console.groupEnd();
-
-					// Procesar la imagen a través de getImageUrl
-					const processedImageUrl = getImageUrl(imageUrl);
-
-					console.log(`🔗 URL final de imagen para producto ${product.id}:`, processedImageUrl);
 
 					return (
 						<ProductCardCompact
@@ -136,7 +130,7 @@ const ProductGrid: React.FC<ProductGridProps> = ({
 							discount={product.discountPercentage}
 							rating={adaptedProduct.rating || 0}
 							reviews={product.ratingCount || 0}
-							image={processedImageUrl}
+							image={imageUrl}
 							category={
 								categories.find((cat) => cat.id === adaptedProduct.categoryId)
 									?.name

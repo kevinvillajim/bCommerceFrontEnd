@@ -109,26 +109,32 @@ const CategoryFilterSection: React.FC<CategoryFilterSectionProps> = ({
 			onToggle={onToggle}
 		>
 			<div className="space-y-1 max-h-60 overflow-y-auto pr-2 scrollbar-thin">
-				{categories.map((category) => (
-					<div key={category} className="flex items-center">
-						<input
-							type="checkbox"
-							id={`category-${category}`}
-							checked={selectedCategories.includes(category)}
-							onChange={() => handleCategoryToggle(category)}
-							className="cursor-pointer h-4 w-4 text-primary-600 focus:ring-primary-500 rounded border-gray-300"
-						/>
-						<label
-							htmlFor={`category-${category}`}
-							className="cursor-pointer ml-2 block text-sm text-gray-700"
-						>
-							{category}
-							<span className="ml-1 text-gray-400 text-xs">
-								({productCountByCategory[category] || 0})
-							</span>
-						</label>
-					</div>
-				))}
+				{categories.map((category, index) => {
+					// ✅ CLAVE ÚNICA: usar index + category para evitar duplicados
+					const uniqueKey = `category-${category}-${index}`;
+					const uniqueId = `category-input-${category}-${index}`;
+
+					return (
+						<div key={uniqueKey} className="flex items-center">
+							<input
+								type="checkbox"
+								id={uniqueId}
+								checked={selectedCategories.includes(category)}
+								onChange={() => handleCategoryToggle(category)}
+								className="cursor-pointer h-4 w-4 text-primary-600 focus:ring-primary-500 rounded border-gray-300"
+							/>
+							<label
+								htmlFor={uniqueId}
+								className="cursor-pointer ml-2 block text-sm text-gray-700"
+							>
+								{category}
+								<span className="ml-1 text-gray-400 text-xs">
+									({productCountByCategory[category] || 0})
+								</span>
+							</label>
+						</div>
+					);
+				})}
 			</div>
 		</FilterSection>
 	);
@@ -249,7 +255,7 @@ const RatingFilterSection: React.FC<RatingFilterSectionProps> = ({
 			<div className="space-y-2">
 				{ratings.map((rating) => (
 					<button
-						key={rating}
+						key={`rating-${rating}`}
 						onClick={() =>
 							onRatingChange(selectedRating === rating ? null : rating)
 						}
@@ -262,7 +268,7 @@ const RatingFilterSection: React.FC<RatingFilterSectionProps> = ({
 						<div className="flex">
 							{[...Array(5)].map((_, i) => (
 								<Star
-									key={i}
+									key={`star-${rating}-${i}`}
 									size={16}
 									fill={i < rating ? "currentColor" : "none"}
 									className={i < rating ? "text-yellow-400" : "text-gray-300"}

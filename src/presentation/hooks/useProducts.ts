@@ -230,6 +230,7 @@ export const useProducts = () => {
 				console.log("🌐 Realizando petición a la API");
 				const response = await productService.getProducts(filterParams);
 
+				
 				console.log("🔍 RESPUESTA RAW DE LA API:", response);
 
 				if (response) {
