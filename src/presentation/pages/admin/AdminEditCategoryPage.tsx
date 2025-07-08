@@ -1,6 +1,6 @@
-// src/presentation/pages/admin/AdminEditCategoryPage.tsx - CORREGIDO
+// src/presentation/pages/admin/AdminEditCategoryPage.tsx - CORREGIDO (Bucle Infinito)
 
-import React, {useState, useEffect} from "react";
+import React, {useState, useEffect, useCallback} from "react";
 import {useNavigate, useParams} from "react-router-dom";
 import {
 	ArrowLeft,
@@ -40,11 +40,11 @@ const AdminEditCategoryPage: React.FC = () => {
 		setError,
 	} = useAdminCategories();
 
-	// Estado del formulario - CORREGIDO: inicialización más robusta
+	// Estado del formulario - CORREGIDO: valores iniciales definidos
 	const [formData, setFormData] = useState<CategoryUpdateData>({
 		id: categoryId,
-		name: "",
-		slug: "",
+		name: "", // CORREGIDO: siempre string
+		slug: "", // CORREGIDO: siempre string
 		description: "",
 		parent_id: undefined,
 		icon: "",
@@ -60,74 +60,117 @@ const AdminEditCategoryPage: React.FC = () => {
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const [isLoading, setIsLoading] = useState(true);
 	const [originalSlug, setOriginalSlug] = useState("");
-	const [slugManuallyChanged, setSlugManuallyChanged] = useState(false);
+	const [dataLoaded, setDataLoaded] = useState(false); // NUEVO: Control de carga de datos
 
-	// ✅ EFECTO SEPARADO: Validar ID de categoría
-	useEffect(() => {
-		if (!categoryId || isNaN(categoryId) || categoryId <= 0) {
+	/**
+	 * Carga los datos de la categoría y las categorías principales - CORREGIDO
+	 */
+	const loadData = useCallback(async () => {
+		if (!categoryId || isNaN(categoryId)) {
 			setError("ID de categoría inválido");
 			navigate("/admin/categories");
+			return;
 		}
-	}, [categoryId, setError, navigate]);
 
-	// ✅ EFECTO SEPARADO: Cargar datos iniciales
-	useEffect(() => {
-		const loadData = async () => {
-			if (!categoryId || isNaN(categoryId)) return;
+		// CORREGIDO: Evitar múltiples llamadas pero permitir recarga si no hay datos
+		if (dataLoaded && categoryDetail) {
+			return;
+		}
 
-			setIsLoading(true);
-			try {
-				console.log(
-					`🔄 AdminEditCategoryPage: Cargando datos para categoría ${categoryId}`
-				);
+		setIsLoading(true);
+		try {
+			console.log(
+				"🔄 AdminEditCategoryPage: Cargando datos para categoría",
+				categoryId
+			);
 
-				// Cargar categoría específica y categorías principales en paralelo
-				const [category] = await Promise.all([
-					fetchCategoryById(categoryId),
-					fetchMainCategories(true),
-				]);
+			// Cargar categoría específica y categorías principales en paralelo
+			const [category] = await Promise.all([
+				fetchCategoryById(categoryId),
+				fetchMainCategories(true),
+			]);
 
-				if (!category) {
-					setError("Categoría no encontrada");
-					navigate("/admin/categories");
-					return;
-				}
-
-				console.log("📥 AdminEditCategoryPage: Categoría cargada:", category);
-
-				// ✅ LLENADO ROBUSTO del formulario
-				const formDataToSet: CategoryUpdateData = {
-					id: category.id || categoryId,
-					name: category.name || "",
-					slug: category.slug || "",
-					description: category.description || "",
-					parent_id: category.parent_id || undefined,
-					icon: category.icon || "",
-					order: typeof category.order === "number" ? category.order : 0,
-					is_active: Boolean(category.is_active ?? true),
-					featured: Boolean(category.featured ?? false),
-				};
-
-				setFormData(formDataToSet);
-				setOriginalSlug(category.slug || "");
-
-				console.log(
-					"✅ AdminEditCategoryPage: Datos del formulario establecidos:",
-					formDataToSet
-				);
-			} catch (error) {
-				console.error(
-					"❌ AdminEditCategoryPage: Error al cargar datos:",
-					error
-				);
-				setError("Error al cargar los datos de la categoría");
-			} finally {
-				setIsLoading(false);
+			if (!category) {
+				setError("Categoría no encontrada");
+				navigate("/admin/categories");
+				return;
 			}
-		};
 
-		loadData();
-	}, [categoryId, fetchCategoryById, fetchMainCategories, setError, navigate]);
+			console.log("📥 AdminEditCategoryPage: Categoría cargada:", category);
+
+			setDataLoaded(true); // NUEVO: Marcar datos como cargados aquí
+		} catch (error) {
+			console.error("Error al cargar datos de categoría:", error);
+			setError("Error al cargar los datos de la categoría");
+		} finally {
+			setIsLoading(false);
+		}
+	}, [
+		categoryId,
+		dataLoaded,
+		categoryDetail,
+		fetchCategoryById,
+		fetchMainCategories,
+		navigate,
+		setError,
+	]);
+
+	// CORREGIDO: useEffect con dependencias adecuadas para evitar bucle infinito
+	useEffect(() => {
+		// Solo cargar datos una vez cuando cambie el categoryId y no estén cargados
+		if (categoryId && !dataLoaded && !loading) {
+			loadData();
+		}
+	}, [categoryId, dataLoaded, loading]); // CORREGIDO: dependencias específicas
+
+	// NUEVO: Efecto separado para resetear estado cuando cambie el ID
+	useEffect(() => {
+		if (categoryId) {
+			setDataLoaded(false);
+			setIsLoading(true);
+			setFormData({
+				id: categoryId,
+				name: "",
+				slug: "",
+				description: "",
+				parent_id: undefined,
+				icon: "",
+				order: 0,
+				is_active: true,
+				featured: false,
+			});
+		}
+	}, [categoryId]);
+
+	// CORREGIDO: useEffect que depende del detalle de la categoría para llenar el formulario
+	useEffect(() => {
+		if (categoryDetail && categoryDetail.id === categoryId && !dataLoaded) {
+			console.log(
+				"📥 AdminEditCategoryPage: Llenando formulario con datos de categoría:",
+				categoryDetail
+			);
+
+			const newFormData: CategoryUpdateData = {
+				id: categoryDetail.id,
+				name: categoryDetail.name || "",
+				slug: categoryDetail.slug || "",
+				description: categoryDetail.description || "",
+				parent_id: categoryDetail.parent_id || undefined,
+				icon: categoryDetail.icon || "",
+				order: categoryDetail.order || 0,
+				is_active: categoryDetail.is_active ?? true,
+				featured: categoryDetail.featured ?? false,
+			};
+
+			setFormData(newFormData);
+			setOriginalSlug(categoryDetail.slug || "");
+
+			console.log(
+				"✅ AdminEditCategoryPage: Datos del formulario establecidos:",
+				newFormData
+			);
+		}
+	}, [categoryDetail, categoryId, dataLoaded]);
 
 	/**
 	 * Genera el slug automáticamente a partir del nombre
@@ -167,14 +210,8 @@ const AdminEditCategoryPage: React.FC = () => {
 		}
 
 		// Manejar números
-		if (name === "order") {
+		if (name === "order" || name === "parent_id") {
 			processedValue = value === "" ? 0 : Number(value);
-		}
-
-		// Manejar parent_id
-		if (name === "parent_id") {
-			processedValue =
-				value === "" || value === "0" ? undefined : Number(value);
 		}
 
 		setFormData((prev) => ({
@@ -182,18 +219,13 @@ const AdminEditCategoryPage: React.FC = () => {
 			[name]: processedValue,
 		}));
 
-		// Generar slug automáticamente cuando cambie el nombre (solo si no se ha modificado manualmente)
-		if (name === "name" && value && !slugManuallyChanged) {
+		// Generar slug automáticamente cuando cambie el nombre - CORREGIDO
+		if (name === "name" && value && (formData.slug || "") === originalSlug) {
 			const autoSlug = generateSlug(value);
 			setFormData((prev) => ({
 				...prev,
 				slug: autoSlug,
 			}));
-		}
-
-		// Marcar que el slug fue modificado manualmente
-		if (name === "slug") {
-			setSlugManuallyChanged(true);
 		}
 
 		// Limpiar error de validación
@@ -211,7 +243,7 @@ const AdminEditCategoryPage: React.FC = () => {
 	const validateForm = (): boolean => {
 		const errors: Record<string, string> = {};
 
-		// Validar nombre
+		// Validar nombre - CORREGIDO: verificar que formData.name esté definido
 		const name = formData.name || "";
 		if (!name.trim()) {
 			errors.name = "El nombre es obligatorio";
@@ -221,7 +253,7 @@ const AdminEditCategoryPage: React.FC = () => {
 			errors.name = "El nombre no puede tener más de 100 caracteres";
 		}
 
-		// Validar slug
+		// Validar slug - CORREGIDO: verificar que formData.slug esté definido
 		const slug = formData.slug || "";
 		if (!slug.trim()) {
 			errors.slug = "El slug es obligatorio";
@@ -270,7 +302,7 @@ const AdminEditCategoryPage: React.FC = () => {
 		setError(null);
 
 		try {
-			// Preparar datos para envío
+			// Preparar datos para envío - CORREGIDO: asegurar que los campos string no sean undefined
 			const dataToSubmit: CategoryUpdateData = {
 				...formData,
 				// Limpiar campos vacíos y asegurar tipos correctos
@@ -281,18 +313,12 @@ const AdminEditCategoryPage: React.FC = () => {
 				parent_id: formData.parent_id === 0 ? undefined : formData.parent_id,
 			};
 
-			console.log(
-				"📤 AdminEditCategoryPage: Enviando datos de categoría:",
-				dataToSubmit
-			);
+			console.log("📤 Enviando datos de categoría:", dataToSubmit);
 
 			const result = await updateCategory(dataToSubmit);
 
 			if (result) {
-				console.log(
-					"✅ AdminEditCategoryPage: Categoría actualizada exitosamente:",
-					result
-				);
+				console.log("✅ Categoría actualizada exitosamente:", result);
 				// Redirigir a la lista de categorías
 				navigate("/admin/categories", {
 					state: {
@@ -303,10 +329,7 @@ const AdminEditCategoryPage: React.FC = () => {
 				setError("Error al actualizar la categoría. Inténtalo de nuevo.");
 			}
 		} catch (error) {
-			console.error(
-				"❌ AdminEditCategoryPage: Error al actualizar categoría:",
-				error
-			);
+			console.error("❌ Error al actualizar categoría:", error);
 			setError(
 				error instanceof Error
 					? error.message
@@ -338,31 +361,6 @@ const AdminEditCategoryPage: React.FC = () => {
 				<div className="text-center">
 					<Loader className="h-8 w-8 animate-spin text-primary-600 mx-auto mb-4" />
 					<p className="text-gray-600">Cargando datos de la categoría...</p>
-				</div>
-			</div>
-		);
-	}
-
-	// Mostrar error si no se puede cargar
-	if (error && !categoryDetail) {
-		return (
-			<div className="max-w-2xl mx-auto px-4 py-12">
-				<div className="bg-red-50 border-l-4 border-red-500 p-4 rounded">
-					<p className="text-red-700">Error: {error}</p>
-					<div className="mt-4 space-x-2">
-						<Link
-							to="/admin/categories"
-							className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
-						>
-							Volver a categorías
-						</Link>
-						<button
-							onClick={() => window.location.reload()}
-							className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-						>
-							Reintentar
-						</button>
-					</div>
 				</div>
 			</div>
 		);
@@ -467,7 +465,7 @@ const AdminEditCategoryPage: React.FC = () => {
 									}`}
 									placeholder="slug-de-la-categoria"
 									maxLength={150}
-									pattern="^[a-z0-9-]+$"
+									pattern="[a-z0-9-]+"
 									required
 								/>
 							</div>
@@ -493,7 +491,7 @@ const AdminEditCategoryPage: React.FC = () => {
 							<select
 								id="parent_id"
 								name="parent_id"
-								value={formData.parent_id || ""}
+								value={formData.parent_id || 0}
 								onChange={handleInputChange}
 								className={`block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 ${
 									validationErrors.parent_id
@@ -501,7 +499,7 @@ const AdminEditCategoryPage: React.FC = () => {
 										: "border-gray-300"
 								}`}
 							>
-								<option value="">Sin categoría padre (principal)</option>
+								<option value={0}>Sin categoría padre (principal)</option>
 								{availableParentCategories.map((category) => (
 									<option key={category.id} value={category.id}>
 										{category.name}
@@ -621,7 +619,7 @@ const AdminEditCategoryPage: React.FC = () => {
 								type="checkbox"
 								id="is_active"
 								name="is_active"
-								checked={Boolean(formData.is_active ?? true)}
+								checked={formData.is_active ?? true}
 								onChange={handleInputChange}
 								className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
 							/>
@@ -643,7 +641,7 @@ const AdminEditCategoryPage: React.FC = () => {
 								type="checkbox"
 								id="featured"
 								name="featured"
-								checked={Boolean(formData.featured ?? false)}
+								checked={formData.featured ?? false}
 								onChange={handleInputChange}
 								className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
 							/>

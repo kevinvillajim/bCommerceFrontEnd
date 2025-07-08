@@ -330,7 +330,7 @@ const AdminCreateCategoryPage: React.FC = () => {
 									}`}
 									placeholder="slug-de-la-categoria"
 									maxLength={150}
-									pattern="^[a-z0-9-]+$"
+									pattern="[a-z0-9-]+"
 									required
 								/>
 							</div>

@@ -57,52 +57,45 @@ export const useAdminCategories = () => {
 	const [categoryDetail, setCategoryDetail] = useState<Category | null>(null);
 
 	/**
-	 * Adaptador para normalizar los datos de categorías - CORREGIDO
+	 * Adaptador para normalizar los datos de categorías
 	 */
 	const adaptCategory = useCallback((apiCategory: any): Category => {
 		if (!apiCategory || typeof apiCategory !== "object") {
-			console.error(
-				"❌ useAdminCategories: Categoría inválida para adaptar:",
-				apiCategory
-			);
+			console.error("Categoría inválida para adaptar:", apiCategory);
 			return {} as Category;
 		}
 
-		// ✅ MEJORADO: Manejo más robusto de los datos
 		return {
-			id: apiCategory.id || undefined,
+			id: apiCategory.id,
 			name: apiCategory.name || "",
 			slug: apiCategory.slug || "",
 			description: apiCategory.description || "",
-			parent_id: apiCategory.parent_id || undefined,
-			icon: apiCategory.icon || "",
-			image: apiCategory.image || "",
-			order: typeof apiCategory.order === "number" ? apiCategory.order : 0,
+			parent_id: apiCategory.parent_id,
+			icon: apiCategory.icon,
+			image: apiCategory.image,
+			order: apiCategory.order,
 			is_active: Boolean(apiCategory.is_active ?? true),
 			featured: Boolean(apiCategory.featured ?? false),
-			created_at: apiCategory.created_at || "",
-			updated_at: apiCategory.updated_at || "",
+			created_at: apiCategory.created_at,
+			updated_at: apiCategory.updated_at,
 			// API response specific fields
 			subcategories: Array.isArray(apiCategory.subcategories)
 				? apiCategory.subcategories.map((sub: any) => adaptCategory(sub))
-				: [],
-			product_count:
-				typeof apiCategory.product_count === "number"
-					? apiCategory.product_count
-					: 0,
-			full_path: apiCategory.full_path || "",
-			has_children: Boolean(apiCategory.has_children ?? false),
-			url: apiCategory.url || "",
+				: undefined,
+			product_count: apiCategory.product_count || 0,
+			full_path: apiCategory.full_path,
+			has_children: Boolean(apiCategory.has_children),
+			url: apiCategory.url,
 			parent: apiCategory.parent
 				? adaptCategory(apiCategory.parent)
 				: undefined,
-			image_url: apiCategory.image_url || "",
-			icon_url: apiCategory.icon_url || "",
+			image_url: apiCategory.image_url,
+			icon_url: apiCategory.icon_url,
 		};
 	}, []);
 
 	/**
-	 * Obtiene todas las categorías (como admin) - CORREGIDO
+	 * Obtiene todas las categorías (como admin)
 	 */
 	const fetchAllCategories = useCallback(
 		async (
@@ -118,33 +111,31 @@ export const useAdminCategories = () => {
 				// Verificar caché si no se fuerza refresh
 				if (!forceRefresh) {
 					const cachedData = CacheService.getItem(cacheKey);
-					if (cachedData && cachedData.data) {
+					if (cachedData && Array.isArray(cachedData.data)) {
 						console.log("💾 useAdminCategories: Usando categorías en caché");
-						setCategories(cachedData.data || []);
+						setCategories(cachedData.data);
 						setLoading(false);
 						return cachedData;
 					}
 				}
 
-				console.log(
-					"🌐 useAdminCategories: Obteniendo categorías desde API con params:",
-					params
-				);
-
+				console.log("🌐 useAdminCategories: Obteniendo categorías desde API");
 				// USAR USE CASE
-				const response = await getAllCategoriesUseCase.execute({
-					...params,
-					// ✅ IMPORTANTE: Como admin, NO filtrar por is_active para ver todas
-					with_children: true, // Incluir información de hijos
-					with_counts: true, // Incluir conteo de productos
-				});
+				const response: CategoryListResponse | null =
+					await getAllCategoriesUseCase.execute({
+						...params,
+						// No filtrar por is_active para que admin vea todas
+					});
 
-				console.log("📥 useAdminCategories: Respuesta del servidor:", response);
-
-				if (response && response.data && Array.isArray(response.data)) {
+				if (
+					response &&
+					typeof response === "object" &&
+					"data" in response &&
+					Array.isArray(response.data)
+				) {
 					const adaptedCategories = response.data.map(adaptCategory);
 
-					const result = {
+					const result: CategoryListResponse = {
 						data: adaptedCategories,
 						meta: response.meta || {total: adaptedCategories.length},
 					};
@@ -160,22 +151,24 @@ export const useAdminCategories = () => {
 					return result;
 				} else {
 					console.warn(
-						"⚠️ useAdminCategories: Respuesta de categorías no tiene el formato esperado:",
+						"Respuesta de categorías no tiene el formato esperado:",
 						response
 					);
 					setCategories([]);
-					return {data: [], meta: {total: 0}};
+					const emptyResult: CategoryListResponse = {
+						data: [],
+						meta: {total: 0},
+					};
+					return emptyResult;
 				}
 			} catch (err) {
 				const errorMessage =
 					err instanceof Error ? err.message : "Error al obtener categorías";
 				setError(errorMessage);
-				console.error(
-					"❌ useAdminCategories: Error al obtener categorías:",
-					err
-				);
+				console.error("Error al obtener categorías:", err);
 				setCategories([]);
-				return {data: [], meta: {total: 0}};
+				const emptyResult: CategoryListResponse = {data: [], meta: {total: 0}};
+				return emptyResult;
 			} finally {
 				setLoading(false);
 			}
@@ -184,7 +177,7 @@ export const useAdminCategories = () => {
 	);
 
 	/**
-	 * Obtiene categorías principales (como admin) - CORREGIDO
+	 * Obtiene categorías principales (como admin)
 	 */
 	const fetchMainCategories = useCallback(
 		async (
@@ -200,7 +193,7 @@ export const useAdminCategories = () => {
 				// Verificar caché si no se fuerza refresh
 				if (!forceRefresh) {
 					const cachedData = CacheService.getItem(cacheKey);
-					if (cachedData) {
+					if (cachedData && Array.isArray(cachedData)) {
 						console.log(
 							"💾 useAdminCategories: Usando categorías principales en caché"
 						);
@@ -213,58 +206,49 @@ export const useAdminCategories = () => {
 				console.log(
 					"🌐 useAdminCategories: Obteniendo categorías principales desde API"
 				);
-
-				// USAR SERVICIO ADMIN - incluir subcategorías para admin
-				const response =
+				// USAR SERVICIO ADMIN
+				const response: Category[] | CategoryListResponse | null =
 					await adminCategoryService.getMainCategories(withCounts);
 
-				console.log(
-					"📥 useAdminCategories: Respuesta de categorías principales:",
-					response
-				);
+				// CORREGIDO: Manejar respuesta que puede ser array directo o con estructura {data, meta} con tipos explícitos
+				let categoriesArray: Category[] = [];
 
-				// ✅ CORREGIDO: Verificar si es array directamente O si tiene estructura {data: [...]}
-				let categoriesToProcess = [];
 				if (Array.isArray(response)) {
-					categoriesToProcess = response;
-				} else if (response && response.data && Array.isArray(response.data)) {
-					categoriesToProcess = response.data;
-				}
-
-				if (categoriesToProcess.length > 0) {
-					const adaptedCategories = categoriesToProcess.map(adaptCategory);
-
-					// Guardar en caché
-					CacheService.setItem(
-						cacheKey,
-						adaptedCategories,
-						appConfig.cache.categoryCacheTime
-					);
-
-					setMainCategories(adaptedCategories);
-					console.log(
-						"✅ useAdminCategories: Categorías principales procesadas correctamente:",
-						adaptedCategories.length
-					);
-					return adaptedCategories;
+					categoriesArray = response;
+				} else if (
+					response &&
+					typeof response === "object" &&
+					"data" in response &&
+					Array.isArray((response as CategoryListResponse).data)
+				) {
+					categoriesArray = (response as CategoryListResponse).data;
 				} else {
 					console.warn(
-						"⚠️ useAdminCategories: Respuesta de categorías principales no tiene el formato esperado:",
+						"Respuesta de categorías principales no tiene el formato esperado:",
 						response
 					);
 					setMainCategories([]);
 					return [];
 				}
+
+				const adaptedCategories = categoriesArray.map(adaptCategory);
+
+				// Guardar en caché
+				CacheService.setItem(
+					cacheKey,
+					adaptedCategories,
+					appConfig.cache.categoryCacheTime
+				);
+
+				setMainCategories(adaptedCategories);
+				return adaptedCategories;
 			} catch (err) {
 				const errorMessage =
 					err instanceof Error
 						? err.message
 						: "Error al obtener categorías principales";
 				setError(errorMessage);
-				console.error(
-					"❌ useAdminCategories: Error al obtener categorías principales:",
-					err
-				);
+				console.error("Error al obtener categorías principales:", err);
 				setMainCategories([]);
 				return [];
 			} finally {
@@ -298,9 +282,10 @@ export const useAdminCategories = () => {
 					`🌐 useAdminCategories: Obteniendo categoría ${id} desde API`
 				);
 				// USAR USE CASE
-				const response = await getCategoryByIdUseCase.execute(id);
+				const response: Category | null =
+					await getCategoryByIdUseCase.execute(id);
 
-				if (response) {
+				if (response && typeof response === "object") {
 					const adaptedCategory = adaptCategory(response);
 
 					// Guardar en caché
@@ -320,10 +305,7 @@ export const useAdminCategories = () => {
 				const errorMessage =
 					err instanceof Error ? err.message : "Error al obtener categoría";
 				setError(errorMessage);
-				console.error(
-					"❌ useAdminCategories: Error al obtener categoría:",
-					err
-				);
+				console.error("Error al obtener categoría:", err);
 				setCategoryDetail(null);
 				return null;
 			} finally {
@@ -344,9 +326,10 @@ export const useAdminCategories = () => {
 			try {
 				console.log("🌐 useAdminCategories: Creando nueva categoría:", data);
 				// USAR USE CASE
-				const response = await createCategoryAsAdminUseCase.execute(data);
+				const response: Category | null =
+					await createCategoryAsAdminUseCase.execute(data);
 
-				if (response) {
+				if (response && typeof response === "object") {
 					const adaptedCategory = adaptCategory(response);
 
 					// Actualizar la lista de categorías
@@ -368,7 +351,7 @@ export const useAdminCategories = () => {
 				const errorMessage =
 					err instanceof Error ? err.message : "Error al crear categoría";
 				setError(errorMessage);
-				console.error("❌ useAdminCategories: Error al crear categoría:", err);
+				console.error("Error al crear categoría:", err);
 				return null;
 			} finally {
 				setLoading(false);
@@ -391,9 +374,10 @@ export const useAdminCategories = () => {
 					data
 				);
 				// USAR USE CASE
-				const response = await updateAnyCategoryUseCase.execute(data);
+				const response: Category | null =
+					await updateAnyCategoryUseCase.execute(data);
 
-				if (response) {
+				if (response && typeof response === "object") {
 					const adaptedCategory = adaptCategory(response);
 
 					// Actualizar en las listas actuales
@@ -420,10 +404,7 @@ export const useAdminCategories = () => {
 				const errorMessage =
 					err instanceof Error ? err.message : "Error al actualizar categoría";
 				setError(errorMessage);
-				console.error(
-					"❌ useAdminCategories: Error al actualizar categoría:",
-					err
-				);
+				console.error("Error al actualizar categoría:", err);
 				return null;
 			} finally {
 				setLoading(false);
@@ -466,10 +447,7 @@ export const useAdminCategories = () => {
 				const errorMessage =
 					err instanceof Error ? err.message : "Error al eliminar categoría";
 				setError(errorMessage);
-				console.error(
-					"❌ useAdminCategories: Error al eliminar categoría:",
-					err
-				);
+				console.error("Error al eliminar categoría:", err);
 				return false;
 			} finally {
 				setLoading(false);
@@ -517,10 +495,7 @@ export const useAdminCategories = () => {
 				const errorMessage =
 					err instanceof Error ? err.message : "Error al cambiar estado activo";
 				setError(errorMessage);
-				console.error(
-					"❌ useAdminCategories: Error al cambiar estado activo:",
-					err
-				);
+				console.error("Error al cambiar estado activo:", err);
 				return false;
 			} finally {
 				setLoading(false);
@@ -573,10 +548,7 @@ export const useAdminCategories = () => {
 						? err.message
 						: "Error al cambiar estado destacado";
 				setError(errorMessage);
-				console.error(
-					"❌ useAdminCategories: Error al cambiar estado destacado:",
-					err
-				);
+				console.error("Error al cambiar estado destacado:", err);
 				return false;
 			} finally {
 				setLoading(false);
@@ -604,7 +576,7 @@ export const useAdminCategories = () => {
 		});
 
 		console.log(
-			`🗑️ useAdminCategories: ${adminCategoryKeys.length} claves de caché de categorías de admin eliminadas`
+			`🗑️ ${adminCategoryKeys.length} claves de caché de categorías de admin eliminadas`
 		);
 	}, []);
 
