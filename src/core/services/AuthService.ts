@@ -10,6 +10,7 @@ import { LocalStorageService } from '../../infrastructure/services/LocalStorageS
 import appConfig from '../../config/appConfig';
 import { API_ENDPOINTS } from '../../constants/apiEndpoints';
 import axiosInstance from '../../infrastructure/api/axiosConfig';
+import GoogleAuthService from "../../infrastructure/services/GoogleAuthService";
 
 // Instancia del servicio de almacenamiento local
 const storageService = new LocalStorageService();
@@ -491,6 +492,50 @@ export class AuthService {
 			}
 
 			throw new Error("No se pudo verificar el correo electrónico");
+		}
+	}
+
+	/**
+	 * Login with Google
+	 */
+	async loginWithGoogle(): Promise<AuthResponse | null> {
+		try {
+			console.log("🔐 Iniciando login con Google...");
+
+			const googleAuthService = GoogleAuthService.getInstance();
+			const result = await googleAuthService.authenticateWithGoogle("login");
+
+			if (!result.success) {
+				throw new Error(result.error || "Error en el login con Google");
+			}
+
+			console.log("✅ Login con Google exitoso");
+			return result.user;
+		} catch (error) {
+			console.error("❌ Error en login con Google:", error);
+			throw error;
+		}
+	}
+
+	/**
+	 * Register with Google
+	 */
+	async registerWithGoogle(): Promise<AuthResponse | null> {
+		try {
+			console.log("🔐 Iniciando registro con Google...");
+
+			const googleAuthService = GoogleAuthService.getInstance();
+			const result = await googleAuthService.authenticateWithGoogle("register");
+
+			if (!result.success) {
+				throw new Error(result.error || "Error en el registro con Google");
+			}
+
+			console.log("✅ Registro con Google exitoso");
+			return result.user;
+		} catch (error) {
+			console.error("❌ Error en registro con Google:", error);
+			throw error;
 		}
 	}
 }

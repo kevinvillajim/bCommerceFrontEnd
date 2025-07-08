@@ -1,5 +1,5 @@
 Listado de rutas de carpetas
-El n�mero de serie del volumen es 204F-F5E4
+El n�mero de serie del volumen es 7C1B-BCDF
 C:.
 |   .dockerignore
 |   .env
@@ -19,11 +19,35 @@ C:.
 |   tsconfig.json
 |   tsconfig.node.json
 |   vite.config.ts
-|               
-+---public
-|       favicon.ico
-|       SeviceWorker.js
+|   
++---.react-router
+|   \---types
+|       |   +register.ts
+|       |   +virtual.ts
+|       |   
+|       \---app
+|           +---+types
+|           |       root.ts
+|           |       
+|           \---routes
+|               \---+types
+|                       home.ts
+|                       
++---.vscode
+|       launch.json
 |       
++---.VSCodeCounter
+|   \---2025-04-06_01-09-05
+|           details.md
+|           diff-details.md
+|           diff.csv
+|           diff.md
+|           diff.txt
+|           results.csv
+|           results.json
+|           results.md
+|           results.txt
+|           
 \---src
     |   App.tsx
     |   main.tsx
@@ -80,7 +104,9 @@ C:.
     |   |           Money.ts
     |   |           
     |   +---services
+    |   |       AdminCategoryService.ts
     |   |       AdminOrderService.ts
+    |   |       AdminProductService.ts
     |   |       AdminRatingService.ts
     |   |       AdminShippingService.ts
     |   |       AdminUserService.ts
@@ -99,6 +125,27 @@ C:.
     |   |       SellerOrderService.ts
     |   |       
     |   \---useCases
+    |       +---admin
+    |       |   +---category
+    |       |   |       CreateCategoryAsAdminUseCase.ts
+    |       |   |       DeleteAnyCategoryUseCase.ts
+    |       |   |       GetAllCategoriesUseCase.ts
+    |       |   |       GetCategoryByIdUseCase.ts
+    |       |   |       ToggleCategoryActiveUseCase.ts
+    |       |   |       ToggleCategoryFeaturedUseCase.ts
+    |       |   |       UpdateAnyCategoryUseCase.ts
+    |       |   |       
+    |       |   \---product
+    |       |           CreateProductAsAdminUseCase.ts
+    |       |           DeleteAnyProductUseCase.ts
+    |       |           GetAllProductsUseCase.ts
+    |       |           GetProductsBySellerUseCase.ts
+    |       |           GetProductStatsUseCase.ts
+    |       |           ToggleProductFeaturedUseCase.ts
+    |       |           ToggleProductPublishedUseCase.ts
+    |       |           UpdateAnyProductUseCase.ts
+    |       |           UpdateProductStatusUseCase.ts
+    |       |           
     |       +---order
     |       |       GetOrderDetailUseCase.ts
     |       |       GetOrderStatsUseCase.ts
@@ -151,6 +198,7 @@ C:.
     |   |   |       CartSellerDebug.tsx
     |   |   |       
     |   |   +---chat
+    |   |   |       ArchivedChatsPage.tsx
     |   |   |       ChatHeader.tsx
     |   |   |       ChatInterface.tsx
     |   |   |       ChatList.tsx
@@ -179,6 +227,7 @@ C:.
     |   |   |       PriceRangeInput.tsx
     |   |   |       ProductCards.tsx
     |   |   |       RatingStars.tsx
+    |   |   |       ScrollIndicator.tsx
     |   |   |       TextSlider.tsx
     |   |   |       ThemeToggle.tsx
     |   |   |       WhyUs.tsx
@@ -217,6 +266,7 @@ C:.
     |   |   |           StandardTable.tsx
     |   |   |           TableHeader.tsx
     |   |   |           
+    |   |   +---debug
     |   |   +---FAQ
     |   |   |       FAQBase.tsx
     |   |   |       
@@ -224,6 +274,7 @@ C:.
     |   |   |       NotificationWrapper.tsx
     |   |   |       
     |   |   +---notifications
+    |   |   |       ChatFilterToast.tsx
     |   |   |       NotificationToast.tsx
     |   |   |       
     |   |   +---orders
@@ -268,6 +319,10 @@ C:.
     |   |   +---shipping
     |   |   |       ShippingFormModal.tsx
     |   |   |       
+    |   |   +---ui
+    |   |   |       CategoryIcon.tsx
+    |   |   |       ProductImage.tsx
+    |   |   |       
     |   |   \---user
     |   |           LoginForm.tsx
     |   |           ProfileCard.tsx
@@ -281,6 +336,8 @@ C:.
     |   |       
     |   +---hooks
     |   |       index.ts
+    |   |       useAdminCategories.ts
+    |   |       useAdminProducts.ts
     |   |       useAdminRatings.ts
     |   |       useAdminShipping.ts
     |   |       useAdminUsers.ts
@@ -297,6 +354,7 @@ C:.
     |   |       useProducts.ts
     |   |       useProductSearch.ts
     |   |       useRatings.ts
+    |   |       useRealTimeChat.ts
     |   |       useRealTimeNotifications.ts
     |   |       useSellerAdmin.ts
     |   |       useSellerProducts.ts
@@ -342,8 +400,10 @@ C:.
     |   |   +---admin
     |   |   |       AdminAccountingPage.tsx
     |   |   |       AdminCategoriesPage.tsx
+    |   |   |       AdminCreateCategoryPage.tsx
     |   |   |       AdminDashboard.tsx
     |   |   |       AdminDiscountsPage.tsx
+    |   |   |       AdminEditCategoryPage.tsx
     |   |   |       AdminFeedbackPage.tsx
     |   |   |       AdminInvoicesPage.tsx
     |   |   |       AdminLogViewerPage.tsx
@@ -376,6 +436,7 @@ C:.
     |       |   ratingTypes.ts
     |       |   
     |       +---admin
+    |       |       ProductFilterParams.ts
     |       |       ratingConfigTypes.ts
     |       |       
     |       \---dashboard
@@ -391,6 +452,7 @@ C:.
     |       SellerRoute.tsx
     |       
     +---styles
+    |       chat.css
     |       dark-mode.css
     |       main.css
     |       notification-animations.css
@@ -404,12 +466,10 @@ C:.
         |   debugUtils.ts
         |   errorHandler.ts
         |   helpers.ts
-        |   imageHelper.tsx
-        |   imageUtils.ts
+        |   imageManager.ts
         |   notificationHelpers.ts
         |   productAdapter.ts
         |   sellerHelper.ts
-        |   unifiedImageUtils.ts
         |   
         +---formatters
         |       currencyFormatter.ts

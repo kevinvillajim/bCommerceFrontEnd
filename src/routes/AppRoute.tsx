@@ -142,6 +142,7 @@ const DatafastResultPage = lazy(
 
 const AdminCreateCategoryPage = lazy(()=> import("../presentation/pages/admin/AdminCreateCategoryPage")) ;
 const AdminEditCategoryPage = lazy(()=> import("../presentation/pages/admin/AdminEditCategoryPage")) ;
+const GoogleAuthSuccessPage = lazy(()=> import("../presentation/pages/GoogleAuthSuccessPage"));
 
 //Route Guards
 import PrivateRoute from "./PrivateRoute";
@@ -150,6 +151,7 @@ import SellerRoute from "./SellerRoute";
 import AdminRoute from "./AdminRoute";
 import AuthRoute from "./AuthRoute";
 import AboutUs from "@/presentation/pages/AboutUsPage";
+
 
 // Define las rutas
 const appRoutes: RouteObject[] = [
@@ -357,6 +359,14 @@ const appRoutes: RouteObject[] = [
 					</AuthRoute>
 				),
 			},
+			{
+				path: "google/success",
+				element: (
+					<AuthRoute>
+						<GoogleAuthSuccessPage />
+					</AuthRoute>
+				),
+			},
 		],
 	},
 	{
@@ -505,7 +515,7 @@ const appRoutes: RouteObject[] = [
 			},
 			{
 				path: "categories/edit/:id",
-				element:< AdminEditCategoryPage />,
+				element: <AdminEditCategoryPage />,
 			},
 			// Order Management
 			{
