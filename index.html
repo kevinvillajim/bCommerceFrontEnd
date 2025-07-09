@@ -4,10 +4,57 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Meta tags para FedCM -->
+  <meta http-equiv="Permissions-Policy" content="identity-credentials-get=*">
+  
+  <!-- Content Security Policy SIN frame-ancestors (solo para server headers) -->
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self';
+    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com/gsi/client;
+    style-src 'self' 'unsafe-inline' https://accounts.google.com;
+    img-src 'self' data: https: blob:;
+    font-src 'self' data: https:;
+    connect-src 'self' https://accounts.google.com;
+    frame-src 'self' https://accounts.google.com;
+  ">
     <title>Comersia</title>
+    <!-- Preload crítico para Google -->
+  <link rel="preconnect" href="https://accounts.google.com">
+  <link rel="preconnect" href="https://www.google.com">
+  
+  <!-- Prefetch del script de Google -->
+  <link rel="prefetch" href="https://accounts.google.com/gsi/client">
   </head>
   <body>
     <div id="root"></div>
+
+    <!-- Script Google -->
+     <script>
+    // Función para cargar Google OAuth de forma optimizada
+    (function() {
+      const script = document.createElement('script');
+      script.src = 'https://accounts.google.com/gsi/client';
+      script.async = true;
+      script.defer = true;
+      
+      // Configurar callback cuando el script se cargue
+      script.onload = function() {
+        console.log('✅ Google Identity Services cargado');
+        
+        // Configurar FedCM globalmente si está disponible
+        if (window.google && window.google.accounts && window.google.accounts.id) {
+          console.log('✅ FedCM disponible');
+        }
+      };
+      
+      script.onerror = function() {
+        console.error('❌ Error cargando Google Identity Services');
+      };
+      
+      document.head.appendChild(script);
+    })();
+  </script>
+  <!-- Script React -->
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
