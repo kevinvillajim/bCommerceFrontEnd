@@ -70,14 +70,6 @@ const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({
 		}
 	};
 
-	const handleMethodSwitch = (method: "redirect" | "fedcm") => {
-		const googleService = GoogleAuthService.getInstance();
-		googleService.setAuthMethod(method);
-
-		// Recargar configuración
-		googleService.checkConfiguration().then(setConfigStatus);
-	};
-
 	const isLoading = loading || isProcessing;
 	const buttonText =
 		action === "login" ? "Iniciar sesión con Google" : "Registrarse con Google";
@@ -208,64 +200,6 @@ const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({
 								))}
 							</ul>
 						</div>
-					</div>
-				</div>
-			)}
-
-			{/* Panel de desarrollo */}
-			{process.env.NODE_ENV === "development" && (
-				<div className="bg-gray-50 border border-gray-200 rounded-md p-3">
-					<div className="text-xs text-gray-600 space-y-2">
-						<div className="flex justify-between items-center">
-							<span className="font-medium">Modo desarrollo</span>
-							<span className="text-xs bg-gray-200 px-2 py-1 rounded">
-								{preferredMethod === "auto" ? "Automático" : preferredMethod}
-							</span>
-						</div>
-
-						<div className="space-y-1">
-							<div>
-								<strong>Origin:</strong> {window.location.origin}
-							</div>
-							<div>
-								<strong>Configurado:</strong>{" "}
-								{configStatus.isConfigured ? "✅" : "❌"}
-							</div>
-							<div>
-								<strong>FedCM:</strong>{" "}
-								{window.CredentialsContainer ? "✅" : "❌"}
-							</div>
-						</div>
-
-						<div className="flex space-x-2">
-							<button
-								onClick={() => handleMethodSwitch("redirect")}
-								className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded hover:bg-blue-200"
-							>
-								Usar Redirect
-							</button>
-							<button
-								onClick={() => handleMethodSwitch("fedcm")}
-								className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded hover:bg-green-200"
-							>
-								Usar FedCM
-							</button>
-						</div>
-
-						<button
-							onClick={() => {
-								console.log("🔍 Estado de configuración:", configStatus);
-								console.log("🌐 Información del navegador:", {
-									userAgent: navigator.userAgent,
-									origin: window.location.origin,
-									protocol: window.location.protocol,
-									hostname: window.location.hostname,
-								});
-							}}
-							className="text-xs bg-gray-200 text-gray-800 px-2 py-1 rounded hover:bg-gray-300 w-full"
-						>
-							📋 Log información debug
-						</button>
 					</div>
 				</div>
 			)}

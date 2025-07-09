@@ -1,4 +1,4 @@
-// src/presentation/pages/GoogleAuthSuccessPage.tsx
+// src/presentation/pages/GoogleAuthSuccessPage.tsx - MEJORADO
 
 import React, {useEffect, useState} from "react";
 import {useNavigate, useSearchParams} from "react-router-dom";
@@ -6,18 +6,36 @@ import {useAuth} from "../hooks/useAuth";
 import {LocalStorageService} from "../../infrastructure/services/LocalStorageService";
 import appConfig from "../../config/appConfig";
 
+interface ProcessingState {
+	isProcessing: boolean;
+	status: string;
+	error: string | null;
+}
+
 const GoogleAuthSuccessPage: React.FC = () => {
 	const [searchParams] = useSearchParams();
 	const navigate = useNavigate();
 	const {setUser, setIsAuthenticated, refreshRoleInfo} = useAuth();
-	const [isProcessing, setIsProcessing] = useState(true);
-	const [error, setError] = useState<string | null>(null);
-	const [status, setStatus] = useState<string>("Procesando autenticación...");
+	const [state, setState] = useState<ProcessingState>({
+		isProcessing: true,
+		status: "Procesando autenticación...",
+		error: null,
+	});
 
 	useEffect(() => {
 		const processGoogleAuthSuccess = async () => {
 			try {
-				setStatus("Obteniendo datos de autenticación...");
+				console.log("🔄 Procesando Google Auth Success...");
+				console.log("📊 URL completa:", window.location.href);
+				console.log(
+					"📊 Parámetros:",
+					Object.fromEntries(searchParams.entries())
+				);
+
+				setState((prev) => ({
+					...prev,
+					status: "Obteniendo datos de autenticación...",
+				}));
 
 				// Obtener parámetros de la URL
 				const token = searchParams.get("token");
@@ -25,43 +43,70 @@ const GoogleAuthSuccessPage: React.FC = () => {
 				const expiresIn = searchParams.get("expires_in");
 				const errorParam = searchParams.get("error");
 
-				console.log("📊 Google Auth Success - Parámetros recibidos:", {
+				console.log("🔍 Parámetros obtenidos:", {
 					hasToken: !!token,
 					hasUserData: !!userData,
+					tokenLength: token?.length,
 					expiresIn,
 					error: errorParam,
 				});
 
+				// Verificar si hay error
 				if (errorParam) {
-					setError(decodeURIComponent(errorParam));
-					setIsProcessing(false);
+					const decodedError = decodeURIComponent(errorParam);
+					console.error("❌ Error en autenticación:", decodedError);
+					setState((prev) => ({
+						...prev,
+						isProcessing: false,
+						error: decodedError,
+					}));
 					return;
 				}
 
+				// Verificar datos requeridos
 				if (!token || !userData) {
-					setError("Datos de autenticación incompletos");
-					setIsProcessing(false);
+					const missingData = [];
+					if (!token) missingData.push("token");
+					if (!userData) missingData.push("userData");
+
+					const errorMessage = `Datos de autenticación incompletos: ${missingData.join(", ")}`;
+					console.error("❌", errorMessage);
+					setState((prev) => ({
+						...prev,
+						isProcessing: false,
+						error: errorMessage,
+					}));
 					return;
 				}
 
-				setStatus("Verificando token de acceso...");
+				setState((prev) => ({
+					...prev,
+					status: "Verificando token de acceso...",
+				}));
 
 				// Decodificar datos del usuario
 				let user;
 				try {
-					user = JSON.parse(atob(userData));
+					const decodedUserData = atob(userData);
+					user = JSON.parse(decodedUserData);
 					console.log("✅ Datos del usuario decodificados:", user);
 				} catch (decodeError) {
 					console.error(
 						"❌ Error decodificando datos del usuario:",
 						decodeError
 					);
-					setError("Error al procesar datos del usuario");
-					setIsProcessing(false);
+					setState((prev) => ({
+						...prev,
+						isProcessing: false,
+						error: "Error al procesar datos del usuario",
+					}));
 					return;
 				}
 
-				setStatus("Guardando información de sesión...");
+				setState((prev) => ({
+					...prev,
+					status: "Guardando información de sesión...",
+				}));
 
 				// Guardar token y datos del usuario en localStorage
 				const storageService = new LocalStorageService();
@@ -69,17 +114,23 @@ const GoogleAuthSuccessPage: React.FC = () => {
 				storageService.setItem(appConfig.storage.userKey, user);
 
 				console.log("✅ Token y datos guardados en localStorage");
+				console.log("🔑 Token guardado:", token.substring(0, 50) + "...");
+				console.log("👤 Usuario guardado:", user);
 
-				// Actualizar estado de autenticación
+				// Actualizar estado de autenticación INMEDIATAMENTE
 				setUser(user);
 				setIsAuthenticated(true);
 
-				setStatus("Obteniendo información de roles...");
+				setState((prev) => ({
+					...prev,
+					status: "Obteniendo información de roles...",
+				}));
 
 				// Obtener información de rol del usuario
 				let redirectPath = "/";
 
 				try {
+					// Usar refreshRoleInfo para obtener información de rol
 					await refreshRoleInfo();
 
 					// Usar el servicio de roles para determinar la ruta
@@ -104,13 +155,16 @@ const GoogleAuthSuccessPage: React.FC = () => {
 							redirectPath = "/";
 							console.log("👤 Usuario normal, redirigiendo a:", redirectPath);
 						}
+					} else {
+						console.log("🔄 Sin rol específico, redirigiendo a home");
+						redirectPath = "/";
 					}
 				} catch (roleError) {
 					console.warn("⚠️ No se pudo obtener información de rol:", roleError);
 					redirectPath = "/";
 				}
 
-				setStatus("Completando autenticación...");
+				setState((prev) => ({...prev, status: "Completando autenticación..."}));
 
 				// Limpiar URL de parámetros
 				window.history.replaceState(
@@ -119,22 +173,35 @@ const GoogleAuthSuccessPage: React.FC = () => {
 					window.location.pathname
 				);
 
+				// Mostrar mensaje de éxito
+				setState((prev) => ({
+					...prev,
+					status: "¡Autenticación exitosa! Redirigiendo...",
+				}));
+
 				// Pequeño delay para mostrar el mensaje de éxito
 				setTimeout(() => {
 					console.log("🚀 Redirigiendo a:", redirectPath);
 					navigate(redirectPath, {replace: true});
-				}, 1000);
+				}, 1500);
 			} catch (error) {
-				console.error("❌ Error procesando Google Auth Success:", error);
-				setError("Error al procesar la autenticación con Google");
-				setIsProcessing(false);
+				console.error(
+					"❌ Error crítico procesando Google Auth Success:",
+					error
+				);
+				setState((prev) => ({
+					...prev,
+					isProcessing: false,
+					error: "Error al procesar la autenticación con Google",
+				}));
 			}
 		};
 
 		processGoogleAuthSuccess();
 	}, [searchParams, navigate, setUser, setIsAuthenticated, refreshRoleInfo]);
 
-	if (error) {
+	// Renderizar estado de error
+	if (state.error) {
 		return (
 			<div className="min-h-screen flex items-center justify-center bg-gray-50">
 				<div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
@@ -142,7 +209,7 @@ const GoogleAuthSuccessPage: React.FC = () => {
 					<h2 className="text-2xl font-bold text-gray-900 mb-4">
 						Error en la autenticación
 					</h2>
-					<p className="text-gray-600 mb-6">{error}</p>
+					<p className="text-gray-600 mb-6">{state.error}</p>
 					<div className="space-y-3">
 						<button
 							onClick={() => navigate("/login")}
@@ -162,30 +229,48 @@ const GoogleAuthSuccessPage: React.FC = () => {
 		);
 	}
 
+	// Renderizar estado de procesamiento
 	return (
 		<div className="min-h-screen flex items-center justify-center bg-gray-50">
 			<div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
-				{isProcessing ? (
-					<>
-						<div className="text-green-500 text-6xl mb-4">✅</div>
-						<h2 className="text-2xl font-bold text-gray-900 mb-4">
-							¡Autenticación exitosa!
-						</h2>
-						<p className="text-gray-600 mb-6">{status}</p>
-						<div className="flex justify-center">
-							<div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600"></div>
+				<div className="text-green-500 text-6xl mb-4">
+					{state.isProcessing ? "🔄" : "🎉"}
+				</div>
+				<h2 className="text-2xl font-bold text-gray-900 mb-4">
+					{state.isProcessing ? "Procesando autenticación..." : "¡Bienvenido!"}
+				</h2>
+				<p className="text-gray-600 mb-6">{state.status}</p>
+
+				{state.isProcessing && (
+					<div className="flex justify-center">
+						<div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600"></div>
+					</div>
+				)}
+
+				{/* Información de debug en desarrollo */}
+				{process.env.NODE_ENV === "development" && (
+					<details className="mt-6 text-left">
+						<summary className="text-sm text-gray-500 cursor-pointer mb-2">
+							🔍 Información de debug
+						</summary>
+						<div className="bg-gray-100 p-3 rounded text-xs">
+							<div className="space-y-1">
+								<div>
+									<strong>URL:</strong> {window.location.href}
+								</div>
+								<div>
+									<strong>Parámetros:</strong>
+								</div>
+								<pre className="whitespace-pre-wrap text-xs">
+									{JSON.stringify(
+										Object.fromEntries(searchParams.entries()),
+										null,
+										2
+									)}
+								</pre>
+							</div>
 						</div>
-					</>
-				) : (
-					<>
-						<div className="text-green-500 text-6xl mb-4">🎉</div>
-						<h2 className="text-2xl font-bold text-gray-900 mb-4">
-							¡Bienvenido!
-						</h2>
-						<p className="text-gray-600 mb-6">
-							Tu cuenta se ha configurado correctamente. Redirigiendo...
-						</p>
-					</>
+					</details>
 				)}
 			</div>
 		</div>

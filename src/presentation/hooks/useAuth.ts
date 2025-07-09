@@ -262,6 +262,8 @@ export const useAuth = () => {
 		// Métodos de Google OAuth
 		loginWithGoogle,
 		registerWithGoogle,
+		setUser,
+		setIsAuthenticated,
 		// Propiedades del contexto
 		roleInfo,
 		isLoadingRole,

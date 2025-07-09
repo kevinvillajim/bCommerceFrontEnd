@@ -360,11 +360,11 @@ const appRoutes: RouteObject[] = [
 				),
 			},
 			{
-				path: "google/success",
+				path: "auth/google/success",
 				element: (
-					<AuthRoute>
+					<PublicRoute>
 						<GoogleAuthSuccessPage />
-					</AuthRoute>
+					</PublicRoute>
 				),
 			},
 		],
