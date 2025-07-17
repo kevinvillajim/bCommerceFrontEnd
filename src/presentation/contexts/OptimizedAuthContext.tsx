@@ -1,5 +1,3 @@
-// src/presentation/contexts/OptimizedAuthContext.tsx
-
 import React, {
 	createContext,
 	useState,
@@ -13,43 +11,51 @@ import type {ReactNode} from "react";
 import {LocalStorageService} from "../../infrastructure/services/LocalStorageService";
 import type {User} from "../../core/domain/entities/User";
 import appConfig from "../../config/appConfig";
-import {
-	useSecureAuth,
-	type OptimizedUserRoleInfo,
-} from "../hooks/useSecureAuth";
+import RoleService from "../../infrastructure/services/RoleService";
+import {OptimizedRoleService} from "../../infrastructure/services/OptimizedRoleService";
 import axiosInstance from "../../infrastructure/api/axiosConfig";
 import {API_ENDPOINTS} from "../../constants/apiEndpoints";
 
-// Endpoint fallback en caso de que no esté definido
-const LOGOUT_ENDPOINT = API_ENDPOINTS?.AUTH?.LOGOUT || "/api/auth/logout";
+// Interfaz para información de rol
+interface UserRoleInfo {
+	role: string | null;
+	isAdmin: boolean;
+	isSeller: boolean;
+	sellerInfo?: {
+		id: number;
+		store_name: string;
+		status: string;
+		verification_level: string;
+	} | null;
+	adminInfo?: {
+		id: number;
+		role: string;
+		permissions: string[];
+	} | null;
+}
 
 // Crear instancia del servicio de almacenamiento
 const storageService = new LocalStorageService();
 
-// Definir interfaz para el contexto optimizado
-interface OptimizedAuthContextProps {
+// Definir interfaz para el contexto
+interface AuthContextProps {
 	user: User | null;
 	setUser: React.Dispatch<React.SetStateAction<User | null>>;
 	isAuthenticated: boolean;
 	setIsAuthenticated: React.Dispatch<React.SetStateAction<boolean>>;
 	logout: () => Promise<void>;
-	roleInfo: OptimizedUserRoleInfo;
+	roleInfo: UserRoleInfo;
 	isLoadingRole: boolean;
-	roleError: string | null;
-	refreshRoleInfo: (critical?: boolean) => Promise<void>;
+	refreshRoleInfo: () => Promise<void>;
 	isInitialized: boolean;
 	getDefaultRouteForRole: () => string;
-	// Funciones de verificación rápida
+	// Nuevas funciones optimizadas de roles
 	isAdmin: (critical?: boolean) => Promise<boolean>;
 	isSeller: (critical?: boolean) => Promise<boolean>;
-	// Utilidades
-	clearRoleCache: () => void;
-	hasRole: boolean;
-	lastRoleUpdate: number;
 }
 
 // Crear el contexto con valores por defecto
-export const OptimizedAuthContext = createContext<OptimizedAuthContextProps>({
+export const AuthContext = createContext<AuthContextProps>({
 	user: null,
 	setUser: () => {},
 	isAuthenticated: false,
@@ -61,18 +67,13 @@ export const OptimizedAuthContext = createContext<OptimizedAuthContextProps>({
 		isSeller: false,
 		sellerInfo: null,
 		adminInfo: null,
-		lastUpdated: 0,
 	},
 	isLoadingRole: false,
-	roleError: null,
 	refreshRoleInfo: async () => {},
 	isInitialized: false,
 	getDefaultRouteForRole: () => "/",
 	isAdmin: async () => false,
 	isSeller: async () => false,
-	clearRoleCache: () => {},
-	hasRole: false,
-	lastRoleUpdate: 0,
 });
 
 // Props para el proveedor
@@ -80,7 +81,7 @@ interface OptimizedAuthProviderProps {
 	children: ReactNode;
 }
 
-// Proveedor del contexto optimizado
+// Proveedor del contexto
 export const OptimizedAuthProvider: React.FC<OptimizedAuthProviderProps> = ({
 	children,
 }) => {
@@ -88,26 +89,20 @@ export const OptimizedAuthProvider: React.FC<OptimizedAuthProviderProps> = ({
 	const [user, setUser] = useState<User | null>(null);
 	const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
 	const [initialized, setInitialized] = useState<boolean>(false);
+	const [isLoadingRole, setIsLoadingRole] = useState<boolean>(false);
+	const [roleInfo, setRoleInfo] = useState<UserRoleInfo>({
+		role: null,
+		isAdmin: false,
+		isSeller: false,
+		sellerInfo: null,
+		adminInfo: null,
+	});
 
 	// Referencias para controlar flujos
+	const hasFetchedRole = useRef(false);
 	const isAuthenticatedRef = useRef(false);
 	const userRef = useRef<User | null>(null);
 	const isInitializationComplete = useRef(false);
-
-	// Hook de autenticación segura
-	const {
-		roleInfo,
-		isLoadingRole,
-		roleError,
-		fetchRoleInfo,
-		refreshRoleInfo: refreshSecureRoleInfo,
-		clearRoleCache,
-		isAdmin: checkIsAdmin,
-		isSeller: checkIsSeller,
-		getDefaultRouteForRole: getSecureDefaultRoute,
-		hasRole,
-		lastUpdated: lastRoleUpdate,
-	} = useSecureAuth();
 
 	// Actualizar refs cuando cambian los estados
 	useEffect(() => {
@@ -120,14 +115,19 @@ export const OptimizedAuthProvider: React.FC<OptimizedAuthProviderProps> = ({
 
 	// Función para obtener la ruta por defecto según el rol
 	const getDefaultRouteForRole = useCallback(() => {
-		return getSecureDefaultRoute();
-	}, [getSecureDefaultRoute]);
+		if (roleInfo.isAdmin) {
+			return "/admin/dashboard";
+		} else if (roleInfo.isSeller) {
+			return "/seller/dashboard";
+		}
+		return "/";
+	}, [roleInfo]);
 
-	// Función para redirección automática en inicialización
+	// Función SOLO para redirección automática en inicialización (NO desde login manual)
 	const handleInitialRedirection = useCallback(() => {
 		const currentPath = window.location.pathname;
 
-		// SOLO redirigir automáticamente si estamos en páginas de autenticación
+		// SOLO redirigir automáticamente si estamos en páginas de autenticación Y es inicialización automática
 		const isAuthPage =
 			["/login", "/register"].includes(currentPath) ||
 			currentPath.startsWith("/auth");
@@ -140,7 +140,7 @@ export const OptimizedAuthProvider: React.FC<OptimizedAuthProviderProps> = ({
 		}
 
 		// Si estamos en una página de auth y el usuario ya está logueado automáticamente, redirigir
-		if (isAuthenticated && hasRole && isInitializationComplete.current) {
+		if (isAuthenticated && roleInfo.role && isInitializationComplete.current) {
 			const targetPath = getDefaultRouteForRole();
 			console.log(
 				`Redirección automática desde ${currentPath} a ${targetPath}`
@@ -150,14 +150,169 @@ export const OptimizedAuthProvider: React.FC<OptimizedAuthProviderProps> = ({
 				window.location.replace(targetPath);
 			}, 100);
 		}
-	}, [isAuthenticated, hasRole, getDefaultRouteForRole]);
+	}, [isAuthenticated, roleInfo, getDefaultRouteForRole]);
 
-	// Método público para actualizar información de rol
-	const refreshRoleInfo = useCallback(
-		async (critical: boolean = false) => {
-			await refreshSecureRoleInfo(critical);
+	// Obtener información de rol del usuario (MEJORADO con sistema híbrido)
+	const fetchRoleInfo = useCallback(async () => {
+		// Verificaciones de salida temprana
+		if (
+			!isAuthenticatedRef.current ||
+			isLoadingRole ||
+			hasFetchedRole.current
+		) {
+			return;
+		}
+
+		setIsLoadingRole(true);
+		try {
+			console.log(
+				"🔐 Obteniendo información de rol del usuario (sistema híbrido)..."
+			);
+
+			// NUEVO: Intentar usar OptimizedRoleService primero
+			let roleData = null;
+			try {
+				roleData = await OptimizedRoleService.checkUserRole(true, false);
+				console.log("✅ Usando OptimizedRoleService");
+			} catch (optimizedError) {
+				console.warn(
+					"⚠️ OptimizedRoleService falló, usando RoleService de respaldo:",
+					optimizedError
+				);
+				// Fallback al sistema anterior
+				roleData = await RoleService.checkUserRole(true);
+			}
+
+			if (roleData && roleData.success) {
+				const newRoleInfo = {
+					role: roleData.data.role,
+					isAdmin: roleData.data.is_admin,
+					isSeller: roleData.data.is_seller,
+					sellerInfo: roleData.data.seller_info || null,
+					adminInfo: roleData.data.admin_info || null,
+				};
+
+				console.log("✅ Información de rol obtenida:", newRoleInfo);
+				setRoleInfo(newRoleInfo);
+
+				// Actualizar el rol en usuario si es necesario
+				if (userRef.current && !userRef.current.role) {
+					setUser((prevUser) => {
+						if (!prevUser) return null;
+						return {...prevUser, role: roleData.data.role};
+					});
+				}
+
+				// Marcar que ya obtuvimos el rol
+				hasFetchedRole.current = true;
+
+				// SOLO redirigir automáticamente si estamos en inicialización
+				if (isInitializationComplete.current) {
+					setTimeout(() => {
+						handleInitialRedirection();
+					}, 300);
+				}
+			}
+		} catch (error) {
+			console.error("❌ Error al obtener información de rol:", error);
+		} finally {
+			setIsLoadingRole(false);
+		}
+	}, [isLoadingRole, handleInitialRedirection]);
+
+	// Método público para actualizar información de rol (MEJORADO)
+	const refreshRoleInfo = useCallback(async () => {
+		hasFetchedRole.current = false;
+		setIsLoadingRole(true);
+
+		try {
+			console.log("🔄 Refrescando información de rol del usuario...");
+
+			// NUEVO: Intentar usar OptimizedRoleService primero
+			let roleData = null;
+			try {
+				roleData = await OptimizedRoleService.checkUserRole(true, false);
+				console.log("✅ Refresh usando OptimizedRoleService");
+			} catch (optimizedError) {
+				console.warn(
+					"⚠️ OptimizedRoleService falló en refresh, usando RoleService de respaldo:",
+					optimizedError
+				);
+				// Fallback al sistema anterior
+				roleData = await RoleService.checkUserRole(true);
+			}
+
+			if (roleData && roleData.success) {
+				const newRoleInfo = {
+					role: roleData.data.role,
+					isAdmin: roleData.data.is_admin,
+					isSeller: roleData.data.is_seller,
+					sellerInfo: roleData.data.seller_info || null,
+					adminInfo: roleData.data.admin_info || null,
+				};
+
+				console.log("✅ Información de rol refrescada:", newRoleInfo);
+				setRoleInfo(newRoleInfo);
+
+				// Actualizar el rol en usuario si es necesario
+				if (userRef.current && !userRef.current.role) {
+					setUser((prevUser) => {
+						if (!prevUser) return null;
+						return {...prevUser, role: roleData.data.role};
+					});
+				}
+
+				// Marcar que ya obtuvimos el rol
+				hasFetchedRole.current = true;
+			}
+		} catch (error) {
+			console.error("❌ Error al refrescar información de rol:", error);
+		} finally {
+			setIsLoadingRole(false);
+		}
+	}, []);
+
+	// NUEVAS funciones optimizadas de verificación de roles
+	const isAdmin = useCallback(
+		async (critical: boolean = false): Promise<boolean> => {
+			try {
+				// Si el sistema optimizado está disponible, usarlo
+				if (critical) {
+					return await OptimizedRoleService.isAdminCritical();
+				} else {
+					return await OptimizedRoleService.isAdmin();
+				}
+			} catch (error) {
+				console.warn(
+					"⚠️ OptimizedRoleService falló, usando verificación de respaldo:",
+					error
+				);
+				// Fallback al sistema anterior
+				return roleInfo.isAdmin;
+			}
 		},
-		[refreshSecureRoleInfo]
+		[roleInfo.isAdmin]
+	);
+
+	const isSeller = useCallback(
+		async (critical: boolean = false): Promise<boolean> => {
+			try {
+				// Si el sistema optimizado está disponible, usarlo
+				if (critical) {
+					return await OptimizedRoleService.isSellerCritical();
+				} else {
+					return await OptimizedRoleService.isSeller();
+				}
+			} catch (error) {
+				console.warn(
+					"⚠️ OptimizedRoleService falló, usando verificación de respaldo:",
+					error
+				);
+				// Fallback al sistema anterior
+				return roleInfo.isSeller;
+			}
+		},
+		[roleInfo.isSeller]
 	);
 
 	// Verificar si hay un token guardado al cargar - UNA SOLA VEZ
@@ -169,7 +324,8 @@ export const OptimizedAuthProvider: React.FC<OptimizedAuthProviderProps> = ({
 				const token = storageService.getItem(appConfig.storage.authTokenKey);
 
 				if (token) {
-					console.log("Token encontrado, inicializando autenticación...");
+					console.log("🔑 Token encontrado, inicializando autenticación...");
+					// El usuario está autenticado
 					setIsAuthenticated(true);
 					isAuthenticatedRef.current = true;
 
@@ -179,27 +335,37 @@ export const OptimizedAuthProvider: React.FC<OptimizedAuthProviderProps> = ({
 						setUser(userData);
 						userRef.current = userData;
 						console.log(
-							"Datos de usuario cargados desde localStorage:",
+							"👤 Datos de usuario cargados desde localStorage:",
 							userData
 						);
 					}
 
-					// Cargar información de rol usando el sistema seguro
-					await fetchRoleInfo(false, false);
+					// Cargar información de rol (solo si el usuario está autenticado)
+					await fetchRoleInfo();
 				} else {
-					console.log("No hay token, usuario no autenticado");
+					console.log("❌ No hay token, usuario no autenticado");
+					// El usuario no está autenticado
 					setIsAuthenticated(false);
 					setUser(null);
-					clearRoleCache();
+					// Limpiar caché de roles (ambos sistemas)
+					RoleService.clearRoleCache();
+					try {
+						OptimizedRoleService.clearAllCache();
+					} catch (error) {
+						console.warn(
+							"⚠️ Error limpiando OptimizedRoleService cache:",
+							error
+						);
+					}
 				}
 			} catch (error) {
 				console.error(
-					"Error durante la inicialización de autenticación:",
+					"❌ Error durante la inicialización de autenticación:",
 					error
 				);
+				// En caso de error, asegurar que el usuario está desconectado
 				setIsAuthenticated(false);
 				setUser(null);
-				clearRoleCache();
 			} finally {
 				setInitialized(true);
 				isInitializationComplete.current = true;
@@ -207,22 +373,15 @@ export const OptimizedAuthProvider: React.FC<OptimizedAuthProviderProps> = ({
 		};
 
 		initializeAuth();
-	}, [fetchRoleInfo, clearRoleCache]);
-
-	// Efecto para redirección automática cuando se carga el rol
-	useEffect(() => {
-		if (isInitializationComplete.current && hasRole) {
-			setTimeout(() => {
-				handleInitialRedirection();
-			}, 300);
-		}
-	}, [hasRole, handleInitialRedirection]);
+	}, [fetchRoleInfo]);
 
 	// Sincronizar datos de usuario con localStorage
 	useEffect(() => {
+		// Solo ejecutar si la inicialización está completa
 		if (!initialized) return;
 
 		if (user) {
+			// Verificar si el usuario ha cambiado antes de guardar
 			const storedUser = storageService.getItem(appConfig.storage.userKey);
 			const currentUserStr = JSON.stringify(user);
 			const storedUserStr = storedUser ? JSON.stringify(storedUser) : "";
@@ -235,15 +394,17 @@ export const OptimizedAuthProvider: React.FC<OptimizedAuthProviderProps> = ({
 		}
 	}, [user, initialized]);
 
-	// Implementación de la función de logout
+	// Implementación de la función de logout (MEJORADA)
 	const logout = useCallback(async (): Promise<void> => {
 		try {
 			// Intentar logout en el servidor
 			if (isAuthenticatedRef.current) {
 				try {
-					await axiosInstance.post(LOGOUT_ENDPOINT);
+					const logoutEndpoint =
+						API_ENDPOINTS?.AUTH?.LOGOUT || "/api/auth/logout";
+					await axiosInstance.post(logoutEndpoint);
 				} catch (error) {
-					console.error("Error al hacer logout en el servidor:", error);
+					console.error("❌ Error al hacer logout en el servidor:", error);
 				}
 			}
 
@@ -253,30 +414,43 @@ export const OptimizedAuthProvider: React.FC<OptimizedAuthProviderProps> = ({
 			storageService.removeItem(appConfig.storage.refreshTokenKey);
 			storageService.removeItem(appConfig.storage.cartKey);
 
-			// Limpiar caché de roles usando el sistema seguro
-			clearRoleCache();
+			// Limpiar caché de roles (ambos sistemas)
+			RoleService.clearRoleCache();
+			try {
+				OptimizedRoleService.clearAllCache();
+			} catch (error) {
+				console.warn("⚠️ Error limpiando OptimizedRoleService cache:", error);
+			}
 
 			// Reiniciar flags
+			hasFetchedRole.current = false;
 			isAuthenticatedRef.current = false;
 			userRef.current = null;
 
 			// Actualizar estados
 			setIsAuthenticated(false);
 			setUser(null);
+			setRoleInfo({
+				role: null,
+				isAdmin: false,
+				isSeller: false,
+				sellerInfo: null,
+				adminInfo: null,
+			});
 
-			console.log("Logout completado exitosamente");
+			console.log("✅ Logout completado exitosamente");
 		} catch (error) {
-			console.error("Error durante el proceso de logout:", error);
+			console.error("❌ Error durante el proceso de logout:", error);
 
 			// Incluso en caso de error, asegurar que se limpien datos locales
 			storageService.removeItem(appConfig.storage.authTokenKey);
 			storageService.removeItem(appConfig.storage.userKey);
-			clearRoleCache();
+			RoleService.clearRoleCache();
 
 			setIsAuthenticated(false);
 			setUser(null);
 		}
-	}, [clearRoleCache]);
+	}, []);
 
 	// Memorizar el contexto para evitar renderizaciones innecesarias
 	const contextValue = useMemo(
@@ -288,15 +462,11 @@ export const OptimizedAuthProvider: React.FC<OptimizedAuthProviderProps> = ({
 			logout,
 			roleInfo,
 			isLoadingRole,
-			roleError,
 			refreshRoleInfo,
 			isInitialized: initialized,
 			getDefaultRouteForRole,
-			isAdmin: checkIsAdmin,
-			isSeller: checkIsSeller,
-			clearRoleCache,
-			hasRole,
-			lastRoleUpdate,
+			isAdmin,
+			isSeller,
 		}),
 		[
 			user,
@@ -306,32 +476,35 @@ export const OptimizedAuthProvider: React.FC<OptimizedAuthProviderProps> = ({
 			logout,
 			roleInfo,
 			isLoadingRole,
-			roleError,
 			refreshRoleInfo,
 			initialized,
 			getDefaultRouteForRole,
-			checkIsAdmin,
-			checkIsSeller,
-			clearRoleCache,
-			hasRole,
-			lastRoleUpdate,
+			isAdmin,
+			isSeller,
 		]
 	);
 
 	return (
-		<OptimizedAuthContext.Provider value={contextValue}>
-			{children}
-		</OptimizedAuthContext.Provider>
+		<AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
 	);
 };
 
-// Hook de utilidad para consumir el contexto optimizado
+// Hook de utilidad para consumir el contexto (CORREGIDO)
 export const useOptimizedAuth = () => {
-	const context = useContext(OptimizedAuthContext);
+	const context = useContext(AuthContext);
 	if (!context) {
 		throw new Error(
 			"useOptimizedAuth debe usarse dentro de un OptimizedAuthProvider"
 		);
+	}
+	return context;
+};
+
+// También exportar como useAuth para compatibilidad
+export const useAuth = () => {
+	const context = useContext(AuthContext);
+	if (!context) {
+		throw new Error("useAuth debe usarse dentro de un OptimizedAuthProvider");
 	}
 	return context;
 };

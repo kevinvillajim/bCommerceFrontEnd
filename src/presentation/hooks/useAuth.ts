@@ -12,7 +12,7 @@ import type {
 	UserProfileUpdateData,
 } from "../../core/domain/entities/User";
 
-// Crear instancias de servicios y casos de uso
+// Crear instancias de servicios y casos de uso (EXACTAMENTE COMO EN TU ORIGINAL)
 const loginUseCase = new LoginUseCase();
 const registerUseCase = new RegisterUseCase();
 const updateProfileUseCase = new UpdateProfileUseCase();
@@ -20,10 +20,10 @@ const googleLoginUseCase = new GoogleLoginUseCase();
 const googleRegisterUseCase = new GoogleRegisterUseCase();
 
 /**
- * Hook para operaciones de autenticación
+ * Hook para operaciones de autenticación (MEJORADO CON FUNCIONES OPTIMIZADAS)
  */
 export const useAuth = () => {
-	// Obtener todo del contexto
+	// Obtener todo del contexto (AGREGADO funciones optimizadas)
 	const {
 		user,
 		setUser,
@@ -35,13 +35,16 @@ export const useAuth = () => {
 		refreshRoleInfo,
 		isInitialized,
 		getDefaultRouteForRole,
+		// NUEVAS funciones optimizadas del contexto mejorado
+		isAdmin: contextIsAdmin,
+		isSeller: contextIsSeller,
 	} = useContext(AuthContext);
 
 	const [loading, setLoading] = useState<boolean>(false);
 	const [error, setError] = useState<string | null>(null);
 
 	/**
-	 * Iniciar sesión de usuario
+	 * Iniciar sesión de usuario (EXACTAMENTE COMO EN TU ORIGINAL)
 	 */
 	const login = useCallback(
 		async (credentials: UserLoginData) => {
@@ -77,7 +80,7 @@ export const useAuth = () => {
 	);
 
 	/**
-	 * Registrar nuevo usuario
+	 * Registrar nuevo usuario (EXACTAMENTE COMO EN TU ORIGINAL)
 	 */
 	const register = useCallback(
 		async (userData: UserRegistrationData) => {
@@ -113,11 +116,11 @@ export const useAuth = () => {
 	);
 
 	// ================================
-	// MÉTODOS DE GOOGLE OAUTH
+	// MÉTODOS DE GOOGLE OAUTH (EXACTAMENTE COMO EN TU ORIGINAL)
 	// ================================
 
 	/**
-	 * Login with Google
+	 * Login with Google (EXACTAMENTE COMO EN TU ORIGINAL)
 	 */
 	const loginWithGoogle = useCallback(async () => {
 		try {
@@ -158,7 +161,7 @@ export const useAuth = () => {
 	}, [setUser, setIsAuthenticated, refreshRoleInfo]);
 
 	/**
-	 * Register with Google
+	 * Register with Google (EXACTAMENTE COMO EN TU ORIGINAL)
 	 */
 	const registerWithGoogle = useCallback(async () => {
 		try {
@@ -199,7 +202,7 @@ export const useAuth = () => {
 	}, [setUser, setIsAuthenticated, refreshRoleInfo]);
 
 	/**
-	 * Cerrar sesión de usuario - usar la del contexto
+	 * Cerrar sesión de usuario - usar la del contexto (EXACTAMENTE COMO EN TU ORIGINAL)
 	 */
 	const logout = useCallback(async () => {
 		setLoading(true);
@@ -220,7 +223,7 @@ export const useAuth = () => {
 	}, [contextLogout]);
 
 	/**
-	 * Actualizar perfil de usuario
+	 * Actualizar perfil de usuario (EXACTAMENTE COMO EN TU ORIGINAL)
 	 */
 	const updateProfile = useCallback(
 		async (profileData: UserProfileUpdateData) => {
@@ -249,7 +252,51 @@ export const useAuth = () => {
 		[setUser]
 	);
 
-	// Devolver estado y funciones del hook - INCLUYENDO las nuevas propiedades
+	// ================================
+	// NUEVAS FUNCIONES OPTIMIZADAS
+	// ================================
+
+	/**
+	 * Verificar si el usuario es administrador (NUEVA - OPTIMIZADA)
+	 * @param critical - Si es true, usa verificación crítica (más segura)
+	 */
+	const isAdmin = useCallback(
+		async (critical: boolean = false): Promise<boolean> => {
+			try {
+				return await contextIsAdmin(critical);
+			} catch (error) {
+				console.log(
+					"⚠️ Error en verificación optimizada de admin, usando fallback:",
+					error
+				);
+				// Fallback al estado actual
+				return roleInfo.isAdmin;
+			}
+		},
+		[contextIsAdmin, roleInfo.isAdmin]
+	);
+
+	/**
+	 * Verificar si el usuario es vendedor (NUEVA - OPTIMIZADA)
+	 * @param critical - Si es true, usa verificación crítica (más segura)
+	 */
+	const isSeller = useCallback(
+		async (critical: boolean = false): Promise<boolean> => {
+			try {
+				return await contextIsSeller(critical);
+			} catch (error) {
+				console.log(
+					"⚠️ Error en verificación optimizada de seller, usando fallback:",
+					error
+				);
+				// Fallback al estado actual
+				return roleInfo.isSeller;
+			}
+		},
+		[contextIsSeller, roleInfo.isSeller]
+	);
+
+	// Devolver estado y funciones del hook (AGREGADO funciones optimizadas)
 	return {
 		user,
 		isAuthenticated,
@@ -264,12 +311,15 @@ export const useAuth = () => {
 		registerWithGoogle,
 		setUser,
 		setIsAuthenticated,
-		// Propiedades del contexto
+		// Propiedades del contexto (TODAS LAS ORIGINALES)
 		roleInfo,
 		isLoadingRole,
 		refreshRoleInfo,
 		isInitialized,
 		getDefaultRouteForRole,
+		// NUEVAS funciones optimizadas
+		isAdmin,
+		isSeller,
 	};
 };
 

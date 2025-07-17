@@ -1,8 +1,8 @@
 // src/presentation/hooks/useSecureAuth.ts
 
-import {useState, useCallback, useEffect, useRef} from "react";
+import {useCallback} from "react";
+import {useAuth} from "./useAuth";
 import {OptimizedRoleService} from "../../infrastructure/services/OptimizedRoleService";
-import type {RoleCheckResponse} from "../../infrastructure/services/OptimizedRoleService";
 
 // Interfaz para información de rol optimizada
 export interface OptimizedUserRoleInfo {
@@ -16,150 +16,106 @@ export interface OptimizedUserRoleInfo {
 
 /**
  * Hook personalizado para manejo seguro y optimizado de roles
+ * Simplificado y compatible con AuthContext existente
  */
 export const useSecureAuth = () => {
-	const [roleInfo, setRoleInfo] = useState<OptimizedUserRoleInfo>({
-		role: null,
-		isAdmin: false,
-		isSeller: false,
-		sellerInfo: null,
-		adminInfo: null,
-		lastUpdated: 0,
-	});
-	const [isLoadingRole, setIsLoadingRole] = useState<boolean>(false);
-	const [roleError, setRoleError] = useState<string | null>(null);
+	// Usar el hook useAuth mejorado existente
+	const {
+		roleInfo: contextRoleInfo,
+		isLoadingRole: contextIsLoadingRole,
+		refreshRoleInfo: contextRefreshRoleInfo,
+		isAdmin: contextIsAdmin,
+		isSeller: contextIsSeller,
+		getDefaultRouteForRole: contextGetDefaultRoute,
+		isAuthenticated: contextIsAuthenticated,
+	} = useAuth();
 
-	// Referencias para controlar actualizaciones
-	const lastFetchTime = useRef<number>(0);
-	const isMountedRef = useRef<boolean>(true);
+	// Convertir roleInfo del contexto al formato optimizado
+	const roleInfo: OptimizedUserRoleInfo = {
+		role: contextRoleInfo.role,
+		isAdmin: contextRoleInfo.isAdmin,
+		isSeller: contextRoleInfo.isSeller,
+		sellerInfo: contextRoleInfo.sellerInfo,
+		adminInfo: contextRoleInfo.adminInfo,
+		lastUpdated: Date.now(),
+	};
 
 	/**
-	 * Función principal para obtener información de rol
+	 * Función principal para obtener información de rol (usa el contexto)
 	 */
 	const fetchRoleInfo = useCallback(
 		async (
 			forceRefresh: boolean = false,
 			criticalOperation: boolean = false
 		): Promise<OptimizedUserRoleInfo | null> => {
-			// Evitar consultas excesivas
-			const now = Date.now();
-			if (
-				!forceRefresh &&
-				!criticalOperation &&
-				now - lastFetchTime.current < 5000
-			) {
-				return roleInfo;
-			}
-
-			if (isLoadingRole && !forceRefresh) {
-				return roleInfo;
-			}
-
-			setIsLoadingRole(true);
-			setRoleError(null);
-			lastFetchTime.current = now;
-
 			try {
+				console.log("🔐 useSecureAuth: Delegando al AuthContext mejorado");
+
+				// Usar el refresh del contexto
+				await contextRefreshRoleInfo();
+
 				console.log(
-					"🔐 Obteniendo información de rol con OptimizedRoleService"
+					"✅ useSecureAuth: Información de rol actualizada vía contexto"
 				);
-
-				const roleData: RoleCheckResponse | null =
-					await OptimizedRoleService.checkUserRole(
-						forceRefresh,
-						criticalOperation
-					);
-
-				if (!isMountedRef.current) return null;
-
-				if (roleData && roleData.success) {
-					const newRoleInfo: OptimizedUserRoleInfo = {
-						role: roleData.data.role,
-						isAdmin: roleData.data.is_admin,
-						isSeller: roleData.data.is_seller,
-						sellerInfo: roleData.data.seller_info || null,
-						adminInfo: roleData.data.admin_info || null,
-						lastUpdated: now,
-					};
-
-					console.log("✅ Información de rol actualizada:", newRoleInfo);
-					setRoleInfo(newRoleInfo);
-					return newRoleInfo;
-				} else {
-					console.warn("⚠️ No se pudo obtener información de rol válida");
-					const emptyRoleInfo: OptimizedUserRoleInfo = {
-						role: null,
-						isAdmin: false,
-						isSeller: false,
-						sellerInfo: null,
-						adminInfo: null,
-						lastUpdated: now,
-					};
-					setRoleInfo(emptyRoleInfo);
-					return emptyRoleInfo;
-				}
+				return roleInfo;
 			} catch (error) {
-				if (!isMountedRef.current) return null;
-
-				const errorMessage =
-					error instanceof Error
-						? error.message
-						: "Error al obtener información de rol";
-				console.error("❌ Error en fetchRoleInfo:", error);
-				setRoleError(errorMessage);
+				console.error("❌ useSecureAuth: Error en fetchRoleInfo:", error);
 				return null;
-			} finally {
-				if (isMountedRef.current) {
-					setIsLoadingRole(false);
-				}
 			}
 		},
-		[roleInfo, isLoadingRole]
+		[contextRefreshRoleInfo, roleInfo]
 	);
 
 	/**
-	 * Funciones de verificación rápida
+	 * Funciones de verificación rápida (usan el contexto optimizado)
 	 */
 	const isAdmin = useCallback(
 		async (critical: boolean = false): Promise<boolean> => {
-			if (critical) {
-				return await OptimizedRoleService.isAdminCritical();
+			try {
+				return await contextIsAdmin(critical);
+			} catch (error) {
+				console.warn(
+					"⚠️ useSecureAuth: Error en isAdmin, usando fallback:",
+					error
+				);
+				return roleInfo.isAdmin;
 			}
-			return await OptimizedRoleService.isAdmin();
 		},
-		[]
+		[contextIsAdmin, roleInfo.isAdmin]
 	);
 
 	const isSeller = useCallback(
 		async (critical: boolean = false): Promise<boolean> => {
-			if (critical) {
-				return await OptimizedRoleService.isSellerCritical();
+			try {
+				return await contextIsSeller(critical);
+			} catch (error) {
+				console.warn(
+					"⚠️ useSecureAuth: Error en isSeller, usando fallback:",
+					error
+				);
+				return roleInfo.isSeller;
 			}
-			return await OptimizedRoleService.isSeller();
 		},
-		[]
+		[contextIsSeller, roleInfo.isSeller]
 	);
 
 	/**
-	 * Función para limpiar toda la cache
+	 * Función para limpiar toda la cache (usa OptimizedRoleService directamente)
 	 */
 	const clearRoleCache = useCallback(() => {
-		OptimizedRoleService.clearAllCache();
-		setRoleInfo({
-			role: null,
-			isAdmin: false,
-			isSeller: false,
-			sellerInfo: null,
-			adminInfo: null,
-			lastUpdated: 0,
-		});
-		setRoleError(null);
-		lastFetchTime.current = 0;
-		console.log("🗑️ Cache de roles limpiada desde useSecureAuth");
+		try {
+			OptimizedRoleService.clearAllCache();
+			console.log("🗑️ useSecureAuth: Cache de roles limpiada");
+		} catch (error) {
+			console.log(
+				"⚠️ useSecureAuth: OptimizedRoleService no disponible para limpiar cache:",
+				error
+			);
+		}
 	}, []);
 
 	/**
-	 * Función para refrescar información de rol
+	 * Función para refrescar información de rol (usa el contexto)
 	 */
 	const refreshRoleInfo = useCallback(
 		async (criticalOperation: boolean = false): Promise<void> => {
@@ -169,36 +125,24 @@ export const useSecureAuth = () => {
 	);
 
 	/**
-	 * Función para obtener la ruta por defecto según el rol
+	 * Función para obtener la ruta por defecto según el rol (usa el contexto)
 	 */
 	const getDefaultRouteForRole = useCallback((): string => {
-		if (roleInfo.isAdmin) {
-			return "/admin/dashboard";
-		} else if (roleInfo.isSeller) {
-			return "/seller/dashboard";
-		}
-		return "/";
-	}, [roleInfo]);
-
-	// Cleanup al desmontar
-	useEffect(() => {
-		return () => {
-			isMountedRef.current = false;
-		};
-	}, []);
+		return contextGetDefaultRoute();
+	}, [contextGetDefaultRoute]);
 
 	return {
-		// Estado
+		// Estado (basado en el contexto)
 		roleInfo,
-		isLoadingRole,
-		roleError,
+		isLoadingRole: contextIsLoadingRole,
+		roleError: null, // Simplificado
 
 		// Funciones principales
 		fetchRoleInfo,
 		refreshRoleInfo,
 		clearRoleCache,
 
-		// Verificaciones rápidas
+		// Verificaciones rápidas (usan el contexto optimizado)
 		isAdmin,
 		isSeller,
 
@@ -207,7 +151,7 @@ export const useSecureAuth = () => {
 
 		// Estados computados
 		hasRole: roleInfo.role !== null,
-		isAuthenticated: roleInfo.role !== null,
+		isAuthenticated: contextIsAuthenticated,
 		lastUpdated: roleInfo.lastUpdated,
 	};
 };

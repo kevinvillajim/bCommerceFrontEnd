@@ -2,9 +2,25 @@
 
 import CryptoJS from "crypto-js";
 
-// Clave secreta derivada del dominio y timestamp de build (cambiar en producción)
-const ENCRYPTION_KEY =
-	process.env.REACT_APP_CACHE_KEY || "default-dev-key-change-in-prod";
+// Función para obtener la clave de cifrado según el bundler
+const getEncryptionKey = (): string => {
+	// Para Vite
+	if (typeof import.meta !== "undefined" && import.meta.env) {
+		return import.meta.env.VITE_CACHE_KEY || "nTIonshRityLkSomPLIgMayOUsEmPLeW";
+	}
+
+	// Para Create React App y otros bundlers que exponen process.env
+	if (typeof process !== "undefined" && process.env) {
+		return (
+			process.env.REACT_APP_CACHE_KEY || "nTIonshRityLkSomPLIgMayOUsEmPLeW"
+		);
+	}
+
+	// Fallback seguro usando la clave que ya configuraste
+	return "nTIonshRityLkSomPLIgMayOUsEmPLeW";
+};
+
+const ENCRYPTION_KEY = getEncryptionKey();
 const INTEGRITY_SALT = "role-integrity-2024";
 
 interface SecureRoleData {

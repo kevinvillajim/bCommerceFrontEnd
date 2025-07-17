@@ -12,8 +12,9 @@ import {LocalStorageService} from "../../infrastructure/services/LocalStorageSer
 import type {User} from "../../core/domain/entities/User";
 import appConfig from "../../config/appConfig";
 import RoleService from "../../infrastructure/services/RoleService";
+import {OptimizedRoleService} from "../../infrastructure/services/OptimizedRoleService";
 import axiosInstance from "../../infrastructure/api/axiosConfig";
-import API_ENDPOINTS from "@/constants/apiEndpoints";
+import {API_ENDPOINTS} from "../../constants/apiEndpoints";
 
 // Interfaz para información de rol
 interface UserRoleInfo {
@@ -36,7 +37,7 @@ interface UserRoleInfo {
 // Crear instancia del servicio de almacenamiento
 const storageService = new LocalStorageService();
 
-// Definir interfaz para el contexto
+// Definir interfaz para el contexto (AGREGADO funciones optimizadas)
 interface AuthContextProps {
 	user: User | null;
 	setUser: React.Dispatch<React.SetStateAction<User | null>>;
@@ -48,6 +49,9 @@ interface AuthContextProps {
 	refreshRoleInfo: () => Promise<void>;
 	isInitialized: boolean;
 	getDefaultRouteForRole: () => string;
+	// NUEVAS funciones optimizadas (sin romper compatibilidad)
+	isAdmin: (critical?: boolean) => Promise<boolean>;
+	isSeller: (critical?: boolean) => Promise<boolean>;
 }
 
 // Crear el contexto con valores por defecto
@@ -67,7 +71,10 @@ export const AuthContext = createContext<AuthContextProps>({
 	isLoadingRole: false,
 	refreshRoleInfo: async () => {},
 	isInitialized: false,
-	getDefaultRouteForRole: () => '/',
+	getDefaultRouteForRole: () => "/",
+	// Valores por defecto para funciones optimizadas
+	isAdmin: async () => false,
+	isSeller: async () => false,
 });
 
 // Props para el proveedor
@@ -75,9 +82,9 @@ interface AuthProviderProps {
 	children: ReactNode;
 }
 
-// Proveedor del contexto
+// Proveedor del contexto (BASADO EN TU CÓDIGO ORIGINAL)
 export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
-	// Estados principales
+	// Estados principales (EXACTAMENTE COMO EN TU ORIGINAL)
 	const [user, setUser] = useState<User | null>(null);
 	const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
 	const [initialized, setInitialized] = useState<boolean>(false);
@@ -90,13 +97,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 		adminInfo: null,
 	});
 
-	// Referencias para controlar flujos
+	// Referencias para controlar flujos (EXACTAMENTE COMO EN TU ORIGINAL)
 	const hasFetchedRole = useRef(false);
 	const isAuthenticatedRef = useRef(false);
 	const userRef = useRef<User | null>(null);
 	const isInitializationComplete = useRef(false);
 
-	// Actualizar refs cuando cambian los estados
+	// Actualizar refs cuando cambian los estados (EXACTAMENTE COMO EN TU ORIGINAL)
 	useEffect(() => {
 		isAuthenticatedRef.current = isAuthenticated;
 	}, [isAuthenticated]);
@@ -105,43 +112,48 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 		userRef.current = user;
 	}, [user]);
 
-	// Función para obtener la ruta por defecto según el rol
+	// Función para obtener la ruta por defecto según el rol (EXACTAMENTE COMO EN TU ORIGINAL)
 	const getDefaultRouteForRole = useCallback(() => {
 		if (roleInfo.isAdmin) {
-			return '/admin/dashboard';
+			return "/admin/dashboard";
 		} else if (roleInfo.isSeller) {
-			return '/seller/dashboard';
+			return "/seller/dashboard";
 		}
-		return '/';
+		return "/";
 	}, [roleInfo]);
 
-	// Función SOLO para redirección automática en inicialización (NO desde login manual)
+	// Función SOLO para redirección automática en inicialización (EXACTAMENTE COMO EN TU ORIGINAL)
 	const handleInitialRedirection = useCallback(() => {
 		const currentPath = window.location.pathname;
-		
+
 		// SOLO redirigir automáticamente si estamos en páginas de autenticación Y es inicialización automática
-		const isAuthPage = ['/login', '/register'].includes(currentPath) || 
-						   currentPath.startsWith('/auth');
+		const isAuthPage =
+			["/login", "/register"].includes(currentPath) ||
+			currentPath.startsWith("/auth");
 
 		if (!isAuthPage) {
-			console.log("No estamos en página de auth, no redireccionar automáticamente");
+			console.log(
+				"No estamos en página de auth, no redireccionar automáticamente"
+			);
 			return;
 		}
 
 		// Si estamos en una página de auth y el usuario ya está logueado automáticamente, redirigir
 		if (isAuthenticated && roleInfo.role && isInitializationComplete.current) {
 			const targetPath = getDefaultRouteForRole();
-			console.log(`Redirección automática desde ${currentPath} a ${targetPath}`);
-			
+			console.log(
+				`Redirección automática desde ${currentPath} a ${targetPath}`
+			);
+
 			setTimeout(() => {
 				window.location.replace(targetPath);
 			}, 100);
 		}
 	}, [isAuthenticated, roleInfo, getDefaultRouteForRole]);
 
-	// Obtener información de rol del usuario
+	// Obtener información de rol del usuario (MEJORADO CON FALLBACK)
 	const fetchRoleInfo = useCallback(async () => {
-		// Verificaciones de salida temprana
+		// Verificaciones de salida temprana (EXACTAMENTE COMO EN TU ORIGINAL)
 		if (
 			!isAuthenticatedRef.current ||
 			isLoadingRole ||
@@ -153,8 +165,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 		setIsLoadingRole(true);
 		try {
 			console.log("Obteniendo información de rol del usuario...");
-			
-			const roleData = await RoleService.checkUserRole(true);
+
+			// MEJORADO: Intentar OptimizedRoleService primero, fallback a RoleService
+			let roleData = null;
+			try {
+				roleData = await OptimizedRoleService.checkUserRole(true, false);
+				console.log("✅ Usando OptimizedRoleService en fetchRoleInfo");
+			} catch (error) {
+				console.log(
+					"⚠️ OptimizedRoleService no disponible, usando RoleService:",
+					error
+				);
+				roleData = await RoleService.checkUserRole(true);
+			}
 
 			if (roleData && roleData.success) {
 				const newRoleInfo = {
@@ -168,7 +191,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 				console.log("Información de rol obtenida:", newRoleInfo);
 				setRoleInfo(newRoleInfo);
 
-				// Actualizar el rol en usuario si es necesario
+				// Actualizar el rol en usuario si es necesario (EXACTAMENTE COMO EN TU ORIGINAL)
 				if (userRef.current && !userRef.current.role) {
 					setUser((prevUser) => {
 						if (!prevUser) return null;
@@ -176,10 +199,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 					});
 				}
 
-				// Marcar que ya obtuvimos el rol
+				// Marcar que ya obtuvimos el rol (EXACTAMENTE COMO EN TU ORIGINAL)
 				hasFetchedRole.current = true;
 
-				// SOLO redirigir automáticamente si estamos en inicialización
+				// SOLO redirigir automáticamente si estamos en inicialización (EXACTAMENTE COMO EN TU ORIGINAL)
 				if (isInitializationComplete.current) {
 					setTimeout(() => {
 						handleInitialRedirection();
@@ -193,15 +216,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 		}
 	}, [isLoadingRole, handleInitialRedirection]);
 
-	// Método público para actualizar información de rol
+	// Método público para actualizar información de rol (MEJORADO CON FALLBACK)
 	const refreshRoleInfo = useCallback(async () => {
 		hasFetchedRole.current = false;
 		setIsLoadingRole(true);
-		
+
 		try {
 			console.log("Refrescando información de rol del usuario...");
-			
-			const roleData = await RoleService.checkUserRole(true);
+
+			// MEJORADO: Intentar OptimizedRoleService primero, fallback a RoleService
+			let roleData = null;
+			try {
+				roleData = await OptimizedRoleService.checkUserRole(true, false);
+				console.log("✅ Usando OptimizedRoleService en refreshRoleInfo");
+			} catch (error) {
+				console.log(
+					"⚠️ OptimizedRoleService no disponible, usando RoleService:",
+					error
+				);
+				roleData = await RoleService.checkUserRole(true);
+			}
 
 			if (roleData && roleData.success) {
 				const newRoleInfo = {
@@ -215,7 +249,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 				console.log("Información de rol refrescada:", newRoleInfo);
 				setRoleInfo(newRoleInfo);
 
-				// Actualizar el rol en usuario si es necesario
+				// Actualizar el rol en usuario si es necesario (EXACTAMENTE COMO EN TU ORIGINAL)
 				if (userRef.current && !userRef.current.role) {
 					setUser((prevUser) => {
 						if (!prevUser) return null;
@@ -223,7 +257,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 					});
 				}
 
-				// Marcar que ya obtuvimos el rol
+				// Marcar que ya obtuvimos el rol (EXACTAMENTE COMO EN TU ORIGINAL)
 				hasFetchedRole.current = true;
 			}
 		} catch (error) {
@@ -233,7 +267,50 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 		}
 	}, []);
 
-	// Verificar si hay un token guardado al cargar - UNA SOLA VEZ
+	// NUEVAS funciones optimizadas (SIN ROMPER COMPATIBILIDAD)
+	const isAdmin = useCallback(
+		async (critical: boolean = false): Promise<boolean> => {
+			try {
+				// Intentar usar OptimizedRoleService
+				if (critical) {
+					return await OptimizedRoleService.isAdminCritical();
+				} else {
+					return await OptimizedRoleService.isAdmin();
+				}
+			} catch (error) {
+				console.log(
+					"⚠️ OptimizedRoleService no disponible para isAdmin, usando roleInfo:",
+					error
+				);
+				// Fallback al estado actual
+				return roleInfo.isAdmin;
+			}
+		},
+		[roleInfo.isAdmin]
+	);
+
+	const isSeller = useCallback(
+		async (critical: boolean = false): Promise<boolean> => {
+			try {
+				// Intentar usar OptimizedRoleService
+				if (critical) {
+					return await OptimizedRoleService.isSellerCritical();
+				} else {
+					return await OptimizedRoleService.isSeller();
+				}
+			} catch (error) {
+				console.log(
+					"⚠️ OptimizedRoleService no disponible para isSeller, usando roleInfo:",
+					error
+				);
+				// Fallback al estado actual
+				return roleInfo.isSeller;
+			}
+		},
+		[roleInfo.isSeller]
+	);
+
+	// Verificar si hay un token guardado al cargar - UNA SOLA VEZ (EXACTAMENTE COMO EN TU ORIGINAL)
 	useEffect(() => {
 		if (isInitializationComplete.current) return;
 
@@ -252,7 +329,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 					if (userData) {
 						setUser(userData);
 						userRef.current = userData;
-						console.log("Datos de usuario cargados desde localStorage:", userData);
+						console.log(
+							"Datos de usuario cargados desde localStorage:",
+							userData
+						);
 					}
 
 					// Cargar información de rol (solo si el usuario está autenticado)
@@ -264,6 +344,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 					setUser(null);
 					// Limpiar caché de roles
 					RoleService.clearRoleCache();
+					try {
+						OptimizedRoleService.clearAllCache();
+					} catch (error) {
+						// Silenciar error si OptimizedRoleService no está disponible
+					}
 				}
 			} catch (error) {
 				console.error(
@@ -282,7 +367,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 		initializeAuth();
 	}, [fetchRoleInfo]);
 
-	// Sincronizar datos de usuario con localStorage
+	// Sincronizar datos de usuario con localStorage (EXACTAMENTE COMO EN TU ORIGINAL)
 	useEffect(() => {
 		// Solo ejecutar si la inicialización está completa
 		if (!initialized) return;
@@ -301,7 +386,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 		}
 	}, [user, initialized]);
 
-	// Implementación de la función de logout
+	// Implementación de la función de logout (EXACTAMENTE COMO EN TU ORIGINAL)
 	const logout = useCallback(async (): Promise<void> => {
 		try {
 			// Intentar logout en el servidor
@@ -321,6 +406,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 
 			// Limpiar caché de roles
 			RoleService.clearRoleCache();
+			try {
+				OptimizedRoleService.clearAllCache();
+			} catch (error) {
+				// Silenciar error si OptimizedRoleService no está disponible
+			}
 
 			// Reiniciar flags
 			hasFetchedRole.current = false;
@@ -352,7 +442,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 		}
 	}, []);
 
-	// Memorizar el contexto para evitar renderizaciones innecesarias
+	// Memorizar el contexto para evitar renderizaciones innecesarias (AGREGADO funciones optimizadas)
 	const contextValue = useMemo(
 		() => ({
 			user,
@@ -365,6 +455,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 			refreshRoleInfo,
 			isInitialized: initialized,
 			getDefaultRouteForRole,
+			// NUEVAS funciones optimizadas
+			isAdmin,
+			isSeller,
 		}),
 		[
 			user,
@@ -377,6 +470,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 			refreshRoleInfo,
 			initialized,
 			getDefaultRouteForRole,
+			isAdmin,
+			isSeller,
 		]
 	);
 
@@ -385,7 +480,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 	);
 };
 
-// Hook de utilidad para consumir el contexto
+// Hook de utilidad para consumir el contexto (EXACTAMENTE COMO EN TU ORIGINAL)
 export const useAuth = () => {
 	const context = useContext(AuthContext);
 	if (!context) {
