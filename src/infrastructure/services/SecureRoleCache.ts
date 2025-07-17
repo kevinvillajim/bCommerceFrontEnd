@@ -1,10 +1,6 @@
 // src/infrastructure/services/SecureRoleCache.ts
 
 import CryptoJS from "crypto-js";
-import {
-	useReactiveCache,
-	useCacheInvalidation,
-} from "../../presentation/hooks/useReactiveCache";
 
 // Clave secreta derivada del dominio y timestamp de build (cambiar en producción)
 const ENCRYPTION_KEY =
@@ -29,11 +25,10 @@ interface CachedSecureData {
 
 /**
  * Servicio de cache seguro para roles de usuario
- * Combina cifrado + validación de integridad + cache reactivo
+ * Combina cifrado + validación de integridad
  */
 export class SecureRoleCache {
 	private static sessionId = this.generateSessionId();
-	private static readonly MEMORY_CACHE_TIME = 30000; // 30 segundos en memoria
 	private static readonly STORAGE_CACHE_TIME = 5 * 60 * 1000; // 5 minutos en storage
 	private static readonly CRITICAL_REVALIDATION_TIME = 2 * 60 * 1000; // 2 minutos para operaciones críticas
 

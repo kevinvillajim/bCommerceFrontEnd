@@ -3,10 +3,10 @@
 import axiosInstance from "../api/axiosConfig";
 import {API_ENDPOINTS} from "../../constants/apiEndpoints";
 import {SecureRoleCache} from "./SecureRoleCache";
-import {
-	useReactiveCache,
-	useCacheInvalidation,
-} from "../../presentation/hooks/useReactiveCache";
+
+// Endpoint fallback en caso de que no esté definido
+const CHECK_ROLE_ENDPOINT =
+	API_ENDPOINTS?.AUTH?.CHECK_ROLE || "/api/user/check-role";
 
 export interface RoleCheckResponse {
 	success: boolean;
@@ -57,7 +57,9 @@ export class OptimizedRoleService {
 		// Limitar tamaño del cache en memoria
 		if (this.memoryCache.size > 10) {
 			const firstKey = this.memoryCache.keys().next().value;
-			this.memoryCache.delete(firstKey);
+			if (firstKey !== undefined) {
+				this.memoryCache.delete(firstKey);
+			}
 		}
 	}
 
@@ -112,7 +114,7 @@ export class OptimizedRoleService {
 
 			// 3. Consulta fresh desde API
 			console.log("🌐 Consultando rol desde API");
-			const response = await axiosInstance.get(API_ENDPOINTS.AUTH.CHECK_ROLE);
+			const response = await axiosInstance.get(CHECK_ROLE_ENDPOINT);
 
 			if (response?.data?.success) {
 				const roleData = response.data;

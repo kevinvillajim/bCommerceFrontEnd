@@ -2,7 +2,8 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App';
-import { AuthProvider } from './presentation/contexts/AuthContext';
+// import { AuthProvider } from './presentation/contexts/AuthContext';
+import {OptimizedAuthProvider} from "./presentation/contexts/OptimizedAuthContext";
 import { CartProvider } from './presentation/contexts/CartContext';
 import { FavoriteProvider } from './presentation/contexts/FavoriteContext';
 import { NotificationProvider } from './presentation/contexts/NotificationContext';
@@ -50,7 +51,7 @@ if (root) {
     <React.StrictMode>
       <BrowserRouter>
         <ThemeProvider>
-          <AuthProvider>
+          <OptimizedAuthProvider>
             <CartProvider>
               <FavoriteProvider>
                 <NotificationProvider>
@@ -60,7 +61,7 @@ if (root) {
                 </NotificationProvider>
               </FavoriteProvider>
             </CartProvider>
-          </AuthProvider>
+          </OptimizedAuthProvider>
         </ThemeProvider>
       </BrowserRouter>
     </React.StrictMode>
