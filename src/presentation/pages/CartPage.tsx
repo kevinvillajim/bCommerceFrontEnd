@@ -14,7 +14,7 @@ import {formatCurrency} from "../../utils/formatters/formatCurrency";
 import { NotificationType } from "../contexts/CartContext";
 
 // IMPORTAR EL HELPER DE IMÁGENES CORREGIDO
-import { getImageUrl } from "../../utils/imageUtils";
+import { getImageUrl } from "../../utils/imageManager";
 
 const CartPage: React.FC = () => {
 	const [isLoading, setIsLoading] = useState(true);
