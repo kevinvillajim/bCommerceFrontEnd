@@ -1,6 +1,7 @@
 // src/presentation/hooks/useAdminProducts.ts
 
 import {useState, useCallback} from "react";
+import {useCacheInvalidation} from "./useReactiveCache";
 import {AdminProductService} from "../../core/services/AdminProductService";
 import CacheService from "../../infrastructure/services/CacheService";
 import appConfig from "../../config/appConfig";
@@ -78,8 +79,11 @@ export const useAdminProducts = () => {
 		totalPages?: number;
 	} | null>(null);
 
+	// Hook para invalidación de cache
+	const {invalidateAfterMutation} = useCacheInvalidation();
+
 	/**
-	 * Función adaptadora para productos - CORREGIDA PARA BACKEND REAL
+	 * Función adaptadora para productos
 	 */
 	const adaptProduct = useCallback((apiProduct: any): Product => {
 		if (!apiProduct || typeof apiProduct !== "object") {
@@ -87,9 +91,7 @@ export const useAdminProducts = () => {
 			return {} as Product;
 		}
 
-		console.log("🔄 Adaptando producto desde API:", apiProduct);
-
-		// Procesar imágenes - CORREGIDO para el formato real del backend
+		// Procesar imágenes
 		let processedImages: string[] = [];
 
 		// Prioridad 1: main_image (formato actual del backend)
@@ -120,7 +122,7 @@ export const useAdminProducts = () => {
 			processedImages = [apiProduct.image];
 		}
 
-		// Procesar tags - el backend devuelve arrays con strings JSON
+		// Procesar tags
 		let processedTags: string[] = [];
 		if (Array.isArray(apiProduct.tags)) {
 			apiProduct.tags.forEach((tag: any) => {
@@ -165,7 +167,7 @@ export const useAdminProducts = () => {
 			attributes: apiProduct.attributes,
 			images: processedImages,
 			featured: Boolean(apiProduct.featured),
-			published: Boolean(apiProduct.published ?? true), // Por defecto true si no viene
+			published: Boolean(apiProduct.published ?? true),
 			status: apiProduct.status || "active",
 			viewCount: apiProduct.view_count || 0,
 			salesCount: apiProduct.sales_count || 0,
@@ -186,16 +188,6 @@ export const useAdminProducts = () => {
 			seller: apiProduct.seller,
 			user: apiProduct.user,
 		};
-
-		console.log("✅ Producto adaptado:", {
-			id: adaptedProduct.id,
-			name: adaptedProduct.name,
-			published: adaptedProduct.published,
-			featured: adaptedProduct.featured,
-			status: adaptedProduct.status,
-			images: adaptedProduct.images,
-			tags: adaptedProduct.tags,
-		});
 
 		return adaptedProduct;
 	}, []);
@@ -226,13 +218,8 @@ export const useAdminProducts = () => {
 					}
 				}
 
-				console.log(
-					"🌐 useAdminProducts: Obteniendo productos desde API con filtros:",
-					filterParams
-				);
+				console.log("🌐 useAdminProducts: Obteniendo productos desde API");
 				const response = await getAllProductsUseCase.execute(filterParams);
-
-				console.log("🔍 RESPUESTA RAW DE LA API:", response);
 
 				if (response) {
 					let adaptedData: Product[] = [];
@@ -240,16 +227,9 @@ export const useAdminProducts = () => {
 
 					// Procesar la respuesta según su estructura
 					if (response.data && Array.isArray(response.data)) {
-						console.log(
-							"📦 Respuesta contiene array en data, procesando productos..."
-						);
-						adaptedData = response.data.map((product) => {
-							console.log("🔄 Procesando producto:", product);
-							return adaptProduct(product);
-						});
+						adaptedData = response.data.map(adaptProduct);
 						responseMeta = response.meta;
 					} else if (Array.isArray(response)) {
-						console.log("📦 Respuesta es directamente un array");
 						adaptedData = response.map(adaptProduct);
 						responseMeta = {
 							total: response.length,
@@ -271,20 +251,6 @@ export const useAdminProducts = () => {
 						},
 					};
 
-					console.log("💫 Datos procesados:", {
-						productCount: adaptedData.length,
-						meta: result.meta,
-						firstProductSample: adaptedData[0]
-							? {
-									id: adaptedData[0].id,
-									name: adaptedData[0].name,
-									published: adaptedData[0].published,
-									featured: adaptedData[0].featured,
-									images: adaptedData[0].images,
-								}
-							: null,
-					});
-
 					// Guardar en caché
 					CacheService.setItem(
 						cacheKey,
@@ -296,7 +262,6 @@ export const useAdminProducts = () => {
 					setMeta(result.meta);
 					return result;
 				} else {
-					console.warn("⚠️ Respuesta vacía de la API");
 					setProducts([]);
 					setMeta({total: 0, limit: 0, offset: 0});
 					return {data: [], meta: {total: 0, limit: 0, offset: 0}};
@@ -359,8 +324,12 @@ export const useAdminProducts = () => {
 				);
 
 				if (product) {
-					// Limpiar caché relacionada
-					clearProductCache();
+					// Invalidar cache después de crear
+					invalidateAfterMutation([
+						"admin_products_*",
+						"products_*",
+						"products_featured_*",
+					]);
 				}
 
 				return product;
@@ -373,7 +342,7 @@ export const useAdminProducts = () => {
 				setLoading(false);
 			}
 		},
-		[]
+		[invalidateAfterMutation]
 	);
 
 	/**
@@ -392,8 +361,14 @@ export const useAdminProducts = () => {
 					setProducts((prev) =>
 						prev.map((p) => (p.id === data.id ? adaptProduct(product) : p))
 					);
-					// Limpiar caché relacionada
-					clearProductCache();
+
+					// Invalidar cache después de actualizar
+					invalidateAfterMutation([
+						"admin_products_*",
+						"products_*",
+						`product_${data.id}`,
+						"products_featured_*",
+					]);
 				}
 
 				return product;
@@ -406,47 +381,54 @@ export const useAdminProducts = () => {
 				setLoading(false);
 			}
 		},
-		[adaptProduct]
+		[adaptProduct, invalidateAfterMutation]
 	);
 
 	/**
 	 * Elimina cualquier producto (como admin)
 	 */
-	const deleteProduct = useCallback(async (id: number): Promise<boolean> => {
-		setLoading(true);
-		setError(null);
+	const deleteProduct = useCallback(
+		async (id: number): Promise<boolean> => {
+			setLoading(true);
+			setError(null);
 
-		try {
-			const result = await deleteAnyProductUseCase.execute(id);
+			try {
+				const result = await deleteAnyProductUseCase.execute(id);
 
-			if (result) {
-				// Remover producto de la lista actual
-				setProducts((prev) => prev.filter((p) => p.id !== id));
-				// Limpiar caché relacionada
-				clearProductCache();
+				if (result) {
+					// Remover producto de la lista actual
+					setProducts((prev) => prev.filter((p) => p.id !== id));
+
+					// Invalidar cache después de eliminar
+					invalidateAfterMutation([
+						"admin_products_*",
+						"products_*",
+						`product_${id}`,
+						"products_featured_*",
+					]);
+				}
+
+				return result;
+			} catch (err) {
+				const errorMessage =
+					err instanceof Error ? err.message : "Error al eliminar producto";
+				setError(errorMessage);
+				return false;
+			} finally {
+				setLoading(false);
 			}
-
-			return result;
-		} catch (err) {
-			const errorMessage =
-				err instanceof Error ? err.message : "Error al eliminar producto";
-			setError(errorMessage);
-			return false;
-		} finally {
-			setLoading(false);
-		}
-	}, []);
+		},
+		[invalidateAfterMutation]
+	);
 
 	/**
-	 * Alterna el estado destacado de un producto - CORREGIDO
+	 * Alterna el estado destacado de un producto
 	 */
 	const toggleFeatured = useCallback(
 		async (id: number, featured: boolean): Promise<boolean> => {
 			setError(null);
 
 			try {
-				console.log(`🌟 Cambiando featured del producto ${id} a ${featured}`);
-
 				const result = await toggleProductFeaturedUseCase.execute(id, featured);
 
 				if (result) {
@@ -454,13 +436,15 @@ export const useAdminProducts = () => {
 					setProducts((prev) =>
 						prev.map((p) => (p.id === id ? {...p, featured} : p))
 					);
-					// Limpiar caché relacionada
-					clearProductCache();
-					console.log(
-						`✅ Featured actualizado correctamente para producto ${id}`
-					);
+
+					// Invalidar cache después de la mutación
+					invalidateAfterMutation([
+						"admin_products_*",
+						"products_*",
+						`product_${id}`,
+						"products_featured_*",
+					]);
 				} else {
-					console.error(`❌ Error al actualizar featured para producto ${id}`);
 					setError("Error al cambiar estado destacado del producto");
 				}
 
@@ -475,19 +459,17 @@ export const useAdminProducts = () => {
 				return false;
 			}
 		},
-		[]
+		[invalidateAfterMutation]
 	);
 
 	/**
-	 * Alterna el estado de publicación de un producto - CORREGIDO
+	 * Alterna el estado de publicación de un producto
 	 */
 	const togglePublished = useCallback(
 		async (id: number, published: boolean): Promise<boolean> => {
 			setError(null);
 
 			try {
-				console.log(`📢 Cambiando published del producto ${id} a ${published}`);
-
 				const result = await toggleProductPublishedUseCase.execute(
 					id,
 					published
@@ -498,13 +480,15 @@ export const useAdminProducts = () => {
 					setProducts((prev) =>
 						prev.map((p) => (p.id === id ? {...p, published} : p))
 					);
-					// Limpiar caché relacionada
-					clearProductCache();
-					console.log(
-						`✅ Published actualizado correctamente para producto ${id}`
-					);
+
+					// Invalidar cache después de la mutación
+					invalidateAfterMutation([
+						"admin_products_*",
+						"products_*",
+						`product_${id}`,
+						"products_featured_*",
+					]);
 				} else {
-					console.error(`❌ Error al actualizar published para producto ${id}`);
 					setError("Error al cambiar estado de publicación del producto");
 				}
 
@@ -519,19 +503,17 @@ export const useAdminProducts = () => {
 				return false;
 			}
 		},
-		[]
+		[invalidateAfterMutation]
 	);
 
 	/**
-	 * Actualiza el estado de un producto - CORREGIDO
+	 * Actualiza el estado de un producto
 	 */
 	const updateStatus = useCallback(
 		async (id: number, status: string): Promise<boolean> => {
 			setError(null);
 
 			try {
-				console.log(`🔄 Cambiando status del producto ${id} a ${status}`);
-
 				const result = await updateProductStatusUseCase.execute(id, status);
 
 				if (result) {
@@ -539,13 +521,15 @@ export const useAdminProducts = () => {
 					setProducts((prev) =>
 						prev.map((p) => (p.id === id ? {...p, status} : p))
 					);
-					// Limpiar caché relacionada
-					clearProductCache();
-					console.log(
-						`✅ Status actualizado correctamente para producto ${id}`
-					);
+
+					// Invalidar cache después de la mutación
+					invalidateAfterMutation([
+						"admin_products_*",
+						"products_*",
+						`product_${id}`,
+						"products_featured_*",
+					]);
 				} else {
-					console.error(`❌ Error al actualizar status para producto ${id}`);
 					setError("Error al actualizar estado del producto");
 				}
 
@@ -558,7 +542,7 @@ export const useAdminProducts = () => {
 				return false;
 			}
 		},
-		[]
+		[invalidateAfterMutation]
 	);
 
 	/**
@@ -621,25 +605,26 @@ export const useAdminProducts = () => {
 	}, []);
 
 	/**
-	 * Limpia la caché de productos de admin
+	 * Limpia la caché de productos de admin usando cache reactivo
 	 */
-	const clearProductCache = useCallback(() => {
-		const allKeys = Object.keys(localStorage);
-		const adminProductKeys = allKeys.filter(
-			(key) =>
-				key.startsWith("admin_products_") ||
-				key.startsWith("product_") ||
-				key.startsWith("products_")
-		);
-
-		adminProductKeys.forEach((key) => {
-			CacheService.removeItem(key);
-		});
-
-		console.log(
-			`🗑️ ${adminProductKeys.length} claves de caché de productos de admin eliminadas`
-		);
-	}, []);
+	const clearProductCache = useCallback(
+		(productId?: number) => {
+			if (productId) {
+				// Invalidar cache específica de un producto
+				invalidateAfterMutation([`product_${productId}`]);
+				console.log(`🗑️ Caché del producto ${productId} invalidada`);
+			} else {
+				// Invalidar todos los patrones de productos
+				invalidateAfterMutation([
+					"admin_products_*",
+					"products_*",
+					"product_*",
+				]);
+				console.log("🗑️ Toda la caché de productos invalidada");
+			}
+		},
+		[invalidateAfterMutation]
+	);
 
 	return {
 		// Estado

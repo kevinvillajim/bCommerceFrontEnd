@@ -1,16 +1,15 @@
 // src/presentation/hooks/useProducts.ts
 import {useState, useCallback, useEffect} from "react";
 import {ProductService} from "../../core/services/ProductService";
+import {useCacheInvalidation} from "./useReactiveCache";
 import CacheService from "../../infrastructure/services/CacheService";
 import appConfig from "../../config/appConfig";
-import ApiResponseInspector from "../../utils/apiResponseInspector";
-import { DebugUtils } from "../../utils/debugUtils";
 import type {
 	Product,
 	ProductDetail,
 	ProductListResponse,
 } from "../../core/domain/entities/Product";
-import type { ExtendedProductFilterParams } from "../types/ProductFilterParams";
+import type {ExtendedProductFilterParams} from "../types/ProductFilterParams";
 
 // Crear instancia del servicio de productos
 const productService = new ProductService();
@@ -34,7 +33,7 @@ const getCacheKey = (params?: ExtendedProductFilterParams): string => {
 };
 
 /**
- * Hook optimizado para operaciones de productos con debugging mejorado
+ * Hook optimizado para operaciones de productos con cache reactivo
  */
 export const useProducts = () => {
 	const [loading, setLoading] = useState<boolean>(false);
@@ -48,7 +47,10 @@ export const useProducts = () => {
 	} | null>(null);
 	const [isInitialized, setIsInitialized] = useState<boolean>(false);
 
-	// Función para adaptar datos de API a nuestro modelo - CORREGIDA CON DEBUGGING
+	// Hook para invalidación de cache
+	const {invalidate} = useCacheInvalidation();
+
+	// Función para adaptar datos de API a nuestro modelo
 	const adaptProduct = useCallback((apiProduct: any): Product => {
 		// Verificar que sea un objeto para prevenir errores
 		if (!apiProduct || typeof apiProduct !== "object") {
@@ -56,73 +58,53 @@ export const useProducts = () => {
 			return {} as Product;
 		}
 
-		// DEBUGGING DE IMÁGENES - VER QUÉ LLEGA DESDE LA API
-		console.group(`🖼️ DEBUGGING IMÁGENES - Producto ID: ${apiProduct.id}`);
-		console.log("📦 Producto completo desde API:", apiProduct);
-		console.log("🎨 Datos de imágenes originales:", {
-			images: apiProduct.images,
-			image: apiProduct.image,
-			main_image: apiProduct.main_image,
-			thumbnail: apiProduct.thumbnail,
-			featured_image: apiProduct.featured_image
-		});
-
 		// Procesar imágenes de manera más robusta
 		let processedImages: string[] = [];
 
 		// Prioridad 1: array images
 		if (Array.isArray(apiProduct.images) && apiProduct.images.length > 0) {
-			console.log("📋 Procesando array images:", apiProduct.images);
-			
-			processedImages = apiProduct.images.map((img: any) => {
-				if (typeof img === "string") {
-					console.log("📄 Imagen como string:", img);
-					return img;
-				}
-				if (typeof img === "object" && img !== null) {
-					// Intentar extraer URL del objeto imagen
-					const imageUrl = img.original || 
-								   img.large || 
-								   img.medium || 
-								   img.thumbnail || 
-								   img.url || 
-								   img.path || 
-								   img.src || 
-								   "";
-					console.log("🎯 Imagen extraída de objeto:", imageUrl, "desde:", img);
-					return imageUrl;
-				}
-				console.warn("⚠️ Formato de imagen no reconocido:", img);
-				return "";
-			}).filter(Boolean); // Filtrar strings vacíos
+			processedImages = apiProduct.images
+				.map((img: any) => {
+					if (typeof img === "string") {
+						return img;
+					}
+					if (typeof img === "object" && img !== null) {
+						// Intentar extraer URL del objeto imagen
+						return (
+							img.original ||
+							img.large ||
+							img.medium ||
+							img.thumbnail ||
+							img.url ||
+							img.path ||
+							img.src ||
+							""
+						);
+					}
+					return "";
+				})
+				.filter(Boolean); // Filtrar strings vacíos
 		}
 
 		// Prioridad 2: campo image (singular)
 		if (processedImages.length === 0 && apiProduct.image) {
-			console.log("📄 Usando campo image singular:", apiProduct.image);
 			processedImages = [apiProduct.image];
 		}
 
 		// Prioridad 3: campo main_image
 		if (processedImages.length === 0 && apiProduct.main_image) {
-			console.log("🌟 Usando campo main_image:", apiProduct.main_image);
 			processedImages = [apiProduct.main_image];
 		}
 
 		// Prioridad 4: campo featured_image
 		if (processedImages.length === 0 && apiProduct.featured_image) {
-			console.log("⭐ Usando campo featured_image:", apiProduct.featured_image);
 			processedImages = [apiProduct.featured_image];
 		}
 
 		// Prioridad 5: campo thumbnail
 		if (processedImages.length === 0 && apiProduct.thumbnail) {
-			console.log("🖼️ Usando campo thumbnail:", apiProduct.thumbnail);
 			processedImages = [apiProduct.thumbnail];
 		}
-
-		console.log("✅ Imágenes procesadas finales:", processedImages);
-		console.groupEnd();
 
 		// Mapear propiedades para manejar tanto camelCase como snake_case
 		const adaptedProduct: Product = {
@@ -144,7 +126,6 @@ export const useProducts = () => {
 			tags: apiProduct.tags,
 			sku: apiProduct.sku,
 			attributes: apiProduct.attributes,
-			// USAR LAS IMÁGENES PROCESADAS
 			images: processedImages,
 			featured: Boolean(apiProduct.featured),
 			published: Boolean(apiProduct.published),
@@ -160,14 +141,6 @@ export const useProducts = () => {
 			createdAt: apiProduct.createdAt || apiProduct.created_at,
 			updatedAt: apiProduct.updatedAt || apiProduct.updated_at,
 		};
-
-		// Log final del producto adaptado
-		console.log("🔄 Producto adaptado:", {
-			id: adaptedProduct.id,
-			name: adaptedProduct.name,
-			images: adaptedProduct.images,
-			price: adaptedProduct.price
-		});
 
 		return adaptedProduct;
 	}, []);
@@ -186,7 +159,7 @@ export const useProducts = () => {
 	}, [isInitialized]);
 
 	/**
-	 * Recupera productos con filtros opcionales - FUNCIÓN CORREGIDA
+	 * Recupera productos con filtros opcionales
 	 */
 	const fetchProducts = useCallback(
 		async (
@@ -196,26 +169,7 @@ export const useProducts = () => {
 			setError(null);
 
 			try {
-				console.group("🔄 Iniciando fetchProducts");
-				
-				// Validar parámetros si existen
-				if (filterParams) {
-					const validation = DebugUtils.validateParams(filterParams);
-					if (!validation.isValid) {
-						console.error("❌ Parámetros inválidos:", validation.errors);
-						setError(`Parámetros inválidos: ${validation.errors.join(", ")}`);
-						setLoading(false);
-						return null;
-					}
-					
-					// Log de debugging
-					console.log("📊 Parámetros recibidos:", filterParams);
-					DebugUtils.buildDebugUrl(filterParams);
-				}
-
-				// Generar clave de caché basada en los parámetros
 				const cacheKey = getCacheKey(filterParams);
-				console.log("🔑 Clave de caché:", cacheKey);
 
 				// Intentar obtener datos de caché primero
 				const cachedData = CacheService.getItem(cacheKey);
@@ -230,31 +184,15 @@ export const useProducts = () => {
 				console.log("🌐 Realizando petición a la API");
 				const response = await productService.getProducts(filterParams);
 
-				
-				console.log("🔍 RESPUESTA RAW DE LA API:", response);
-
 				if (response) {
-					console.log("✅ Respuesta recibida:", response);
-					
-					// Usar la herramienta de inspección para analizar la estructura
-					ApiResponseInspector.inspectResponse(
-						response,
-						"Respuesta de productos"
-					);
-
 					// Adaptar los datos si es necesario
 					let adaptedData: Product[] = [];
 
 					if (Array.isArray(response.data)) {
-						console.log("📦 Respuesta contiene un array en data");
 						adaptedData = response.data.map(adaptProduct);
 					} else if (response.data && typeof response.data === "object") {
-						// Si es un solo objeto en lugar de un array
-						console.log("📦 Respuesta contiene un objeto en data");
 						adaptedData = [adaptProduct(response.data)];
 					} else if (Array.isArray(response)) {
-						// Si la respuesta es directamente un array
-						console.log("📦 Respuesta es directamente un array");
 						adaptedData = response.map(adaptProduct);
 					}
 
@@ -267,12 +205,6 @@ export const useProducts = () => {
 						},
 					};
 
-					console.log("💫 Datos adaptados:", {
-						productCount: adaptedData.length,
-						meta: result.meta,
-						firstProduct: adaptedData[0]
-					});
-
 					// Guardar en caché
 					CacheService.setItem(
 						cacheKey,
@@ -282,24 +214,18 @@ export const useProducts = () => {
 
 					setProducts(adaptedData);
 					setMeta(result.meta);
-
-					console.groupEnd();
 					return result;
 				} else {
-					console.warn("⚠️ Respuesta vacía de la API");
 					setProducts([]);
 					setMeta({total: 0, limit: 0, offset: 0});
-					console.groupEnd();
 					return {data: [], meta: {total: 0, limit: 0, offset: 0}};
 				}
 			} catch (err) {
-				console.error("❌ Error obteniendo productos:", err);
 				const errorMessage =
 					err instanceof Error ? err.message : "Error al obtener productos";
 				setError(errorMessage);
 				setProducts([]);
 				setMeta({total: 0, limit: 0, offset: 0});
-				console.groupEnd();
 				return null;
 			} finally {
 				setLoading(false);
@@ -333,7 +259,6 @@ export const useProducts = () => {
 				const productDetailResponse = await productService.getProductById(id);
 
 				if (productDetailResponse) {
-					console.log(`✅ Producto con ID ${id} recibido:`, productDetailResponse);
 					// Guardar en caché
 					CacheService.setItem(
 						cacheKey,
@@ -389,10 +314,6 @@ export const useProducts = () => {
 					await productService.getProductBySlug(slug);
 
 				if (productDetailResponse) {
-					console.log(
-						`✅ Producto con slug ${slug} recibido:`,
-						productDetailResponse
-					);
 					// Guardar en caché
 					CacheService.setItem(
 						cacheKey,
@@ -407,7 +328,10 @@ export const useProducts = () => {
 				setProduct(null);
 				return null;
 			} catch (err) {
-				console.error("❌ Error obteniendo detalles de producto por slug:", err);
+				console.error(
+					"❌ Error obteniendo detalles de producto por slug:",
+					err
+				);
 				const errorMessage =
 					err instanceof Error
 						? err.message
@@ -452,8 +376,6 @@ export const useProducts = () => {
 					await productService.getFeaturedProducts(limit);
 
 				if (featuredProducts && featuredProducts.length > 0) {
-					console.log(`✅ Productos destacados recibidos:`, featuredProducts);
-
 					// Adaptar datos si es necesario
 					const adaptedProducts = featuredProducts.map(adaptProduct);
 
@@ -517,11 +439,6 @@ export const useProducts = () => {
 				);
 
 				if (relatedProducts && relatedProducts.length > 0) {
-					console.log(
-						`✅ Productos relacionados recibidos para producto ${productId}:`,
-						relatedProducts
-					);
-
 					// Adaptar datos si es necesario
 					const adaptedProducts = relatedProducts.map(adaptProduct);
 
@@ -566,29 +483,24 @@ export const useProducts = () => {
 	);
 
 	/**
-	 * Limpia la caché de productos
+	 * Limpia la caché de productos usando cache reactivo
 	 */
-	const clearProductCache = useCallback((productId?: number): void => {
-		if (productId) {
-			// Limpiar caché específica de un producto
-			CacheService.removeItem(`product_${productId}`);
-			console.log(`🗑️ Caché del producto ${productId} eliminada`);
-		} else {
-			// Identificar y limpiar todas las claves de caché relacionadas con productos
-			const allKeys = Object.keys(localStorage);
-			const productKeys = allKeys.filter(
-				(key) => key.startsWith("product_") || key.startsWith("products_")
-			);
-
-			productKeys.forEach((key) => {
-				CacheService.removeItem(key);
-			});
-
-			console.log(
-				`🗑️ ${productKeys.length} claves de caché de productos eliminadas`
-			);
-		}
-	}, []);
+	const clearProductCache = useCallback(
+		(productId?: number): void => {
+			if (productId) {
+				// Limpiar caché específica de un producto
+				CacheService.removeItem(`product_${productId}`);
+				invalidate(`product_${productId}`);
+				console.log(`🗑️ Caché del producto ${productId} eliminada`);
+			} else {
+				// Invalidar todos los patrones de productos
+				invalidate("products_*");
+				invalidate("product_*");
+				console.log("🗑️ Toda la caché de productos invalidada");
+			}
+		},
+		[invalidate]
+	);
 
 	return {
 		loading,

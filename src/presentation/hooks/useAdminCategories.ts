@@ -1,6 +1,7 @@
 // src/presentation/hooks/useAdminCategories.ts - CORREGIDO
 
 import {useState, useCallback} from "react";
+import {useCacheInvalidation} from "./useReactiveCache";
 import {AdminCategoryService} from "../../core/services/AdminCategoryService";
 import CacheService from "../../infrastructure/services/CacheService";
 import appConfig from "../../config/appConfig";
@@ -55,6 +56,9 @@ export const useAdminCategories = () => {
 	const [categories, setCategories] = useState<Category[]>([]);
 	const [mainCategories, setMainCategories] = useState<Category[]>([]);
 	const [categoryDetail, setCategoryDetail] = useState<Category | null>(null);
+
+	// Hook para invalidación de cache
+	const {invalidateAfterMutation} = useCacheInvalidation();
 
 	/**
 	 * Adaptador para normalizar los datos de categorías
@@ -120,7 +124,6 @@ export const useAdminCategories = () => {
 				}
 
 				console.log("🌐 useAdminCategories: Obteniendo categorías desde API");
-				// USAR USE CASE
 				const response: CategoryListResponse | null =
 					await getAllCategoriesUseCase.execute({
 						...params,
@@ -206,11 +209,10 @@ export const useAdminCategories = () => {
 				console.log(
 					"🌐 useAdminCategories: Obteniendo categorías principales desde API"
 				);
-				// USAR SERVICIO ADMIN
 				const response: Category[] | CategoryListResponse | null =
 					await adminCategoryService.getMainCategories(withCounts);
 
-				// CORREGIDO: Manejar respuesta que puede ser array directo o con estructura {data, meta} con tipos explícitos
+				// Manejar respuesta que puede ser array directo o con estructura {data, meta}
 				let categoriesArray: Category[] = [];
 
 				if (Array.isArray(response)) {
@@ -281,7 +283,6 @@ export const useAdminCategories = () => {
 				console.log(
 					`🌐 useAdminCategories: Obteniendo categoría ${id} desde API`
 				);
-				// USAR USE CASE
 				const response: Category | null =
 					await getCategoryByIdUseCase.execute(id);
 
@@ -325,7 +326,6 @@ export const useAdminCategories = () => {
 
 			try {
 				console.log("🌐 useAdminCategories: Creando nueva categoría:", data);
-				// USAR USE CASE
 				const response: Category | null =
 					await createCategoryAsAdminUseCase.execute(data);
 
@@ -340,8 +340,14 @@ export const useAdminCategories = () => {
 						setMainCategories((prev) => [...prev, adaptedCategory]);
 					}
 
-					// Limpiar caché relacionada
-					clearCategoryCache();
+					// Invalidar cache después de crear
+					invalidateAfterMutation([
+						"admin_categories_*",
+						"categories_*",
+						"admin_main_categories_*",
+						"categories_main_*",
+						"categories_featured_*",
+					]);
 
 					return adaptedCategory;
 				}
@@ -357,7 +363,7 @@ export const useAdminCategories = () => {
 				setLoading(false);
 			}
 		},
-		[adaptCategory]
+		[adaptCategory, invalidateAfterMutation]
 	);
 
 	/**
@@ -373,7 +379,6 @@ export const useAdminCategories = () => {
 					`🌐 useAdminCategories: Actualizando categoría ${data.id}:`,
 					data
 				);
-				// USAR USE CASE
 				const response: Category | null =
 					await updateAnyCategoryUseCase.execute(data);
 
@@ -393,8 +398,16 @@ export const useAdminCategories = () => {
 						setCategoryDetail(adaptedCategory);
 					}
 
-					// Limpiar caché relacionada
-					clearCategoryCache();
+					// Invalidar cache después de actualizar
+					invalidateAfterMutation([
+						"admin_categories_*",
+						"categories_*",
+						`admin_category_${data.id}`,
+						`category_${data.id}`,
+						"admin_main_categories_*",
+						"categories_main_*",
+						"categories_featured_*",
+					]);
 
 					return adaptedCategory;
 				}
@@ -410,7 +423,7 @@ export const useAdminCategories = () => {
 				setLoading(false);
 			}
 		},
-		[adaptCategory, categoryDetail]
+		[adaptCategory, categoryDetail, invalidateAfterMutation]
 	);
 
 	/**
@@ -423,7 +436,6 @@ export const useAdminCategories = () => {
 
 			try {
 				console.log(`🌐 useAdminCategories: Eliminando categoría ${id}`);
-				// USAR USE CASE
 				const result = await deleteAnyCategoryUseCase.execute(id);
 
 				if (result) {
@@ -436,8 +448,16 @@ export const useAdminCategories = () => {
 						setCategoryDetail(null);
 					}
 
-					// Limpiar caché relacionada
-					clearCategoryCache();
+					// Invalidar cache después de eliminar
+					invalidateAfterMutation([
+						"admin_categories_*",
+						"categories_*",
+						`admin_category_${id}`,
+						`category_${id}`,
+						"admin_main_categories_*",
+						"categories_main_*",
+						"categories_featured_*",
+					]);
 
 					return true;
 				}
@@ -453,7 +473,7 @@ export const useAdminCategories = () => {
 				setLoading(false);
 			}
 		},
-		[categoryDetail]
+		[categoryDetail, invalidateAfterMutation]
 	);
 
 	/**
@@ -468,7 +488,6 @@ export const useAdminCategories = () => {
 				console.log(
 					`🌐 useAdminCategories: Cambiando estado activo de categoría ${id} a ${is_active}`
 				);
-				// USAR USE CASE
 				const result = await toggleCategoryActiveUseCase.execute(id, is_active);
 
 				if (result) {
@@ -484,8 +503,16 @@ export const useAdminCategories = () => {
 						setCategoryDetail((prev) => (prev ? {...prev, is_active} : prev));
 					}
 
-					// Limpiar caché relacionada
-					clearCategoryCache();
+					// Invalidar cache después de la mutación
+					invalidateAfterMutation([
+						"admin_categories_*",
+						"categories_*",
+						`admin_category_${id}`,
+						`category_${id}`,
+						"admin_main_categories_*",
+						"categories_main_*",
+						"categories_featured_*",
+					]);
 
 					return true;
 				}
@@ -501,7 +528,7 @@ export const useAdminCategories = () => {
 				setLoading(false);
 			}
 		},
-		[categoryDetail]
+		[categoryDetail, invalidateAfterMutation]
 	);
 
 	/**
@@ -516,7 +543,6 @@ export const useAdminCategories = () => {
 				console.log(
 					`🌐 useAdminCategories: Cambiando estado destacado de categoría ${id} a ${featured}`
 				);
-				// USAR USE CASE
 				const result = await toggleCategoryFeaturedUseCase.execute(
 					id,
 					featured
@@ -535,8 +561,16 @@ export const useAdminCategories = () => {
 						setCategoryDetail((prev) => (prev ? {...prev, featured} : prev));
 					}
 
-					// Limpiar caché relacionada
-					clearCategoryCache();
+					// Invalidar cache después de la mutación
+					invalidateAfterMutation([
+						"admin_categories_*",
+						"categories_*",
+						`admin_category_${id}`,
+						`category_${id}`,
+						"admin_main_categories_*",
+						"categories_main_*",
+						"categories_featured_*",
+					]);
 
 					return true;
 				}
@@ -554,31 +588,37 @@ export const useAdminCategories = () => {
 				setLoading(false);
 			}
 		},
-		[categoryDetail]
+		[categoryDetail, invalidateAfterMutation]
 	);
 
 	/**
-	 * Limpia la caché de categorías de admin
+	 * Limpia la caché de categorías de admin usando cache reactivo
 	 */
-	const clearCategoryCache = useCallback(() => {
-		const allKeys = Object.keys(localStorage);
-		const adminCategoryKeys = allKeys.filter(
-			(key) =>
-				key.startsWith("admin_categories_") ||
-				key.startsWith("admin_category_") ||
-				key.startsWith("admin_main_categories_") ||
-				key.startsWith("category_") ||
-				key.startsWith("categories_")
-		);
-
-		adminCategoryKeys.forEach((key) => {
-			CacheService.removeItem(key);
-		});
-
-		console.log(
-			`🗑️ ${adminCategoryKeys.length} claves de caché de categorías de admin eliminadas`
-		);
-	}, []);
+	const clearCategoryCache = useCallback(
+		(categoryId?: number) => {
+			if (categoryId) {
+				// Invalidar cache específica de una categoría
+				invalidateAfterMutation([
+					`admin_category_${categoryId}`,
+					`category_${categoryId}`,
+				]);
+				console.log(`🗑️ Caché de la categoría ${categoryId} invalidada`);
+			} else {
+				// Invalidar todos los patrones de categorías
+				invalidateAfterMutation([
+					"admin_categories_*",
+					"categories_*",
+					"admin_category_*",
+					"category_*",
+					"admin_main_categories_*",
+					"categories_main_*",
+					"categories_featured_*",
+				]);
+				console.log("🗑️ Toda la caché de categorías invalidada");
+			}
+		},
+		[invalidateAfterMutation]
+	);
 
 	return {
 		// Estado
