@@ -17,6 +17,7 @@ import {LocalStorageService} from "../../infrastructure/services/LocalStorageSer
 import {AuthContext} from "./AuthContext";
 import {CartService} from "../../core/services/CartService";
 import appConfig from "../../config/appConfig";
+import {useInvalidateCounters} from "../hooks/useInvalidateCounters";
 
 // Tipos para las notificaciones del carrito
 export enum NotificationType {
@@ -87,6 +88,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 	const [notification, setNotification] = useState<CartNotification | null>(
 		null
 	);
+	const {invalidateCart} = useInvalidateCounters();
 
 	const {isAuthenticated} = useContext(AuthContext);
 
@@ -456,6 +458,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 				const response = await cartService.addToCart(request);
 				if (response && response.status === "success") {
 					await fetchCart();
+					invalidateCart();
 					return true;
 				}
 				throw new Error(response?.message || "No se pudo agregar al carrito");
@@ -471,7 +474,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 				setLoading(false);
 			}
 		},
-		[addToCartLocal, fetchCart]
+		[addToCartLocal, fetchCart, invalidateCart]
 	);
 
 	// Remove item from cart - versión local
@@ -516,6 +519,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 				const response = await cartService.removeFromCart(itemId);
 				if (response && response.status === "success") {
 					await fetchCart();
+					invalidateCart();
 					return true;
 				}
 				throw new Error(response?.message || "No se pudo eliminar del carrito");
@@ -531,7 +535,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 				setLoading(false);
 			}
 		},
-		[removeFromCartLocal, fetchCart]
+		[removeFromCartLocal, fetchCart, invalidateCart]
 	);
 
 	// Update cart item quantity - versión local
@@ -589,6 +593,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 				);
 				if (response && response.status === "success") {
 					await fetchCart();
+					invalidateCart();
 					return true;
 				}
 				throw new Error(
@@ -606,7 +611,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 				setLoading(false);
 			}
 		},
-		[updateCartItemLocal, fetchCart]
+		[updateCartItemLocal, fetchCart, invalidateCart]
 	);
 
 	// Clear entire cart - versión local
@@ -648,6 +653,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 			const response = await cartService.clearCart();
 			if (response && response.status === "success") {
 				await fetchCart();
+				invalidateCart();
 				return true;
 			}
 			throw new Error(response?.message || "No se pudo vaciar el carrito");
@@ -658,7 +664,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 		} finally {
 			setLoading(false);
 		}
-	}, [clearCartLocal, fetchCart]);
+	}, [clearCartLocal, fetchCart, invalidateCart]);
 
 	return (
 		<CartContext.Provider

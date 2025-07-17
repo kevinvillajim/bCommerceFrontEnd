@@ -5,6 +5,7 @@ import ApiClient from '../../infrastructure/api/apiClient';
 import { API_ENDPOINTS } from '../../constants/apiEndpoints';
 import type { Notification } from '../../core/domain/entities/Notification';
 import { useAuth } from '../hooks/useAuth';
+import {useInvalidateCounters} from "../hooks/useInvalidateCounters";
 
 interface NotificationContextProps {
   notifications: Notification[];
@@ -77,7 +78,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   const { isAuthenticated } = useAuth();
   const isInitialized = useRef(false);
   const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
+  const {invalidateNotifications} = useInvalidateCounters();
 
   // Limpiar timeouts al desmontar
   useEffect(() => {
@@ -158,120 +159,151 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   }, [isAuthenticated]);
 
   // Marcar notificación como leída
-  const markAsRead = useCallback(async (id: number): Promise<boolean> => {
-    if (!isAuthenticated) return false;
-    
-    try {
-      const response = await ApiClient.post<{
-        status: string;
-        data: {
-          unread_count: number;
-        };
-      }>(`${API_ENDPOINTS.NOTIFICATIONS.MARK_AS_READ(id)}`);
-      
-      if (response.status === 'success') {
-        // Actualizar el estado local
-        setNotifications(prev => 
-           prev.map(notif => normalizeNotification({ ...notif, read: true, readAt: new Date().toISOString() }))
-         );
-        
-        // Actualizar contador
-        if (response.data?.unread_count !== undefined) {
-          setUnreadCount(response.data.unread_count);
-        } else {
-          setUnreadCount(prev => Math.max(0, prev - 1));
-        }
-        
-        return true;
-      }
-      
-      return false;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al marcar notificación como leída');
-      console.error('Error marking notification as read:', err);
-      return false;
-    }
-  }, [isAuthenticated]);
+  const markAsRead = useCallback(
+		async (id: number): Promise<boolean> => {
+			if (!isAuthenticated) return false;
+
+			try {
+				const response = await ApiClient.post<{
+					status: string;
+					data: {
+						unread_count: number;
+					};
+				}>(`${API_ENDPOINTS.NOTIFICATIONS.MARK_AS_READ(id)}`);
+
+				if (response.status === "success") {
+					// Actualizar el estado local
+					setNotifications((prev) =>
+						prev.map((notif) =>
+							normalizeNotification({
+								...notif,
+								read: true,
+								readAt: new Date().toISOString(),
+							})
+						)
+					);
+
+					// Actualizar contador
+					if (response.data?.unread_count !== undefined) {
+						setUnreadCount(response.data.unread_count);
+					} else {
+						setUnreadCount((prev) => Math.max(0, prev - 1));
+					}
+
+					invalidateNotifications();
+
+					return true;
+				}
+
+				return false;
+			} catch (err) {
+				setError(
+					err instanceof Error
+						? err.message
+						: "Error al marcar notificación como leída"
+				);
+				console.error("Error marking notification as read:", err);
+				return false;
+			}
+		},
+		[isAuthenticated, invalidateNotifications]
+	);
 
   // Marcar todas las notificaciones como leídas
   const markAllAsRead = useCallback(async (): Promise<boolean> => {
-    if (!isAuthenticated) return false;
-    
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const response = await ApiClient.post<{
-        status: string;
-        data: {
-          unread_count: number;
-        };
-      }>(API_ENDPOINTS.NOTIFICATIONS.MARK_ALL_AS_READ);
-      
-      if (response.status === 'success') {
-        // Actualizar la lista
-        setNotifications(prev => 
-          prev.map(notif => ({ ...notif, read: true, readAt: new Date().toISOString() }))
-        );
-        
-        // Reset contador
-        setUnreadCount(0);
-        
-        return true;
-      }
-      
-      return false;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al marcar todas las notificaciones como leídas');
-      console.error('Error marking all notifications as read:', err);
-      return false;
-    } finally {
-      setLoading(false);
-    }
-  }, [isAuthenticated]);
+		if (!isAuthenticated) return false;
+
+		setLoading(true);
+		setError(null);
+
+		try {
+			const response = await ApiClient.post<{
+				status: string;
+				data: {
+					unread_count: number;
+				};
+			}>(API_ENDPOINTS.NOTIFICATIONS.MARK_ALL_AS_READ);
+
+			if (response.status === "success") {
+				// Actualizar la lista
+				setNotifications((prev) =>
+					prev.map((notif) => ({
+						...notif,
+						read: true,
+						readAt: new Date().toISOString(),
+					}))
+				);
+
+				// Reset contador
+				setUnreadCount(0);
+				invalidateNotifications();
+
+				return true;
+			}
+
+			return false;
+		} catch (err) {
+			setError(
+				err instanceof Error
+					? err.message
+					: "Error al marcar todas las notificaciones como leídas"
+			);
+			console.error("Error marking all notifications as read:", err);
+			return false;
+		} finally {
+			setLoading(false);
+		}
+	}, [isAuthenticated, invalidateNotifications]);
 
   // Eliminar notificación
-  const deleteNotification = useCallback(async (id: number): Promise<boolean> => {
-    if (!isAuthenticated) return false;
-    
-    try {
-      const response = await ApiClient.delete<{
-        status: string;
-        data: {
-          unread_count: number;
-        };
-      }>(`${API_ENDPOINTS.NOTIFICATIONS.DELETE(id)}`);
-      
-      if (response.status === 'success') {
-        // Encontrar la notificación antes de eliminarla
-        const notification = notifications.find(n => n.id === id);
-        const wasUnread = notification && !notification.read;
-        
-        // Remover de la lista local
-        setNotifications(prev => prev.filter(notif => notif.id !== id));
-        
-        // Actualizar contador si la notificación no estaba leída
-        if (wasUnread) {
-          if (response.data?.unread_count !== undefined) {
-            setUnreadCount(response.data.unread_count);
-          } else {
-            setUnreadCount(prev => Math.max(0, prev - 1));
-          }
-        }
-        
-        // Actualizar total
-        setTotalNotifications(prev => Math.max(0, prev - 1));
-        
-        return true;
-      }
-      
-      return false;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al eliminar notificación');
-      console.error('Error deleting notification:', err);
-      return false;
-    }
-  }, [isAuthenticated, notifications]);
+  const deleteNotification = useCallback(
+		async (id: number): Promise<boolean> => {
+			if (!isAuthenticated) return false;
+
+			try {
+				const response = await ApiClient.delete<{
+					status: string;
+					data: {
+						unread_count: number;
+					};
+				}>(`${API_ENDPOINTS.NOTIFICATIONS.DELETE(id)}`);
+
+				if (response.status === "success") {
+					// Encontrar la notificación antes de eliminarla
+					const notification = notifications.find((n) => n.id === id);
+					const wasUnread = notification && !notification.read;
+
+					// Remover de la lista local
+					setNotifications((prev) => prev.filter((notif) => notif.id !== id));
+
+					// Actualizar contador si la notificación no estaba leída
+					if (wasUnread) {
+						if (response.data?.unread_count !== undefined) {
+							setUnreadCount(response.data.unread_count);
+						} else {
+							setUnreadCount((prev) => Math.max(0, prev - 1));
+						}
+					}
+
+					// Actualizar total
+					setTotalNotifications((prev) => Math.max(0, prev - 1));
+
+					invalidateNotifications();
+
+					return true;
+				}
+
+				return false;
+			} catch (err) {
+				setError(
+					err instanceof Error ? err.message : "Error al eliminar notificación"
+				);
+				console.error("Error deleting notification:", err);
+				return false;
+			}
+		},
+		[isAuthenticated, notifications, invalidateNotifications]
+	);
 
   // Cargar notificaciones y contador cuando el usuario está autenticado
   useEffect(() => {

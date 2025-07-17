@@ -10,6 +10,7 @@ import {
 	AlertTriangle,
 } from "lucide-react";
 import {AuthContext} from "../../contexts/AuthContext";
+import {useHeaderCounters} from "../../hooks/useHeaderCounters";
 import ThemeToggle from "../common/ThemeToggle";
 import {useDashboard} from "./DashboardContext";
 
@@ -43,12 +44,12 @@ interface DashboardHeaderProps {
 }
 
 /**
- * Componente Header reutilizable para dashboards
+ * Componente Header reutilizable para dashboards OPTIMIZADO
  */
 const DashboardHeader: React.FC<DashboardHeaderProps> = ({
 	toggleSidebar,
 	isAdmin = false,
-	unreadNotifications = 0,
+	unreadNotifications,
 	notifications = [],
 	pendingActions = {},
 	onReadAllNotifications = () => {},
@@ -58,6 +59,24 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
 	const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
 	const {user, logout} = useContext(AuthContext);
 	const {currentPageTitle} = useDashboard();
+
+	// ✅ USAR EL HOOK UNIFICADO OPTIMIZADO - CORRECCIÓN PRINCIPAL
+	const {counters, loading: countersLoading} = useHeaderCounters();
+
+	// ✅ USAR EL CONTADOR DE NOTIFICACIONES DEL HOOK OPTIMIZADO
+	// Si se pasa unreadNotifications como prop, usar eso, sino usar del hook
+	const finalUnreadNotifications =
+		unreadNotifications !== undefined
+			? unreadNotifications
+			: counters.notificationCount;
+
+	console.log("DashboardHeader: Contadores optimizados", {
+		finalUnreadNotifications,
+		propsUnread: unreadNotifications,
+		hookUnread: counters.notificationCount,
+		isAdmin,
+		loading: countersLoading,
+	});
 
 	// Calcular total de acciones pendientes
 	const totalPendingActions = Object.values(pendingActions).reduce(
@@ -159,16 +178,24 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
 						</a>
 					)}
 
-					{/* Notifications */}
+					{/* ✅ NOTIFICACIONES OPTIMIZADAS - CORRECCIÓN PRINCIPAL */}
 					<div className="relative">
 						<button
 							className="notifications-button text-gray-600 hover:text-gray-900 p-1 rounded-full relative"
 							onClick={toggleNotifications}
 						>
 							<Bell size={20} />
-							{unreadNotifications > 0 && (
+							{finalUnreadNotifications > 0 && (
 								<span className="absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-									{unreadNotifications > 9 ? "9+" : unreadNotifications}
+									{finalUnreadNotifications > 9
+										? "9+"
+										: finalUnreadNotifications}
+								</span>
+							)}
+							{/* ✅ INDICADOR DE LOADING PARA CONTADORES */}
+							{countersLoading && (
+								<span className="absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2 bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+									<div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
 								</span>
 							)}
 						</button>
@@ -180,7 +207,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
 									<h3 className="text-sm font-semibold text-gray-800">
 										Notificaciones
 									</h3>
-									{unreadNotifications > 0 && (
+									{finalUnreadNotifications > 0 && (
 										<button
 											className="text-xs text-primary-600 hover:underline"
 											onClick={onReadAllNotifications}
@@ -214,8 +241,22 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
 											</div>
 										))
 									) : (
-										<div className="px-4 py-3 text-center text-gray-500">
-											No hay notificaciones para mostrar
+										<div className="px-4 py-8 text-center">
+											{countersLoading ? (
+												<div className="flex items-center justify-center">
+													<div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-primary-600 mr-2"></div>
+													<span className="text-gray-500 text-sm">
+														Cargando notificaciones...
+													</span>
+												</div>
+											) : (
+												<div className="text-gray-500">
+													<Bell size={24} className="mx-auto mb-2 opacity-50" />
+													<p className="text-sm">
+														No hay notificaciones para mostrar
+													</p>
+												</div>
+											)}
 										</div>
 									)}
 								</div>

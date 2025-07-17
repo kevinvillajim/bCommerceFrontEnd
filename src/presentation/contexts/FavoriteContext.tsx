@@ -5,6 +5,7 @@ import ApiClient from '../../infrastructure/api/apiClient';
 import { API_ENDPOINTS } from '../../constants/apiEndpoints';
 import type { Favorite, FavoriteListResponse } from '../../core/domain/entities/Favorite';
 import { useAuth } from '../hooks/useAuth';
+import {useInvalidateCounters} from "../hooks/useInvalidateCounters";
 
 interface FavoriteContextProps {
   favorites: Favorite[];
@@ -36,6 +37,7 @@ export const FavoriteProvider: React.FC<FavoriteProviderProps> = ({ children }) 
   const [error, setError] = useState<string | null>(null);
   const [favoriteCount, setFavoriteCount] = useState<number>(0);
   const { isAuthenticated } = useAuth();
+  const {invalidateFavorites} = useInvalidateCounters();
 
   // Cargar favoritos cuando el usuario está autenticado
   useEffect(() => {
@@ -86,6 +88,7 @@ export const FavoriteProvider: React.FC<FavoriteProviderProps> = ({ children }) 
       
       // Actualizar la lista de favoritos después del toggle
       await fetchFavorites();
+      invalidateFavorites();
       
       return response.isFavorite || false;
     } catch (err) {

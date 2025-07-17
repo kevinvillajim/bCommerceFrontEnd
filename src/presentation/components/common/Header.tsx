@@ -1,23 +1,32 @@
-import React, { useState, useEffect, useRef, useContext } from 'react';
-import { ShoppingCart, User, Menu, X, Search, Heart, Bell, LogOut, Settings, ShoppingBag } from 'lucide-react';
-import { useAuth } from '../../hooks/useAuth';
-import { useNotifications } from '../../hooks/useNotifications';
-import ThemeToggle from './ThemeToggle';
-import { CartContext } from "../../contexts/CartContext";
-import { FavoriteContext } from "../../contexts/FavoriteContext";
+import React, {useState, useEffect, useRef} from "react";
+import {
+	ShoppingCart,
+	User,
+	Menu,
+	X,
+	Search,
+	Heart,
+	Bell,
+	LogOut,
+	Settings,
+	ShoppingBag,
+} from "lucide-react";
+import {useAuth} from "../../hooks/useAuth";
+import {useHeaderCounters} from "../../hooks/useHeaderCounters";
+import ThemeToggle from "./ThemeToggle";
 
 // Interfaz para el logo
 interface Logo {
-  img?: string;
-  name: string;
+	img?: string;
+	name: string;
 }
 
 interface HeaderProps {
-  logo?: Logo;
-  navLinks?: Array<{
-    text: string;
-    to: string;
-  }>;
+	logo?: Logo;
+	navLinks?: Array<{
+		text: string;
+		to: string;
+	}>;
 }
 
 const Header: React.FC<HeaderProps> = ({
@@ -40,32 +49,20 @@ const Header: React.FC<HeaderProps> = ({
 	// Obtener información del usuario y estado de autenticación
 	const {user, isAuthenticated, logout} = useAuth();
 
-	const cartContext = useContext(CartContext);
-	const favoriteContext = useContext(FavoriteContext);
+	// ✅ USAR EL HOOK UNIFICADO OPTIMIZADO
+	const {
+		counters,
+		loading: countersLoading,
+		error: countersError,
+	} = useHeaderCounters();
+	const {cartItemCount, favoriteCount, notificationCount} = counters;
 
-	console.log("Header: CartContext", {
-		cartItemCount: cartContext?.cartItemCount,
-		itemCount: cartContext?.itemCount,
-		cartIsNull: cartContext === null,
+	console.log("Header: Contadores unificados", {
+		cartItemCount,
+		favoriteCount,
+		notificationCount,
+		loading: countersLoading,
 	});
-
-	console.log("Header: FavoriteContext", {
-		favoriteCount: favoriteContext?.favoriteCount,
-		favoriteIsNull: favoriteContext === null,
-	});
-
-	const {cartItemCount} = cartContext || {cartItemCount: 0};
-	const {favoriteCount} = favoriteContext || {favoriteCount: 0};
-	const {unreadCount: notificationCount} = useNotifications();
-
-	// Effect para verificar que se actualiza el contador
-	useEffect(() => {
-		console.log("Header: cartItemCount cambió", cartItemCount);
-	}, [cartItemCount]);
-
-	useEffect(() => {
-		console.log("Header: favoriteCount cambió", favoriteCount);
-	}, [favoriteCount]);
 
 	// Cerrar el menú de usuario al hacer clic fuera de él
 	useEffect(() => {
@@ -122,7 +119,8 @@ const Header: React.FC<HeaderProps> = ({
 		return "U";
 	};
 
-	const notificationCountSanitized = notificationCount > 99 ? "99" : notificationCount;
+	const notificationCountSanitized =
+		notificationCount > 99 ? "99" : notificationCount;
 
 	return (
 		<header className="bg-white shadow-md sticky top-0 z-50">
@@ -141,8 +139,6 @@ const Header: React.FC<HeaderProps> = ({
 							<a href="faq" className="hover:underline">
 								Ayuda
 							</a>
-							{/* <span>|</span>
-              <a href="#" className="hover:underline">ES</a> */}
 						</div>
 					</div>
 				</div>
@@ -182,6 +178,8 @@ const Header: React.FC<HeaderProps> = ({
 					{/* Icons - Desktop */}
 					<div className="hidden md:flex items-center space-x-6">
 						<ThemeToggle />
+
+						{/* ✅ CONTADORES OPTIMIZADOS - Se cargan juntos */}
 						{/* Favorites Icon */}
 						<Link
 							to="/favorites"
@@ -466,6 +464,13 @@ const Header: React.FC<HeaderProps> = ({
 							</Link>
 						</div>
 					)}
+				</div>
+			)}
+
+			{/* ✅ MOSTRAR ERROR DE CONTADORES SI EXISTE */}
+			{countersError && (
+				<div className="bg-yellow-50 border-l-4 border-yellow-400 p-2 text-sm text-yellow-700">
+					Error cargando contadores: {countersError}
 				</div>
 			)}
 		</header>
