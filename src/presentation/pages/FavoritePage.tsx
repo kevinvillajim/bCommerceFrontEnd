@@ -12,12 +12,13 @@ import {
 import {useFavoriteApi} from "../hooks/useFavoriteApi";
 import {useAuth} from "../hooks/useAuth";
 import {useCart} from "../hooks/useCart";
+import {useInvalidateCounters} from "../hooks/useHeaderCounters"; // ✅ AÑADIDO
 import {formatCurrency} from "../../utils/formatters/formatCurrency";
+import CacheService from "../../infrastructure/services/CacheService"; // ✅ AÑADIDO
 
 // ✅ IMPORTAR HOOKS OPTIMIZADOS Y CACHE
 import {useImageCache} from "../hooks/useImageCache";
 import {useAutoPrefetch} from "../hooks/useAutoPrefetch";
-import CacheService from "../../infrastructure/services/CacheService";
 
 // Tipo para los datos del producto favorito
 interface FavoriteProduct {
@@ -203,12 +204,12 @@ const FavoritePage: React.FC = () => {
 	const [isLoading, setIsLoading] = useState(true);
 	const [isEmpty, setIsEmpty] = useState(false);
 	const [error, setError] = useState<string | null>(null);
-	const [activePreferences, setActivePreferences] = useState<number | null>(
-		null
-	);
+	const [activePreferences, setActivePreferences] = useState<number | null>(null);
 	const [currentPage, setCurrentPage] = useState(1);
 	const [hasMore, setHasMore] = useState(false);
 	const [total, setTotal] = useState(0);
+	const [lastCacheCheck, setLastCacheCheck] = useState(Date.now()); // ✅ AÑADIDO
+	const [isUpdating, setIsUpdating] = useState(false); // ✅ AÑADIDO para prevenir dobles clicks
 
 	const limit = 10;
 	const {getUserFavorites, toggleFavorite} = useFavoriteApi();
@@ -224,6 +225,48 @@ const FavoritePage: React.FC = () => {
 		onPrefetchComplete: () =>
 			console.log("✅ Favorites page prefetch completed"),
 	});
+
+	// ✅ HOOK PARA ACTUALIZACIONES OPTIMISTAS
+	const {
+		optimisticCartAdd,
+		optimisticFavoriteAdd,
+		optimisticFavoriteRemove
+	} = useInvalidateCounters();
+
+	// ✅ FUNCIÓN PARA INVALIDAR CACHE DE PÁGINAS ESPECÍFICAS
+	const invalidateRelatedPages = useCallback(() => {
+		CacheService.removeItem("cart_user_data");
+		CacheService.removeItem("cart_guest_data");
+		CacheService.removeItem("header_counters");
+		
+		// Invalidar cache de favoritos
+		for (let page = 1; page <= 10; page++) {
+			CacheService.removeItem(`user_favorites_${page}_10`);
+		}
+		
+		console.log("🔄 Cache invalidado desde FavoritePage");
+	}, []);
+
+	// ✅ DETECTOR DE CAMBIOS EN CACHE - Refresca automáticamente
+	useEffect(() => {
+		const interval = setInterval(() => {
+			// Verificar si el cache fue invalidado por otra página
+			const currentHeaderCache = CacheService.getItem("header_counters");
+			const currentFavoritesCache = CacheService.getItem(`user_favorites_${currentPage}_${limit}`);
+			
+			// Si no hay cache y habían datos antes, significa que fue invalidado
+			if (!currentHeaderCache || !currentFavoritesCache) {
+				const now = Date.now();
+				if (now - lastCacheCheck > 2000) { // Evitar refrescos muy frecuentes
+					console.log("🔄 Cache invalidado detectado, refrescando favorites...");
+					fetchFavorites();
+					setLastCacheCheck(now);
+				}
+			}
+		}, 1000); // Verificar cada segundo
+
+		return () => clearInterval(interval);
+	}, [lastCacheCheck, currentPage, limit]);
 
 	// ✅ FUNCIÓN OPTIMIZADA PARA OBTENER IMAGEN DEL PRODUCTO
 	const getProductImage = useCallback(
@@ -371,34 +414,58 @@ const FavoritePage: React.FC = () => {
 		fetchFavorites();
 	}, [invalidateFavoritesCache, fetchFavorites]);
 
-	// ✅ HANDLER PARA REMOVER DE FAVORITOS
+	// ✅ HANDLER PARA REMOVER DE FAVORITOS CON OPTIMIZACIÓN
 	const handleRemoveFromWishlist = useCallback(
 		async (productId: number) => {
+			// ✅ PREVENIR DOBLES CLICKS
+			if (isUpdating) {
+				console.log("Ya se está procesando una acción, ignorando click");
+				return;
+			}
+
 			try {
+				setIsUpdating(true);
+
+				// ✅ ACTUALIZACIÓN OPTIMISTA INMEDIATA
+				optimisticFavoriteRemove();
+
 				await toggleFavorite(productId);
 
 				// ✅ INVALIDAR CACHE Y RECARGAR
-				invalidateFavoritesCache();
-
-				// También invalidar cache de header counters
-				CacheService.removeItem("header_counters");
+				invalidateRelatedPages();
 
 				// Recargar favoritos
 				fetchFavorites();
 			} catch (error) {
 				console.error("Error removing from favorites:", error);
+			} finally {
+				// ✅ TIMEOUT PARA PREVENIR SPAM
+				setTimeout(() => {
+					setIsUpdating(false);
+				}, 1000);
 			}
 		},
-		[toggleFavorite, invalidateFavoritesCache, fetchFavorites]
+		[toggleFavorite, invalidateRelatedPages, fetchFavorites, optimisticFavoriteRemove, isUpdating]
 	);
 
-	// ✅ HANDLER PARA AGREGAR AL CARRITO
+	// ✅ HANDLER PARA AGREGAR AL CARRITO CON OPTIMIZACIÓN
 	const handleAddToCart = useCallback(
 		async (product: FavoriteProduct) => {
+			// ✅ PREVENIR DOBLES CLICKS
+			if (isUpdating) {
+				console.log("Ya se está procesando una acción, ignorando click");
+				return;
+			}
+
 			try {
 				if (!product.stock || product.stock <= 0) {
 					return;
 				}
+
+				setIsUpdating(true);
+
+				// ✅ ACTUALIZACIÓN OPTIMISTA INMEDIATA
+				optimisticCartAdd();
 
 				await addToCart({
 					productId: product.id,
@@ -406,12 +473,17 @@ const FavoritePage: React.FC = () => {
 				});
 
 				// ✅ INVALIDAR CACHE DE CARRITO (no afecta favoritos)
-				CacheService.removeItem("header_counters");
+				invalidateRelatedPages();
 			} catch (error) {
 				console.error(`Error adding product ${product.id} to cart:`, error);
+			} finally {
+				// ✅ TIMEOUT PARA PREVENIR SPAM
+				setTimeout(() => {
+					setIsUpdating(false);
+				}, 1000);
 			}
 		},
-		[addToCart]
+		[addToCart, optimisticCartAdd, invalidateRelatedPages, isUpdating]
 	);
 
 	// ✅ HANDLER PARA ABRIR PREFERENCIAS
@@ -523,6 +595,7 @@ const FavoritePage: React.FC = () => {
 			onRemove,
 			onAddToCart,
 			onOpenPreferences,
+			isUpdating,
 		}: {
 			item: FavoriteItem;
 			prices: any;
@@ -532,6 +605,7 @@ const FavoritePage: React.FC = () => {
 			onRemove: () => void;
 			onAddToCart: () => void;
 			onOpenPreferences: () => void;
+			isUpdating: boolean;
 		}) => {
 			const product = item.product;
 			if (!product) return null;
@@ -604,7 +678,8 @@ const FavoritePage: React.FC = () => {
 							<div className="flex space-x-2">
 								<button
 									onClick={onOpenPreferences}
-									className="cursor-pointer text-gray-400 hover:text-blue-500 transition-colors"
+									disabled={isUpdating}
+									className="cursor-pointer text-gray-400 hover:text-blue-500 transition-colors disabled:opacity-50"
 									aria-label="Configurar notificaciones"
 								>
 									<Settings size={20} className="stroke-current" />
@@ -612,7 +687,8 @@ const FavoritePage: React.FC = () => {
 
 								<button
 									onClick={onRemove}
-									className="cursor-pointer text-gray-400 hover:text-red-500 transition-colors"
+									disabled={isUpdating}
+									className="cursor-pointer text-gray-400 hover:text-red-500 transition-colors disabled:opacity-50"
 									aria-label="Eliminar de favoritos"
 								>
 									<Trash2 size={20} className="stroke-current" />
@@ -644,15 +720,15 @@ const FavoritePage: React.FC = () => {
 
 							<button
 								onClick={onAddToCart}
-								disabled={!isInStock}
-								className={`cursor-pointer inline-flex items-center px-5 py-2.5 rounded-lg text-white font-medium transition-all ${
-									isInStock
+								disabled={!isInStock || isUpdating}
+								className={`cursor-pointer inline-flex items-center px-5 py-2.5 rounded-lg text-white font-medium transition-all disabled:opacity-50 ${
+									isInStock && !isUpdating
 										? "bg-primary-600 hover:bg-primary-700 shadow-sm hover:shadow"
 										: "bg-gray-400 cursor-not-allowed"
 								}`}
 							>
 								<ShoppingCart size={18} className="mr-2" />
-								{isInStock ? "Añadir al carrito" : "Agotado"}
+								{isUpdating ? "Agregando..." : isInStock ? "Añadir al carrito" : "Agotado"}
 							</button>
 						</div>
 					</div>
@@ -677,7 +753,7 @@ const FavoritePage: React.FC = () => {
 					{!isEmpty && (
 						<button
 							onClick={forceRefresh}
-							disabled={isLoading}
+							disabled={isLoading || isUpdating}
 							className="text-sm text-blue-600 hover:text-blue-700 disabled:opacity-50 px-3 py-1.5 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
 						>
 							{isLoading ? "Actualizando..." : "Actualizar"}
@@ -729,6 +805,7 @@ const FavoritePage: React.FC = () => {
 							onRemove={() => handleRemoveFromWishlist(item.product!.id)}
 							onAddToCart={() => handleAddToCart(item.product!)}
 							onOpenPreferences={() => openPreferences(item.favorite.id)}
+							isUpdating={isUpdating}
 						/>
 					))}
 
@@ -737,9 +814,10 @@ const FavoritePage: React.FC = () => {
 						<div className="flex justify-center py-4">
 							<button
 								onClick={loadMore}
-								className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
+								disabled={isLoading || isUpdating}
+								className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 disabled:opacity-50"
 							>
-								Cargar más favoritos
+								{isLoading ? "Cargando..." : "Cargar más favoritos"}
 							</button>
 						</div>
 					)}

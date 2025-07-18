@@ -22,8 +22,9 @@ import {getImageUrl} from "../../utils/imageManager";
 import {useCart} from "../hooks/useCart";
 import {useFavorites} from "../hooks/useFavorites";
 import {useChat} from "../hooks/useChat";
-import {useCacheInvalidation} from "../hooks/useReactiveCache";
+import {useInvalidateCounters} from "../hooks/useHeaderCounters";
 import {NotificationType} from "../contexts/CartContext";
+import CacheService from "../../infrastructure/services/CacheService"; // ✅ AÑADIDO
 import ApiClient from "../../infrastructure/api/apiClient";
 
 interface SellerApiResponse {
@@ -49,20 +50,27 @@ const ProductItemPage: React.FC = () => {
 	const [activeTab, setActiveTab] = useState<
 		"description" | "specifications" | "reviews"
 	>("description");
+	const [isUpdating, setIsUpdating] = useState(false); // ✅ AÑADIDO para prevenir dobles clicks
 	const {addToCart, showNotification} = useCart();
-	const {toggleFavorite} = useFavorites();
+	const {toggleFavorite, checkIsFavorite} = useFavorites();
 	const {createChat} = useChat();
-	const {invalidateAfterMutation} = useCacheInvalidation();
+	
+	// ✅ Hook para actualizaciones optimistas
+	const {
+		optimisticCartAdd,
+		optimisticFavoriteAdd,
+		optimisticFavoriteRemove
+	} = useInvalidateCounters();
 
 	// Initialize service
 	const productService = new ProductService();
 
-	// ✅ HELPER PARA VALIDAR VALORES - Evita mostrar 0, null, undefined
+	// ✅ HELPER PARA VALIDAR VALORES
 	const hasValidValue = (value: any): boolean => {
 		return value !== null && value !== undefined && value !== 0 && value !== "0" && value !== "";
 	};
 
-	// ✅ HELPER PARA MOSTRAR RATING - Evita mostrar 0
+	// ✅ HELPER PARA MOSTRAR RATING
 	const displayRating = (rating?: number) => {
 		if (!rating || rating === 0 || isNaN(rating)) return null;
 		return (
@@ -72,10 +80,25 @@ const ProductItemPage: React.FC = () => {
 		);
 	};
 
-	// ✅ HELPER PARA MOSTRAR RATING COUNT - Evita mostrar 0
+	// ✅ HELPER PARA MOSTRAR RATING COUNT
 	const displayRatingCount = (count?: number) => {
 		if (!count || count === 0 || isNaN(count)) return "Sin valoraciones";
 		return `${count} valoración${count > 1 ? 'es' : ''}`;
+	};
+
+	// ✅ FUNCIÓN PARA INVALIDAR CACHE DE PÁGINAS ESPECÍFICAS
+	const invalidateRelatedPages = () => {
+		// Invalidar cache de páginas de carrito y favoritos
+		CacheService.removeItem("cart_user_data");
+		CacheService.removeItem("cart_guest_data");
+		CacheService.removeItem("header_counters");
+		
+		// Invalidar cache de favoritos (todas las páginas)
+		for (let page = 1; page <= 10; page++) {
+			CacheService.removeItem(`user_favorites_${page}_10`);
+		}
+		
+		console.log("🔄 Cache de páginas relacionadas invalidado");
 	};
 
 	useEffect(() => {
@@ -120,15 +143,16 @@ const ProductItemPage: React.FC = () => {
 	};
 
 	const handleAddToCart = async () => {
-		if (!product) {
-			showNotification(
-				NotificationType.ERROR,
-				"Error: No se pudo cargar la información del producto"
-			);
+		// ✅ PREVENIR DOBLES CLICKS
+		if (isUpdating || !product) {
+			if (!product) {
+				showNotification(
+					NotificationType.ERROR,
+					"Error: No se pudo cargar la información del producto"
+				);
+			}
 			return;
 		}
-
-		console.log(`Añadido al carrito: ${quantity} unidades de ${product.name}`);
 
 		if (!product.is_in_stock) {
 			showNotification(
@@ -138,19 +162,22 @@ const ProductItemPage: React.FC = () => {
 			return;
 		}
 
+		console.log(`Añadido al carrito: ${quantity} unidades de ${product.name}`);
+
 		try {
+			setIsUpdating(true);
+
+			// ✅ ACTUALIZACIÓN OPTIMISTA INMEDIATA
+			optimisticCartAdd();
+
 			const success = await addToCart({
 				productId: Number(id),
 				quantity: quantity,
 			});
 
 			if (success) {
-				// ✅ INVALIDAR CACHE DEL HEADER PARA ACTUALIZAR CONTADORES
-				invalidateAfterMutation([
-					'cart_*',
-					'header_counters',
-					'cart_items_*'
-				]);
+				// ✅ INVALIDAR CACHE DE PÁGINAS RELACIONADAS
+				invalidateRelatedPages();
 
 				showNotification(
 					NotificationType.SUCCESS,
@@ -165,29 +192,44 @@ const ProductItemPage: React.FC = () => {
 				NotificationType.ERROR,
 				"Error al agregar producto al carrito. Inténtalo de nuevo."
 			);
+		} finally {
+			// ✅ TIMEOUT PARA PREVENIR SPAM
+			setTimeout(() => {
+				setIsUpdating(false);
+			}, 1000);
 		}
 	};
 
 	const handleAddToWishlist = async () => {
-		if (!product) {
-			showNotification(
-				NotificationType.ERROR,
-				"Error: No se pudo cargar la información del producto"
-			);
+		// ✅ PREVENIR DOBLES CLICKS
+		if (isUpdating || !product) {
+			if (!product) {
+				showNotification(
+					NotificationType.ERROR,
+					"Error: No se pudo cargar la información del producto"
+				);
+			}
 			return;
 		}
 
-		console.log(`Añadido a favoritos: ${product.name}`);
+		console.log(`Gestionando favoritos: ${product.name}`);
 
 		try {
+			setIsUpdating(true);
+
+			// ✅ VERIFICAR ESTADO ACTUAL Y ACTUALIZACIÓN OPTIMISTA
+			const isCurrentlyFavorite = checkIsFavorite(Number(id));
+			
+			if (isCurrentlyFavorite) {
+				optimisticFavoriteRemove();
+			} else {
+				optimisticFavoriteAdd();
+			}
+
 			const result = await toggleFavorite(Number(id));
 
-			// ✅ INVALIDAR CACHE DEL HEADER PARA ACTUALIZAR CONTADORES
-			invalidateAfterMutation([
-				'favorites_*',
-				'header_counters',
-				'favorite_items_*'
-			]);
+			// ✅ INVALIDAR CACHE DE PÁGINAS RELACIONADAS
+			invalidateRelatedPages();
 
 			if (result) {
 				showNotification(
@@ -206,6 +248,11 @@ const ProductItemPage: React.FC = () => {
 				NotificationType.ERROR,
 				"Error al gestionar favoritos. Inténtalo de nuevo."
 			);
+		} finally {
+			// ✅ TIMEOUT PARA PREVENIR SPAM
+			setTimeout(() => {
+				setIsUpdating(false);
+			}, 1000);
 		}
 	};
 
@@ -296,7 +343,7 @@ const ProductItemPage: React.FC = () => {
 		}
 	};
 
-	// ✅ NUEVA FUNCIÓN - Compartir producto
+	// ✅ FUNCIÓN COMPARTIR
 	const handleShareProduct = async () => {
 		const currentUrl = window.location.href;
 		
@@ -317,7 +364,6 @@ const ProductItemPage: React.FC = () => {
 
 	// Renderizar estrellas de valoración
 	const renderRatingStars = (rating: number) => {
-		// ✅ VALIDACIÓN ADICIONAL PARA EVITAR UNDEFINED
 		if (!rating || rating === 0 || isNaN(rating)) {
 			return (
 				<div className="flex items-center">
@@ -420,7 +466,7 @@ const ProductItemPage: React.FC = () => {
 	const sizes = parseStringArrays(product.sizes);
 	const tags = parseStringArrays(product.tags);
 
-	// Create specification items from product data (SKU COMPLETAMENTE ELIMINADO)
+	// Create specification items from product data
 	const specifications = [
 		{
 			name: "Peso", 
@@ -504,7 +550,7 @@ const ProductItemPage: React.FC = () => {
 
 						{/* Product Info */}
 						<div className="space-y-6">
-							{/* ✅ SELLER INFO - SEPARADO Y LIMPIO */}
+							{/* Seller Info */}
 							{(product.seller && product.seller.name) ? (
 								<div className="flex items-center mb-2">
 									<span className="text-sm bg-primary-50 text-primary-700 px-2 py-0.5 rounded font-medium">
@@ -513,7 +559,7 @@ const ProductItemPage: React.FC = () => {
 								</div>
 							) : null}
 
-							{/* ✅ DISCOUNT BADGE - SEPARADO Y LIMPIO */}
+							{/* Discount Badge */}
 							{(product.discount_percentage && 
 							  typeof product.discount_percentage === 'number' && 
 							  product.discount_percentage > 0) ? (
@@ -522,12 +568,12 @@ const ProductItemPage: React.FC = () => {
 								</span>
 							) : null}
 
-							{/* ✅ TITLE - COMPLETAMENTE AISLADO */}
+							{/* Title */}
 							<h1 className="text-3xl font-bold text-gray-900">
 								{product.name}
 							</h1>
 
-							{/* ✅ RATING - COMPLETAMENTE AISLADO */}
+							{/* Rating */}
 							{(product.rating && 
 							  typeof product.rating === 'number' && 
 							  product.rating > 0) ? (
@@ -544,7 +590,7 @@ const ProductItemPage: React.FC = () => {
 								</div>
 							) : null}
 
-							{/* ✅ PRICE - COMPLETAMENTE AISLADO SIN WRAPPERS */}
+							{/* Price */}
 							<div className="price-container">
 								<span className="text-3xl font-bold text-primary-700">
 									$
@@ -566,7 +612,7 @@ const ProductItemPage: React.FC = () => {
 								) : null}
 							</div>
 
-							{/* ✅ SAVINGS MESSAGE - COMPLETAMENTE AISLADO */}
+							{/* Savings Message */}
 							{(product.discount_percentage && 
 							  typeof product.discount_percentage === 'number' && 
 							  product.discount_percentage > 0 && 
@@ -645,18 +691,19 @@ const ProductItemPage: React.FC = () => {
 									</button>
 								</div>
 								<button
-									className="flex-grow h-12 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors duration-200 flex items-center justify-center"
+									className="flex-grow h-12 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors duration-200 flex items-center justify-center disabled:opacity-50"
 									onClick={handleAddToCart}
-									disabled={!product.is_in_stock}
+									disabled={!product.is_in_stock || isUpdating}
 								>
 									<ShoppingCart size={20} className="mr-2" />
-									{product.is_in_stock
+									{isUpdating ? "Agregando..." : product.is_in_stock
 										? "Añadir al Carrito"
 										: "Producto Agotado"}
 								</button>
 								<button
-									className="h-12 w-12 border border-gray-300 rounded-lg flex items-center justify-center text-gray-600 hover:text-primary-600 hover:border-primary-600 transition-colors duration-200"
+									className="h-12 w-12 border border-gray-300 rounded-lg flex items-center justify-center text-gray-600 hover:text-primary-600 hover:border-primary-600 transition-colors duration-200 disabled:opacity-50"
 									onClick={handleAddToWishlist}
+									disabled={isUpdating}
 									title="Añadir a favoritos"
 								>
 									<Heart size={20} />
@@ -763,7 +810,7 @@ const ProductItemPage: React.FC = () => {
 								</div>
 							) : null}
 
-							{/* ✅ SHARE MEJORADO - Ahora funcional */}
+							{/* Share */}
 							<button 
 								onClick={handleShareProduct}
 								className="flex items-center text-gray-500 text-sm hover:text-primary-600 transition-colors cursor-pointer"
@@ -843,7 +890,6 @@ const ProductItemPage: React.FC = () => {
 
 							{activeTab === "reviews" && (
 								<div className="max-w-3xl">
-									{/* ✅ REVIEWS MEJORADO - Solo muestra si hay rating válido */}
 									{(product.rating && 
 									  typeof product.rating === 'number' && 
 									  product.rating > 0) ? (
@@ -865,15 +911,12 @@ const ProductItemPage: React.FC = () => {
 													No hay valoraciones disponibles
 												</p>
 											</div>
-
-											{/* ✅ BOTÓN DE VALORACIÓN ELIMINADO - Solo usuarios que compraron pueden valorar */}
 										</div>
 									) : (
 										<div className="text-center py-12">
 											<p className="text-gray-500 mb-4">
 												Este producto aún no tiene valoraciones
 											</p>
-											{/* ✅ BOTÓN DE VALORACIÓN ELIMINADO - Solo usuarios que compraron pueden valorar */}
 										</div>
 									)}
 								</div>
@@ -909,7 +952,6 @@ const ProductItemPage: React.FC = () => {
 										/>
 									</div>
 									<div className="p-5">
-										{/* Related products rating - Solo si hay rating válido */}
 										{(relatedProduct.rating && 
 										  typeof relatedProduct.rating === 'number' && 
 										  relatedProduct.rating > 0) ? (

@@ -10,6 +10,10 @@ import {
 	useFavorites,
 } from "../hooks";
 
+// ✅ Hook para actualizaciones optimistas
+import {useInvalidateCounters} from "../hooks/useHeaderCounters";
+import CacheService from "../../infrastructure/services/CacheService"; // ✅ AÑADIDO
+
 // Componentes mejorados
 import SearchBar from "../components/product/SearchBar";
 import CategoriesCarousel from "../components/product/CategoriesCarousel";
@@ -54,6 +58,7 @@ const ProductPage: React.FC = () => {
 	// Estado para UI
 	const [showMobileFilters, setShowMobileFilters] = useState(false);
 	const [isMobile, setIsMobile] = useState(false);
+	const [isUpdating, setIsUpdating] = useState(false); // ✅ AÑADIDO para prevenir dobles clicks
 
 	// Hooks para datos y funcionalidad
 	const {
@@ -95,7 +100,29 @@ const ProductPage: React.FC = () => {
 	} = useProducts();
 
 	const {addToCart} = useCart();
-	const {toggleFavorite} = useFavorites();
+	const {toggleFavorite, checkIsFavorite} = useFavorites();
+	
+	// ✅ Hook para actualizaciones optimistas
+	const {
+		optimisticCartAdd,
+		optimisticFavoriteAdd,
+		optimisticFavoriteRemove
+	} = useInvalidateCounters();
+
+	// ✅ FUNCIÓN PARA INVALIDAR CACHE DE PÁGINAS ESPECÍFICAS
+	const invalidateRelatedPages = useCallback(() => {
+		// Invalidar cache de páginas de carrito y favoritos
+		CacheService.removeItem("cart_user_data");
+		CacheService.removeItem("cart_guest_data");
+		CacheService.removeItem("header_counters");
+		
+		// Invalidar cache de favoritos (todas las páginas)
+		for (let page = 1; page <= 10; page++) {
+			CacheService.removeItem(`user_favorites_${page}_10`);
+		}
+		
+		console.log("🔄 Cache de páginas relacionadas invalidado desde ProductPage");
+	}, []);
 
 	// Sincronizar término de búsqueda entre hooks
 	useEffect(() => {
@@ -173,27 +200,75 @@ const ProductPage: React.FC = () => {
 
 	const handleAddToCart = useCallback(
 		async (productId: number) => {
+			// ✅ PREVENIR DOBLES CLICKS
+			if (isUpdating) {
+				console.log("Ya se está procesando una acción, ignorando click duplicado");
+				return;
+			}
+
 			try {
+				setIsUpdating(true);
+
+				// ✅ ACTUALIZACIÓN OPTIMISTA INMEDIATA
+				optimisticCartAdd();
+
 				await addToCart({
 					productId,
 					quantity: 1,
 				});
+
+				// ✅ INVALIDAR CACHE DE PÁGINAS RELACIONADAS
+				invalidateRelatedPages();
+
+				console.log(`✅ Producto ${productId} añadido al carrito correctamente`);
 			} catch (error) {
 				console.error("Error al añadir al carrito:", error);
+			} finally {
+				// ✅ TIMEOUT PARA PREVENIR SPAM
+				setTimeout(() => {
+					setIsUpdating(false);
+				}, 1000);
 			}
 		},
-		[addToCart]
+		[addToCart, optimisticCartAdd, invalidateRelatedPages, isUpdating]
 	);
 
 	const handleAddToWishlist = useCallback(
 		async (productId: number) => {
+			// ✅ PREVENIR DOBLES CLICKS
+			if (isUpdating) {
+				console.log("Ya se está procesando una acción, ignorando click duplicado");
+				return;
+			}
+
 			try {
+				setIsUpdating(true);
+
+				// ✅ VERIFICAR ESTADO ACTUAL Y ACTUALIZACIÓN OPTIMISTA
+				const isCurrentlyFavorite = checkIsFavorite(productId);
+				
+				if (isCurrentlyFavorite) {
+					optimisticFavoriteRemove();
+				} else {
+					optimisticFavoriteAdd();
+				}
+
 				await toggleFavorite(productId);
+
+				// ✅ INVALIDAR CACHE DE PÁGINAS RELACIONADAS
+				invalidateRelatedPages();
+
+				console.log(`✅ Favorito ${productId} gestionado correctamente`);
 			} catch (error) {
 				console.error("Error al añadir a favoritos:", error);
+			} finally {
+				// ✅ TIMEOUT PARA PREVENIR SPAM
+				setTimeout(() => {
+					setIsUpdating(false);
+				}, 1000);
 			}
 		},
-		[toggleFavorite]
+		[toggleFavorite, checkIsFavorite, optimisticFavoriteAdd, optimisticFavoriteRemove, invalidateRelatedPages, isUpdating]
 	);
 
 	// FUNCIÓN HELPER PARA OBTENER IMAGEN DEL PRODUCTO
@@ -233,6 +308,7 @@ const ProductPage: React.FC = () => {
 		filters,
 		isLoading,
 		hasActiveFilters,
+		isUpdating, // ✅ INCLUIR EN LOGS
 	});
 
 	return (

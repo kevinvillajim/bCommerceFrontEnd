@@ -4,7 +4,9 @@ import {Link} from "react-router-dom";
 import RatingStars from "../common/RatingStars";
 import {useCart} from "../../hooks/useCart";
 import {useFavorites} from "../../hooks/useFavorites";
+import {useInvalidateCounters} from "../../hooks/useHeaderCounters"; // ✅ AÑADIDO
 import {NotificationType} from "../../contexts/CartContext";
+import CacheService from "../../../infrastructure/services/CacheService"; // ✅ AÑADIDO
 
 interface ProductCardProps {
 	id: number;
@@ -48,7 +50,28 @@ const ProductCardCompact: React.FC<ProductCardProps> = ({
 
 	// Hooks para carrito y favoritos
 	const {addToCart, showNotification} = useCart();
-	const {toggleFavorite} = useFavorites();
+	const {toggleFavorite, checkIsFavorite} = useFavorites();
+	
+	// ✅ Hook para actualizaciones optimistas
+	const {
+		optimisticCartAdd,
+		optimisticFavoriteAdd,
+		optimisticFavoriteRemove
+	} = useInvalidateCounters();
+
+	// ✅ FUNCIÓN PARA INVALIDAR CACHE DE PÁGINAS ESPECÍFICAS
+	const invalidateRelatedPages = () => {
+		CacheService.removeItem("cart_user_data");
+		CacheService.removeItem("cart_guest_data");
+		CacheService.removeItem("header_counters");
+		
+		// Invalidar cache de favoritos
+		for (let page = 1; page <= 10; page++) {
+			CacheService.removeItem(`user_favorites_${page}_10`);
+		}
+		
+		console.log("🔄 Cache invalidado desde ProductCardCompact");
+	};
 
 	// Calculate discounted price
 	const discountedPrice = discount ? price - price * (discount / 100) : price;
@@ -61,6 +84,12 @@ const ProductCardCompact: React.FC<ProductCardProps> = ({
 		e.preventDefault(); // Evitar navegación
 		e.stopPropagation(); // Evitar propagación a elementos padres
 
+		// ✅ PREVENIR DOBLES CLICKS
+		if (isAddingToCart) {
+			console.log("Ya se está agregando al carrito, ignorando click");
+			return;
+		}
+
 		if (!hasStock) {
 			showNotification(
 				NotificationType.ERROR,
@@ -72,17 +101,26 @@ const ProductCardCompact: React.FC<ProductCardProps> = ({
 		setIsAddingToCart(true);
 
 		try {
-			// Si hay una función externa, usarla primero
+			// ✅ DIFERENTE COMPORTAMIENTO SEGÚN SI HAY FUNCIÓN EXTERNA
 			if (onAddToCart) {
+				// ✅ SI HAY FUNCIÓN EXTERNA, NO HACER ACTUALIZACIÓN OPTIMISTA AQUÍ
+				// (La función externa ya lo hará desde ProductPage)
+				console.log("🔄 Usando función externa de carrito (ProductPage manejará optimización)");
 				onAddToCart(id);
 			} else {
-				// Llamar a la API para agregar al carrito
+				// ✅ SI NO HAY FUNCIÓN EXTERNA, HACER ACTUALIZACIÓN OPTIMISTA Y API
+				console.log("🔄 Ejecutando optimización propia de carrito");
+				optimisticCartAdd();
+
 				const success = await addToCart({
 					productId: id,
 					quantity: 1,
 				});
 
 				if (success) {
+					// ✅ INVALIDAR CACHE DESPUÉS DE ÉXITO
+					invalidateRelatedPages();
+
 					showNotification(
 						NotificationType.SUCCESS,
 						`${name} ha sido agregado al carrito`
@@ -98,10 +136,10 @@ const ProductCardCompact: React.FC<ProductCardProps> = ({
 				"Error al agregar producto al carrito. Inténtalo de nuevo."
 			);
 		} finally {
-			// Restaurar el estado después de un breve tiempo para la animación
+			// ✅ TIMEOUT PARA PREVENIR SPAM
 			setTimeout(() => {
 				setIsAddingToCart(false);
-			}, 1000);
+			}, 1500);
 		}
 	};
 
@@ -110,16 +148,39 @@ const ProductCardCompact: React.FC<ProductCardProps> = ({
 		e.preventDefault(); // Evitar navegación
 		e.stopPropagation(); // Evitar propagación a elementos padres
 
+		// ✅ PREVENIR DOBLES CLICKS
+		if (isAddingToWishlist) {
+			console.log("Ya se está agregando a favoritos, ignorando click");
+			return;
+		}
+
 		setIsAddingToWishlist(true);
 
 		try {
-			// Si hay una función externa, usarla primero
+			// ✅ DIFERENTE COMPORTAMIENTO SEGÚN SI HAY FUNCIÓN EXTERNA
 			if (onAddToWishlist) {
+				// ✅ SI HAY FUNCIÓN EXTERNA, NO HACER ACTUALIZACIÓN OPTIMISTA AQUÍ
+				// (La función externa ya lo hará desde ProductPage)
+				console.log("🔄 Usando función externa de favoritos (ProductPage manejará optimización)");
 				onAddToWishlist(id);
 				setIsFavorite(!isFavorite);
 			} else {
-				// Llamar a la API para alternar favorito
+				// ✅ SI NO HAY FUNCIÓN EXTERNA, HACER ACTUALIZACIÓN OPTIMISTA Y API
+				console.log("🔄 Ejecutando optimización propia de favoritos");
+				
+				// Verificar estado actual y hacer actualización optimista
+				const isCurrentlyFavorite = checkIsFavorite(id);
+				
+				if (isCurrentlyFavorite) {
+					optimisticFavoriteRemove();
+				} else {
+					optimisticFavoriteAdd();
+				}
+
 				const result = await toggleFavorite(id);
+
+				// ✅ INVALIDAR CACHE DESPUÉS DE ÉXITO
+				invalidateRelatedPages();
 
 				setIsFavorite(result);
 
@@ -142,10 +203,10 @@ const ProductCardCompact: React.FC<ProductCardProps> = ({
 				"Error al gestionar favoritos. Inténtalo de nuevo."
 			);
 		} finally {
-			// Restaurar el estado después de un breve tiempo para la animación
+			// ✅ TIMEOUT PARA PREVENIR SPAM
 			setTimeout(() => {
 				setIsAddingToWishlist(false);
-			}, 1000);
+			}, 1500);
 		}
 	};
 
@@ -161,29 +222,30 @@ const ProductCardCompact: React.FC<ProductCardProps> = ({
 					/>
 				</Link>
 
-				{/* Discount Tag */}
-				{discount && (
+				{/* ✅ DISCOUNT TAG - Solo si hay descuento válido */}
+				{(discount && typeof discount === 'number' && discount > 0) ? (
 					<div
 						className={`absolute top-2 left-2 ${color ? "bg-red-500" : "bg-primary-600"} text-white text-xs font-bold py-1 px-2 rounded-md badge`}
 					>
 						-{discount}%
 					</div>
-				)}
+				) : null}
 
 				{/* New Product Tag */}
-				{isNew && (
+				{isNew ? (
 					<div
 						className={`absolute top-2 right-2 ${color ? "bg-green-500" : "bg-primary-800"} text-white text-xs font-bold py-1 px-2 rounded-md badge`}
 					>
 						Nuevo
 					</div>
-				)}
+				) : null}
 
 				{/* Quick Action Buttons */}
 				<div className="absolute inset-0 bg-black bg-opacity-30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 items-center justify-center gap-2 hidden md:flex">
 					<button
 						onClick={handleAddToWishlist}
-						className="cursor-pointer bg-white p-2 rounded-full hover:bg-primary-50 hover:text-primary-600 transition-colors"
+						disabled={isAddingToWishlist}
+						className="cursor-pointer bg-white p-2 rounded-full hover:bg-primary-50 hover:text-primary-600 transition-colors disabled:opacity-50"
 						aria-label="Añadir a favoritos"
 					>
 						{isAddingToWishlist || isFavorite ? (
@@ -195,7 +257,7 @@ const ProductCardCompact: React.FC<ProductCardProps> = ({
 					<button
 						onClick={handleAddToCart}
 						disabled={isAddingToCart || !hasStock}
-						className={`cursor-pointer bg-white p-2 rounded-full hover:bg-primary-50 hover:text-primary-600 transition-colors ${!hasStock ? "opacity-50 cursor-not-allowed" : ""}`}
+						className={`cursor-pointer bg-white p-2 rounded-full hover:bg-primary-50 hover:text-primary-600 transition-colors disabled:opacity-50 ${!hasStock ? "cursor-not-allowed" : ""}`}
 						aria-label="Añadir al carrito"
 					>
 						{isAddingToCart ? (
@@ -210,11 +272,11 @@ const ProductCardCompact: React.FC<ProductCardProps> = ({
 			{/* Product Info */}
 			<div className="p-3">
 				{/* Category */}
-				{category && (
+				{category ? (
 					<span className="text-xs text-gray-500 uppercase mb-1 block">
 						{category}
 					</span>
-				)}
+				) : null}
 
 				{/* Product Name */}
 				<Link to={`/products/${slug || id}`}>
@@ -223,20 +285,22 @@ const ProductCardCompact: React.FC<ProductCardProps> = ({
 					</h3>
 				</Link>
 
-				{/* Rating */}
-				<div className="mb-2">
-					<RatingStars
-						rating={rating}
-						size={14}
-						showValue={true}
-						reviews={reviews}
-					/>
-				</div>
+				{/* ✅ RATING - Solo si hay rating válido */}
+				{(rating && typeof rating === 'number' && rating > 0) ? (
+					<div className="mb-2">
+						<RatingStars
+							rating={rating}
+							size={14}
+							showValue={true}
+							reviews={reviews}
+						/>
+					</div>
+				) : null}
 
 				{/* Price */}
 				<div className="flex items-center justify-between">
 					<div className="flex items-center">
-						{discount ? (
+						{(discount && typeof discount === 'number' && discount > 0) ? (
 							<>
 								<span className="font-bold text-primary-600">
 									${discountedPrice.toFixed(2)}
@@ -256,7 +320,8 @@ const ProductCardCompact: React.FC<ProductCardProps> = ({
 					<div className="flex lg:hidden gap-1">
 						<button
 							onClick={handleAddToWishlist}
-							className="text-gray-500 hover:text-primary-600 transition-colors"
+							disabled={isAddingToWishlist}
+							className="text-gray-500 hover:text-primary-600 transition-colors disabled:opacity-50"
 							aria-label="Añadir a favoritos"
 						>
 							{isAddingToWishlist || isFavorite ? (
@@ -268,7 +333,7 @@ const ProductCardCompact: React.FC<ProductCardProps> = ({
 						<button
 							onClick={handleAddToCart}
 							disabled={isAddingToCart || !hasStock}
-							className={`text-gray-500 hover:text-primary-600 transition-colors ${!hasStock ? "opacity-50 cursor-not-allowed" : ""}`}
+							className={`text-gray-500 hover:text-primary-600 transition-colors disabled:opacity-50 ${!hasStock ? "cursor-not-allowed" : ""}`}
 							aria-label="Añadir al carrito"
 						>
 							{isAddingToCart ? (
@@ -281,7 +346,7 @@ const ProductCardCompact: React.FC<ProductCardProps> = ({
 				</div>
 
 				{/* Stock Availability */}
-				{!hasStock && <p className="text-xs text-red-500 mt-1">Agotado</p>}
+				{!hasStock ? <p className="text-xs text-red-500 mt-1">Agotado</p> : null}
 			</div>
 		</div>
 	);
