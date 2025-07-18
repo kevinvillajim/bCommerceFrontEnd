@@ -1,131 +1,153 @@
-// src/presentation/contexts/FavoriteContext.tsx
-import React, { createContext, useState, useEffect } from 'react';
-import type { ReactNode } from 'react';
-import ApiClient from '../../infrastructure/api/apiClient';
-import { API_ENDPOINTS } from '../../constants/apiEndpoints';
-import type { Favorite, FavoriteListResponse } from '../../core/domain/entities/Favorite';
-import { useAuth } from '../hooks/useAuth';
-import {useInvalidateCounters} from "../hooks/useInvalidateCounters";
+// src/presentation/contexts/FavoriteContext.tsx - OPTIMIZADO
+import React, {createContext, useState, useCallback} from "react";
+import type {ReactNode} from "react";
+import ApiClient from "../../infrastructure/api/apiClient";
+import {API_ENDPOINTS} from "../../constants/apiEndpoints";
+import type {
+	Favorite,
+	FavoriteListResponse,
+} from "../../core/domain/entities/Favorite";
+import {useAuth} from "../hooks/useAuth";
+import {
+	useReactiveCache,
+	useCacheInvalidation,
+} from "../hooks/useReactiveCache";
 
 interface FavoriteContextProps {
-  favorites: Favorite[];
-  loading: boolean;
-  error: string | null;
-  favoriteCount: number;
-  toggleFavorite: (productId: number) => Promise<boolean>;
-  checkIsFavorite: (productId: number) => Promise<boolean>;
-  fetchFavorites: () => Promise<void>;
+	favorites: Favorite[];
+	loading: boolean;
+	error: string | null;
+	favoriteCount: number;
+	toggleFavorite: (productId: number) => Promise<boolean>;
+	checkIsFavorite: (productId: number) => boolean; // ✅ AHORA SINCRÓNICO usando cache
+	fetchFavorites: () => Promise<void>;
+	isProductFavorite: (productId: number) => boolean; // ✅ HELPER RÁPIDO
 }
 
 export const FavoriteContext = createContext<FavoriteContextProps>({
-  favorites: [],
-  loading: false,
-  error: null,
-  favoriteCount: 0,
-  toggleFavorite: async () => false,
-  checkIsFavorite: async () => false,
-  fetchFavorites: async () => {}
+	favorites: [],
+	loading: false,
+	error: null,
+	favoriteCount: 0,
+	toggleFavorite: async () => false,
+	checkIsFavorite: () => false,
+	fetchFavorites: async () => {},
+	isProductFavorite: () => false,
 });
 
 interface FavoriteProviderProps {
-  children: ReactNode;
+	children: ReactNode;
 }
 
-export const FavoriteProvider: React.FC<FavoriteProviderProps> = ({ children }) => {
-  const [favorites, setFavorites] = useState<Favorite[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
-  const [favoriteCount, setFavoriteCount] = useState<number>(0);
-  const { isAuthenticated } = useAuth();
-  const {invalidateFavorites} = useInvalidateCounters();
+export const FavoriteProvider: React.FC<FavoriteProviderProps> = ({
+	children,
+}) => {
+	const [favoriteCount, setFavoriteCount] = useState<number>(0);
+	const {isAuthenticated} = useAuth();
+	const {invalidateMany} = useCacheInvalidation();
 
-  // Cargar favoritos cuando el usuario está autenticado
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchFavorites();
-    } else {
-      setFavorites([]);
-      setFavoriteCount(0);
-    }
-  }, [isAuthenticated]);
+	// ✅ USO DE CACHE REACTIVO para favoritos
+	const {
+		data: favoritesData,
+		loading,
+		error,
+		refetch: fetchFavorites,
+	} = useReactiveCache<Favorite[]>({
+		key: "user_favorites",
+		fetcher: async () => {
+			if (!isAuthenticated) {
+				return [];
+			}
 
-  // Obtener lista de favoritos
-  const fetchFavorites = async (): Promise<void> => {
-    if (!isAuthenticated) return;
-    
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const response = await ApiClient.get<FavoriteListResponse>(API_ENDPOINTS.FAVORITES.LIST);
-      if (response && response.data) {
-      setFavorites(response.data);
-      setFavoriteCount(response.data.length);
-    } else {
-      setFavorites([]);
-      setFavoriteCount(0);
-    }
-  } catch (err) {
-    setError(err instanceof Error ? err.message : 'Error al cargar favoritos');
-    console.error('Error fetching favorites:', err);
-  } finally {
-    setLoading(false);
-  }
-};
+			console.log("🌐 Fetching favorites from API");
+			const response = await ApiClient.get<FavoriteListResponse>(
+				API_ENDPOINTS.FAVORITES.LIST
+			);
 
-  // Toggle favorito (añadir/quitar)
-  const toggleFavorite = async (productId: number): Promise<boolean> => {
-    if (!isAuthenticated) return false;
-    
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const response = await ApiClient.post<{ isFavorite: boolean }>(
-      API_ENDPOINTS.FAVORITES.TOGGLE,
-      { productId }
-    );
-      
-      // Actualizar la lista de favoritos después del toggle
-      await fetchFavorites();
-      invalidateFavorites();
-      
-      return response.isFavorite || false;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al actualizar favorito');
-      console.error('Error toggling favorite:', err);
-      return false;
-    } finally {
-      setLoading(false);
-    }
-  };
+			if (response && response.data) {
+				const favoritesData = Array.isArray(response.data) ? response.data : [];
+				console.log(`✅ Favoritos cargados: ${favoritesData.length}`);
+				return favoritesData;
+			}
 
-  // Verificar si un producto está en favoritos
-  const checkIsFavorite = async (productId: number): Promise<boolean> => {
-    if (!isAuthenticated) return false;
-    
-    try {
-        const response = await ApiClient.get<{ favorites: Favorite[]; unread_count: number }>(
-      API_ENDPOINTS.FAVORITES.LIST
-    );
-      return response.favorites.some(fav => fav.id === productId);
-    } catch (err) {
-      console.error('Error checking favorite status:', err);
-      return false;
-    }
-  };
+			return [];
+		},
+		cacheTime: 10 * 60 * 1000, // 10 minutos de cache - más tiempo ya que no cambian tan frecuentemente
+		invalidatePatterns: ["favorites_*", "header_counters"],
+		dependencies: [isAuthenticated],
+	});
 
-  return (
-    <FavoriteContext.Provider value={{
-      favorites,
-      loading,
-      error,
-      favoriteCount,
-      toggleFavorite,
-      checkIsFavorite,
-      fetchFavorites
-    }}>
-      {children}
-    </FavoriteContext.Provider>
-  );
+	// ✅ ASEGURAR QUE SIEMPRE SEA ARRAY
+	const favorites: Favorite[] = favoritesData || [];
+
+	// Actualizar contador cuando cambien los favoritos
+	React.useEffect(() => {
+		setFavoriteCount(favorites.length);
+	}, [favorites]);
+
+	// ✅ CHECK SINCRÓNICO usando cache local
+	const checkIsFavorite = useCallback(
+		(productId: number): boolean => {
+			return favorites.some((fav) => fav.productId === productId);
+		},
+		[favorites]
+	);
+
+	// Alias para mayor claridad
+	const isProductFavorite = checkIsFavorite;
+
+	// ✅ TOGGLE OPTIMIZADO con invalidación inteligente
+	const toggleFavorite = useCallback(
+		async (productId: number): Promise<boolean> => {
+			if (!isAuthenticated) return false;
+
+			const wasFavorite = checkIsFavorite(productId);
+
+			try {
+				console.log(
+					`🔄 Toggling favorite for product ${productId} (was: ${wasFavorite})`
+				);
+
+				const response = await ApiClient.post<{isFavorite: boolean}>(
+					API_ENDPOINTS.FAVORITES.TOGGLE,
+					{productId}
+				);
+
+				// ✅ INVALIDAR CACHE para refetch automático
+				invalidateMany(["favorites_*", "header_counters"]);
+
+				const newState =
+					response?.isFavorite !== undefined
+						? response.isFavorite
+						: !wasFavorite;
+
+				console.log(
+					`✅ Favorite toggled: product ${productId} is now ${newState ? "favorited" : "unfavorited"}`
+				);
+
+				return newState;
+			} catch (err) {
+				console.error("Error toggling favorite:", err);
+				return wasFavorite; // Mantener estado anterior en caso de error
+			}
+		},
+		[isAuthenticated, checkIsFavorite, invalidateMany]
+	);
+
+	return (
+		<FavoriteContext.Provider
+			value={{
+				favorites,
+				loading,
+				error: error || null,
+				favoriteCount,
+				toggleFavorite,
+				checkIsFavorite,
+				fetchFavorites,
+				isProductFavorite,
+			}}
+		>
+			{children}
+		</FavoriteContext.Provider>
+	);
 };

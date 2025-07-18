@@ -1,8 +1,10 @@
+// src/presentation/hooks/useFavoriteApi.ts - OPTIMIZADO PARA CACHE REACTIVO
 import {useState} from "react";
 import ApiClient from "../../infrastructure/api/apiClient";
 import {API_ENDPOINTS} from "../../constants/apiEndpoints";
 import type {Favorite} from "../../core/domain/entities/Favorite";
 import {useAuth} from "./useAuth";
+import {useCacheInvalidation} from "./useReactiveCache";
 
 // Interfaces para las respuestas de la API
 interface ApiResponse<T> {
@@ -70,17 +72,14 @@ interface UseFavoriteApiReturn {
 			notify_promotion: boolean;
 			notify_low_stock: boolean;
 		}
-	) => Promise<{
-		success: boolean;
-		message: string;
-		favorite?: any;
-	}>;
+	) => Promise<{success: boolean; message: string; favorite?: any}>;
 }
 
 export const useFavoriteApi = (): UseFavoriteApiReturn => {
 	const [loading, setLoading] = useState<boolean>(false);
 	const [error, setError] = useState<string | null>(null);
 	const {isAuthenticated} = useAuth();
+	const {invalidateMany} = useCacheInvalidation();
 
 	const getUserFavorites = async (
 		limit = 10,
@@ -96,33 +95,21 @@ export const useFavoriteApi = (): UseFavoriteApiReturn => {
 
 			const response = await ApiClient.get<ApiResponse<any[]>>(
 				API_ENDPOINTS.FAVORITES.LIST,
-				{
-					limit,
-					offset,
-				}
+				{limit, offset}
 			);
 
-			// Verificamos la estructura real de la respuesta
-			// Según la respuesta del servidor, los favoritos están en `data` y son un array
 			const apiData = response?.data || [];
-
-			// Procesamos los datos para el formato que espera nuestra aplicación
-			const favorites = apiData.map((item, index) => {
-				// El backend envía `favorite` como un objeto vacío y toda la información está en `product`
-				return {
-					favorite: {
-						// Usamos el ID del producto como ID del favorito, con un prefijo para garantizar unicidad
-						id: item.product?.id ? item.product.id + 1000 : index + 1000,
-						userId: 0, // No tenemos este dato
-						productId: item.product?.id || 0,
-						// Valores por defecto para las notificaciones ya que el backend no los envía
-						notifyPriceChange: true,
-						notifyPromotion: true,
-						notifyLowStock: true,
-					},
-					product: item.product,
-				};
-			});
+			const favorites = apiData.map((item, index) => ({
+				favorite: {
+					id: item.product?.id ? item.product.id + 1000 : index + 1000,
+					userId: 0,
+					productId: item.product?.id || 0,
+					notifyPriceChange: true,
+					notifyPromotion: true,
+					notifyLowStock: true,
+				},
+				product: item.product,
+			}));
 
 			return {
 				favorites,
@@ -139,12 +126,7 @@ export const useFavoriteApi = (): UseFavoriteApiReturn => {
 			setError(errorMessage);
 			return {
 				favorites: [],
-				meta: {
-					total: 0,
-					limit,
-					offset,
-					has_more: false,
-				},
+				meta: {total: 0, limit, offset, has_more: false},
 			};
 		} finally {
 			setLoading(false);
@@ -167,20 +149,11 @@ export const useFavoriteApi = (): UseFavoriteApiReturn => {
 				throw new Error("User must be authenticated to toggle favorites");
 			}
 
-			// Establecer valores predeterminados si no se proporcionan
 			const preferences = {
 				notify_price_change:
-					notificationPreferences?.notify_price_change !== undefined
-						? notificationPreferences.notify_price_change
-						: true,
-				notify_promotion:
-					notificationPreferences?.notify_promotion !== undefined
-						? notificationPreferences.notify_promotion
-						: true,
-				notify_low_stock:
-					notificationPreferences?.notify_low_stock !== undefined
-						? notificationPreferences.notify_low_stock
-						: true,
+					notificationPreferences?.notify_price_change ?? true,
+				notify_promotion: notificationPreferences?.notify_promotion ?? true,
+				notify_low_stock: notificationPreferences?.notify_low_stock ?? true,
 			};
 
 			const response = await ApiClient.post<ApiResponse<FavoriteApiResponse>>(
@@ -190,6 +163,9 @@ export const useFavoriteApi = (): UseFavoriteApiReturn => {
 					notification_preferences: preferences,
 				}
 			);
+
+			// ✅ INVALIDAR CACHE AUTOMÁTICAMENTE
+			invalidateMany(["favorites_*", "header_counters"]);
 
 			return {
 				is_favorite: response?.data?.is_favorite || false,
@@ -235,7 +211,6 @@ export const useFavoriteApi = (): UseFavoriteApiReturn => {
 			setError(errorMessage);
 			console.error(errorMessage);
 
-			// Return a default response on error rather than throwing
 			return {
 				is_favorite: false,
 				favorite_id: null,
@@ -268,6 +243,9 @@ export const useFavoriteApi = (): UseFavoriteApiReturn => {
 				API_ENDPOINTS.FAVORITES.UPDATE_NOTIFICATIONS(favoriteId),
 				preferences
 			);
+
+			// ✅ INVALIDAR CACHE TRAS ACTUALIZACIÓN
+			invalidateMany(["favorites_*"]);
 
 			return {
 				success: true,

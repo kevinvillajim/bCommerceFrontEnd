@@ -1,4 +1,4 @@
-// src/presentation/contexts/NotificationContext.tsx (OPTIMIZADO)
+// src/presentation/contexts/NotificationContext.tsx - OPTIMIZADO ADICIONAL
 
 import React, {
 	createContext,
@@ -12,18 +12,17 @@ import ApiClient from "../../infrastructure/api/apiClient";
 import {API_ENDPOINTS} from "../../constants/apiEndpoints";
 import type {Notification} from "../../core/domain/entities/Notification";
 import {useAuth} from "../hooks/useAuth";
-import {useInvalidateCounters} from "../hooks/useInvalidateCounters";
 import {CacheService} from "../../infrastructure/services/CacheService";
 
-// Cache keys y tiempos
+// ✅ CACHE KEYS Y TIEMPOS OPTIMIZADOS
 const CACHE_KEYS = {
 	NOTIFICATIONS: "notifications_list",
 	UNREAD_COUNT: "notifications_unread_count",
 };
 
 const CACHE_TIMES = {
-	NOTIFICATIONS: 2 * 60 * 1000, // 2 minutos
-	UNREAD_COUNT: 1 * 60 * 1000, // 1 minuto
+	NOTIFICATIONS: 3 * 60 * 1000, // 3 minutos (aumentado)
+	UNREAD_COUNT: 2 * 60 * 1000, // 2 minutos (aumentado)
 };
 
 interface NotificationContextProps {
@@ -95,21 +94,28 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 
 	const {isAuthenticated} = useAuth();
 	const isInitialized = useRef(false);
-	const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 	const fetchPromiseRef = useRef<Promise<any> | null>(null);
 	const countPromiseRef = useRef<Promise<any> | null>(null);
-	const {invalidateNotifications} = useInvalidateCounters();
 
-	// Limpiar timeouts al desmontar
-	useEffect(() => {
-		return () => {
-			if (refreshTimeoutRef.current) {
-				clearTimeout(refreshTimeoutRef.current);
+	// ✅ OPTIMIZADO: Invalidar cache SIN tocar header_counters
+	const invalidateCache = useCallback(() => {
+		CacheService.removeItem(CACHE_KEYS.UNREAD_COUNT);
+		// ❌ NO invalidar header_counters - tiene su propio sistema inteligente
+
+		// Invalidar cache de notificaciones
+		Object.keys(localStorage).forEach((key) => {
+			if (key.includes(CACHE_KEYS.NOTIFICATIONS)) {
+				CacheService.removeItem(key.replace("cache_", ""));
 			}
-		};
+		});
 	}, []);
 
-	// OPTIMIZADO: Obtener contador de no leídas con cache
+	// ✅ FUNCIÓN SEPARADA para invalidar header solo cuando sea realmente necesario
+	const invalidateHeaderCache = useCallback(() => {
+		CacheService.removeItem("header_counters");
+	}, []);
+
+	// ✅ OPTIMIZADO: Obtener contador usando cache del header primero
 	const refreshUnreadCount = useCallback(async (): Promise<void> => {
 		if (!isAuthenticated) return;
 
@@ -118,17 +124,23 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 			return countPromiseRef.current;
 		}
 
-		// Verificar cache primero
+		// ✅ PRIMERO: Verificar cache del header (más eficiente)
+		const headerCache = CacheService.getItem("header_counters");
+		if (headerCache && headerCache.notificationCount !== undefined) {
+			setUnreadCount(headerCache.notificationCount);
+			return;
+		}
+
+		// ✅ SEGUNDO: Verificar cache específico de notificaciones
 		const cachedCount = CacheService.getItem(CACHE_KEYS.UNREAD_COUNT);
 		if (cachedCount !== null) {
-			console.log("📊 Usando unread count desde cache:", cachedCount);
 			setUnreadCount(cachedCount);
 			return;
 		}
 
+		// ✅ ÚLTIMO RECURSO: Consultar API
 		countPromiseRef.current = (async () => {
 			try {
-				console.log("📊 Consultando unread count desde API");
 				const response = await ApiClient.get<{
 					status: string;
 					data: {
@@ -140,13 +152,12 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 					const count = response.data.unread_count;
 					setUnreadCount(count);
 
-					// Guardar en cache
+					// ✅ GUARDAR EN CACHE con tiempo mayor
 					CacheService.setItem(
 						CACHE_KEYS.UNREAD_COUNT,
 						count,
 						CACHE_TIMES.UNREAD_COUNT
 					);
-					console.log("📊 Unread count guardado en cache:", count);
 				}
 			} catch (err) {
 				console.error("Error fetching notification count:", err);
@@ -158,7 +169,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 		return countPromiseRef.current;
 	}, [isAuthenticated]);
 
-	// OPTIMIZADO: Obtener notificaciones con cache
+	// ✅ OPTIMIZADO: Obtener notificaciones con cache mejorado
 	const fetchNotifications = useCallback(
 		async (
 			page: number = 1,
@@ -173,11 +184,10 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 				return fetchPromiseRef.current;
 			}
 
-			// Verificar cache solo para página 1 y no showUnreadOnly
+			// ✅ VERIFICAR CACHE con tiempo mayor
 			if (page === 1 && !showUnreadOnly) {
 				const cachedData = CacheService.getItem(cacheKey);
 				if (cachedData) {
-					console.log("📋 Usando notificaciones desde cache");
 					setNotifications(cachedData.notifications);
 					setUnreadCount(cachedData.unread_count);
 					setTotalNotifications(cachedData.total);
@@ -192,11 +202,6 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 
 			fetchPromiseRef.current = (async () => {
 				try {
-					console.log("📋 Consultando notificaciones desde API", {
-						page,
-						showUnreadOnly,
-					});
-
 					const endpoint = showUnreadOnly
 						? API_ENDPOINTS.NOTIFICATIONS.UNREAD
 						: API_ENDPOINTS.NOTIFICATIONS.LIST;
@@ -228,7 +233,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 						if (page === 1) {
 							setNotifications(normalizedNotifications);
 
-							// Guardar en cache solo página 1 sin filtros
+							// ✅ GUARDAR EN CACHE con tiempo mayor - solo página 1 sin filtros
 							if (!showUnreadOnly) {
 								CacheService.setItem(
 									cacheKey,
@@ -239,7 +244,6 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 									},
 									CACHE_TIMES.NOTIFICATIONS
 								);
-								console.log("📋 Notificaciones guardadas en cache");
 							}
 						} else {
 							setNotifications((prev) => [...prev, ...normalizedNotifications]);
@@ -250,7 +254,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 						setCurrentPage(page);
 						setHasMore(newNotifications.length === 20);
 
-						// Actualizar cache de contador también
+						// ✅ ACTUALIZAR CACHE DE CONTADOR también
 						CacheService.setItem(
 							CACHE_KEYS.UNREAD_COUNT,
 							unread_count,
@@ -277,7 +281,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 		[isAuthenticated]
 	);
 
-	// OPTIMIZADO: Marcar como leída con invalidación de cache
+	// ✅ OPTIMIZADO: Marcar como leída SIN invalidar header cache
 	const markAsRead = useCallback(
 		async (id: number): Promise<boolean> => {
 			if (!isAuthenticated) return false;
@@ -291,7 +295,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 				}>(`${API_ENDPOINTS.NOTIFICATIONS.MARK_AS_READ(id)}`);
 
 				if (response.status === "success") {
-					// Actualizar estado local
+					// ✅ ACTUALIZAR ESTADO LOCAL INMEDIATAMENTE
 					setNotifications((prev) =>
 						prev.map((notif) =>
 							notif.id === id
@@ -312,16 +316,14 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 
 					setUnreadCount(newCount);
 
-					// Invalidar cache
-					CacheService.removeItem(CACHE_KEYS.UNREAD_COUNT);
-					// Invalidar cache de notificaciones
-					Object.keys(localStorage).forEach((key) => {
-						if (key.includes(CACHE_KEYS.NOTIFICATIONS)) {
-							CacheService.removeItem(key);
-						}
-					});
+					// ✅ SOLO invalidar cache de notificaciones
+					invalidateCache();
 
-					invalidateNotifications();
+					// ✅ SOLO invalidar header cache si es necesario para sincronizar
+					if (response.data?.unread_count !== undefined) {
+						invalidateHeaderCache();
+					}
+
 					return true;
 				}
 
@@ -336,10 +338,10 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 				return false;
 			}
 		},
-		[isAuthenticated, unreadCount, invalidateNotifications]
+		[isAuthenticated, unreadCount, invalidateCache, invalidateHeaderCache]
 	);
 
-	// OPTIMIZADO: Marcar todas como leídas con invalidación de cache
+	// ✅ OPTIMIZADO: Marcar todas como leídas SIN invalidar header cache innecesariamente
 	const markAllAsRead = useCallback(async (): Promise<boolean> => {
 		if (!isAuthenticated) return false;
 
@@ -355,7 +357,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 			}>(API_ENDPOINTS.NOTIFICATIONS.MARK_ALL_AS_READ);
 
 			if (response.status === "success") {
-				// Actualizar lista local
+				// ✅ ACTUALIZAR LISTA LOCAL
 				setNotifications((prev) =>
 					prev.map((notif) => ({
 						...notif,
@@ -367,15 +369,12 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 				// Reset contador
 				setUnreadCount(0);
 
-				// Invalidar todo el cache de notificaciones
-				CacheService.removeItem(CACHE_KEYS.UNREAD_COUNT);
-				Object.keys(localStorage).forEach((key) => {
-					if (key.includes(CACHE_KEYS.NOTIFICATIONS)) {
-						CacheService.removeItem(key);
-					}
-				});
+				// ✅ SOLO invalidar cache de notificaciones
+				invalidateCache();
 
-				invalidateNotifications();
+				// ✅ SOLO invalidar header cache para sincronizar con 0
+				invalidateHeaderCache();
+
 				return true;
 			}
 
@@ -391,9 +390,9 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 		} finally {
 			setLoading(false);
 		}
-	}, [isAuthenticated, invalidateNotifications]);
+	}, [isAuthenticated, invalidateCache, invalidateHeaderCache]);
 
-	// OPTIMIZADO: Eliminar notificación con invalidación de cache
+	// ✅ OPTIMIZADO: Eliminar notificación SIN invalidar header cache innecesariamente
 	const deleteNotification = useCallback(
 		async (id: number): Promise<boolean> => {
 			if (!isAuthenticated) return false;
@@ -411,7 +410,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 					const notification = notifications.find((n) => n.id === id);
 					const wasUnread = notification && !notification.read;
 
-					// Remover de la lista local
+					// ✅ REMOVER DE LA LISTA LOCAL
 					setNotifications((prev) => prev.filter((notif) => notif.id !== id));
 
 					// Actualizar contador si era no leída
@@ -426,15 +425,14 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 					// Actualizar total
 					setTotalNotifications((prev) => Math.max(0, prev - 1));
 
-					// Invalidar cache
-					CacheService.removeItem(CACHE_KEYS.UNREAD_COUNT);
-					Object.keys(localStorage).forEach((key) => {
-						if (key.includes(CACHE_KEYS.NOTIFICATIONS)) {
-							CacheService.removeItem(key);
-						}
-					});
+					// ✅ SOLO invalidar cache de notificaciones
+					invalidateCache();
 
-					invalidateNotifications();
+					// ✅ SOLO invalidar header cache si era una notificación no leída
+					if (wasUnread) {
+						invalidateHeaderCache();
+					}
+
 					return true;
 				}
 
@@ -447,10 +445,16 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 				return false;
 			}
 		},
-		[isAuthenticated, notifications, unreadCount, invalidateNotifications]
+		[
+			isAuthenticated,
+			notifications,
+			unreadCount,
+			invalidateCache,
+			invalidateHeaderCache,
+		]
 	);
 
-	// OPTIMIZADO: Cargar cuando el usuario está autenticado
+	// ✅ OPTIMIZADO: Cargar datos iniciales SIN invalidar header cache
 	useEffect(() => {
 		if (isAuthenticated) {
 			if (!isInitialized.current) {
@@ -460,7 +464,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 				isInitialized.current = true;
 			}
 		} else {
-			// Reset cuando no está autenticado
+			// Reset completo cuando no está autenticado
 			setNotifications([]);
 			setUnreadCount(0);
 			setCurrentPage(1);
@@ -468,17 +472,17 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 			setHasMore(false);
 			isInitialized.current = false;
 
-			// Limpiar cache
-			CacheService.removeItem(CACHE_KEYS.UNREAD_COUNT);
-			Object.keys(localStorage).forEach((key) => {
-				if (key.includes(CACHE_KEYS.NOTIFICATIONS)) {
-					CacheService.removeItem(key);
-				}
-			});
+			// ✅ SOLO limpiar cache de notificaciones, NO del header
+			invalidateCache();
 		}
-	}, [isAuthenticated, fetchNotifications, refreshUnreadCount]);
+	}, [
+		isAuthenticated,
+		fetchNotifications,
+		refreshUnreadCount,
+		invalidateCache,
+	]);
 
-	// Obtener URL de destino según el tipo de notificación
+	// ✅ OPTIMIZADO: Obtener URL de destino según el tipo de notificación
 	const getNotificationUrl = useCallback(
 		(notification: Notification): string | null => {
 			const {type, data} = notification;

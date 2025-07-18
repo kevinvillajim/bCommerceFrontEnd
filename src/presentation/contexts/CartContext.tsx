@@ -17,7 +17,7 @@ import {LocalStorageService} from "../../infrastructure/services/LocalStorageSer
 import {AuthContext} from "./AuthContext";
 import {CartService} from "../../core/services/CartService";
 import appConfig from "../../config/appConfig";
-import {useInvalidateCounters} from "../hooks/useInvalidateCounters";
+import CacheService from "../../infrastructure/services/CacheService";
 
 // Tipos para las notificaciones del carrito
 export enum NotificationType {
@@ -74,6 +74,16 @@ export const CartContext = createContext<CartContextProps>({
 const storageService = new LocalStorageService();
 const cartService = new CartService();
 
+// Cache keys y tiempos
+const CACHE_KEYS = {
+	CART_USER: "cart_user_data",
+	CART_GUEST: "cart_guest_data",
+};
+
+const CACHE_TIMES = {
+	CART: 3 * 60 * 1000, // 3 minutos - más corto que antes para datos más frescos
+};
+
 // Provider component
 interface CartProviderProps {
 	children: ReactNode;
@@ -88,7 +98,6 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 	const [notification, setNotification] = useState<CartNotification | null>(
 		null
 	);
-	const {invalidateCart} = useInvalidateCounters();
 
 	const {isAuthenticated} = useContext(AuthContext);
 
@@ -99,8 +108,6 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 	const notificationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 	const fetchCartTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 	const isFetchingRef = useRef(false);
-
-	// FIX: Control de actualización y debounce
 	const cartUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
 	// Actualizar el ref cuando cambia isAuthenticated
@@ -111,19 +118,16 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 	// Función para mostrar una notificación
 	const showNotification = useCallback(
 		(type: NotificationType, message: string) => {
-			// Limpiar cualquier temporizador existente
 			if (notificationTimeoutRef.current) {
 				clearTimeout(notificationTimeoutRef.current);
 			}
 
-			// Crear y mostrar la nueva notificación
 			setNotification({
 				id: Date.now().toString(),
 				type,
 				message,
 			});
 
-			// Establecer temporizador para ocultar la notificación después de 3 segundos
 			notificationTimeoutRef.current = setTimeout(() => {
 				setNotification(null);
 				notificationTimeoutRef.current = null;
@@ -156,21 +160,48 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 		};
 	}, []);
 
+	// Invalidar cache relacionado con carrito
+	const invalidateCartCache = useCallback(() => {
+		CacheService.removeItem(CACHE_KEYS.CART_USER);
+		CacheService.removeItem(CACHE_KEYS.CART_GUEST);
+		CacheService.removeItem("header_counters"); // Invalidar también contadores del header
+		console.log("🗑️ Cart cache invalidated");
+	}, []);
+
 	// Calcular el número total de elementos en el carrito (sumando cantidades)
 	const calculateTotalItems = useCallback((cartItems: CartItem[]): number => {
 		if (!cartItems || cartItems.length === 0) return 0;
 		return cartItems.reduce((total, item) => total + item.quantity, 0);
 	}, []);
 
-	// Función para cargar el carrito desde la API
+	// Función para cargar el carrito desde la API con cache
 	const fetchCartFromAPI = useCallback(async () => {
-		// FIX: Evitar múltiples peticiones simultáneas
 		if (isFetchingRef.current) return null;
 
 		isFetchingRef.current = true;
 
 		try {
 			setLoading(true);
+			setError(null);
+
+			// ✅ VERIFICAR CACHE PRIMERO
+			const cacheKey = isAuthenticatedRef.current
+				? CACHE_KEYS.CART_USER
+				: CACHE_KEYS.CART_GUEST;
+			const cachedCart = CacheService.getItem(cacheKey);
+
+			if (cachedCart) {
+				console.log("📦 Using cached cart data");
+				setCart(cachedCart);
+				setItemCount(cachedCart.items ? cachedCart.items.length : 0);
+				setTotalAmount(cachedCart.total || 0);
+				lastCartString.current = JSON.stringify(cachedCart);
+				setLoading(false);
+				isFetchingRef.current = false;
+				return cachedCart;
+			}
+
+			console.log("🌐 Fetching cart from API...");
 			const response = await cartService.getCart();
 
 			if (response && response.status === "success" && response.data) {
@@ -179,7 +210,6 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 					id: response.data.id,
 					total: response.data.total,
 					items: response.data.items.map((item) => {
-						// ✅ ACCESO DEFENSIVO A LAS PROPIEDADES DEL PRODUCTO
 						const product = item.product || {};
 
 						return {
@@ -194,16 +224,13 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 								name: product.name || "Producto sin nombre",
 								slug: product.slug,
 								price: product.price || 0,
-								// ✅ ACCESO SEGURO CON VERIFICACIONES EXPLÍCITAS
 								final_price: (product as any).final_price ?? product.price ?? 0,
 								discount_percentage: (product as any).discount_percentage ?? 0,
 								rating: (product as any).rating ?? 0,
 								rating_count: (product as any).rating_count ?? 0,
-								// ✅ GESTIÓN SEGURA DE IMÁGENES
 								image: (product as any).main_image || product.image || "",
 								main_image: (product as any).main_image || product.image || "",
 								stockAvailable: product.stock || 0,
-								// ✅ GESTIÓN SEGURA DE SELLER ID
 								sellerId:
 									product.seller_id ||
 									product.sellerId ||
@@ -219,15 +246,23 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 					item_count: response.data.item_count || 0,
 				};
 
+				// ✅ GUARDAR EN CACHE
+				CacheService.setItem(cacheKey, cartData, CACHE_TIMES.CART);
+
 				// Calcular la suma total de cantidades
 				const totalQuantities = calculateTotalItems(cartData.items);
 				const itemCountValue = response.data.item_count || totalQuantities;
 
-				// FIX: Actualización atómica del estado para evitar renderizaciones parciales
 				setCart(cartData);
 				setItemCount(itemCountValue);
 				setTotalAmount(cartData.total);
 				lastCartString.current = JSON.stringify(cartData);
+
+				console.log("✅ Cart loaded successfully:", {
+					itemCount: itemCountValue,
+					total: cartData.total,
+					items: cartData.items.length,
+				});
 
 				return cartData;
 			}
@@ -247,7 +282,6 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 						typeof localCart === "string" ? JSON.parse(localCart) : localCart;
 					setCart(parsedCart);
 					lastCartString.current = JSON.stringify(parsedCart);
-					// Calcular totales
 					const totalItems = calculateTotalItems(parsedCart.items || []);
 					setItemCount(totalItems);
 					setTotalAmount(parsedCart.total || 0);
@@ -264,7 +298,6 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 
 	// Cargar carrito (desde API o localStorage)
 	const fetchCart = useCallback(async () => {
-		// FIX: Implementar debounce para evitar múltiples llamadas simultáneas
 		if (fetchCartTimeoutRef.current) {
 			clearTimeout(fetchCartTimeoutRef.current);
 		}
@@ -281,7 +314,6 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 							typeof localCart === "string" ? JSON.parse(localCart) : localCart;
 						setCart(parsedCart);
 						lastCartString.current = JSON.stringify(parsedCart);
-						// Calcular totales
 						const totalItems = calculateTotalItems(parsedCart.items || []);
 						setItemCount(totalItems);
 						setTotalAmount(parsedCart.total || 0);
@@ -301,12 +333,11 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 				}
 			}
 			fetchCartTimeoutRef.current = null;
-		}, 100); // Pequeño debounce de 100ms
+		}, 100);
 	}, [fetchCartFromAPI, calculateTotalItems]);
 
 	// Initialize cart on mount or when auth state changes
 	useEffect(() => {
-		// Si ya inicializamos, solo actualizamos cuando cambie isAuthenticated
 		if (
 			isInitialized.current &&
 			isAuthenticatedRef.current === isAuthenticated
@@ -318,25 +349,12 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 		isInitialized.current = true;
 	}, [isAuthenticated, fetchCart]);
 
-	// FIX: Reducir las actualizaciones periódicas a un intervalo mayor
+	// ✅ ELIMINADO POLLING AUTOMÁTICO - Solo carga inicial y manual
 	useEffect(() => {
-		// Cargar carrito al montar el componente
 		fetchCart();
+	}, [fetchCart]);
 
-		// Actualizar el carrito en intervalos regulares pero más espaciados
-		const cartRefreshInterval = setInterval(() => {
-			if (isAuthenticatedRef.current && !isFetchingRef.current) {
-				fetchCart();
-			}
-		}, 180000); // Cada 3 minutos en lugar de cada minuto
-
-		// Limpiar intervalo al desmontar
-		return () => {
-			clearInterval(cartRefreshInterval);
-		};
-	}, [fetchCart]); // Sin dependencias para que solo se ejecute al montar
-
-	// Update derived states when cart changes - FIX: Incluir lógica para evitar ciclos
+	// Update derived states when cart changes
 	useEffect(() => {
 		if (!cart) {
 			setItemCount(0);
@@ -344,27 +362,22 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 			return;
 		}
 
-		// FIX: Implementar debounce para evitar múltiples actualizaciones en cascada
 		if (cartUpdateTimeoutRef.current) {
 			clearTimeout(cartUpdateTimeoutRef.current);
 		}
 
 		cartUpdateTimeoutRef.current = setTimeout(() => {
-			// Calcular contador de items - sumando las cantidades
 			const totalItems = cart.items ? cart.items.length : 0;
 
-			// Verificar si el itemCount ha cambiado realmente
 			if (itemCount !== totalItems) {
 				setItemCount(totalItems);
 			}
 
-			// Verificar si el totalAmount ha cambiado realmente
 			if (totalAmount !== cart.total) {
 				setTotalAmount(cart.total);
 			}
 
 			// Sincronizar con localStorage para usuarios anónimos
-			// Solo guardar si el carrito ha cambiado realmente
 			const cartString = JSON.stringify(cart);
 			if (
 				!isAuthenticatedRef.current &&
@@ -384,7 +397,6 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 			try {
 				if (!cart) return false;
 
-				// Verificar si el producto ya existe en el carrito
 				const existingItemIndex = cart.items.findIndex(
 					(item) => item.productId === request.productId
 				);
@@ -392,7 +404,6 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 				let updatedCart: ShoppingCart;
 
 				if (existingItemIndex >= 0) {
-					// Actualizar item existente
 					const updatedItems = [...cart.items];
 					updatedItems[existingItemIndex].quantity += request.quantity;
 					updatedItems[existingItemIndex].subtotal =
@@ -410,9 +421,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 						total: newTotal,
 					};
 				} else {
-					// Añadir nuevo item
-					// Nota: en una app real, obtendríamos el precio del producto del servidor
-					const price = 0; // Obtener dinámicamente en app real
+					const price = 0;
 					const newItem: CartItem = {
 						id: Date.now(),
 						productId: request.productId,
@@ -457,8 +466,9 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 				setLoading(true);
 				const response = await cartService.addToCart(request);
 				if (response && response.status === "success") {
+					// ✅ INVALIDAR CACHE Y REFETCH
+					invalidateCartCache();
 					await fetchCart();
-					invalidateCart();
 					return true;
 				}
 				throw new Error(response?.message || "No se pudo agregar al carrito");
@@ -474,7 +484,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 				setLoading(false);
 			}
 		},
-		[addToCartLocal, fetchCart, invalidateCart]
+		[addToCartLocal, fetchCart, invalidateCartCache]
 	);
 
 	// Remove item from cart - versión local
@@ -518,8 +528,8 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 				setLoading(true);
 				const response = await cartService.removeFromCart(itemId);
 				if (response && response.status === "success") {
+					invalidateCartCache();
 					await fetchCart();
-					invalidateCart();
 					return true;
 				}
 				throw new Error(response?.message || "No se pudo eliminar del carrito");
@@ -535,7 +545,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 				setLoading(false);
 			}
 		},
-		[removeFromCartLocal, fetchCart, invalidateCart]
+		[removeFromCartLocal, fetchCart, invalidateCartCache]
 	);
 
 	// Update cart item quantity - versión local
@@ -592,8 +602,8 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 					data.quantity
 				);
 				if (response && response.status === "success") {
+					invalidateCartCache();
 					await fetchCart();
-					invalidateCart();
 					return true;
 				}
 				throw new Error(
@@ -611,7 +621,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 				setLoading(false);
 			}
 		},
-		[updateCartItemLocal, fetchCart, invalidateCart]
+		[updateCartItemLocal, fetchCart, invalidateCartCache]
 	);
 
 	// Clear entire cart - versión local
@@ -619,7 +629,6 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 		try {
 			if (!cart) return false;
 
-			// Crear un carrito vacío manteniendo el ID
 			const emptyCart = {
 				id: cart.id,
 				items: [],
@@ -629,7 +638,6 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 			setCart(emptyCart);
 			lastCartString.current = JSON.stringify(emptyCart);
 
-			// Actualizar localStorage
 			storageService.setItem(
 				appConfig.storage.cartKey,
 				JSON.stringify(emptyCart)
@@ -652,8 +660,8 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 			setLoading(true);
 			const response = await cartService.clearCart();
 			if (response && response.status === "success") {
+				invalidateCartCache();
 				await fetchCart();
-				invalidateCart();
 				return true;
 			}
 			throw new Error(response?.message || "No se pudo vaciar el carrito");
@@ -664,7 +672,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 		} finally {
 			setLoading(false);
 		}
-	}, [clearCartLocal, fetchCart, invalidateCart]);
+	}, [clearCartLocal, fetchCart, invalidateCartCache]);
 
 	return (
 		<CartContext.Provider
@@ -711,7 +719,6 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 	);
 };
 
-// Custom hook para usar el contexto de carrito con notificaciones
 export const useCartWithNotifications = () => {
 	const context = useContext(CartContext);
 	if (!context) {

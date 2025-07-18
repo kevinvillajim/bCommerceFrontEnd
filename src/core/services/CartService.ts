@@ -6,11 +6,13 @@ import type {
 } from "../domain/entities/ShoppingCart";
 
 /**
- * Servicio para gestionar las operaciones del carrito de compras
+ * Servicio optimizado para gestionar las operaciones del carrito de compras
+ * ✅ Eliminadas consultas adicionales para seller_id que causaban lentitud
  */
 export class CartService {
 	/**
 	 * Obtiene el carrito del usuario actual
+	 * ✅ SIN ENRIQUECIMIENTO COSTOSO - más rápido y eficiente
 	 */
 	async getCart(): Promise<ShoppingCartResponse> {
 		try {
@@ -22,27 +24,9 @@ export class CartService {
 
 			console.log("CartService: Respuesta del carrito:", response);
 
-			// Asegurarse de que los productos tienen la información del vendedor
-			if (response && response.data && response.data.items) {
-				// Intentar enriquecer la información de los productos
-				for (const item of response.data.items) {
-					if (item.product) {
-						 // Siempre resolver seller_id real si hay user_id
-						if (item.product.user_id) {
-							try {
-								const sellerResp = await ApiClient.get<{ data: { seller_id: number } }>(
-									API_ENDPOINTS.SELLERS.BY_USER_ID(item.product.user_id)
-								);
-								if (sellerResp && sellerResp.data && sellerResp.data.seller_id) {
-									item.product.seller_id = sellerResp.data.seller_id;
-								}
-							} catch (err) {
-								console.warn('No se pudo resolver seller_id para user_id', item.product.user_id);
-							}
-						}
-					}
-				}
-			}
+			// ✅ RETORNAR DIRECTAMENTE SIN ENRIQUECIMIENTO
+			// El header ya no depende de estos datos adicionales
+			// Si se necesita seller_id, se puede hacer en componentes específicos bajo demanda
 
 			return response;
 		} catch (error) {
