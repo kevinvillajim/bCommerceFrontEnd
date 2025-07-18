@@ -22,6 +22,7 @@ import {getImageUrl} from "../../utils/imageManager";
 import {useCart} from "../hooks/useCart";
 import {useFavorites} from "../hooks/useFavorites";
 import {useChat} from "../hooks/useChat";
+import {useCacheInvalidation} from "../hooks/useReactiveCache";
 import {NotificationType} from "../contexts/CartContext";
 import ApiClient from "../../infrastructure/api/apiClient";
 
@@ -51,9 +52,31 @@ const ProductItemPage: React.FC = () => {
 	const {addToCart, showNotification} = useCart();
 	const {toggleFavorite} = useFavorites();
 	const {createChat} = useChat();
+	const {invalidateAfterMutation} = useCacheInvalidation();
 
 	// Initialize service
 	const productService = new ProductService();
+
+	// ✅ HELPER PARA VALIDAR VALORES - Evita mostrar 0, null, undefined
+	const hasValidValue = (value: any): boolean => {
+		return value !== null && value !== undefined && value !== 0 && value !== "0" && value !== "";
+	};
+
+	// ✅ HELPER PARA MOSTRAR RATING - Evita mostrar 0
+	const displayRating = (rating?: number) => {
+		if (!rating || rating === 0 || isNaN(rating)) return null;
+		return (
+			<span className="text-yellow-500 ml-1 font-medium">
+				{rating.toFixed(1)}
+			</span>
+		);
+	};
+
+	// ✅ HELPER PARA MOSTRAR RATING COUNT - Evita mostrar 0
+	const displayRatingCount = (count?: number) => {
+		if (!count || count === 0 || isNaN(count)) return "Sin valoraciones";
+		return `${count} valoración${count > 1 ? 'es' : ''}`;
+	};
 
 	useEffect(() => {
 		const fetchProductData = async () => {
@@ -97,7 +120,6 @@ const ProductItemPage: React.FC = () => {
 	};
 
 	const handleAddToCart = async () => {
-		// ✅ VERIFICACIÓN DE NULL AGREGADA
 		if (!product) {
 			showNotification(
 				NotificationType.ERROR,
@@ -123,6 +145,13 @@ const ProductItemPage: React.FC = () => {
 			});
 
 			if (success) {
+				// ✅ INVALIDAR CACHE DEL HEADER PARA ACTUALIZAR CONTADORES
+				invalidateAfterMutation([
+					'cart_*',
+					'header_counters',
+					'cart_items_*'
+				]);
+
 				showNotification(
 					NotificationType.SUCCESS,
 					`${product.name} ha sido agregado al carrito`
@@ -140,7 +169,6 @@ const ProductItemPage: React.FC = () => {
 	};
 
 	const handleAddToWishlist = async () => {
-		// ✅ VERIFICACIÓN DE NULL AGREGADA
 		if (!product) {
 			showNotification(
 				NotificationType.ERROR,
@@ -153,6 +181,13 @@ const ProductItemPage: React.FC = () => {
 
 		try {
 			const result = await toggleFavorite(Number(id));
+
+			// ✅ INVALIDAR CACHE DEL HEADER PARA ACTUALIZAR CONTADORES
+			invalidateAfterMutation([
+				'favorites_*',
+				'header_counters',
+				'favorite_items_*'
+			]);
 
 			if (result) {
 				showNotification(
@@ -175,7 +210,6 @@ const ProductItemPage: React.FC = () => {
 	};
 
 	const handleChatWithSeller = async () => {
-		// Verificación de null
 		if (!product) {
 			showNotification(
 				NotificationType.ERROR,
@@ -187,29 +221,24 @@ const ProductItemPage: React.FC = () => {
 		try {
 			let sellerId;
 
-			// Caso 1: El producto ya tiene seller_id directamente
 			if (product.seller_id) {
 				sellerId = product.seller_id;
 				console.log(`Usando seller_id directo del producto: ${sellerId}`);
 			}
-			// Caso 2: El producto tiene objeto seller con id
 			else if (product.seller?.id) {
 				sellerId = product.seller.id;
 				console.log(`Usando seller.id del producto: ${sellerId}`);
 			}
-			// Caso 3: Necesitamos convertir user_id a seller_id
 			else if (product.user_id) {
 				console.log(
 					`Intentando obtener seller_id a partir de user_id: ${product.user_id}`
 				);
 
 				try {
-					// ✅ CORRECCIÓN - Tipar la respuesta de la API
 					const response = await ApiClient.get<SellerApiResponse>(
 						`/sellers/by-user/${product.user_id}`
 					);
 
-					// ✅ ACCESO SEGURO A LAS PROPIEDADES
 					if (response && response.data) {
 						if (response.data.id) {
 							sellerId = response.data.id;
@@ -222,14 +251,12 @@ const ProductItemPage: React.FC = () => {
 								`Convertido user_id ${product.user_id} a seller_id ${sellerId}`
 							);
 						} else {
-							// Si no podemos obtener el seller_id, usamos el user_id como fallback
 							console.warn(
 								`No se pudo obtener seller_id, usando user_id como fallback`
 							);
 							sellerId = product.user_id;
 						}
 					} else {
-						// Respuesta vacía o sin data
 						console.warn(
 							`Respuesta de API vacía o sin data, usando user_id como fallback`
 						);
@@ -237,7 +264,6 @@ const ProductItemPage: React.FC = () => {
 					}
 				} catch (error) {
 					console.error("Error al obtener seller_id:", error);
-					// Como fallback, usamos el user_id directamente
 					sellerId = product.user_id;
 					console.warn(
 						`Fallback: usando user_id ${sellerId} como seller_id debido a error`
@@ -257,7 +283,6 @@ const ProductItemPage: React.FC = () => {
 
 			const chatId = await createChat(sellerId, Number(id));
 			if (chatId) {
-				// Redirigir a la página de chat
 				navigate(`/chats/${chatId}`);
 			} else {
 				throw new Error("No se pudo crear el chat con el vendedor");
@@ -271,8 +296,42 @@ const ProductItemPage: React.FC = () => {
 		}
 	};
 
+	// ✅ NUEVA FUNCIÓN - Compartir producto
+	const handleShareProduct = async () => {
+		const currentUrl = window.location.href;
+		
+		try {
+			await navigator.clipboard.writeText(currentUrl);
+			showNotification(
+				NotificationType.SUCCESS,
+				"¡Enlace copiado al portapapeles!"
+			);
+		} catch (error) {
+			console.error("Error al copiar enlace:", error);
+			showNotification(
+				NotificationType.ERROR,
+				"No se pudo copiar el enlace"
+			);
+		}
+	};
+
 	// Renderizar estrellas de valoración
 	const renderRatingStars = (rating: number) => {
+		// ✅ VALIDACIÓN ADICIONAL PARA EVITAR UNDEFINED
+		if (!rating || rating === 0 || isNaN(rating)) {
+			return (
+				<div className="flex items-center">
+					{[1, 2, 3, 4, 5].map((star) => (
+						<Star
+							key={star}
+							size={18}
+							className="text-gray-300"
+						/>
+					))}
+				</div>
+			);
+		}
+
 		return (
 			<div className="flex items-center">
 				{[1, 2, 3, 4, 5].map((star) => (
@@ -330,7 +389,7 @@ const ProductItemPage: React.FC = () => {
 	// Process product data for display
 	const categories = product.category ? [product.category.name] : [];
 
-	// ✅ CORREGIDO - Función helper para obtener URL de imagen
+	// Función helper para obtener URL de imagen
 	const getImageUrlFromProduct = (image: string | ProductImage): string => {
 		if (typeof image === "string") {
 			return getImageUrl(image);
@@ -338,20 +397,13 @@ const ProductItemPage: React.FC = () => {
 		return getImageUrl(image.original || image.medium || image.thumbnail);
 	};
 
-	// ✅ CORREGIDO - Eliminar variable no utilizada mainImage
-	// const mainImage = product.images && product.images.length > 0
-	// 	? getImageUrlFromProduct(product.images[0])
-	// 	: getImageUrl(null);
-
 	// Parse colors, sizes, and tags
 	const parseStringArrays = (value: any): string[] => {
 		if (!value) return [];
 		if (Array.isArray(value)) {
-			// If already an array of strings, return as is
 			if (typeof value[0] === "string" && !value[0].startsWith("[")) {
 				return value;
 			}
-			// If it's an array of JSON strings, parse them
 			try {
 				return value
 					.join(",")
@@ -368,14 +420,16 @@ const ProductItemPage: React.FC = () => {
 	const sizes = parseStringArrays(product.sizes);
 	const tags = parseStringArrays(product.tags);
 
-	// Create specification items from product data
+	// Create specification items from product data (SKU COMPLETAMENTE ELIMINADO)
 	const specifications = [
-		{name: "SKU", value: product.sku || "N/A"},
-		{name: "Peso", value: product.weight ? `${product.weight} kg` : "N/A"},
+		{
+			name: "Peso", 
+			value: hasValidValue(product.weight) ? `${product.weight} kg` : "N/A"
+		},
 		{
 			name: "Dimensiones",
-			value:
-				product.dimensions || (product.width && product.height && product.depth)
+			value: product.dimensions || 
+				(hasValidValue(product.width) && hasValidValue(product.height) && hasValidValue(product.depth))
 					? `${product.width} × ${product.height} × ${product.depth} cm`
 					: "N/A",
 		},
@@ -383,7 +437,10 @@ const ProductItemPage: React.FC = () => {
 			name: "Disponibilidad",
 			value: product.is_in_stock ? "En stock" : "Agotado",
 		},
-		{name: "Categoría", value: product.category?.name || "N/A"},
+		{
+			name: "Categoría", 
+			value: product.category?.name || "N/A"
+		},
 	];
 
 	return (
@@ -395,7 +452,7 @@ const ProductItemPage: React.FC = () => {
 						Inicio
 					</Link>
 					<span className="mx-2">/</span>
-					{product.category && (
+					{product.category ? (
 						<>
 							<Link
 								to={`/category/${product.category.slug}`}
@@ -405,7 +462,7 @@ const ProductItemPage: React.FC = () => {
 							</Link>
 							<span className="mx-2">/</span>
 						</>
-					)}
+					) : null}
 					<span className="text-gray-700 font-medium">{product.name}</span>
 				</nav>
 
@@ -414,15 +471,15 @@ const ProductItemPage: React.FC = () => {
 						{/* Product Images */}
 						<div className="space-y-6">
 							<div className="bg-gray-50 rounded-xl overflow-hidden h-96 lg:h-[500px]">
-								{product.images && product.images.length > 0 && (
+								{(product.images && product.images.length > 0) ? (
 									<img
 										src={getImageUrlFromProduct(product.images[activeImage])}
 										alt={product.name}
 										className="w-full h-full object-cover transition-all duration-300"
 									/>
-								)}
+								) : null}
 							</div>
-							{product.images && product.images.length > 1 && (
+							{(product.images && product.images.length > 1) ? (
 								<div className="grid grid-cols-4 gap-3">
 									{product.images.map((image, index) => (
 										<div
@@ -442,81 +499,89 @@ const ProductItemPage: React.FC = () => {
 										</div>
 									))}
 								</div>
-							)}
+							) : null}
 						</div>
 
 						{/* Product Info */}
 						<div className="space-y-6">
-							{/* Product Header */}
-							<div>
-								{product.seller && (
-									<div className="flex items-center mb-2">
-										<span className="text-sm bg-primary-50 text-primary-700 px-2 py-0.5 rounded font-medium">
-											{product.seller.name || "Vendedor"}
-										</span>
-									</div>
-								)}
+							{/* ✅ SELLER INFO - SEPARADO Y LIMPIO */}
+							{(product.seller && product.seller.name) ? (
+								<div className="flex items-center mb-2">
+									<span className="text-sm bg-primary-50 text-primary-700 px-2 py-0.5 rounded font-medium">
+										{product.seller.name}
+									</span>
+								</div>
+							) : null}
 
-								{product.discount_percentage &&
-									product.discount_percentage > 0 && (
-										<span className="ml-2 bg-red-100 text-red-700 px-2 py-0.5 rounded text-sm font-medium">
-											{product.discount_percentage}% DESCUENTO
-										</span>
-									)}
+							{/* ✅ DISCOUNT BADGE - SEPARADO Y LIMPIO */}
+							{(product.discount_percentage && 
+							  typeof product.discount_percentage === 'number' && 
+							  product.discount_percentage > 0) ? (
+								<span className="bg-red-100 text-red-700 px-2 py-0.5 rounded text-sm font-medium">
+									{product.discount_percentage}% DESCUENTO
+								</span>
+							) : null}
 
-								<h1 className="text-3xl font-bold text-gray-900 mb-3">
-									{product.name}
-								</h1>
+							{/* ✅ TITLE - COMPLETAMENTE AISLADO */}
+							<h1 className="text-3xl font-bold text-gray-900">
+								{product.name}
+							</h1>
 
-								<div className="flex items-center gap-3 mb-4">
+							{/* ✅ RATING - COMPLETAMENTE AISLADO */}
+							{(product.rating && 
+							  typeof product.rating === 'number' && 
+							  product.rating > 0) ? (
+								<div className="flex items-center gap-3">
 									<div className="flex items-center">
-										{renderRatingStars(product.rating || 0)}
-										<span className="text-yellow-500 ml-1 font-medium">
-											{(product.rating || 0).toFixed(1)}
-										</span>
+										{renderRatingStars(product.rating)}
+										{displayRating(product.rating)}
 									</div>
 									<div className="text-gray-500 text-sm">
 										<span className="font-medium">
-											{product.rating_count || 0}
-										</span>{" "}
-										valoraciones
-									</div>
-									<div className="text-gray-400">|</div>
-									<div className="text-sm text-gray-500">
-										SKU:{" "}
-										<span className="text-gray-700">
-											{product.sku || "N/A"}
+											{displayRatingCount(product.rating_count)}
 										</span>
 									</div>
 								</div>
+							) : null}
 
-								{/* Price */}
-								<div className="flex items-center mb-2">
-									<span className="text-3xl font-bold text-primary-700">
-										$
-										{product.final_price
-											? product.final_price.toFixed(2)
-											: product.price.toFixed(2)}
+							{/* ✅ PRICE - COMPLETAMENTE AISLADO SIN WRAPPERS */}
+							<div className="price-container">
+								<span className="text-3xl font-bold text-primary-700">
+									$
+									{(product.final_price && 
+									  typeof product.final_price === 'number' && 
+									  product.final_price > 0)
+										? product.final_price.toFixed(2)
+										: product.price.toFixed(2)}
+								</span>
+								{(product.discount_percentage && 
+								  typeof product.discount_percentage === 'number' && 
+								  product.discount_percentage > 0 && 
+								  product.final_price && 
+								  typeof product.final_price === 'number' && 
+								  product.final_price < product.price) ? (
+									<span className="ml-3 text-lg text-gray-500 line-through">
+										${product.price.toFixed(2)}
 									</span>
-									{product.discount_percentage &&
-										product.discount_percentage > 0 && (
-											<span className="ml-3 text-lg text-gray-500 line-through">
-												${product.price.toFixed(2)}
-											</span>
-										)}
-								</div>
-								{product.discount_percentage &&
-									product.discount_percentage > 0 && (
-										<p className="text-sm text-green-600 font-medium mb-4">
-											¡Ahorra $
-											{(product.price - (product.final_price || 0)).toFixed(2)}!
-											Oferta por tiempo limitado.
-										</p>
-									)}
+								) : null}
 							</div>
 
+							{/* ✅ SAVINGS MESSAGE - COMPLETAMENTE AISLADO */}
+							{(product.discount_percentage && 
+							  typeof product.discount_percentage === 'number' && 
+							  product.discount_percentage > 0 && 
+							  product.final_price && 
+							  typeof product.final_price === 'number' && 
+							  product.final_price < product.price) ? (
+								<p className="text-sm text-green-600 font-medium">
+									¡Ahorra $
+									{(product.price - product.final_price).toFixed(2)}!
+									Oferta por tiempo limitado.
+								</p>
+							) : null}
+
 							{/* Color Selection */}
-							{colors.length > 0 && (
+							{colors.length > 0 ? (
 								<div>
 									<h3 className="font-medium text-gray-900 mb-3">Color:</h3>
 									<div className="flex space-x-3">
@@ -531,10 +596,10 @@ const ProductItemPage: React.FC = () => {
 										))}
 									</div>
 								</div>
-							)}
+							) : null}
 
 							{/* Size Selection */}
-							{sizes.length > 0 && (
+							{sizes.length > 0 ? (
 								<div>
 									<h3 className="font-medium text-gray-900 mb-3">Tamaño:</h3>
 									<div className="flex space-x-3">
@@ -549,7 +614,7 @@ const ProductItemPage: React.FC = () => {
 										))}
 									</div>
 								</div>
-							)}
+							) : null}
 
 							{/* Quantity and Add to Cart */}
 							<div className="flex flex-col sm:flex-row gap-4">
@@ -660,9 +725,9 @@ const ProductItemPage: React.FC = () => {
 							</div>
 
 							{/* Categories */}
-							{(categories.length > 0 || tags.length > 0) && (
+							{(categories.length > 0 || tags.length > 0) ? (
 								<div className="pt-4 border-t border-gray-200">
-									{categories.length > 0 && (
+									{categories.length > 0 ? (
 										<div className="flex items-center mb-2">
 											<span className="text-gray-600 mr-2">Categorías:</span>
 											<div className="flex flex-wrap gap-2">
@@ -677,9 +742,9 @@ const ProductItemPage: React.FC = () => {
 												))}
 											</div>
 										</div>
-									)}
+									) : null}
 
-									{tags.length > 0 && (
+									{tags.length > 0 ? (
 										<div className="flex items-center">
 											<span className="text-gray-600 mr-2">Etiquetas:</span>
 											<div className="flex flex-wrap gap-2">
@@ -694,15 +759,18 @@ const ProductItemPage: React.FC = () => {
 												))}
 											</div>
 										</div>
-									)}
+									) : null}
 								</div>
-							)}
+							) : null}
 
-							{/* Share */}
-							<div className="flex items-center text-gray-500 text-sm">
+							{/* ✅ SHARE MEJORADO - Ahora funcional */}
+							<button 
+								onClick={handleShareProduct}
+								className="flex items-center text-gray-500 text-sm hover:text-primary-600 transition-colors cursor-pointer"
+							>
 								<Share2 size={16} className="mr-2" />
 								<span>Compartir este producto</span>
-							</div>
+							</button>
 						</div>
 					</div>
 
@@ -744,11 +812,11 @@ const ProductItemPage: React.FC = () => {
 						<div className="p-6 lg:p-10">
 							{activeTab === "description" && (
 								<div className="max-w-3xl space-y-6">
-									{product.short_description && (
+									{product.short_description ? (
 										<p className="font-medium text-lg text-gray-800">
 											{product.short_description}
 										</p>
-									)}
+									) : null}
 									<p className="text-gray-700 leading-relaxed">
 										{product.description}
 									</p>
@@ -775,32 +843,39 @@ const ProductItemPage: React.FC = () => {
 
 							{activeTab === "reviews" && (
 								<div className="max-w-3xl">
-									<div className="flex items-center mb-6">
-										<div className="mr-4">
-											<div className="text-5xl font-bold text-gray-900">
-												{(product.rating || 0).toFixed(1)}
+									{/* ✅ REVIEWS MEJORADO - Solo muestra si hay rating válido */}
+									{(product.rating && 
+									  typeof product.rating === 'number' && 
+									  product.rating > 0) ? (
+										<div className="flex items-center mb-6">
+											<div className="mr-4">
+												<div className="text-5xl font-bold text-gray-900">
+													{product.rating.toFixed(1)}
+												</div>
+												<div className="flex mt-2">
+													{renderRatingStars(product.rating)}
+												</div>
+												<div className="text-sm text-gray-500 mt-1">
+													{displayRatingCount(product.rating_count)}
+												</div>
 											</div>
-											<div className="flex mt-2">
-												{renderRatingStars(product.rating || 0)}
-											</div>
-											<div className="text-sm text-gray-500 mt-1">
-												{product.rating_count || 0} valoraciones
-											</div>
-										</div>
 
-										<div className="flex-grow">
-											{/* Rating bars would go here */}
-											<p className="text-center text-gray-500">
-												No hay valoraciones disponibles
+											<div className="flex-grow">
+												<p className="text-center text-gray-500">
+													No hay valoraciones disponibles
+												</p>
+											</div>
+
+											{/* ✅ BOTÓN DE VALORACIÓN ELIMINADO - Solo usuarios que compraron pueden valorar */}
+										</div>
+									) : (
+										<div className="text-center py-12">
+											<p className="text-gray-500 mb-4">
+												Este producto aún no tiene valoraciones
 											</p>
+											{/* ✅ BOTÓN DE VALORACIÓN ELIMINADO - Solo usuarios que compraron pueden valorar */}
 										</div>
-
-										<div className="ml-6">
-											<button className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg">
-												Escribir valoración
-											</button>
-										</div>
-									</div>
+									)}
 								</div>
 							)}
 						</div>
@@ -808,7 +883,7 @@ const ProductItemPage: React.FC = () => {
 				</div>
 
 				{/* Related Products */}
-				{product.related_products && product.related_products.length > 0 && (
+				{(product.related_products && product.related_products.length > 0) ? (
 					<div className="mt-16">
 						<h2 className="text-2xl font-bold mb-8">Productos relacionados</h2>
 						<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -834,12 +909,17 @@ const ProductItemPage: React.FC = () => {
 										/>
 									</div>
 									<div className="p-5">
-										<div className="flex items-center mb-2">
-											{renderRatingStars(relatedProduct.rating || 0)}
-											<span className="text-xs text-gray-500 ml-1">
-												({relatedProduct.rating || 0})
-											</span>
-										</div>
+										{/* Related products rating - Solo si hay rating válido */}
+										{(relatedProduct.rating && 
+										  typeof relatedProduct.rating === 'number' && 
+										  relatedProduct.rating > 0) ? (
+											<div className="flex items-center mb-2">
+												{renderRatingStars(relatedProduct.rating)}
+												<span className="text-xs text-gray-500 ml-1">
+													({relatedProduct.rating.toFixed(1)})
+												</span>
+											</div>
+										) : null}
 										<Link to={`/product/${relatedProduct.id}`}>
 											<h3 className="font-medium text-gray-800 mb-2 hover:text-primary-600 transition-colors line-clamp-2 h-12">
 												{relatedProduct.name}
@@ -847,7 +927,9 @@ const ProductItemPage: React.FC = () => {
 										</Link>
 										<p className="text-primary-600 font-bold">
 											$
-											{relatedProduct.final_price
+											{(relatedProduct.final_price && 
+											  typeof relatedProduct.final_price === 'number' && 
+											  relatedProduct.final_price > 0)
 												? relatedProduct.final_price.toFixed(2)
 												: relatedProduct.price.toFixed(2)}
 										</p>
@@ -864,7 +946,7 @@ const ProductItemPage: React.FC = () => {
 							))}
 						</div>
 					</div>
-				)}
+				) : null}
 			</div>
 		</div>
 	);
