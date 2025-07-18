@@ -33,7 +33,7 @@ export const API_ENDPOINTS = {
 		CONFIRM_RECEPTION: (id: number) => `/user/orders/${id}/confirm-reception`,
 	},
 
-	HEADER_COUNTERS: "/api/user/header-counters",
+	HEADER_COUNTERS: "/user/header-counters",
 
 	// Products
 	PRODUCTS: {

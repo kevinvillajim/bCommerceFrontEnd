@@ -55,8 +55,8 @@ const Header: React.FC<HeaderProps> = ({
 		loading: countersLoading,
 		error: countersError,
 	} = useHeaderCounters();
-	const {cartItemCount, favoriteCount, notificationCount} = counters;
 
+	const {cartItemCount, favoriteCount, notificationCount} = counters;
 	console.log("Header: Contadores unificados", {
 		cartItemCount,
 		favoriteCount,
