@@ -1,4 +1,5 @@
-// src/presentation/hooks/useAuth.ts
+// src/presentation/hooks/useAuth.ts (OPTIMIZADO)
+
 import {useState, useCallback, useContext} from "react";
 import {AuthContext} from "../contexts/AuthContext";
 import LoginUseCase from "../../core/useCases/user/LoginUseCase";
@@ -11,19 +12,26 @@ import type {
 	UserRegistrationData,
 	UserProfileUpdateData,
 } from "../../core/domain/entities/User";
+import {CacheService} from "../../infrastructure/services/CacheService";
 
-// Crear instancias de servicios y casos de uso (EXACTAMENTE COMO EN TU ORIGINAL)
+// Crear instancias de servicios y casos de uso
 const loginUseCase = new LoginUseCase();
 const registerUseCase = new RegisterUseCase();
 const updateProfileUseCase = new UpdateProfileUseCase();
 const googleLoginUseCase = new GoogleLoginUseCase();
 const googleRegisterUseCase = new GoogleRegisterUseCase();
 
+// Cache keys
+const CACHE_KEYS = {
+	USER_DATA: "auth_user_data",
+	ROLE_INFO: "auth_role_info",
+};
+
 /**
- * Hook para operaciones de autenticación (MEJORADO CON FUNCIONES OPTIMIZADAS)
+ * Hook optimizado para operaciones de autenticación
  */
 export const useAuth = () => {
-	// Obtener todo del contexto (AGREGADO funciones optimizadas)
+	// Obtener todo del contexto unificado
 	const {
 		user,
 		setUser,
@@ -35,7 +43,6 @@ export const useAuth = () => {
 		refreshRoleInfo,
 		isInitialized,
 		getDefaultRouteForRole,
-		// NUEVAS funciones optimizadas del contexto mejorado
 		isAdmin: contextIsAdmin,
 		isSeller: contextIsSeller,
 	} = useContext(AuthContext);
@@ -44,7 +51,7 @@ export const useAuth = () => {
 	const [error, setError] = useState<string | null>(null);
 
 	/**
-	 * Iniciar sesión de usuario (EXACTAMENTE COMO EN TU ORIGINAL)
+	 * OPTIMIZADO: Iniciar sesión de usuario
 	 */
 	const login = useCallback(
 		async (credentials: UserLoginData) => {
@@ -52,12 +59,16 @@ export const useAuth = () => {
 			setError(null);
 
 			try {
-				// Usar el caso de uso de login
+				console.log("🔑 Iniciando login...");
 				const response = await loginUseCase.execute(credentials);
 
 				if (response && response.user) {
+					console.log("✅ Login exitoso");
 					setUser(response.user);
 					setIsAuthenticated(true);
+
+					// Limpiar cache antes del refresh para obtener datos frescos
+					CacheService.removeItem(CACHE_KEYS.ROLE_INFO);
 
 					// Refrescar información de rol después del login
 					await refreshRoleInfo();
@@ -69,7 +80,7 @@ export const useAuth = () => {
 			} catch (err) {
 				const errorMessage =
 					err instanceof Error ? err.message : "Error al iniciar sesión";
-				console.error("Login error:", errorMessage);
+				console.error("❌ Login error:", errorMessage);
 				setError(errorMessage);
 				return null;
 			} finally {
@@ -80,7 +91,7 @@ export const useAuth = () => {
 	);
 
 	/**
-	 * Registrar nuevo usuario (EXACTAMENTE COMO EN TU ORIGINAL)
+	 * OPTIMIZADO: Registrar nuevo usuario
 	 */
 	const register = useCallback(
 		async (userData: UserRegistrationData) => {
@@ -88,12 +99,16 @@ export const useAuth = () => {
 			setError(null);
 
 			try {
-				// Usar el caso de uso de registro
+				console.log("📝 Iniciando registro...");
 				const response = await registerUseCase.execute(userData);
 
 				if (response && response.user) {
+					console.log("✅ Registro exitoso");
 					setUser(response.user);
 					setIsAuthenticated(true);
+
+					// Limpiar cache antes del refresh para obtener datos frescos
+					CacheService.removeItem(CACHE_KEYS.ROLE_INFO);
 
 					// Refrescar información de rol después del registro
 					await refreshRoleInfo();
@@ -105,7 +120,7 @@ export const useAuth = () => {
 			} catch (err) {
 				const errorMessage =
 					err instanceof Error ? err.message : "Error al registrar usuario";
-				console.error("Register error:", errorMessage);
+				console.error("❌ Register error:", errorMessage);
 				setError(errorMessage);
 				return null;
 			} finally {
@@ -115,30 +130,26 @@ export const useAuth = () => {
 		[setUser, setIsAuthenticated, refreshRoleInfo]
 	);
 
-	// ================================
-	// MÉTODOS DE GOOGLE OAUTH (EXACTAMENTE COMO EN TU ORIGINAL)
-	// ================================
-
 	/**
-	 * Login with Google (EXACTAMENTE COMO EN TU ORIGINAL)
+	 * OPTIMIZADO: Login with Google
 	 */
 	const loginWithGoogle = useCallback(async () => {
 		try {
 			setLoading(true);
 			setError(null);
 
-			console.log("🔐 useAuth: Iniciando login con Google...");
-
+			console.log("🔐 Iniciando login con Google...");
 			const result = await googleLoginUseCase.execute();
 
 			if (result) {
-				console.log("✅ useAuth: Login con Google exitoso");
-
-				// Actualizar estado del usuario
+				console.log("✅ Login con Google exitoso");
 				setUser(result.user);
 				setIsAuthenticated(true);
 
-				// Refrescar información de rol después del login
+				// Limpiar cache antes del refresh
+				CacheService.removeItem(CACHE_KEYS.ROLE_INFO);
+
+				// Refrescar información de rol
 				await refreshRoleInfo();
 
 				return result;
@@ -146,13 +157,11 @@ export const useAuth = () => {
 
 			return null;
 		} catch (error) {
-			console.error("❌ useAuth: Error en login con Google:", error);
-
+			console.error("❌ Error en login con Google:", error);
 			const errorMessage =
 				error instanceof Error
 					? error.message
 					: "Error desconocido al iniciar sesión con Google";
-
 			setError(errorMessage);
 			return null;
 		} finally {
@@ -161,25 +170,25 @@ export const useAuth = () => {
 	}, [setUser, setIsAuthenticated, refreshRoleInfo]);
 
 	/**
-	 * Register with Google (EXACTAMENTE COMO EN TU ORIGINAL)
+	 * OPTIMIZADO: Register with Google
 	 */
 	const registerWithGoogle = useCallback(async () => {
 		try {
 			setLoading(true);
 			setError(null);
 
-			console.log("🔐 useAuth: Iniciando registro con Google...");
-
+			console.log("🔐 Iniciando registro con Google...");
 			const result = await googleRegisterUseCase.execute();
 
 			if (result) {
-				console.log("✅ useAuth: Registro con Google exitoso");
-
-				// Actualizar estado del usuario
+				console.log("✅ Registro con Google exitoso");
 				setUser(result.user);
 				setIsAuthenticated(true);
 
-				// Refrescar información de rol después del registro
+				// Limpiar cache antes del refresh
+				CacheService.removeItem(CACHE_KEYS.ROLE_INFO);
+
+				// Refrescar información de rol
 				await refreshRoleInfo();
 
 				return result;
@@ -187,13 +196,11 @@ export const useAuth = () => {
 
 			return null;
 		} catch (error) {
-			console.error("❌ useAuth: Error en registro con Google:", error);
-
+			console.error("❌ Error en registro con Google:", error);
 			const errorMessage =
 				error instanceof Error
 					? error.message
 					: "Error desconocido al registrarse con Google";
-
 			setError(errorMessage);
 			return null;
 		} finally {
@@ -202,28 +209,34 @@ export const useAuth = () => {
 	}, [setUser, setIsAuthenticated, refreshRoleInfo]);
 
 	/**
-	 * Cerrar sesión de usuario - usar la del contexto (EXACTAMENTE COMO EN TU ORIGINAL)
+	 * OPTIMIZADO: Cerrar sesión de usuario
 	 */
 	const logout = useCallback(async () => {
 		setLoading(true);
 		setError(null);
 
 		try {
+			console.log("🚪 Cerrando sesión...");
 			await contextLogout();
+			console.log("✅ Sesión cerrada exitosamente");
 			return true;
 		} catch (err) {
 			const errorMessage =
 				err instanceof Error ? err.message : "Error al cerrar sesión";
+			console.error("❌ Logout error:", errorMessage);
 			setError(errorMessage);
 			return false;
 		} finally {
 			setLoading(false);
-			window.location.href = "/"; // Redirigir al inicio después de cerrar sesión
+			// Redirigir al inicio después de cerrar sesión
+			setTimeout(() => {
+				window.location.href = "/";
+			}, 100);
 		}
 	}, [contextLogout]);
 
 	/**
-	 * Actualizar perfil de usuario (EXACTAMENTE COMO EN TU ORIGINAL)
+	 * OPTIMIZADO: Actualizar perfil de usuario
 	 */
 	const updateProfile = useCallback(
 		async (profileData: UserProfileUpdateData) => {
@@ -231,11 +244,20 @@ export const useAuth = () => {
 			setError(null);
 
 			try {
-				// Usar el caso de uso de actualización de perfil
+				console.log("👤 Actualizando perfil...");
 				const updatedUser = await updateProfileUseCase.execute(profileData);
 
 				if (updatedUser) {
+					console.log("✅ Perfil actualizado exitosamente");
 					setUser(updatedUser);
+
+					// Actualizar cache de usuario
+					CacheService.setItem(
+						CACHE_KEYS.USER_DATA,
+						updatedUser,
+						10 * 60 * 1000
+					);
+
 					return updatedUser;
 				} else {
 					throw new Error("No se recibió información de usuario actualizada");
@@ -243,6 +265,7 @@ export const useAuth = () => {
 			} catch (err) {
 				const errorMessage =
 					err instanceof Error ? err.message : "Error al actualizar perfil";
+				console.error("❌ Update profile error:", errorMessage);
 				setError(errorMessage);
 				return null;
 			} finally {
@@ -252,24 +275,18 @@ export const useAuth = () => {
 		[setUser]
 	);
 
-	// ================================
-	// NUEVAS FUNCIONES OPTIMIZADAS
-	// ================================
-
 	/**
-	 * Verificar si el usuario es administrador (NUEVA - OPTIMIZADA)
-	 * @param critical - Si es true, usa verificación crítica (más segura)
+	 * OPTIMIZADO: Verificar si el usuario es administrador
 	 */
 	const isAdmin = useCallback(
 		async (critical: boolean = false): Promise<boolean> => {
 			try {
 				return await contextIsAdmin(critical);
 			} catch (error) {
-				console.log(
-					"⚠️ Error en verificación optimizada de admin, usando fallback:",
+				console.warn(
+					"⚠️ Error en verificación de admin, usando fallback:",
 					error
 				);
-				// Fallback al estado actual
 				return roleInfo.isAdmin;
 			}
 		},
@@ -277,50 +294,67 @@ export const useAuth = () => {
 	);
 
 	/**
-	 * Verificar si el usuario es vendedor (NUEVA - OPTIMIZADA)
-	 * @param critical - Si es true, usa verificación crítica (más segura)
+	 * OPTIMIZADO: Verificar si el usuario es vendedor
 	 */
 	const isSeller = useCallback(
 		async (critical: boolean = false): Promise<boolean> => {
 			try {
 				return await contextIsSeller(critical);
 			} catch (error) {
-				console.log(
-					"⚠️ Error en verificación optimizada de seller, usando fallback:",
+				console.warn(
+					"⚠️ Error en verificación de seller, usando fallback:",
 					error
 				);
-				// Fallback al estado actual
 				return roleInfo.isSeller;
 			}
 		},
 		[contextIsSeller, roleInfo.isSeller]
 	);
 
-	// Devolver estado y funciones del hook (AGREGADO funciones optimizadas)
+	// Función de utilidad para limpiar errores
+	const clearError = useCallback(() => {
+		setError(null);
+	}, []);
+
+	// Devolver estado y funciones del hook
 	return {
+		// Estados básicos
 		user,
 		isAuthenticated,
 		loading,
 		error,
+
+		// Funciones de autenticación
 		login,
 		register,
 		logout,
 		updateProfile,
+
 		// Métodos de Google OAuth
 		loginWithGoogle,
 		registerWithGoogle,
+
+		// Setters (para compatibilidad, pero se recomienda usar las funciones)
 		setUser,
 		setIsAuthenticated,
-		// Propiedades del contexto (TODAS LAS ORIGINALES)
+
+		// Propiedades del contexto
 		roleInfo,
 		isLoadingRole,
 		refreshRoleInfo,
 		isInitialized,
 		getDefaultRouteForRole,
-		// NUEVAS funciones optimizadas
+
+		// Funciones optimizadas de roles
 		isAdmin,
 		isSeller,
+
+		// Utilidades
+		clearError,
 	};
 };
+
+// Re-exportar también como useSecureAuth para compatibilidad
+export const useSecureAuth = useAuth;
 
 export default useAuth;

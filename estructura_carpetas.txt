@@ -160,6 +160,8 @@ C:.
     |       |       SearchProductsUseCase.ts
     |       |       
     |       \---user
+    |               GoogleLoginUseCase.ts
+    |               GoogleRegisterUseCase.ts
     |               LoginUseCase.ts
     |               RegisterUseCase.ts
     |               UpdateProfileUseCase.ts
@@ -179,10 +181,13 @@ C:.
     |   |       
     |   \---services
     |           CacheService.ts
+    |           GoogleAuthService.ts
     |           HttpAuthService.ts
     |           LocalStorageService.ts
+    |           OptimizedRoleService.ts
     |           PrefetchService.ts
     |           RoleService.ts
+    |           SecureRoleCache.ts
     |           SellerIdResolverService.ts
     |           
     +---presentation
@@ -193,6 +198,10 @@ C:.
     |   |   |       RatingConfiguration.tsx
     |   |   |       SellerFormModal.tsx
     |   |   |       StatusUpdateModal.tsx
+    |   |   |       
+    |   |   +---auth
+    |   |   |       GoogleAuthButton.tsx
+    |   |   |       GoogleAuthCallbackHandler.tsx
     |   |   |       
     |   |   +---cart
     |   |   |       CartSellerDebug.tsx
@@ -332,6 +341,7 @@ C:.
     |   |       CartContext.tsx
     |   |       FavoriteContext.tsx
     |   |       NotificationContext.tsx
+    |   |       OptimizedAuthContext.tsx
     |   |       ThemeContext.tsx
     |   |       
     |   +---hooks
@@ -349,13 +359,17 @@ C:.
     |   |       useFavoriteApi.ts
     |   |       useFavorites.ts
     |   |       useFilterState.ts
+    |   |       useHeaderCounters.ts
+    |   |       useInvalidateCounters.ts
     |   |       useNotifications.ts
     |   |       useProductFilters.ts
     |   |       useProducts.ts
     |   |       useProductSearch.ts
     |   |       useRatings.ts
+    |   |       useReactiveCache.ts
     |   |       useRealTimeChat.ts
     |   |       useRealTimeNotifications.ts
+    |   |       useSecureAuth.ts
     |   |       useSellerAdmin.ts
     |   |       useSellerProducts.ts
     |   |       useSellerRatings.ts
@@ -381,6 +395,7 @@ C:.
     |   |   |   FAQPage.tsx
     |   |   |   FavoritePage.tsx
     |   |   |   ForgotPasswordPage.tsx
+    |   |   |   GoogleAuthSuccessPage.tsx
     |   |   |   HomePage.tsx
     |   |   |   LoginPage.tsx
     |   |   |   NotFoundPage.tsx

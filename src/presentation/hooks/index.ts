@@ -22,9 +22,6 @@ export { useAuth } from './useAuth';
 // Chat functionality
 export { useChat } from './useChat';
 
-export {useSecureAuth} from "./useSecureAuth";
-export {useOptimizedAuth} from "../contexts/OptimizedAuthContext";
-
 // Re-export default exports as named exports for consistency
 import useCategories from './useCategories';
 import useProductFilters from './useProductFilters';
