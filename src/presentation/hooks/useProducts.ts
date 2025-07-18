@@ -1,4 +1,4 @@
-// src/presentation/hooks/useProducts.ts
+// src/presentation/hooks/useProducts.ts - INTEGRACIÓN CON CACHE DE IMÁGENES
 import {useState, useCallback, useEffect} from "react";
 import {ProductService} from "../../core/services/ProductService";
 import {useCacheInvalidation} from "./useReactiveCache";
@@ -10,6 +10,9 @@ import type {
 	ProductListResponse,
 } from "../../core/domain/entities/Product";
 import type {ExtendedProductFilterParams} from "../types/ProductFilterParams";
+
+// ✅ IMPORTAR HOOK OPTIMIZADO DE IMÁGENES
+import {useImageCache} from "./useImageCache";
 
 // Crear instancia del servicio de productos
 const productService = new ProductService();
@@ -33,7 +36,7 @@ const getCacheKey = (params?: ExtendedProductFilterParams): string => {
 };
 
 /**
- * Hook optimizado para operaciones de productos con cache reactivo
+ * Hook optimizado para operaciones de productos con cache reactivo e imágenes optimizadas
  */
 export const useProducts = () => {
 	const [loading, setLoading] = useState<boolean>(false);
@@ -50,7 +53,10 @@ export const useProducts = () => {
 	// Hook para invalidación de cache
 	const {invalidate} = useCacheInvalidation();
 
-	// Función para adaptar datos de API a nuestro modelo
+	// ✅ HOOK PARA CACHE DE IMÁGENES OPTIMIZADO
+	const {getMultipleImageUrls, preloadImages} = useImageCache();
+
+	// ✅ FUNCIÓN OPTIMIZADA PARA ADAPTAR PRODUCTOS CON CACHE DE IMÁGENES
 	const adaptProduct = useCallback((apiProduct: any): Product => {
 		// Verificar que sea un objeto para prevenir errores
 		if (!apiProduct || typeof apiProduct !== "object") {
@@ -58,7 +64,7 @@ export const useProducts = () => {
 			return {} as Product;
 		}
 
-		// Procesar imágenes de manera más robusta
+		// Procesar imágenes de manera más robusta - SIMPLIFICADO
 		let processedImages: string[] = [];
 
 		// Prioridad 1: array images
@@ -145,6 +151,56 @@ export const useProducts = () => {
 		return adaptedProduct;
 	}, []);
 
+	// ✅ FUNCIÓN PARA PRECARGAR IMÁGENES DE PRODUCTOS
+	const preloadProductImages = useCallback(
+		async (products: Product[]): Promise<void> => {
+			try {
+				// Extraer las primeras imágenes de cada producto y convertir a strings
+				const productImageObjects = products.map((product) => {
+					// Convertir ProductImage a string si es necesario - solo propiedades existentes
+					const getImageString = (img: any): string | undefined => {
+						if (typeof img === "string") return img;
+						if (img && typeof img === "object") {
+							// Solo usar propiedades que existen en ProductImage
+							return img.url || img.original || img.medium || img.thumbnail;
+						}
+						return undefined;
+					};
+
+					const imageString = product.images?.[0]
+						? getImageString(product.images[0])
+						: undefined;
+					// Filtrar undefined values del array
+					const imagesArray = product.images
+						? product.images
+								.map(getImageString)
+								.filter((img): img is string => img !== undefined)
+						: undefined;
+
+					return {
+						image: imageString,
+						images: imagesArray,
+					};
+				});
+
+				// Obtener URLs optimizadas usando el hook de cache de imágenes
+				const imageUrls = getMultipleImageUrls(productImageObjects, "medium");
+
+				// Precargar las imágenes de forma asíncrona (no bloquear la UI)
+				if (imageUrls.length > 0) {
+					setTimeout(() => {
+						preloadImages(imageUrls).catch((error) =>
+							console.log("⚠️ Error precargando imágenes (no crítico):", error)
+						);
+					}, 100);
+				}
+			} catch (error) {
+				console.log("⚠️ Error configurando precarga de imágenes:", error);
+			}
+		},
+		[getMultipleImageUrls, preloadImages]
+	);
+
 	// Inicializar el hook
 	useEffect(() => {
 		if (!isInitialized) {
@@ -153,10 +209,15 @@ export const useProducts = () => {
 			if (cachedFeatured) {
 				setProducts(cachedFeatured.data || []);
 				setMeta(cachedFeatured.meta || null);
+
+				// ✅ PRECARGAR IMÁGENES DE PRODUCTOS DESTACADOS
+				if (cachedFeatured.data?.length > 0) {
+					preloadProductImages(cachedFeatured.data);
+				}
 			}
 			setIsInitialized(true);
 		}
-	}, [isInitialized]);
+	}, [isInitialized, preloadProductImages]);
 
 	/**
 	 * Recupera productos con filtros opcionales
@@ -178,6 +239,12 @@ export const useProducts = () => {
 					setProducts(cachedData.data || []);
 					setMeta(cachedData.meta || null);
 					setLoading(false);
+
+					// ✅ PRECARGAR IMÁGENES DE PRODUCTOS DESDE CACHE
+					if (cachedData.data?.length > 0) {
+						preloadProductImages(cachedData.data);
+					}
+
 					return cachedData;
 				}
 
@@ -214,6 +281,12 @@ export const useProducts = () => {
 
 					setProducts(adaptedData);
 					setMeta(result.meta);
+
+					// ✅ PRECARGAR IMÁGENES DE PRODUCTOS NUEVOS
+					if (adaptedData.length > 0) {
+						preloadProductImages(adaptedData);
+					}
+
 					return result;
 				} else {
 					setProducts([]);
@@ -231,7 +304,7 @@ export const useProducts = () => {
 				setLoading(false);
 			}
 		},
-		[adaptProduct]
+		[adaptProduct, preloadProductImages]
 	);
 
 	/**
@@ -267,6 +340,46 @@ export const useProducts = () => {
 					);
 
 					setProduct(productDetailResponse);
+
+					// ✅ PRECARGAR IMÁGENES DEL PRODUCTO INDIVIDUAL
+					if (
+						productDetailResponse.images &&
+						productDetailResponse.images.length > 0
+					) {
+						// Convertir ProductImage[] a string[] - solo propiedades existentes
+						const imageStrings = productDetailResponse.images
+							.map((img) => {
+								if (typeof img === "string") return img;
+								if (img && typeof img === "object") {
+									// Solo usar propiedades que existen en ProductImage
+									return (
+										img.url || img.original || img.medium || img.thumbnail || ""
+									);
+								}
+								return "";
+							})
+							.filter(Boolean);
+
+						const imageUrls = getMultipleImageUrls(
+							[
+								{
+									images: imageStrings,
+								},
+							],
+							"original"
+						);
+
+						// Precargar todas las imágenes del producto para galería
+						setTimeout(() => {
+							preloadImages(imageUrls).catch((error) =>
+								console.log(
+									"⚠️ Error precargando imágenes del producto:",
+									error
+								)
+							);
+						}, 50);
+					}
+
 					return productDetailResponse;
 				}
 
@@ -285,7 +398,7 @@ export const useProducts = () => {
 				setLoading(false);
 			}
 		},
-		[]
+		[getMultipleImageUrls, preloadImages]
 	);
 
 	/**
@@ -322,6 +435,45 @@ export const useProducts = () => {
 					);
 
 					setProduct(productDetailResponse);
+
+					// ✅ PRECARGAR IMÁGENES DEL PRODUCTO POR SLUG
+					if (
+						productDetailResponse.images &&
+						productDetailResponse.images.length > 0
+					) {
+						// Convertir ProductImage[] a string[] - solo propiedades existentes
+						const imageStrings = productDetailResponse.images
+							.map((img) => {
+								if (typeof img === "string") return img;
+								if (img && typeof img === "object") {
+									// Solo usar propiedades que existen en ProductImage
+									return (
+										img.url || img.original || img.medium || img.thumbnail || ""
+									);
+								}
+								return "";
+							})
+							.filter(Boolean);
+
+						const imageUrls = getMultipleImageUrls(
+							[
+								{
+									images: imageStrings,
+								},
+							],
+							"original"
+						);
+
+						setTimeout(() => {
+							preloadImages(imageUrls).catch((error) =>
+								console.log(
+									"⚠️ Error precargando imágenes del producto:",
+									error
+								)
+							);
+						}, 50);
+					}
+
 					return productDetailResponse;
 				}
 
@@ -343,7 +495,7 @@ export const useProducts = () => {
 				setLoading(false);
 			}
 		},
-		[]
+		[getMultipleImageUrls, preloadImages]
 	);
 
 	/**
@@ -366,6 +518,10 @@ export const useProducts = () => {
 					);
 					setProducts(cachedProducts);
 					setLoading(false);
+
+					// ✅ PRECARGAR IMÁGENES DE PRODUCTOS DESTACADOS DESDE CACHE
+					preloadProductImages(cachedProducts);
+
 					return cachedProducts;
 				}
 
@@ -387,6 +543,10 @@ export const useProducts = () => {
 					);
 
 					setProducts(adaptedProducts);
+
+					// ✅ PRECARGAR IMÁGENES DE PRODUCTOS DESTACADOS NUEVOS
+					preloadProductImages(adaptedProducts);
+
 					return adaptedProducts;
 				}
 
@@ -405,7 +565,7 @@ export const useProducts = () => {
 				setLoading(false);
 			}
 		},
-		[adaptProduct]
+		[adaptProduct, preloadProductImages]
 	);
 
 	/**
@@ -427,6 +587,10 @@ export const useProducts = () => {
 						`💾 Usando productos relacionados en caché para producto ${productId}`
 					);
 					setLoading(false);
+
+					// ✅ PRECARGAR IMÁGENES DE PRODUCTOS RELACIONADOS DESDE CACHE
+					preloadProductImages(cachedProducts);
+
 					return cachedProducts;
 				}
 
@@ -449,6 +613,9 @@ export const useProducts = () => {
 						appConfig.cache.productCacheTime
 					);
 
+					// ✅ PRECARGAR IMÁGENES DE PRODUCTOS RELACIONADOS NUEVOS
+					preloadProductImages(adaptedProducts);
+
 					return adaptedProducts;
 				}
 
@@ -465,7 +632,7 @@ export const useProducts = () => {
 				setLoading(false);
 			}
 		},
-		[adaptProduct]
+		[adaptProduct, preloadProductImages]
 	);
 
 	/**
@@ -515,6 +682,8 @@ export const useProducts = () => {
 		fetchRelatedProducts,
 		trackProductView,
 		clearProductCache,
+		// ✅ NUEVAS FUNCIONALIDADES DE CACHE DE IMÁGENES
+		preloadProductImages,
 	};
 };
 

@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from "react";
+import React, {useState, useEffect, useMemo, useCallback} from "react";
 import {Link, useNavigate} from "react-router-dom";
 import {
 	ShoppingCart,
@@ -11,10 +11,11 @@ import {
 import {useCart} from "../hooks/useCart";
 import {useFavorites} from "../hooks/useFavorites";
 import {formatCurrency} from "../../utils/formatters/formatCurrency";
-import { NotificationType } from "../contexts/CartContext";
+import {NotificationType} from "../contexts/CartContext";
 
-// IMPORTAR EL HELPER DE IMÁGENES CORREGIDO
-import { getImageUrl } from "../../utils/imageManager";
+// ✅ IMPORTAR HOOKS OPTIMIZADOS
+import {useImageCache} from "../hooks/useImageCache";
+import {useAutoPrefetch} from "../hooks/useAutoPrefetch";
 
 const CartPage: React.FC = () => {
 	const [isLoading, setIsLoading] = useState(true);
@@ -25,6 +26,14 @@ const CartPage: React.FC = () => {
 	const [loadingItem, setLoadingItem] = useState<number | null>(null);
 
 	const navigate = useNavigate();
+
+	// ✅ HOOKS OPTIMIZADOS
+	const {getOptimizedImageUrl} = useImageCache();
+	const {prefetchCartPageData} = useAutoPrefetch({
+		enabled: true,
+		delay: 500,
+		onPrefetchComplete: () => console.log("✅ Cart page prefetch completed"),
+	});
 
 	// Obtener datos del carrito y funciones para manipularlo
 	const {
@@ -41,12 +50,114 @@ const CartPage: React.FC = () => {
 
 	const {toggleFavorite} = useFavorites();
 
+	// ✅ FUNCIÓN OPTIMIZADA PARA OBTENER IMAGEN DEL PRODUCTO
+	const getProductImage = useCallback(
+		(product: any): string => {
+			return getOptimizedImageUrl(product, "medium");
+		},
+		[getOptimizedImageUrl]
+	);
+
+	// ✅ FUNCIÓN MEMOIZADA PARA CALCULAR PRECIOS DE ITEM
+	const calculateItemPrices = useCallback((item: any) => {
+		if (!item) return {original: 0, discounted: 0, discount: 0, subtotal: 0};
+
+		// Obtener precio original del item
+		const originalPrice = item.price || 0;
+
+		// USAR DIRECTAMENTE final_price DE LA API
+		let discountedPrice = originalPrice;
+		let discountPercentage = 0;
+
+		if (item.product) {
+			// PRIORIDAD 1: usar final_price si existe (viene calculado desde la API)
+			if (
+				item.product.final_price !== undefined &&
+				item.product.final_price !== null
+			) {
+				discountedPrice = item.product.final_price;
+			}
+			// FALLBACK: si no hay final_price, calcular manualmente
+			else {
+				discountPercentage =
+					item.product.discount_percentage ||
+					item.product.discountPercentage ||
+					item.product.discount ||
+					0;
+				if (discountPercentage > 0) {
+					discountedPrice =
+						originalPrice - originalPrice * (discountPercentage / 100);
+				}
+			}
+
+			// Obtener porcentaje de descuento para mostrar en UI
+			discountPercentage =
+				item.product.discount_percentage ||
+				item.product.discountPercentage ||
+				item.product.discount ||
+				0;
+		}
+
+		// CALCULAR SUBTOTAL usando el precio con descuento (final_price)
+		const subtotal = discountedPrice * item.quantity;
+
+		return {
+			original: originalPrice,
+			discounted: discountedPrice,
+			discount: discountPercentage,
+			subtotal: subtotal,
+		};
+	}, []);
+
+	// ✅ MEMOIZAR CÁLCULOS DE TOTALES DEL CARRITO
+	const cartTotals = useMemo(() => {
+		if (!cart || !cart.items || cart.items.length === 0) {
+			return {
+				subtotal: 0,
+				tax: 0,
+				couponAmount: 0,
+				total: 0,
+			};
+		}
+
+		// Calcular subtotal sumando todos los subtotales con descuento
+		const subtotal = cart.items.reduce((sum, item) => {
+			const itemPrices = calculateItemPrices(item);
+			return sum + itemPrices.subtotal;
+		}, 0);
+
+		const taxRate = 0.15; // 15% IVA
+		const tax = subtotal * taxRate;
+		const couponAmount = couponApplied ? subtotal * (couponDiscount / 100) : 0;
+		const total = subtotal + tax - couponAmount;
+
+		return {
+			subtotal,
+			tax,
+			couponAmount,
+			total,
+		};
+	}, [cart?.items, couponApplied, couponDiscount, calculateItemPrices]);
+
+	// ✅ MEMOIZAR ITEMS CON SUS PRECIOS CALCULADOS
+	const cartItemsWithPrices = useMemo(() => {
+		if (!cart?.items) return [];
+
+		return cart.items.map((item) => ({
+			...item,
+			prices: calculateItemPrices(item),
+			imageUrl: getProductImage(item.product),
+		}));
+	}, [cart?.items, calculateItemPrices, getProductImage]);
+
 	// Cargar el carrito al montar el componente
 	useEffect(() => {
 		const loadCart = async () => {
 			setIsLoading(true);
 			try {
 				await fetchCart();
+				// ✅ PREFETCH DE DATOS RELACIONADOS DESPUÉS DE CARGAR CARRITO
+				prefetchCartPageData();
 			} catch (error) {
 				console.error("Error al cargar el carrito:", error);
 				showNotification(
@@ -59,7 +170,7 @@ const CartPage: React.FC = () => {
 		};
 
 		loadCart();
-	}, [fetchCart, showNotification]);
+	}, [fetchCart, showNotification, prefetchCartPageData]);
 
 	// Actualizar estado de carrito vacío cuando cambia el carrito
 	useEffect(() => {
@@ -68,120 +179,132 @@ const CartPage: React.FC = () => {
 		}
 	}, [cart, loading]);
 
-	// Funciones para manipular el carrito
-	const increaseQuantity = async (id: number) => {
-		if (loadingItem) return; // Evitar múltiples clics simultáneos
+	// ✅ FUNCIONES MEMOIZADAS PARA MANIPULAR EL CARRITO
+	const increaseQuantity = useCallback(
+		async (id: number) => {
+			if (loadingItem) return;
 
-		setLoadingItem(id);
-		const item = cart?.items.find((item) => item.id === id);
+			setLoadingItem(id);
+			const item = cart?.items.find((item) => item.id === id);
 
-		if (item) {
+			if (item) {
+				try {
+					const result = await updateCartItem({
+						itemId: id,
+						quantity: item.quantity + 1,
+					});
+
+					if (!result) {
+						throw new Error("No se pudo actualizar la cantidad");
+					}
+				} catch (error) {
+					console.error("Error al aumentar cantidad:", error);
+					showNotification(
+						NotificationType.ERROR,
+						"No se pudo actualizar la cantidad"
+					);
+				} finally {
+					setLoadingItem(null);
+				}
+			}
+		},
+		[cart?.items, loadingItem, updateCartItem, showNotification]
+	);
+
+	const decreaseQuantity = useCallback(
+		async (id: number) => {
+			if (loadingItem) return;
+
+			setLoadingItem(id);
+			const item = cart?.items.find((item) => item.id === id);
+
+			if (item && item.quantity > 1) {
+				try {
+					const result = await updateCartItem({
+						itemId: id,
+						quantity: item.quantity - 1,
+					});
+
+					if (!result) {
+						throw new Error("No se pudo actualizar la cantidad");
+					}
+				} catch (error) {
+					console.error("Error al disminuir cantidad:", error);
+					showNotification(
+						NotificationType.ERROR,
+						"No se pudo actualizar la cantidad"
+					);
+				} finally {
+					setLoadingItem(null);
+				}
+			}
+		},
+		[cart?.items, loadingItem, updateCartItem, showNotification]
+	);
+
+	const handleRemoveFromCart = useCallback(
+		async (id: number) => {
+			if (loadingItem) return;
+
+			setLoadingItem(id);
 			try {
-				const result = await updateCartItem({
-					itemId: id,
-					quantity: item.quantity + 1,
-				});
+				const result = await removeFromCart(id);
 
-				if (!result) {
-					throw new Error("No se pudo actualizar la cantidad");
+				if (result) {
+					showNotification(
+						NotificationType.SUCCESS,
+						"Producto eliminado del carrito"
+					);
+				} else {
+					throw new Error("No se pudo eliminar el producto");
 				}
 			} catch (error) {
-				console.error("Error al aumentar cantidad:", error);
+				console.error("Error al eliminar del carrito:", error);
 				showNotification(
 					NotificationType.ERROR,
-					"No se pudo actualizar la cantidad"
+					"No se pudo eliminar el producto"
 				);
 			} finally {
 				setLoadingItem(null);
 			}
-		}
-	};
+		},
+		[loadingItem, removeFromCart, showNotification]
+	);
 
-	const decreaseQuantity = async (id: number) => {
-		if (loadingItem) return; // Evitar múltiples clics simultáneos
+	const moveToWishlist = useCallback(
+		async (id: number, productId: number) => {
+			if (loadingItem) return;
 
-		setLoadingItem(id);
-		const item = cart?.items.find((item) => item.id === id);
-
-		if (item && item.quantity > 1) {
+			setLoadingItem(id);
 			try {
-				const result = await updateCartItem({
-					itemId: id,
-					quantity: item.quantity - 1,
-				});
+				// Primero agregamos a favoritos
+				await toggleFavorite(productId);
 
-				if (!result) {
-					throw new Error("No se pudo actualizar la cantidad");
+				// Luego eliminamos del carrito
+				const result = await removeFromCart(id);
+
+				if (result) {
+					showNotification(
+						NotificationType.SUCCESS,
+						"Producto movido a favoritos"
+					);
+				} else {
+					throw new Error("No se pudo mover el producto a favoritos");
 				}
 			} catch (error) {
-				console.error("Error al disminuir cantidad:", error);
+				console.error("Error al mover a favoritos:", error);
 				showNotification(
 					NotificationType.ERROR,
-					"No se pudo actualizar la cantidad"
+					"No se pudo mover el producto a favoritos"
 				);
 			} finally {
 				setLoadingItem(null);
 			}
-		}
-	};
+		},
+		[loadingItem, toggleFavorite, removeFromCart, showNotification]
+	);
 
-	const handleRemoveFromCart = async (id: number) => {
-		if (loadingItem) return; // Evitar múltiples clics simultáneos
-
-		setLoadingItem(id);
-		try {
-			const result = await removeFromCart(id);
-
-			if (result) {
-				showNotification(
-					NotificationType.SUCCESS,
-					"Producto eliminado del carrito"
-				);
-			} else {
-				throw new Error("No se pudo eliminar el producto");
-			}
-		} catch (error) {
-			console.error("Error al eliminar del carrito:", error);
-			showNotification(
-				NotificationType.ERROR,
-				"No se pudo eliminar el producto"
-			);
-		} finally {
-			setLoadingItem(null);
-		}
-	};
-
-	const moveToWishlist = async (id: number, productId: number) => {
-		if (loadingItem) return; // Evitar múltiples clics simultáneos
-
-		setLoadingItem(id);
-		try {
-			// Primero agregamos a favoritos
-			await toggleFavorite(productId);
-
-			// Luego eliminamos del carrito
-			const result = await removeFromCart(id);
-
-			if (result) {
-				showNotification(
-					NotificationType.SUCCESS,
-					"Producto movido a favoritos"
-				);
-			} else {
-				throw new Error("No se pudo mover el producto a favoritos");
-			}
-		} catch (error) {
-			console.error("Error al mover a favoritos:", error);
-			showNotification(
-				NotificationType.ERROR,
-				"No se pudo mover el producto a favoritos"
-			);
-		} finally {
-			setLoadingItem(null);
-		}
-	};
-
-	const applyCoupon = () => {
+	const applyCoupon = useCallback(() => {
 		if (couponCode.toLowerCase() === "discount10") {
 			setCouponApplied(true);
 			setCouponDiscount(10);
@@ -189,9 +312,9 @@ const CartPage: React.FC = () => {
 		} else {
 			showNotification(NotificationType.ERROR, "Código de cupón inválido");
 		}
-	};
+	}, [couponCode, showNotification]);
 
-	const handleEmptyCart = async () => {
+	const handleEmptyCart = useCallback(async () => {
 		if (loading) return;
 
 		try {
@@ -209,141 +332,10 @@ const CartPage: React.FC = () => {
 			console.error("Error al vaciar el carrito:", error);
 			showNotification(NotificationType.ERROR, "No se pudo vaciar el carrito");
 		}
-	};
-
-	// FUNCIÓN CORREGIDA PARA OBTENER IMAGEN DEL PRODUCTO
-	const getProductImage = (product: any): string => {
-		console.log("🎨 CartPage - getProductImage:", product);
-		
-		let imagePath = "";
-
-		// Prioridad 1: image
-		if (product?.image) {
-			imagePath = product.image;
-		}
-		// Prioridad 2: main_image  
-		else if (product?.main_image) {
-			imagePath = product.main_image;
-		}
-		// Prioridad 3: primer elemento de images array
-		else if (product?.images && Array.isArray(product.images) && product.images.length > 0) {
-			const firstImage = product.images[0];
-			if (typeof firstImage === 'string') {
-				imagePath = firstImage;
-			} else if (typeof firstImage === 'object' && firstImage !== null) {
-				imagePath = firstImage.original || firstImage.medium || firstImage.thumbnail || "";
-			}
-		}
-
-		console.log("🖼️ CartPage - Path extraído:", imagePath);
-		
-		// USAR EL HELPER CORREGIDO
-		const finalUrl = getImageUrl(imagePath);
-		console.log("🔗 CartPage - URL final:", finalUrl);
-		
-		return finalUrl;
-	};
-
-	// FUNCIÓN SIMPLIFICADA PARA CALCULAR PRECIOS DE ITEM
-	const calculateItemPrices = (item: any): { original: number, discounted: number, discount: number, subtotal: number } => {
-		console.log("💰 CartPage - Datos del item completo:", item);
-	
-	// *** AGREGÁ ESTE DEBUG TEMPORAL ***
-	console.log("🔍 DEBUG - Item completo:", JSON.stringify(item, null, 2));
-	console.log("🔍 DEBUG - Producto completo:", JSON.stringify(item.product, null, 2));
-
-		
-		// Obtener precio original del item
-		const originalPrice = item.price || 0;
-		
-		// USAR DIRECTAMENTE final_price DE LA API - ESTA ES LA CORRECCIÓN PRINCIPAL
-		let discountedPrice = originalPrice; // Por defecto usar precio original
-		let discountPercentage = 0;
-		
-		if (item.product) {
-			// PRIORIDAD 1: usar final_price si existe (viene calculado desde la API)
-			if (item.product.final_price !== undefined && item.product.final_price !== null) {
-				discountedPrice = item.product.final_price;
-			}
-			// FALLBACK: si no hay final_price, calcular manualmente (caso raro)
-			else {
-				discountPercentage = item.product.discount_percentage || 
-									item.product.discountPercentage || 
-									item.product.discount || 
-									0;
-				if (discountPercentage > 0) {
-					discountedPrice = originalPrice - (originalPrice * (discountPercentage / 100));
-				}
-			}
-			
-			// Obtener porcentaje de descuento para mostrar en UI
-			discountPercentage = item.product.discount_percentage || 
-								item.product.discountPercentage || 
-								item.product.discount || 
-								0;
-		}
-		
-		console.log("💰 CartPage - Precio original:", originalPrice);
-		console.log("💰 CartPage - Precio con descuento (final_price):", discountedPrice);
-		console.log("💰 CartPage - Descuento %:", discountPercentage);
-		console.log("💰 CartPage - Cantidad:", item.quantity);
-		
-		// CALCULAR SUBTOTAL usando el precio con descuento (final_price)
-		const subtotal = discountedPrice * item.quantity;
-		
-		console.log("💰 CartPage - Subtotal calculado:", subtotal);
-		
-		return {
-			original: originalPrice,
-			discounted: discountedPrice,
-			discount: discountPercentage,
-			subtotal: subtotal
-		};
-	};
-
-	// CALCULAR TOTALES DEL CARRITO
-	const calculateCartTotals = () => {
-		if (!cart || !cart.items || cart.items.length === 0) {
-			return {
-				subtotal: 0,
-				tax: 0,
-				couponAmount: 0,
-				total: 0
-			};
-		}
-
-		// Calcular subtotal sumando todos los subtotales con descuento
-		const subtotal = cart.items.reduce((sum, item) => {
-			const itemPrices = calculateItemPrices(item);
-			return sum + itemPrices.subtotal;
-		}, 0);
-
-		console.log("💰 CartPage - Subtotal total del carrito:", subtotal);
-
-		const taxRate = 0.15; // 15% IVA
-		const tax = subtotal * taxRate;
-		const couponAmount = couponApplied ? subtotal * (couponDiscount / 100) : 0;
-		const total = subtotal + tax - couponAmount;
-
-		console.log("💰 CartPage - Totales finales:", {
-			subtotal,
-			tax,
-			couponAmount,
-			total
-		});
-
-		return {
-			subtotal,
-			tax, 
-			couponAmount,
-			total
-		};
-	};
-
-	const { subtotal, tax, couponAmount, total } = calculateCartTotals();
+	}, [loading, clearCart, showNotification]);
 
 	// Función para proceder al checkout
-	const handleCheckout = () => {
+	const handleCheckout = useCallback(() => {
 		if (isEmpty) {
 			showNotification(
 				NotificationType.ERROR,
@@ -354,7 +346,141 @@ const CartPage: React.FC = () => {
 
 		// Redireccionar a la página de checkout
 		navigate("/checkout");
-	};
+	}, [isEmpty, navigate, showNotification]);
+
+	// ✅ COMPONENTE MEMOIZADO PARA ITEM DEL CARRITO
+	const CartItem = React.memo(
+		({
+			item,
+			prices,
+			imageUrl,
+			onIncrease,
+			onDecrease,
+			onRemove,
+			onMoveToWishlist,
+			isLoading,
+		}: {
+			item: any;
+			prices: any;
+			imageUrl: string;
+			onIncrease: () => void;
+			onDecrease: () => void;
+			onRemove: () => void;
+			onMoveToWishlist: () => void;
+			isLoading: boolean;
+		}) => (
+			<div className="border-b border-gray-200 last:border-b-0">
+				<div className="grid sm:grid-cols-12 gap-4 p-5">
+					{/* Producto (imagen y nombre) */}
+					<div className="sm:col-span-6 flex">
+						<Link
+							to={`/products/${item.productId}`}
+							className="w-24 h-24 flex-shrink-0"
+						>
+							<img
+								src={imageUrl}
+								alt={item.product?.name || `Producto ${item.productId}`}
+								className="w-full h-full object-cover rounded"
+							/>
+						</Link>
+						<div className="ml-4 flex flex-col">
+							<Link
+								to={`/products/${item.productId}`}
+								className="font-medium text-gray-800 hover:text-primary-600"
+							>
+								{item.product?.name || `Producto ${item.productId}`}
+							</Link>
+
+							{/* Mostrar descuento si existe */}
+							{prices.discount > 0 && (
+								<div className="mt-1">
+									<span className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded">
+										{prices.discount}% OFF
+									</span>
+								</div>
+							)}
+
+							<div className="mt-auto flex space-x-3 text-sm pt-3">
+								<button
+									onClick={onRemove}
+									disabled={isLoading}
+									className="text-gray-500 hover:text-red-500 flex items-center disabled:opacity-50"
+								>
+									<Trash2 size={14} className="mr-1" />
+									Eliminar
+								</button>
+								<button
+									onClick={onMoveToWishlist}
+									disabled={isLoading}
+									className="text-gray-500 hover:text-primary-600 flex items-center disabled:opacity-50"
+								>
+									<Heart size={14} className="mr-1" />
+									Guardar
+								</button>
+							</div>
+						</div>
+					</div>
+
+					{/* Precio */}
+					<div className="sm:col-span-2 flex items-center justify-center sm:justify-center">
+						<div className="sm:hidden mr-2 font-medium text-gray-800">
+							Precio:
+						</div>
+						<div className="font-medium flex flex-col items-center">
+							<span className="text-gray-800">
+								{formatCurrency(prices.discounted)}
+							</span>
+							{prices.discount > 0 && (
+								<span className="text-xs text-gray-500 line-through">
+									{formatCurrency(prices.original)}
+								</span>
+							)}
+						</div>
+					</div>
+
+					{/* Cantidad */}
+					<div className="sm:col-span-2 flex items-center justify-center">
+						<div className="sm:hidden mr-2 font-medium text-gray-800">
+							Cantidad:
+						</div>
+						<div className="flex items-center border border-gray-300 rounded-md">
+							<button
+								onClick={onDecrease}
+								disabled={item.quantity <= 1 || isLoading}
+								className="px-2 py-1 text-gray-600 hover:text-gray-800 disabled:opacity-50"
+							>
+								<Minus size={14} />
+							</button>
+							<span className="px-3 py-1 text-gray-800 text-center w-10">
+								{isLoading ? (
+									<span className="inline-block h-4 w-4 border-2 border-t-primary-600 border-r-primary-600 border-b-primary-200 border-l-primary-200 rounded-full animate-spin"></span>
+								) : (
+									item.quantity
+								)}
+							</span>
+							<button
+								onClick={onIncrease}
+								disabled={isLoading}
+								className="px-2 py-1 text-gray-600 hover:text-gray-800 disabled:opacity-50"
+							>
+								<Plus size={14} />
+							</button>
+						</div>
+					</div>
+
+					{/* Total */}
+					<div className="sm:col-span-2 flex items-center justify-center sm:justify-center">
+						<div className="sm:hidden mr-2 font-medium text-gray-800">
+							Total:
+						</div>
+						<span className="font-bold text-gray-800">
+							{formatCurrency(prices.subtotal)}
+						</span>
+					</div>
+				</div>
+			</div>
+		)
+	);
 
 	return (
 		<div className="container mx-auto px-4 lg:px-8 py-10">
@@ -401,138 +527,22 @@ const CartPage: React.FC = () => {
 								</div>
 							</div>
 
-							{/* Productos */}
-							{cart?.items.map((item) => {
-								// CALCULAR PRECIOS USANDO LA FUNCIÓN SIMPLIFICADA
-								const prices = calculateItemPrices(item);
-
-								console.log("🛒 CartPage - Renderizando item:", {
-									itemId: item.id,
-									prices
-								});
-
-								return (
-									<div
-										key={item.id}
-										className="border-b border-gray-200 last:border-b-0"
-									>
-										<div className="grid sm:grid-cols-12 gap-4 p-5">
-											{/* Producto (imagen y nombre) - NAVEGACIÓN CORREGIDA */}
-											<div className="sm:col-span-6 flex">
-												<Link
-													to={`/products/${item.productId}`}
-													className="w-24 h-24 flex-shrink-0"
-												>
-													<img
-														src={getProductImage(item.product)}
-														alt={
-															item.product?.name || `Producto ${item.productId}`
-														}
-														className="w-full h-full object-cover rounded"
-													/>
-												</Link>
-												<div className="ml-4 flex flex-col">
-													<Link
-														to={`/products/${item.productId}`}
-														className="font-medium text-gray-800 hover:text-primary-600"
-													>
-														{item.product?.name || `Producto ${item.productId}`}
-													</Link>
-													
-													{/* Mostrar descuento si existe */}
-													{prices.discount > 0 && (
-														<div className="mt-1">
-															<span className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded">
-																{prices.discount}% OFF
-															</span>
-														</div>
-													)}
-
-													<div className="mt-auto flex space-x-3 text-sm pt-3">
-														<button
-															onClick={() => handleRemoveFromCart(item.id)}
-															disabled={loadingItem === item.id}
-															className="text-gray-500 hover:text-red-500 flex items-center disabled:opacity-50"
-														>
-															<Trash2 size={14} className="mr-1" />
-															Eliminar
-														</button>
-														<button
-															onClick={() =>
-																moveToWishlist(item.id, item.productId)
-															}
-															disabled={loadingItem === item.id}
-															className="text-gray-500 hover:text-primary-600 flex items-center disabled:opacity-50"
-														>
-															<Heart size={14} className="mr-1" />
-															Guardar
-														</button>
-													</div>
-												</div>
-											</div>
-
-											{/* Precio - MOSTRAR PRECIO CON DESCUENTO */}
-											<div className="sm:col-span-2 flex items-center justify-center sm:justify-center">
-												<div className="sm:hidden mr-2 font-medium text-gray-800">
-													Precio:
-												</div>
-												<div className="font-medium flex flex-col items-center">
-													<span className="text-gray-800">
-														{formatCurrency(prices.discounted)}
-													</span>
-													{prices.discount > 0 && (
-														<span className="text-xs text-gray-500 line-through">
-															{formatCurrency(prices.original)}
-														</span>
-													)}
-												</div>
-											</div>
-
-											{/* Cantidad */}
-											<div className="sm:col-span-2 flex items-center justify-center">
-												<div className="sm:hidden mr-2 font-medium text-gray-800">
-													Cantidad:
-												</div>
-												<div className="flex items-center border border-gray-300 rounded-md">
-													<button
-														onClick={() => decreaseQuantity(item.id)}
-														disabled={
-															item.quantity <= 1 || loadingItem === item.id
-														}
-														className="px-2 py-1 text-gray-600 hover:text-gray-800 disabled:opacity-50"
-													>
-														<Minus size={14} />
-													</button>
-													<span className="px-3 py-1 text-gray-800 text-center w-10">
-														{loadingItem === item.id ? (
-															<span className="inline-block h-4 w-4 border-2 border-t-primary-600 border-r-primary-600 border-b-primary-200 border-l-primary-200 rounded-full animate-spin"></span>
-														) : (
-															item.quantity
-														)}
-													</span>
-													<button
-														onClick={() => increaseQuantity(item.id)}
-														disabled={loadingItem === item.id}
-														className="px-2 py-1 text-gray-600 hover:text-gray-800 disabled:opacity-50"
-													>
-														<Plus size={14} />
-													</button>
-												</div>
-											</div>
-
-											{/* Total - USAR SUBTOTAL CALCULADO CON DESCUENTO */}
-											<div className="sm:col-span-2 flex items-center justify-center sm:justify-center">
-												<div className="sm:hidden mr-2 font-medium text-gray-800">
-													Total:
-												</div>
-												<span className="font-bold text-gray-800">
-													{formatCurrency(prices.subtotal)}
-												</span>
-											</div>
-										</div>
-									</div>
-								);
-							})}
+							{/* Productos - USANDO ITEMS MEMOIZADOS */}
+							{cartItemsWithPrices.map((item) => (
+								<CartItem
+									key={item.id}
+									item={item}
+									prices={item.prices}
+									imageUrl={item.imageUrl}
+									onIncrease={() => increaseQuantity(item.id)}
+									onDecrease={() => decreaseQuantity(item.id)}
+									onRemove={() => handleRemoveFromCart(item.id)}
+									onMoveToWishlist={() =>
+										moveToWishlist(item.id, item.productId)
+									}
+									isLoading={loadingItem === item.id}
+								/>
+							))}
 
 							{/* Botones de acción en la parte inferior */}
 							<div className="flex justify-between items-center p-5 bg-gray-50">
@@ -563,7 +573,7 @@ const CartPage: React.FC = () => {
 						</div>
 					</div>
 
-					{/* Resumen del pedido - CÁLCULOS CORREGIDOS */}
+					{/* Resumen del pedido - USANDO TOTALES MEMOIZADOS */}
 					<div className="lg:w-1/3">
 						<div className="bg-white rounded-lg shadow-lg overflow-hidden">
 							<div className="p-6">
@@ -597,31 +607,35 @@ const CartPage: React.FC = () => {
 									)}
 								</div>
 
-								{/* Cálculos */}
+								{/* Cálculos - USANDO TOTALES MEMOIZADOS */}
 								<div className="space-y-4 border-t border-gray-200 pt-4">
 									<div className="flex justify-between">
-										<span className="text-gray-600">Subtotal (con descuentos)</span>
+										<span className="text-gray-600">
+											Subtotal (con descuentos)
+										</span>
 										<span className="font-medium">
-											{formatCurrency(subtotal)}
+											{formatCurrency(cartTotals.subtotal)}
 										</span>
 									</div>
 
 									<div className="flex justify-between">
 										<span className="text-gray-600">IVA (15%)</span>
-										<span className="font-medium">{formatCurrency(tax)}</span>
+										<span className="font-medium">
+											{formatCurrency(cartTotals.tax)}
+										</span>
 									</div>
 
 									{couponApplied && (
 										<div className="flex justify-between text-green-600">
 											<span>Descuento de cupón</span>
-											<span>-{formatCurrency(couponAmount)}</span>
+											<span>-{formatCurrency(cartTotals.couponAmount)}</span>
 										</div>
 									)}
 
 									<div className="flex justify-between border-t border-gray-200 pt-4">
 										<span className="text-xl font-bold">Total</span>
 										<span className="text-xl font-bold">
-											{formatCurrency(total)}
+											{formatCurrency(cartTotals.total)}
 										</span>
 									</div>
 								</div>
@@ -664,8 +678,6 @@ const CartPage: React.FC = () => {
 					</button>
 				</div>
 			)}
-
-			{/* Herramienta de depuración de seller_id - solo en desarrollo */}
 		</div>
 	);
 };

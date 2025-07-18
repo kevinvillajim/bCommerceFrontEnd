@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from "react";
+import React, {useState, useEffect, useMemo, useCallback} from "react";
 import {Link, useNavigate} from "react-router-dom";
 import {
 	Heart,
@@ -13,14 +13,17 @@ import {useFavoriteApi} from "../hooks/useFavoriteApi";
 import {useAuth} from "../hooks/useAuth";
 import {useCart} from "../hooks/useCart";
 import {formatCurrency} from "../../utils/formatters/formatCurrency";
-// IMPORTAR EL HELPER DE IMÁGENES CORREGIDO
-import { getImageUrl } from "../../utils/imageManager";
+
+// ✅ IMPORTAR HOOKS OPTIMIZADOS Y CACHE
+import {useImageCache} from "../hooks/useImageCache";
+import {useAutoPrefetch} from "../hooks/useAutoPrefetch";
+import CacheService from "../../infrastructure/services/CacheService";
 
 // Tipo para los datos del producto favorito
 interface FavoriteProduct {
 	id: number;
 	name: string;
-	price: number | string; // Puede venir como string o number
+	price: number | string;
 	discount?: number | string;
 	discount_percentage?: number | string;
 	rating?: number | string;
@@ -64,136 +67,136 @@ interface NotificationPreferencesProps {
 	onClose: () => void;
 }
 
-const NotificationPreferences: React.FC<NotificationPreferencesProps> = ({
-	favoriteId,
-	initialPreferences,
-	onClose,
-}) => {
-	const [preferences, setPreferences] = useState({
-		notify_price_change: initialPreferences.notifyPriceChange,
-		notify_promotion: initialPreferences.notifyPromotion,
-		notify_low_stock: initialPreferences.notifyLowStock,
-	});
-	const [isSaving, setIsSaving] = useState(false);
-	const {updateNotificationPreferences} = useFavoriteApi();
+const NotificationPreferences: React.FC<NotificationPreferencesProps> =
+	React.memo(({favoriteId, initialPreferences, onClose}) => {
+		const [preferences, setPreferences] = useState({
+			notify_price_change: initialPreferences.notifyPriceChange,
+			notify_promotion: initialPreferences.notifyPromotion,
+			notify_low_stock: initialPreferences.notifyLowStock,
+		});
+		const [isSaving, setIsSaving] = useState(false);
+		const {updateNotificationPreferences} = useFavoriteApi();
 
-	const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const {name, checked} = e.target;
-		setPreferences((prev) => ({...prev, [name]: checked}));
-	};
+		const handleChange = useCallback(
+			(e: React.ChangeEvent<HTMLInputElement>) => {
+				const {name, checked} = e.target;
+				setPreferences((prev) => ({...prev, [name]: checked}));
+			},
+			[]
+		);
 
-	const handleSave = async () => {
-		try {
-			setIsSaving(true);
-			await updateNotificationPreferences(favoriteId, preferences);
-			onClose();
-		} catch (error) {
-			console.error("Error saving preferences:", error);
-		} finally {
-			setIsSaving(false);
-		}
-	};
+		const handleSave = useCallback(async () => {
+			try {
+				setIsSaving(true);
+				await updateNotificationPreferences(favoriteId, preferences);
+				onClose();
+			} catch (error) {
+				console.error("Error saving preferences:", error);
+			} finally {
+				setIsSaving(false);
+			}
+		}, [favoriteId, preferences, updateNotificationPreferences, onClose]);
 
-	return (
-		<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-			<div className="bg-white rounded-lg p-6 max-w-md w-full shadow-xl">
-				<div className="flex justify-between items-center mb-4">
-					<h3 className="text-lg font-semibold">
-						Preferencias de notificación
-					</h3>
-					<button
-						onClick={onClose}
-						className="text-gray-500 hover:text-gray-700"
-					>
-						<span className="sr-only">Cerrar</span>
-						<svg
-							className="h-6 w-6"
-							fill="none"
-							viewBox="0 0 24 24"
-							stroke="currentColor"
+		return (
+			<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+				<div className="bg-white rounded-lg p-6 max-w-md w-full shadow-xl">
+					<div className="flex justify-between items-center mb-4">
+						<h3 className="text-lg font-semibold">
+							Preferencias de notificación
+						</h3>
+						<button
+							onClick={onClose}
+							className="text-gray-500 hover:text-gray-700"
 						>
-							<path
-								strokeLinecap="round"
-								strokeLinejoin="round"
-								strokeWidth={2}
-								d="M6 18L18 6M6 6l12 12"
+							<span className="sr-only">Cerrar</span>
+							<svg
+								className="h-6 w-6"
+								fill="none"
+								viewBox="0 0 24 24"
+								stroke="currentColor"
+							>
+								<path
+									strokeLinecap="round"
+									strokeLinejoin="round"
+									strokeWidth={2}
+									d="M6 18L18 6M6 6l12 12"
+								/>
+							</svg>
+						</button>
+					</div>
+
+					<div className="space-y-4">
+						<div className="flex items-center">
+							<input
+								type="checkbox"
+								id="notify_price_change"
+								name="notify_price_change"
+								checked={preferences.notify_price_change}
+								onChange={handleChange}
+								className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
 							/>
-						</svg>
-					</button>
-				</div>
+							<label
+								htmlFor="notify_price_change"
+								className="ml-2 block text-sm text-gray-700"
+							>
+								Notificarme cambios de precio
+							</label>
+						</div>
 
-				<div className="space-y-4">
-					<div className="flex items-center">
-						<input
-							type="checkbox"
-							id="notify_price_change"
-							name="notify_price_change"
-							checked={preferences.notify_price_change}
-							onChange={handleChange}
-							className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-						/>
-						<label
-							htmlFor="notify_price_change"
-							className="ml-2 block text-sm text-gray-700"
-						>
-							Notificarme cambios de precio
-						</label>
+						<div className="flex items-center">
+							<input
+								type="checkbox"
+								id="notify_promotion"
+								name="notify_promotion"
+								checked={preferences.notify_promotion}
+								onChange={handleChange}
+								className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+							/>
+							<label
+								htmlFor="notify_promotion"
+								className="ml-2 block text-sm text-gray-700"
+							>
+								Notificarme promociones
+							</label>
+						</div>
+
+						<div className="flex items-center">
+							<input
+								type="checkbox"
+								id="notify_low_stock"
+								name="notify_low_stock"
+								checked={preferences.notify_low_stock}
+								onChange={handleChange}
+								className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+							/>
+							<label
+								htmlFor="notify_low_stock"
+								className="ml-2 block text-sm text-gray-700"
+							>
+								Notificarme cuando haya poco stock
+							</label>
+						</div>
 					</div>
 
-					<div className="flex items-center">
-						<input
-							type="checkbox"
-							id="notify_promotion"
-							name="notify_promotion"
-							checked={preferences.notify_promotion}
-							onChange={handleChange}
-							className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-						/>
-						<label
-							htmlFor="notify_promotion"
-							className="ml-2 block text-sm text-gray-700"
+					<div className="mt-6 flex justify-end space-x-3">
+						<button
+							onClick={onClose}
+							className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
 						>
-							Notificarme promociones
-						</label>
-					</div>
-
-					<div className="flex items-center">
-						<input
-							type="checkbox"
-							id="notify_low_stock"
-							name="notify_low_stock"
-							checked={preferences.notify_low_stock}
-							onChange={handleChange}
-							className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-						/>
-						<label
-							htmlFor="notify_low_stock"
-							className="ml-2 block text-sm text-gray-700"
+							Cancelar
+						</button>
+						<button
+							onClick={handleSave}
+							disabled={isSaving}
+							className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50"
 						>
-							Notificarme cuando haya poco stock
-						</label>
+							{isSaving ? "Guardando..." : "Guardar"}
+						</button>
 					</div>
-				</div>
-
-				<div className="mt-6 flex justify-end space-x-3">
-					<button
-						onClick={onClose}
-						className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
-					>
-						Cancelar
-					</button>
-					<button
-						onClick={handleSave}
-						disabled={isSaving}
-						className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50"
-					>
-						{isSaving ? "Guardando..." : "Guardar"}
-					</button>
 				</div>
 			</div>
-		</div>
-	);
-};
+		);
+	});
 
 const FavoritePage: React.FC = () => {
 	const [favorites, setFavorites] = useState<FavoriteItem[]>([]);
@@ -213,25 +216,117 @@ const FavoritePage: React.FC = () => {
 	const {addToCart} = useCart();
 	const navigate = useNavigate();
 
-	useEffect(() => {
-		if (!isAuthenticated) {
-			navigate("/login", {state: {from: "/favorites"}});
+	// ✅ HOOKS OPTIMIZADOS
+	const {getOptimizedImageUrl} = useImageCache();
+	const {prefetchFavoritesPageData} = useAutoPrefetch({
+		enabled: true,
+		delay: 300,
+		onPrefetchComplete: () =>
+			console.log("✅ Favorites page prefetch completed"),
+	});
+
+	// ✅ FUNCIÓN OPTIMIZADA PARA OBTENER IMAGEN DEL PRODUCTO
+	const getProductImage = useCallback(
+		(product: FavoriteProduct): string => {
+			return getOptimizedImageUrl(product, "medium");
+		},
+		[getOptimizedImageUrl]
+	);
+
+	// ✅ FUNCIÓN MEMOIZADA PARA CALCULAR PRECIO CON DESCUENTO
+	const calculateDiscountedPrice = useCallback((product: FavoriteProduct) => {
+		if (!product) return {original: 0, discounted: 0, discount: 0};
+
+		// CONVERTIR STRINGS A NÚMEROS
+		const originalPrice = parseFloat(product.price?.toString() || "0");
+		const discountPercentage = parseFloat(
+			(product.discount_percentage || product.discount)?.toString() || "0"
+		);
+
+		// Calcular precio con descuento
+		let discountedPrice = originalPrice;
+		if (discountPercentage > 0) {
+			discountedPrice =
+				originalPrice - originalPrice * (discountPercentage / 100);
+		}
+
+		return {
+			original: originalPrice,
+			discounted: discountedPrice,
+			discount: discountPercentage,
+		};
+	}, []);
+
+	// ✅ FUNCIÓN MEMOIZADA PARA RENDERIZAR ESTRELLAS
+	const renderRatingStars = useCallback(
+		(rating: number | string = 0, ratingCount: number | string = 0) => {
+			// CONVERTIR STRINGS A NÚMEROS
+			const safeRating = parseFloat(rating?.toString() || "0");
+			const safeRatingCount = parseInt(ratingCount?.toString() || "0");
+
+			return (
+				<div className="flex items-center">
+					{[1, 2, 3, 4, 5].map((star) => (
+						<Star
+							key={star}
+							size={14}
+							className={`${
+								star <= Math.round(safeRating)
+									? "text-yellow-400 fill-current"
+									: "text-gray-300"
+							}`}
+						/>
+					))}
+					<span className="ml-2 text-sm text-gray-600">
+						{safeRating.toFixed(1)} ({safeRatingCount})
+					</span>
+				</div>
+			);
+		},
+		[]
+	);
+
+	// ✅ FUNCIÓN PARA INVALIDAR CACHE DE FAVORITOS
+	const invalidateFavoritesCache = useCallback(() => {
+		// Limpiar cache de todas las páginas de favoritos
+		for (let page = 1; page <= Math.ceil(total / limit); page++) {
+			CacheService.removeItem(`user_favorites_${page}_${limit}`);
+		}
+		console.log("🗑️ Cache de favoritos invalidado");
+	}, [total, limit]);
+
+	// ✅ FUNCIÓN PRINCIPAL PARA OBTENER FAVORITOS CON CACHE
+	const fetchFavorites = useCallback(async () => {
+		// ✅ CACHE INTELIGENTE - Verificar cache primero
+		const cacheKey = `user_favorites_${currentPage}_${limit}`;
+		const cachedFavorites = CacheService.getItem(cacheKey);
+
+		if (cachedFavorites && currentPage === 1) {
+			console.log("💾 Usando favoritos desde cache");
+			setFavorites(cachedFavorites.favorites);
+			setTotal(cachedFavorites.meta.total);
+			setHasMore(cachedFavorites.meta.has_more);
+			setIsEmpty(cachedFavorites.favorites.length === 0);
+			setIsLoading(false);
+
+			// ✅ PREFETCH DE DATOS RELACIONADOS DESDE CACHE
+			if (cachedFavorites.favorites.length > 0) {
+				prefetchFavoritesPageData();
+			}
 			return;
 		}
 
-		fetchFavorites();
-	}, [isAuthenticated, currentPage]);
-
-	const fetchFavorites = async () => {
 		try {
 			setIsLoading(true);
+			console.log("🌐 Cargando favoritos desde API");
+
 			const offset = (currentPage - 1) * limit;
 			const result = await getUserFavorites(limit, offset);
 
 			// Asegúrate de que los datos tengan el formato correcto
 			const formattedFavorites = result.favorites.map((item) => ({
 				favorite: {
-					id: item.favorite.id || 0, // Asigna un valor por defecto si es undefined
+					id: item.favorite.id || 0,
 					userId: item.favorite.userId,
 					productId: item.favorite.productId,
 					notifyPriceChange: item.favorite.notifyPriceChange || false,
@@ -245,6 +340,18 @@ const FavoritePage: React.FC = () => {
 			setTotal(result.meta.total);
 			setHasMore(result.meta.has_more);
 			setIsEmpty(formattedFavorites.length === 0 && currentPage === 1);
+
+			// ✅ GUARDAR EN CACHE - 3 minutos para datos de favoritos
+			const cacheData = {
+				favorites: formattedFavorites,
+				meta: result.meta,
+			};
+			CacheService.setItem(cacheKey, cacheData, 3 * 60 * 1000); // 3 minutos
+
+			// ✅ PREFETCH DE DATOS RELACIONADOS DESPUÉS DE CARGAR FAVORITOS
+			if (currentPage === 1 && formattedFavorites.length > 0) {
+				prefetchFavoritesPageData();
+			}
 		} catch (err) {
 			console.error("Error fetching favorites:", err);
 			setError(
@@ -253,150 +360,336 @@ const FavoritePage: React.FC = () => {
 		} finally {
 			setIsLoading(false);
 		}
-	};
+	}, [getUserFavorites, currentPage, limit, prefetchFavoritesPageData]);
 
-	const handleRemoveFromWishlist = async (productId: number) => {
-		try {
-			await toggleFavorite(productId);
-			// Actualizar la lista de favoritos después de eliminar
-			fetchFavorites();
-		} catch (error) {
-			console.error("Error removing from favorites:", error);
-		}
-	};
+	// ✅ FUNCIÓN PARA REFRESCAR MANUALMENTE (LIMPIAR CACHE)
+	const forceRefresh = useCallback(() => {
+		console.log("🔄 Forzando refresh de favoritos");
+		invalidateFavoritesCache();
+		setCurrentPage(1);
+		setIsLoading(true);
+		fetchFavorites();
+	}, [invalidateFavoritesCache, fetchFavorites]);
 
-	const handleAddToCart = async (product: FavoriteProduct) => {
-		try {
-			if (!product.stock || product.stock <= 0) {
-				return;
+	// ✅ HANDLER PARA REMOVER DE FAVORITOS
+	const handleRemoveFromWishlist = useCallback(
+		async (productId: number) => {
+			try {
+				await toggleFavorite(productId);
+
+				// ✅ INVALIDAR CACHE Y RECARGAR
+				invalidateFavoritesCache();
+
+				// También invalidar cache de header counters
+				CacheService.removeItem("header_counters");
+
+				// Recargar favoritos
+				fetchFavorites();
+			} catch (error) {
+				console.error("Error removing from favorites:", error);
 			}
+		},
+		[toggleFavorite, invalidateFavoritesCache, fetchFavorites]
+	);
 
-			await addToCart({
-				productId: product.id,
-				quantity: 1,
-			});
+	// ✅ HANDLER PARA AGREGAR AL CARRITO
+	const handleAddToCart = useCallback(
+		async (product: FavoriteProduct) => {
+			try {
+				if (!product.stock || product.stock <= 0) {
+					return;
+				}
 
-			// Opcional: Mostrar un mensaje de éxito
-		} catch (error) {
-			console.error(`Error adding product ${product.id} to cart:`, error);
-		}
-	};
+				await addToCart({
+					productId: product.id,
+					quantity: 1,
+				});
 
-	// FUNCIÓN CORREGIDA PARA OBTENER IMAGEN DEL PRODUCTO
-	const getProductImage = (product: FavoriteProduct): string => {
-		console.log("🎨 FavoritePage - getProductImage:", product);
-		
-		let imagePath = "";
-
-		// Prioridad 1: image
-		if (product?.image) {
-			imagePath = product.image;
-		}
-		// Prioridad 2: primer elemento de images array
-		else if (product?.images && Array.isArray(product.images) && product.images.length > 0) {
-			const firstImage = product.images[0];
-			if (typeof firstImage === 'string') {
-				imagePath = firstImage;
-			} else if (typeof firstImage === 'object' && firstImage !== null) {
-				imagePath = firstImage.original || firstImage.medium || firstImage.thumbnail || "";
+				// ✅ INVALIDAR CACHE DE CARRITO (no afecta favoritos)
+				CacheService.removeItem("header_counters");
+			} catch (error) {
+				console.error(`Error adding product ${product.id} to cart:`, error);
 			}
-		}
+		},
+		[addToCart]
+	);
 
-		console.log("🖼️ FavoritePage - Path extraído:", imagePath);
-		
-		// USAR EL HELPER CORREGIDO
-		const finalUrl = getImageUrl(imagePath);
-		console.log("🔗 FavoritePage - URL final:", finalUrl);
-		
-		return finalUrl;
-	};
-
-	// FUNCIÓN CORREGIDA PARA CALCULAR PRECIO CON DESCUENTO - CONVIERTE STRINGS A NUMBERS
-	const calculateDiscountedPrice = (product: FavoriteProduct): { original: number, discounted: number, discount: number } => {
-		console.log("💰 FavoritePage - Datos del producto completo:", product);
-		
-		// CONVERTIR STRINGS A NÚMEROS - ESTA ERA LA PARTE QUE FALTABA
-		const originalPrice = parseFloat(product.price?.toString() || "0");
-		const discountPercentage = parseFloat((product.discount_percentage || product.discount)?.toString() || "0");
-		
-		console.log("💰 FavoritePage - Precio original (convertido):", originalPrice);
-		console.log("💰 FavoritePage - Descuento % (convertido):", discountPercentage);
-		
-		// Calcular precio con descuento
-		let discountedPrice = originalPrice;
-		if (discountPercentage > 0) {
-			discountedPrice = originalPrice - (originalPrice * (discountPercentage / 100));
-		}
-		
-		console.log("💰 FavoritePage - Precio con descuento:", discountedPrice);
-		
-		return {
-			original: originalPrice,
-			discounted: discountedPrice,
-			discount: discountPercentage
-		};
-	};
-
-	// FUNCIÓN CORREGIDA PARA RENDERIZAR ESTRELLAS - CONVIERTE STRINGS A NUMBERS
-	const renderRatingStars = (rating: number | string = 0, ratingCount: number | string = 0) => {
-		// CONVERTIR STRINGS A NÚMEROS
-		const safeRating = parseFloat(rating?.toString() || "0");
-		const safeRatingCount = parseInt(ratingCount?.toString() || "0");
-
-		console.log("⭐ renderRatingStars:", { rating, safeRating, ratingCount, safeRatingCount });
-
-		return (
-			<div className="flex items-center">
-				{[1, 2, 3, 4, 5].map((star) => (
-					<Star
-						key={star}
-						size={14}
-						className={`${
-							star <= Math.round(safeRating)
-								? "text-yellow-400 fill-current"
-								: "text-gray-300"
-						}`}
-					/>
-				))}
-				<span className="ml-2 text-sm text-gray-600">
-					{safeRating.toFixed(1)} ({safeRatingCount})
-				</span>
-			</div>
-		);
-	};
-
-	const openPreferences = (favoriteId: number) => {
+	// ✅ HANDLER PARA ABRIR PREFERENCIAS
+	const openPreferences = useCallback((favoriteId: number) => {
 		if (favoriteId) {
 			setActivePreferences(favoriteId);
 		}
-	};
+	}, []);
 
-	const closePreferences = () => {
+	// ✅ HANDLER PARA CERRAR PREFERENCIAS
+	const closePreferences = useCallback(() => {
 		setActivePreferences(null);
-	};
+	}, []);
 
-	const loadMore = () => {
-		if (hasMore) {
+	// ✅ HANDLER PARA CARGAR MÁS
+	const loadMore = useCallback(() => {
+		if (hasMore && !isLoading) {
+			console.log("📄 Cargando más favoritos - página", currentPage + 1);
 			setCurrentPage((prev) => prev + 1);
 		}
-	};
+	}, [hasMore, isLoading, currentPage]);
+
+	// ✅ MEMOIZAR FAVORITOS CON DATOS CALCULADOS
+	const favoritesWithCalculatedData = useMemo(() => {
+		return favorites.map((item) => {
+			const product = item.product;
+			if (!product)
+				return {
+					...item,
+					prices: null,
+					imageUrl: "",
+					isInStock: false,
+					ratingStars: (
+						<div className="flex items-center">
+							<span className="text-sm text-gray-600">Sin valorar</span>
+						</div>
+					),
+				};
+
+			const isInStock =
+				product.is_in_stock !== undefined
+					? product.is_in_stock
+					: product.stock > 0;
+
+			return {
+				...item,
+				prices: calculateDiscountedPrice(product),
+				imageUrl: getProductImage(product),
+				isInStock,
+				ratingStars: renderRatingStars(
+					product.rating || 0,
+					product.rating_count || 0
+				),
+			};
+		});
+	}, [favorites, calculateDiscountedPrice, getProductImage, renderRatingStars]);
+
+	// ✅ INICIALIZACIÓN CON CACHE
+	useEffect(() => {
+		if (!isAuthenticated) {
+			navigate("/login", {state: {from: "/favorites"}});
+			return;
+		}
+
+		// Solo ejecutar en primera carga
+		if (currentPage !== 1) return;
+
+		// Verificar cache de la primera página inmediatamente
+		const cacheKey = `user_favorites_1_${limit}`;
+		const cachedFavorites = CacheService.getItem(cacheKey);
+
+		if (cachedFavorites) {
+			console.log("⚡ Carga instantánea desde cache");
+			setFavorites(cachedFavorites.favorites);
+			setTotal(cachedFavorites.meta.total);
+			setHasMore(cachedFavorites.meta.has_more);
+			setIsEmpty(cachedFavorites.favorites.length === 0);
+			setIsLoading(false);
+
+			// Opcional: refrescar en background si el cache es viejo
+			const cacheAge = Date.now() - (cachedFavorites.timestamp || 0);
+			if (cacheAge > 60 * 1000) {
+				// Si tiene más de 1 minuto, refrescar en background
+				setTimeout(() => {
+					fetchFavorites();
+				}, 100);
+			}
+		} else {
+			fetchFavorites();
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [isAuthenticated, navigate]); // Dependencias mínimas
+
+	// ✅ EFFECT SEPARADO PARA PÁGINAS ADICIONALES
+	useEffect(() => {
+		if (isAuthenticated && currentPage > 1) {
+			fetchFavorites();
+		}
+	}, [isAuthenticated, currentPage, fetchFavorites]);
+
+	// ✅ COMPONENTE MEMOIZADO PARA ITEM DE FAVORITO
+	const FavoriteItem = React.memo(
+		({
+			item,
+			prices,
+			imageUrl,
+			isInStock,
+			ratingStars,
+			onRemove,
+			onAddToCart,
+			onOpenPreferences,
+		}: {
+			item: FavoriteItem;
+			prices: any;
+			imageUrl: string;
+			isInStock: boolean;
+			ratingStars: React.ReactElement;
+			onRemove: () => void;
+			onAddToCart: () => void;
+			onOpenPreferences: () => void;
+		}) => {
+			const product = item.product;
+			if (!product) return null;
+
+			return (
+				<div className="flex flex-col sm:flex-row p-6 border-b border-gray-200 last:border-b-0 hover:bg-gray-50 transition-colors">
+					{/* Imagen del producto con badges */}
+					<div className="sm:w-40 sm:h-40 h-60 w-full flex-shrink-0 mx-auto sm:mx-0 relative">
+						<Link to={`/products/${product.id}`}>
+							<img
+								src={imageUrl}
+								alt={product.name}
+								className="w-full h-full object-contain sm:object-cover rounded-lg shadow-sm"
+							/>
+						</Link>
+
+						{/* Badges */}
+						<div className="absolute top-2 left-2 flex flex-col space-y-1">
+							{prices.discount > 0 && (
+								<span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-md shadow-sm">
+									{prices.discount}% OFF
+								</span>
+							)}
+							{product.isNew && (
+								<span className="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-md shadow-sm">
+									NUEVO
+								</span>
+							)}
+						</div>
+					</div>
+
+					{/* Información del producto */}
+					<div className="flex-1 sm:ml-6 mt-4 sm:mt-0 flex flex-col">
+						<div className="flex justify-between">
+							<div>
+								{/* Categoría */}
+								{product.category && (
+									<span className="inline-block text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded-md mb-2 uppercase tracking-wide">
+										{product.category}
+									</span>
+								)}
+
+								{/* Nombre del producto */}
+								<Link to={`/products/${product.id}`} className="block">
+									<h3 className="text-xl font-medium text-gray-800 hover:text-primary-600 transition-colors mb-2">
+										{product.name}
+									</h3>
+								</Link>
+
+								{/* Valoración */}
+								<div className="mb-2">{ratingStars}</div>
+
+								{/* Disponibilidad */}
+								<div className="mb-3">
+									{isInStock ? (
+										<span className="inline-flex items-center text-sm text-green-600">
+											<Check size={14} className="mr-1" />
+											En stock
+										</span>
+									) : (
+										<span className="inline-flex items-center text-sm text-amber-600">
+											<AlertTriangle size={14} className="mr-1" />
+											Agotado
+										</span>
+									)}
+								</div>
+							</div>
+
+							{/* Botones de acciones */}
+							<div className="flex space-x-2">
+								<button
+									onClick={onOpenPreferences}
+									className="cursor-pointer text-gray-400 hover:text-blue-500 transition-colors"
+									aria-label="Configurar notificaciones"
+								>
+									<Settings size={20} className="stroke-current" />
+								</button>
+
+								<button
+									onClick={onRemove}
+									className="cursor-pointer text-gray-400 hover:text-red-500 transition-colors"
+									aria-label="Eliminar de favoritos"
+								>
+									<Trash2 size={20} className="stroke-current" />
+								</button>
+							</div>
+						</div>
+
+						{/* Precio y botón de añadir al carrito */}
+						<div className="mt-auto pt-4 flex flex-wrap sm:flex-nowrap items-center justify-between">
+							<div className="flex items-center mb-3 sm:mb-0">
+								{prices.discount > 0 ? (
+									<>
+										<span className="font-bold text-primary-600 text-xl">
+											{formatCurrency(prices.discounted)}
+										</span>
+										<span className="text-sm text-gray-500 line-through ml-2">
+											{formatCurrency(prices.original)}
+										</span>
+										<span className="ml-3 px-2 py-1 text-xs font-semibold text-white bg-red-500 rounded">
+											{prices.discount}% DESCUENTO
+										</span>
+									</>
+								) : (
+									<span className="font-bold text-primary-600 text-xl">
+										{formatCurrency(prices.original)}
+									</span>
+								)}
+							</div>
+
+							<button
+								onClick={onAddToCart}
+								disabled={!isInStock}
+								className={`cursor-pointer inline-flex items-center px-5 py-2.5 rounded-lg text-white font-medium transition-all ${
+									isInStock
+										? "bg-primary-600 hover:bg-primary-700 shadow-sm hover:shadow"
+										: "bg-gray-400 cursor-not-allowed"
+								}`}
+							>
+								<ShoppingCart size={18} className="mr-2" />
+								{isInStock ? "Añadir al carrito" : "Agotado"}
+							</button>
+						</div>
+					</div>
+				</div>
+			);
+		}
+	);
 
 	return (
 		<div className="container mx-auto px-10 lg:px-20 py-10">
 			<div className="flex flex-wrap justify-between items-center mb-8">
 				<h1 className="text-3xl font-bold">Mis Favoritos</h1>
 
-				{!isEmpty && !isLoading && (
-					<div className="text-sm text-gray-500 mt-2 md:mt-0 px-3 py-1.5 bg-gray-100 rounded-full">
-						{total} {total === 1 ? "producto" : "productos"} en tu lista
-					</div>
-				)}
+				<div className="flex items-center space-x-4">
+					{!isEmpty && !isLoading && (
+						<div className="text-sm text-gray-500 px-3 py-1.5 bg-gray-100 rounded-full">
+							{total} {total === 1 ? "producto" : "productos"} en tu lista
+						</div>
+					)}
+
+					{/* ✅ BOTÓN DE REFRESH OPCIONAL */}
+					{!isEmpty && (
+						<button
+							onClick={forceRefresh}
+							disabled={isLoading}
+							className="text-sm text-blue-600 hover:text-blue-700 disabled:opacity-50 px-3 py-1.5 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
+						>
+							{isLoading ? "Actualizando..." : "Actualizar"}
+						</button>
+					)}
+				</div>
 			</div>
 
 			{error && (
 				<div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
 					{error}
-					<button className="ml-2 underline" onClick={fetchFavorites}>
+					<button className="ml-2 underline" onClick={forceRefresh}>
 						Reintentar
 					</button>
 				</div>
@@ -424,162 +717,20 @@ const FavoritePage: React.FC = () => {
 				</div>
 			) : (
 				<div className="bg-white rounded-xl shadow-lg overflow-hidden">
-					{favorites.map((item, index) => {
-						const product = item.product;
-						if (!product) return null;
-
-						const isInStock =
-							product.is_in_stock !== undefined
-								? product.is_in_stock
-								: product.stock > 0;
-
-						// USAR LA FUNCIÓN CORREGIDA QUE CONVIERTE STRINGS
-						const prices = calculateDiscountedPrice(product);
-
-						return (
-							<div
-								key={item.favorite.id}
-								className={`flex flex-col sm:flex-row p-6 ${
-									index !== favorites.length - 1
-										? "border-b border-gray-200"
-										: ""
-								} hover:bg-gray-50 transition-colors`}
-							>
-								{/* Imagen del producto con badges - NAVEGACIÓN CORREGIDA */}
-								<div className="sm:w-40 sm:h-40 h-60 w-full flex-shrink-0 mx-auto sm:mx-0 relative">
-									<Link to={`/products/${product.id}`}>
-										<img
-											src={getProductImage(product)}
-											alt={product.name}
-											className="w-full h-full object-contain sm:object-cover rounded-lg shadow-sm"
-										/>
-									</Link>
-
-									{/* Badges */}
-									<div className="absolute top-2 left-2 flex flex-col space-y-1">
-										{prices.discount > 0 && (
-											<span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-md shadow-sm">
-												{prices.discount}% OFF
-											</span>
-										)}
-										{product.isNew && (
-											<span className="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-md shadow-sm">
-												NUEVO
-											</span>
-										)}
-									</div>
-								</div>
-
-								{/* Información del producto */}
-								<div className="flex-1 sm:ml-6 mt-4 sm:mt-0 flex flex-col">
-									<div className="flex justify-between">
-										<div>
-											{/* Categoría */}
-											{product.category && (
-												<span className="inline-block text-xs font-medium text-gray-500 bg-gray-100 px-2 py-1 rounded-md mb-2 uppercase tracking-wide">
-													{product.category}
-												</span>
-											)}
-
-											{/* Nombre del producto - NAVEGACIÓN CORREGIDA */}
-											<Link
-												to={`/products/${product.id}`}
-												className="block"
-											>
-												<h3 className="text-xl font-medium text-gray-800 hover:text-primary-600 transition-colors mb-2">
-													{product.name}
-												</h3>
-											</Link>
-
-											{/* Valoración - FUNCIÓN CORREGIDA QUE CONVIERTE STRINGS */}
-											<div className="mb-2">
-												{renderRatingStars(
-													product.rating || 0,
-													product.rating_count || 0
-												)}
-											</div>
-
-											{/* Disponibilidad */}
-											<div className="mb-3">
-												{isInStock ? (
-													<span className="inline-flex items-center text-sm text-green-600">
-														<Check size={14} className="mr-1" />
-														En stock
-													</span>
-												) : (
-													<span className="inline-flex items-center text-sm text-amber-600">
-														<AlertTriangle size={14} className="mr-1" />
-														Agotado
-													</span>
-												)}
-											</div>
-										</div>
-
-										{/* Botones de acciones */}
-										<div className="flex space-x-2">
-											<button
-												onClick={() => openPreferences(item.favorite.id)}
-												className="cursor-pointer text-gray-400 hover:text-blue-500 transition-colors"
-												aria-label="Configurar notificaciones"
-											>
-												<Settings
-													size={20}
-													className="stroke-current"
-												/>
-											</button>
-
-											<button
-												onClick={() => handleRemoveFromWishlist(product.id)}
-												className="cursor-pointer text-gray-400 hover:text-red-500 transition-colors"
-												aria-label="Eliminar de favoritos"
-											>
-												<Trash2
-													size={20}
-													className="stroke-current"
-												/>
-											</button>
-										</div>
-									</div>
-
-									{/* Precio y botón de añadir al carrito - USANDO PRICES CALCULADOS CORRECTAMENTE */}
-									<div className="mt-auto pt-4 flex flex-wrap sm:flex-nowrap items-center justify-between">
-										<div className="flex items-center mb-3 sm:mb-0">
-											{prices.discount > 0 ? (
-												<>
-													<span className="font-bold text-primary-600 text-xl">
-														{formatCurrency(prices.discounted)}
-													</span>
-													<span className="text-sm text-gray-500 line-through ml-2">
-														{formatCurrency(prices.original)}
-													</span>
-													<span className="ml-3 px-2 py-1 text-xs font-semibold text-white bg-red-500 rounded">
-														{prices.discount}% DESCUENTO
-													</span>
-												</>
-											) : (
-												<span className="font-bold text-primary-600 text-xl">
-													{formatCurrency(prices.original)}
-												</span>
-											)}
-										</div>
-
-										<button
-											onClick={() => handleAddToCart(product)}
-											disabled={!isInStock}
-											className={`cursor-pointer inline-flex items-center px-5 py-2.5 rounded-lg text-white font-medium transition-all ${
-												isInStock
-													? "bg-primary-600 hover:bg-primary-700 shadow-sm hover:shadow"
-													: "bg-gray-400 cursor-not-allowed"
-											}`}
-										>
-											<ShoppingCart size={18} className="mr-2" />
-											{isInStock ? "Añadir al carrito" : "Agotado"}
-										</button>
-									</div>
-								</div>
-							</div>
-						);
-					})}
+					{/* USANDO FAVORITOS MEMOIZADOS */}
+					{favoritesWithCalculatedData.map((item) => (
+						<FavoriteItem
+							key={item.favorite.id}
+							item={item}
+							prices={item.prices}
+							imageUrl={item.imageUrl}
+							isInStock={item.isInStock}
+							ratingStars={item.ratingStars}
+							onRemove={() => handleRemoveFromWishlist(item.product!.id)}
+							onAddToCart={() => handleAddToCart(item.product!)}
+							onOpenPreferences={() => openPreferences(item.favorite.id)}
+						/>
+					))}
 
 					{/* Paginación o botón "cargar más" */}
 					{hasMore && (
