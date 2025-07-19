@@ -3,12 +3,6 @@
 import {useState, useEffect, useCallback, useRef} from "react";
 import CacheService from "../../infrastructure/services/CacheService";
 
-// Eventos de invalidación de cache
-// type CacheEvent = {
-// 	pattern: string;
-// 	timestamp: number;
-// };
-
 // Gestor global de eventos de cache
 class CacheEventManager {
 	private static instance: CacheEventManager;
@@ -121,6 +115,7 @@ export function useReactiveCache<T>({
 
 	const cacheManager = useRef(CacheEventManager.getInstance());
 	const isMountedRef = useRef(true);
+	const lastDependencies = useRef<any[]>([]);
 
 	// Función para cargar datos
 	const loadData = useCallback(
@@ -186,10 +181,21 @@ export function useReactiveCache<T>({
 		};
 	}, [loadData, invalidatePatterns]);
 
-	// Efecto para recargar cuando cambien las dependencias
+	// ✅ EFECTO MEJORADO PARA DEPENDENCIAS - EVITAR LOOPS
 	useEffect(() => {
-		if (dependencies.length > 0) {
-			loadData(true);
+		// Verificar si las dependencias realmente cambiaron
+		const dependenciesChanged = dependencies.some((dep, index) => {
+			return dep !== lastDependencies.current[index];
+		}) || dependencies.length !== lastDependencies.current.length;
+
+		if (dependenciesChanged) {
+			console.log(`🔄 Dependencies changed for ${key}, reloading...`);
+			lastDependencies.current = [...dependencies];
+			
+			// Solo recargar si hay dependencias y realmente cambiaron
+			if (dependencies.length > 0) {
+				loadData(true);
+			}
 		}
 	}, dependencies);
 

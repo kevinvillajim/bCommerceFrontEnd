@@ -18,7 +18,9 @@ import "./styles/main.css";
 PrefetchService.initPrefetch();
 
 // Registrar service worker para mejorar rendimiento
-if (process.env.NODE_ENV === "production" && "serviceWorker" in navigator) {
+if (
+	// process.env.NODE_ENV === "production" && 
+	"serviceWorker" in navigator) {
 	window.addEventListener("load", () => {
 		// Verificar que la URL del service worker exista antes de intentar registrarlo
 		fetch("/serviceWorker.js")

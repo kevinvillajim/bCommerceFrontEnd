@@ -10,14 +10,42 @@ const STATIC_ASSETS = [
 	"/favicon.ico",
 	"/logo192.png",
 	"/manifest.json",
-	// Añadir otros recursos estáticos importantes
 ];
 
 // URLs de API que deben cachearse
 const API_ROUTES = [
 	"/api/categories",
-	// Otros endpoints de API que se repitan frecuentemente
 ];
+
+// ✅ LISTA COMPLETA DE DOMINIOS/RUTAS QUE NO DEBEN SER INTERCEPTADOS
+const BYPASS_PATTERNS = [
+	// Google domains
+	'accounts.google.com',
+	'www.google.com',
+	'google.com',
+	'googleapis.com',
+	'gstatic.com',
+	// Google scripts específicos
+	'/gsi/',
+	'/oauth/',
+	'/auth/',
+	// Otros servicios externos que podrías usar
+	'facebook.com',
+	'twitter.com',
+	'linkedin.com',
+	// Analytics
+	'analytics',
+	'gtag'
+];
+
+// ✅ FUNCIÓN PARA VERIFICAR SI UNA URL DEBE SER IGNORADA
+function shouldBypass(url) {
+	const urlString = url.toString().toLowerCase();
+	
+	return BYPASS_PATTERNS.some(pattern => {
+		return urlString.includes(pattern.toLowerCase());
+	});
+}
 
 // Instalar service worker
 self.addEventListener("install", (event) => {
@@ -63,15 +91,34 @@ self.addEventListener("activate", (event) => {
 	);
 });
 
-// Estrategia de caché: Cache, falling back to network
+// ✅ EVENTO FETCH MEJORADO - MÚLTIPLES VERIFICACIONES
 self.addEventListener("fetch", (event) => {
-	// Solo interceptar peticiones GET
-	if (event.request.method !== "GET") return;
-
 	const url = new URL(event.request.url);
+	
+	// ✅ VERIFICACIÓN 1: Solo GET requests
+	if (event.request.method !== "GET") {
+		console.log(`[ServiceWorker] Ignorando método ${event.request.method}: ${url.href}`);
+		return;
+	}
 
-	// Ignorar solicitudes de análisis, etc.
-	if (url.pathname.startsWith("/analytics")) return;
+	// ✅ VERIFICACIÓN 2: Verificar si debe ser ignorado
+	if (shouldBypass(url)) {
+		console.log(`[ServiceWorker] BYPASSING (external): ${url.href}`);
+		return; // ← IMPORTANTE: No interceptar
+	}
+
+	// ✅ VERIFICACIÓN 3: Solo nuestro origen
+	if (url.origin !== self.location.origin) {
+		console.log(`[ServiceWorker] Ignorando origen externo: ${url.origin}`);
+		return;
+	}
+
+	// ✅ VERIFICACIÓN 4: Ignorar análisis
+	if (url.pathname.startsWith("/analytics")) {
+		return;
+	}
+
+	console.log(`[ServiceWorker] Interceptando: ${url.href}`);
 
 	// Estrategia para recursos estáticos
 	if (STATIC_ASSETS.some((asset) => url.pathname.endsWith(asset))) {
@@ -81,7 +128,7 @@ self.addEventListener("fetch", (event) => {
 
 	// Estrategia para API
 	if (API_ROUTES.some((route) => url.pathname.includes(route))) {
-		event.respondWith(networkFirstWithCache(event.request, 30 * 60)); // 30 minutos de caché
+		event.respondWith(networkFirstWithCache(event.request, 30 * 60));
 		return;
 	}
 
@@ -91,22 +138,36 @@ self.addEventListener("fetch", (event) => {
 
 // Estrategia: Primero caché, luego red como respaldo
 async function cacheFirst(request) {
-	const cachedResponse = await caches.match(request);
-	return cachedResponse || fetchAndCache(request);
+	try {
+		const cachedResponse = await caches.match(request);
+		if (cachedResponse) {
+			console.log(`[SW] Cache hit: ${request.url}`);
+			return cachedResponse;
+		}
+		
+		console.log(`[SW] Cache miss, fetching: ${request.url}`);
+		return await fetchAndCache(request);
+	} catch (error) {
+		console.error(`[SW] Error in cacheFirst: ${error}`);
+		throw error;
+	}
 }
 
 // Estrategia: Primero red, luego caché como respaldo
 async function networkFirst(request) {
 	try {
+		console.log(`[SW] Network first: ${request.url}`);
 		return await fetchAndCache(request);
 	} catch (error) {
+		console.log(`[SW] Network failed, trying cache: ${request.url}`);
 		const cachedResponse = await caches.match(request);
 
 		if (cachedResponse) {
+			console.log(`[SW] Cache fallback hit: ${request.url}`);
 			return cachedResponse;
 		}
 
-		// Si no hay caché disponible, mostrar página offline o lanzar error
+		console.error(`[SW] No cache fallback available: ${request.url}`);
 		throw error;
 	}
 }
@@ -155,15 +216,20 @@ async function networkFirstWithCache(request, maxAgeSeconds = 60) {
 
 // Función auxiliar para obtener y cachear
 async function fetchAndCache(request) {
-	const response = await fetch(request);
+	try {
+		const response = await fetch(request);
 
-	// Solo cachear respuestas válidas
-	if (response.ok) {
-		const cache = await caches.open(CACHE_NAME);
-		cache.put(request, response.clone());
+		// Solo cachear respuestas válidas
+		if (response.ok) {
+			const cache = await caches.open(CACHE_NAME);
+			cache.put(request, response.clone());
+		}
+
+		return response;
+	} catch (error) {
+		console.error(`[SW] Fetch error: ${request.url}`, error);
+		throw error;
 	}
-
-	return response;
 }
 
 // Evento de mensajes (para comunicación con la aplicación)
