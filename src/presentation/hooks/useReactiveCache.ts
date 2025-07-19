@@ -138,15 +138,32 @@ export function useReactiveCache<T>({
 				}
 
 				console.log(`🌐 Fetching: ${key}`);
-				const result = await fetcher();
+				
+				// ✅ INTENTAR FETCH Y MANEJAR ERRORES ESPECÍFICOS
+				try {
+					const result = await fetcher();
 
-				if (!isMountedRef.current) return result;
+					if (!isMountedRef.current) return result;
 
-				// Guardar en cache
-				CacheService.setItem(key, result, cacheTime);
-				setData(result);
+					// Guardar en cache solo si el resultado es válido
+					if (result !== null && result !== undefined) {
+						CacheService.setItem(key, result, cacheTime);
+						setData(result);
+					}
 
-				return result;
+					return result;
+				} catch (fetchError) {
+					// ✅ SI EL ERROR ES DE AUTENTICACIÓN, NO REINTENTAR
+					if (fetchError instanceof Error) {
+						const errorMsg = fetchError.message.toLowerCase();
+						if (errorMsg.includes('token') || errorMsg.includes('unauthorized') || errorMsg.includes('401')) {
+							console.log(`🚫 Auth error for ${key}, setting empty data`);
+							setData(null);
+							return null;
+						}
+					}
+					throw fetchError; // Re-lanzar otros errores
+				}
 			} catch (err) {
 				if (!isMountedRef.current) return null;
 
@@ -166,6 +183,20 @@ export function useReactiveCache<T>({
 
 	// Efecto para cargar datos iniciales y suscribirse a invalidaciones
 	useEffect(() => {
+		// ✅ SOLO CARGAR DATOS AL INICIO SI HACE SENTIDO
+		// Para user_favorites, no cargar si no hay token
+		if (key === 'user_favorites') {
+			// Buscar token en las claves más comunes
+			const possibleTokenKeys = ['authToken', 'token', 'auth_token', 'access_token'];
+			const hasToken = possibleTokenKeys.some(tokenKey => localStorage.getItem(tokenKey));
+			
+			if (!hasToken) {
+				console.log(`🚫 No auth token found, skipping initial load for ${key}`);
+				// ✅ NO LLAMAR setData - simplemente salir
+				return;
+			}
+		}
+
 		loadData();
 
 		// Suscribirse a invalidaciones
@@ -179,23 +210,38 @@ export function useReactiveCache<T>({
 		return () => {
 			unsubscribeFunctions.forEach((unsub) => unsub());
 		};
-	}, [loadData, invalidatePatterns]);
+	}, [loadData, invalidatePatterns, key]);
 
 	// ✅ EFECTO MEJORADO PARA DEPENDENCIAS - EVITAR LOOPS
 	useEffect(() => {
+		// ✅ SOLO PROCESAR DEPENDENCIAS SI HAY ALGUNA
+		if (dependencies.length === 0) return;
+
 		// Verificar si las dependencias realmente cambiaron
 		const dependenciesChanged = dependencies.some((dep, index) => {
 			return dep !== lastDependencies.current[index];
 		}) || dependencies.length !== lastDependencies.current.length;
 
 		if (dependenciesChanged) {
-			console.log(`🔄 Dependencies changed for ${key}, reloading...`);
+			console.log(`🔄 Dependencies changed for ${key}:`, {
+				old: lastDependencies.current,
+				new: dependencies
+			});
+			
 			lastDependencies.current = [...dependencies];
 			
-			// Solo recargar si hay dependencias y realmente cambiaron
-			if (dependencies.length > 0) {
-				loadData(true);
+			// ✅ VERIFICACIÓN ESPECÍFICA PARA user_favorites
+			if (key === 'user_favorites') {
+				const isAuthenticated = dependencies[0]; // Asumiendo que es el primer dep
+				if (!isAuthenticated) {
+					console.log(`🚫 User not authenticated, skipping reload for ${key}`);
+					// ✅ NO LLAMAR setData - simplemente salir
+					return;
+				}
 			}
+			
+			// Solo recargar si realmente tiene sentido
+			loadData(true);
 		}
 	}, dependencies);
 
