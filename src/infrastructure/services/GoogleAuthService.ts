@@ -84,6 +84,15 @@ export class GoogleAuthService {
       }
 
       return new Promise((resolve) => {
+        // Verificar que window.google existe antes de usar
+        if (!window.google?.accounts?.id) {
+          resolve({
+            success: false,
+            error: 'Google Identity Services no disponible'
+          });
+          return;
+        }
+
         // Configuración con FedCM habilitado
         window.google.accounts.id.initialize({
           client_id: this.clientId,
@@ -108,31 +117,33 @@ export class GoogleAuthService {
           itp_support: true,
         });
 
-        // Mostrar prompt
-        window.google.accounts.id.prompt((notification: any) => {
-          console.log('📊 Notification:', notification);
-          
-          // Manejar diferentes estados sin usar métodos deprecados
-          if (notification.isNotDisplayed?.()) {
-            console.log('❌ Prompt no se mostró');
-            resolve({
-              success: false,
-              error: 'No se pudo mostrar el prompt de Google'
-            });
-          } else if (notification.isSkippedMoment?.()) {
-            console.log('⏭️ Prompt fue omitido');
-            resolve({
-              success: false,
-              error: 'Autenticación omitida por el usuario'
-            });
-          } else if (notification.isDismissedMoment?.()) {
-            console.log('❌ Prompt fue cerrado');
-            resolve({
-              success: false,
-              error: 'Autenticación cancelada por el usuario'
-            });
-          }
-        });
+        // Mostrar prompt - verificar nuevamente
+        if (window.google?.accounts?.id) {
+          window.google.accounts.id.prompt((notification: any) => {
+            console.log('📊 Notification:', notification);
+            
+            // Manejar diferentes estados sin usar métodos deprecados
+            if (notification.isNotDisplayed?.()) {
+              console.log('❌ Prompt no se mostró');
+              resolve({
+                success: false,
+                error: 'No se pudo mostrar el prompt de Google'
+              });
+            } else if (notification.isSkippedMoment?.()) {
+              console.log('⏭️ Prompt fue omitido');
+              resolve({
+                success: false,
+                error: 'Autenticación omitida por el usuario'
+              });
+            } else if (notification.isDismissedMoment?.()) {
+              console.log('❌ Prompt fue cerrado');
+              resolve({
+                success: false,
+                error: 'Autenticación cancelada por el usuario'
+              });
+            }
+          });
+        }
       });
       
     } catch (error) {

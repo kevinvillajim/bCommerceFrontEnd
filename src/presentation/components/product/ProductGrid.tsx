@@ -29,7 +29,6 @@ const ProductGrid: React.FC<ProductGridProps> = ({
 	onRetry,
 	onAddToCart,
 	onAddToWishlist,
-	getImageUrl,
 	selectedCategories,
 	totalItems,
 	currentPage,

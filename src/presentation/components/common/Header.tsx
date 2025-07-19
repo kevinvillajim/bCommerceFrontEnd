@@ -8,7 +8,6 @@ import {
 	Heart,
 	Bell,
 	LogOut,
-	Settings,
 	ShoppingBag,
 } from "lucide-react";
 import {useAuth} from "../../hooks/useAuth";

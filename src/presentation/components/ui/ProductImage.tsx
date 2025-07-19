@@ -3,8 +3,22 @@ import React, {useState, useRef, useEffect} from "react";
 import {Package} from "lucide-react";
 import {
 	getProductMainImage,
-	getDefaultImageUrl,
-} from "../../../utils/unifiedImageUtils";
+	// getImageUrl,
+} from "../../../utils/imageManager";
+
+// Función para obtener URL por defecto (placeholder)
+const getDefaultImageUrl = (): string => {
+	return `data:image/svg+xml,${encodeURIComponent(`
+<svg width="300" height="300" xmlns="http://www.w3.org/2000/svg">
+  <rect width="300" height="300" fill="#e5e7eb"/>
+  <circle cx="150" cy="120" r="30" fill="#9ca3af"/>
+  <path d="M90 180L120 150L150 200L180 130L210 200V230H90V180Z" fill="#9ca3af"/>
+  <text x="150" y="260" font-family="Arial, sans-serif" font-size="14" fill="#6b7280" text-anchor="middle">
+    Sin imagen
+  </text>
+</svg>
+`)}`;
+};
 
 interface ProductImageProps {
 	product: any;

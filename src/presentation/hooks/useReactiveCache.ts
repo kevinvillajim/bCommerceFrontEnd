@@ -4,16 +4,15 @@ import {useState, useEffect, useCallback, useRef} from "react";
 import CacheService from "../../infrastructure/services/CacheService";
 
 // Eventos de invalidación de cache
-type CacheEvent = {
-	pattern: string;
-	timestamp: number;
-};
+// type CacheEvent = {
+// 	pattern: string;
+// 	timestamp: number;
+// };
 
 // Gestor global de eventos de cache
 class CacheEventManager {
 	private static instance: CacheEventManager;
 	private listeners: Map<string, Set<() => void>> = new Map();
-	private eventEmitter: EventTarget = new EventTarget();
 
 	static getInstance(): CacheEventManager {
 		if (!CacheEventManager.instance) {
