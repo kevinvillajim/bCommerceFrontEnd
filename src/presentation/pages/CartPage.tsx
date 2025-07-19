@@ -10,10 +10,10 @@ import {
 } from "lucide-react";
 import {useCart} from "../hooks/useCart";
 import {useFavorites} from "../hooks/useFavorites";
-import {useInvalidateCounters} from "../hooks/useHeaderCounters"; // ✅ AÑADIDO
+import {useInvalidateCounters} from "../hooks/useHeaderCounters";
 import {formatCurrency} from "../../utils/formatters/formatCurrency";
 import {NotificationType} from "../contexts/CartContext";
-import CacheService from "../../infrastructure/services/CacheService"; // ✅ AÑADIDO
+import CacheService from "../../infrastructure/services/CacheService";
 
 // ✅ IMPORTAR HOOKS OPTIMIZADOS
 import {useImageCache} from "../hooks/useImageCache";
@@ -26,7 +26,7 @@ const CartPage: React.FC = () => {
 	const [couponApplied, setCouponApplied] = useState(false);
 	const [couponDiscount, setCouponDiscount] = useState(0);
 	const [loadingItem, setLoadingItem] = useState<number | null>(null);
-	const [lastCacheCheck, setLastCacheCheck] = useState(Date.now()); // ✅ AÑADIDO
+	const [lastCacheCheck, setLastCacheCheck] = useState(Date.now());
 
 	const navigate = useNavigate();
 
@@ -56,8 +56,8 @@ const CartPage: React.FC = () => {
 	// ✅ HOOK PARA ACTUALIZACIONES OPTIMISTAS
 	const {
 		optimisticCartAdd,
-		optimisticFavoriteAdd,
-		optimisticFavoriteRemove
+		optimisticCartRemove,
+		optimisticFavoriteAdd
 	} = useInvalidateCounters();
 
 	// ✅ FUNCIÓN PARA INVALIDAR CACHE DE PÁGINAS ESPECÍFICAS
@@ -271,6 +271,9 @@ const CartPage: React.FC = () => {
 
 			if (item && item.quantity > 1) {
 				try {
+					// ✅ ACTUALIZACIÓN OPTIMISTA PARA DECREMENTO
+					optimisticCartRemove();
+
 					const result = await updateCartItem({
 						itemId: id,
 						quantity: item.quantity - 1,
@@ -293,7 +296,7 @@ const CartPage: React.FC = () => {
 				}
 			}
 		},
-		[cart?.items, loadingItem, updateCartItem, showNotification, invalidateRelatedPages]
+		[cart?.items, loadingItem, updateCartItem, showNotification, optimisticCartRemove, invalidateRelatedPages]
 	);
 
 	const handleRemoveFromCart = useCallback(
@@ -302,6 +305,16 @@ const CartPage: React.FC = () => {
 
 			setLoadingItem(id);
 			try {
+				// ✅ ACTUALIZACIÓN OPTIMISTA PARA ELIMINACIÓN COMPLETA
+				// Necesitamos saber cuántas unidades tiene el item para decrementar correctamente
+				const item = cart?.items.find((item) => item.id === id);
+				const itemQuantity = item?.quantity || 1;
+				
+				// Decrementar optimistamente por la cantidad total del item
+				for (let i = 0; i < itemQuantity; i++) {
+					optimisticCartRemove();
+				}
+
 				const result = await removeFromCart(id);
 
 				if (result) {
@@ -325,7 +338,7 @@ const CartPage: React.FC = () => {
 				setLoadingItem(null);
 			}
 		},
-		[loadingItem, removeFromCart, showNotification, invalidateRelatedPages]
+		[loadingItem, removeFromCart, showNotification, invalidateRelatedPages, optimisticCartRemove, cart?.items]
 	);
 
 	const moveToWishlist = useCallback(
@@ -336,6 +349,15 @@ const CartPage: React.FC = () => {
 			try {
 				// ✅ ACTUALIZACIÓN OPTIMISTA PARA FAVORITOS
 				optimisticFavoriteAdd();
+
+				// ✅ ACTUALIZACIÓN OPTIMISTA PARA CARRITO (se va a eliminar)
+				const item = cart?.items.find((item) => item.id === id);
+				const itemQuantity = item?.quantity || 1;
+				
+				// Decrementar optimistamente por la cantidad total del item
+				for (let i = 0; i < itemQuantity; i++) {
+					optimisticCartRemove();
+				}
 
 				// Primero agregamos a favoritos
 				await toggleFavorite(productId);
@@ -364,7 +386,7 @@ const CartPage: React.FC = () => {
 				setLoadingItem(null);
 			}
 		},
-		[loadingItem, toggleFavorite, removeFromCart, showNotification, optimisticFavoriteAdd, invalidateRelatedPages]
+		[loadingItem, toggleFavorite, removeFromCart, showNotification, optimisticFavoriteAdd, optimisticCartRemove, invalidateRelatedPages, cart?.items]
 	);
 
 	const applyCoupon = useCallback(() => {
@@ -381,6 +403,15 @@ const CartPage: React.FC = () => {
 		if (loading) return;
 
 		try {
+			// ✅ ACTUALIZACIÓN OPTIMISTA PARA VACIAR CARRITO COMPLETO
+			// Calcular total de items para decrementar correctamente
+			const totalItems = cart?.items.reduce((total, item) => total + item.quantity, 0) || 0;
+			
+			// Decrementar optimistamente por todos los items
+			for (let i = 0; i < totalItems; i++) {
+				optimisticCartRemove();
+			}
+
 			const result = await clearCart();
 
 			if (result) {
@@ -398,7 +429,7 @@ const CartPage: React.FC = () => {
 			console.error("Error al vaciar el carrito:", error);
 			showNotification(NotificationType.ERROR, "No se pudo vaciar el carrito");
 		}
-	}, [loading, clearCart, showNotification, invalidateRelatedPages]);
+	}, [loading, clearCart, showNotification, invalidateRelatedPages, optimisticCartRemove, cart?.items]);
 
 	// Función para proceder al checkout
 	const handleCheckout = useCallback(() => {

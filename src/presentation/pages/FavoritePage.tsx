@@ -12,9 +12,9 @@ import {
 import {useFavoriteApi} from "../hooks/useFavoriteApi";
 import {useAuth} from "../hooks/useAuth";
 import {useCart} from "../hooks/useCart";
-import {useInvalidateCounters} from "../hooks/useHeaderCounters"; // ✅ AÑADIDO
+import {useInvalidateCounters} from "../hooks/useHeaderCounters";
 import {formatCurrency} from "../../utils/formatters/formatCurrency";
-import CacheService from "../../infrastructure/services/CacheService"; // ✅ AÑADIDO
+import CacheService from "../../infrastructure/services/CacheService";
 
 // ✅ IMPORTAR HOOKS OPTIMIZADOS Y CACHE
 import {useImageCache} from "../hooks/useImageCache";
@@ -208,8 +208,8 @@ const FavoritePage: React.FC = () => {
 	const [currentPage, setCurrentPage] = useState(1);
 	const [hasMore, setHasMore] = useState(false);
 	const [total, setTotal] = useState(0);
-	const [lastCacheCheck, setLastCacheCheck] = useState(Date.now()); // ✅ AÑADIDO
-	const [isUpdating, setIsUpdating] = useState(false); // ✅ AÑADIDO para prevenir dobles clicks
+	const [lastCacheCheck, setLastCacheCheck] = useState(Date.now());
+	const [isUpdating, setIsUpdating] = useState(false);
 
 	const limit = 10;
 	const {getUserFavorites, toggleFavorite} = useFavoriteApi();
@@ -229,7 +229,6 @@ const FavoritePage: React.FC = () => {
 	// ✅ HOOK PARA ACTUALIZACIONES OPTIMISTAS
 	const {
 		optimisticCartAdd,
-		optimisticFavoriteAdd,
 		optimisticFavoriteRemove
 	} = useInvalidateCounters();
 
@@ -442,7 +441,7 @@ const FavoritePage: React.FC = () => {
 				// ✅ TIMEOUT PARA PREVENIR SPAM
 				setTimeout(() => {
 					setIsUpdating(false);
-				}, 1000);
+				}, 500);
 			}
 		},
 		[toggleFavorite, invalidateRelatedPages, fetchFavorites, optimisticFavoriteRemove, isUpdating]
@@ -480,7 +479,7 @@ const FavoritePage: React.FC = () => {
 				// ✅ TIMEOUT PARA PREVENIR SPAM
 				setTimeout(() => {
 					setIsUpdating(false);
-				}, 1000);
+				}, 500);
 			}
 		},
 		[addToCart, optimisticCartAdd, invalidateRelatedPages, isUpdating]

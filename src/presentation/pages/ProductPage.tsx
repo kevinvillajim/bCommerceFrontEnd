@@ -200,33 +200,45 @@ const ProductPage: React.FC = () => {
 
 	const handleAddToCart = useCallback(
 		async (productId: number) => {
+			console.log("🏪 ProductPage.handleAddToCart INICIADO", {
+				productId,
+				isUpdating,
+				component: "ProductPage"
+			});
+	
 			// ✅ PREVENIR DOBLES CLICKS
 			if (isUpdating) {
-				console.log("Ya se está procesando una acción, ignorando click duplicado");
+				console.log("❌ ProductPage: Click ignorado - ya se está procesando");
 				return;
 			}
-
+	
 			try {
 				setIsUpdating(true);
-
+				console.log("🔒 ProductPage: Estado isUpdating = true");
+	
 				// ✅ ACTUALIZACIÓN OPTIMISTA INMEDIATA
+				console.log("📈 ProductPage: Aplicando optimisticCartAdd...");
 				optimisticCartAdd();
-
+	
+				console.log("📞 ProductPage: Llamando addToCart API...");
 				await addToCart({
 					productId,
 					quantity: 1,
 				});
-
+	
 				// ✅ INVALIDAR CACHE DE PÁGINAS RELACIONADAS
+				console.log("🔄 ProductPage: Invalidando cache...");
 				invalidateRelatedPages();
-
-				console.log(`✅ Producto ${productId} añadido al carrito correctamente`);
+	
+				console.log(`✅ ProductPage: Producto ${productId} añadido al carrito correctamente`);
 			} catch (error) {
-				console.error("Error al añadir al carrito:", error);
+				console.error("❌ ProductPage: Error al añadir al carrito:", error);
 			} finally {
 				// ✅ TIMEOUT PARA PREVENIR SPAM
+				console.log("🔚 ProductPage: Limpiando estado isUpdating...");
 				setTimeout(() => {
 					setIsUpdating(false);
+					console.log("✅ ProductPage: Estado limpio");
 				}, 1000);
 			}
 		},
@@ -235,36 +247,50 @@ const ProductPage: React.FC = () => {
 
 	const handleAddToWishlist = useCallback(
 		async (productId: number) => {
+			const isCurrentlyFavorite = checkIsFavorite(productId);
+			
+			console.log("💖 ProductPage.handleAddToWishlist INICIADO", {
+				productId,
+				isCurrentlyFavorite,
+				isUpdating,
+				component: "ProductPage"
+			});
+	
 			// ✅ PREVENIR DOBLES CLICKS
 			if (isUpdating) {
-				console.log("Ya se está procesando una acción, ignorando click duplicado");
+				console.log("❌ ProductPage: Click ignorado - ya se está procesando");
 				return;
 			}
-
+	
 			try {
 				setIsUpdating(true);
-
+				console.log("🔒 ProductPage: Estado isUpdating = true");
+	
 				// ✅ VERIFICAR ESTADO ACTUAL Y ACTUALIZACIÓN OPTIMISTA
-				const isCurrentlyFavorite = checkIsFavorite(productId);
+				console.log(`📈 ProductPage: Aplicando optimistic${isCurrentlyFavorite ? 'Remove' : 'Add'}...`);
 				
 				if (isCurrentlyFavorite) {
 					optimisticFavoriteRemove();
 				} else {
 					optimisticFavoriteAdd();
 				}
-
+	
+				console.log("📞 ProductPage: Llamando toggleFavorite API...");
 				await toggleFavorite(productId);
-
+	
 				// ✅ INVALIDAR CACHE DE PÁGINAS RELACIONADAS
+				console.log("🔄 ProductPage: Invalidando cache...");
 				invalidateRelatedPages();
-
-				console.log(`✅ Favorito ${productId} gestionado correctamente`);
+	
+				console.log(`✅ ProductPage: Favorito ${productId} gestionado correctamente`);
 			} catch (error) {
-				console.error("Error al añadir a favoritos:", error);
+				console.error("❌ ProductPage: Error al añadir a favoritos:", error);
 			} finally {
 				// ✅ TIMEOUT PARA PREVENIR SPAM
+				console.log("🔚 ProductPage: Limpiando estado isUpdating...");
 				setTimeout(() => {
 					setIsUpdating(false);
+					console.log("✅ ProductPage: Estado limpio");
 				}, 1000);
 			}
 		},

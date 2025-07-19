@@ -21,9 +21,9 @@ interface ProductCardProps {
 	color?: boolean;
 	stock?: number;
 	slug?: string;
-	// Props opcionales para funciones externas
-	onAddToCart?: (id: number) => void;
-	onAddToWishlist?: (id: number) => void;
+	// Props opcionales para funciones externas - pueden ser async
+	onAddToCart?: (id: number) => void | Promise<void>;
+	onAddToWishlist?: (id: number) => void | Promise<void>;
 }
 
 const ProductCardCompact: React.FC<ProductCardProps> = ({
@@ -43,10 +43,11 @@ const ProductCardCompact: React.FC<ProductCardProps> = ({
 	onAddToCart,
 	onAddToWishlist,
 }) => {
-	// Estados para controlar las animaciones
+	// Estados para controlar las animaciones y feedback visual
 	const [isAddingToCart, setIsAddingToCart] = useState(false);
 	const [isAddingToWishlist, setIsAddingToWishlist] = useState(false);
 	const [isFavorite, setIsFavorite] = useState(false);
+	const [isInCart, setIsInCart] = useState(false); // ✅ NUEVO: estado para carrito
 
 	// Hooks para carrito y favoritos
 	const {addToCart, showNotification} = useCart();
@@ -73,113 +74,157 @@ const ProductCardCompact: React.FC<ProductCardProps> = ({
 		console.log("🔄 Cache invalidado desde ProductCardCompact");
 	};
 
+	// ✅ INICIALIZAR ESTADOS AL MONTAR
+	React.useEffect(() => {
+		setIsFavorite(checkIsFavorite(id));
+		// TODO: Aquí podrías verificar si está en carrito si tienes una función para eso
+	}, [id, checkIsFavorite]);
+
 	// Calculate discounted price
 	const discountedPrice = discount ? price - price * (discount / 100) : price;
 
 	// Verificar si hay stock
 	const hasStock = stock > 0;
 
-	// Función para agregar al carrito
-	const handleAddToCart = async (e: React.MouseEvent) => {
-		e.preventDefault();
-		e.stopPropagation();
+	// ✅ FUNCIÓN PRINCIPAL PARA CARRITO - Reutilizada en todos los botones
+	const executeAddToCart = async () => {
+		console.log("🚀 ProductCardCompact.executeAddToCart INICIADO", {
+			productId: id,
+			hasExternalFunction: !!onAddToCart,
+			isAddingToCart,
+			hasStock
+		});
 
-		// ✅ PREVENIR DOBLES CLICKS
-		if (isAddingToCart) {
-			console.log("Ya se está agregando al carrito, ignorando click");
-			return;
-		}
-
-		if (!hasStock) {
-			showNotification(
-				NotificationType.ERROR,
-				"Lo sentimos, este producto está agotado"
-			);
+		if (isAddingToCart || !hasStock) {
+			if (!hasStock) {
+				showNotification(
+					NotificationType.ERROR,
+					"Lo sentimos, este producto está agotado"
+				);
+			}
+			console.log("❌ Acción bloqueada - isAddingToCart:", isAddingToCart, "hasStock:", hasStock);
 			return;
 		}
 
 		setIsAddingToCart(true);
 
 		try {
-			// ✅ SI HAY FUNCIÓN EXTERNA, USARLA SIN OPTIMIZACIÓN AQUÍ
 			if (onAddToCart) {
-				console.log("🔄 Usando función externa de carrito");
-				onAddToCart(id);
+				// ✅ HAY FUNCIÓN EXTERNA - NO optimizar aquí, dejar que ella lo haga
+				console.log("🔄 Ejecutando SOLO función externa (NO optimización aquí)");
+				const result = onAddToCart(id);
+				if (result && typeof result.then === 'function') {
+					console.log("⏳ Esperando función externa async...");
+					await result;
+					console.log("✅ Función externa completada");
+				} else {
+					console.log("✅ Función externa sync completada");
+				}
 			} else {
-				// ✅ SI ES FUNCIÓN PROPIA, HACER OPTIMIZACIÓN + API
-				console.log("🔄 Ejecutando optimización + API propia");
+				// ✅ NO HAY FUNCIÓN EXTERNA - optimizar + API
+				console.log("🔄 NO hay función externa - aplicando optimización + API");
 				
-				// Actualización optimista inmediata
+				console.log("📈 Aplicando optimisticCartAdd...");
 				optimisticCartAdd();
-
-				// Llamada a la API
+				
+				console.log("📞 Llamando addToCart API...");
 				const success = await addToCart({
 					productId: id,
 					quantity: 1,
 				});
 
-				if (success) {
-					invalidateRelatedPages();
-					showNotification(
-						NotificationType.SUCCESS,
-						`${name} ha sido agregado al carrito`
-					);
-				} else {
+				if (!success) {
+					console.log("❌ API falló");
 					throw new Error("No se pudo agregar el producto al carrito");
 				}
+
+				console.log("✅ API exitosa");
+				showNotification(
+					NotificationType.SUCCESS,
+					`${name} ha sido agregado al carrito`
+				);
+				
+				console.log("🔄 Invalidando cache...");
+				invalidateRelatedPages();
 			}
+			
+			// ✅ FEEDBACK VISUAL - Marcar como agregado al carrito
+			setIsInCart(true);
+			
+			// ✅ RESETEAR FEEDBACK VISUAL DESPUÉS DE 3 SEGUNDOS
+			setTimeout(() => {
+				setIsInCart(false);
+			}, 3000);
+			
+			console.log("🎉 ProductCardCompact.executeAddToCart COMPLETADO");
+			
 		} catch (error) {
-			console.error("Error al agregar al carrito:", error);
+			console.error("❌ Error en ProductCardCompact.executeAddToCart:", error);
 			showNotification(
 				NotificationType.ERROR,
 				"Error al agregar producto al carrito. Inténtalo de nuevo."
 			);
 		} finally {
+			console.log("🔚 Limpiando estado isAddingToCart...");
 			setTimeout(() => {
 				setIsAddingToCart(false);
-			}, 1500);
+				console.log("✅ Estado limpio");
+			}, 500);
 		}
 	};
 
-	// Función para agregar a favoritos
-	const handleAddToWishlist = async (e: React.MouseEvent) => {
-		e.preventDefault();
-		e.stopPropagation();
+	// ✅ FUNCIÓN PRINCIPAL PARA FAVORITOS - Reutilizada en todos los botones
+	const executeAddToWishlist = async () => {
+		const isCurrentlyFavorite = checkIsFavorite(id);
+		
+		console.log("💖 ProductCardCompact.executeAddToWishlist INICIADO", {
+			productId: id,
+			isCurrentlyFavorite,
+			hasExternalFunction: !!onAddToWishlist,
+			isAddingToWishlist
+		});
 
-		// ✅ PREVENIR DOBLES CLICKS
 		if (isAddingToWishlist) {
-			console.log("Ya se está agregando a favoritos, ignorando click");
+			console.log("❌ Click ignorado - ya se está procesando");
 			return;
 		}
 
 		setIsAddingToWishlist(true);
 
 		try {
-			// ✅ SI HAY FUNCIÓN EXTERNA, USARLA SIN OPTIMIZACIÓN AQUÍ
 			if (onAddToWishlist) {
-				console.log("🔄 Usando función externa de favoritos");
-				onAddToWishlist(id);
+				// ✅ HAY FUNCIÓN EXTERNA - NO optimizar aquí, dejar que ella lo haga
+				console.log("🔄 Ejecutando SOLO función externa (NO optimización aquí)");
+				const result = onAddToWishlist(id);
+				if (result && typeof result.then === 'function') {
+					console.log("⏳ Esperando función externa async...");
+					await result;
+					console.log("✅ Función externa completada");
+				} else {
+					console.log("✅ Función externa sync completada");
+				}
+				
 				setIsFavorite(!isFavorite);
 			} else {
-				// ✅ SI ES FUNCIÓN PROPIA, HACER OPTIMIZACIÓN + API
-				console.log("🔄 Ejecutando optimización + API propia");
+				// ✅ NO HAY FUNCIÓN EXTERNA - optimizar + API
+				console.log("🔄 NO hay función externa - aplicando optimización + API");
 				
-				// Verificar estado actual para decidir la optimización
-				const isCurrentlyFavorite = checkIsFavorite(id);
-				
-				// Actualización optimista inmediata
+				console.log(`📈 Aplicando optimistic${isCurrentlyFavorite ? 'Remove' : 'Add'}...`);
 				if (isCurrentlyFavorite) {
 					optimisticFavoriteRemove();
 				} else {
 					optimisticFavoriteAdd();
 				}
-
-				// Llamada a la API
+				
+				console.log("📞 Llamando toggleFavorite API...");
 				const result = await toggleFavorite(id);
-
-				// Invalidar cache después de éxito
-				invalidateRelatedPages();
-
+				
+				if (result === undefined) {
+					console.log("❌ API falló");
+					throw new Error("No se pudo gestionar el favorito");
+				}
+				
+				console.log("✅ API exitosa, resultado:", result);
 				setIsFavorite(result);
 
 				if (result) {
@@ -193,18 +238,39 @@ const ProductCardCompact: React.FC<ProductCardProps> = ({
 						"Producto eliminado de favoritos"
 					);
 				}
+				
+				console.log("🔄 Invalidando cache...");
+				invalidateRelatedPages();
 			}
+			
+			console.log("🎉 ProductCardCompact.executeAddToWishlist COMPLETADO");
+			
 		} catch (error) {
-			console.error("Error al manejar favorito:", error);
+			console.error("❌ Error en ProductCardCompact.executeAddToWishlist:", error);
 			showNotification(
 				NotificationType.ERROR,
 				"Error al gestionar favoritos. Inténtalo de nuevo."
 			);
 		} finally {
+			console.log("🔚 Limpiando estado isAddingToWishlist...");
 			setTimeout(() => {
 				setIsAddingToWishlist(false);
-			}, 1500);
+				console.log("✅ Estado limpio");
+			}, 500);
 		}
+	};
+
+	// ✅ HANDLERS SIMPLIFICADOS - Solo llaman a las funciones principales
+	const handleAddToCart = async (e: React.MouseEvent) => {
+		e.preventDefault();
+		e.stopPropagation();
+		await executeAddToCart();
+	};
+
+	const handleAddToWishlist = async (e: React.MouseEvent) => {
+		e.preventDefault();
+		e.stopPropagation();
+		await executeAddToWishlist();
 	};
 
 	return (
@@ -237,30 +303,72 @@ const ProductCardCompact: React.FC<ProductCardProps> = ({
 					</div>
 				)}
 
-				{/* Quick Action Buttons */}
-				<div className="absolute inset-0 bg-black bg-opacity-30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 items-center justify-center gap-2 hidden md:flex">
+				{/* ✅ BOTONES HOVER MEJORADOS - Exactamente la misma lógica */}
+				<div className="absolute inset-0 bg-black bg-opacity-30 opacity-0 group-hover:opacity-100 hover:opacity-100 transition-opacity duration-300 items-center justify-center gap-3 hidden sm:flex">
 					<button
 						onClick={handleAddToWishlist}
 						disabled={isAddingToWishlist}
-						className="cursor-pointer bg-white p-2 rounded-full hover:bg-primary-50 hover:text-primary-600 transition-colors disabled:opacity-50"
+						className="cursor-pointer bg-white p-3 rounded-full hover:bg-primary-50 hover:text-primary-600 transition-all duration-200 disabled:opacity-50 shadow-lg hover:shadow-xl transform hover:scale-105"
 						aria-label="Añadir a favoritos"
+						title="Añadir a favoritos"
 					>
-						{isAddingToWishlist || isFavorite ? (
-							<Heart size={18} className="text-red-500 fill-current" />
+						{isAddingToWishlist ? (
+							<div className="animate-spin rounded-full h-5 w-5 border-2 border-red-500 border-t-transparent"></div>
+						) : isFavorite ? (
+							<Heart size={20} className="text-red-500 fill-current" />
 						) : (
-							<Heart size={18} />
+							<Heart size={20} className="text-gray-600" />
 						)}
 					</button>
 					<button
 						onClick={handleAddToCart}
 						disabled={isAddingToCart || !hasStock}
-						className={`cursor-pointer bg-white p-2 rounded-full hover:bg-primary-50 hover:text-primary-600 transition-colors disabled:opacity-50 ${!hasStock ? "cursor-not-allowed" : ""}`}
+						className={`cursor-pointer bg-white p-3 rounded-full hover:bg-primary-50 hover:text-primary-600 transition-all duration-200 disabled:opacity-50 shadow-lg hover:shadow-xl transform hover:scale-105 ${!hasStock ? "cursor-not-allowed" : ""}`}
+						aria-label="Añadir al carrito"
+						title={hasStock ? "Añadir al carrito" : "Sin stock"}
+					>
+						{isAddingToCart ? (
+							<div className="animate-spin rounded-full h-5 w-5 border-2 border-green-500 border-t-transparent"></div>
+						) : isInCart ? (
+							<Check size={20} className="text-green-500" />
+						) : !hasStock ? (
+							<ShoppingCart size={20} className="text-gray-400" />
+						) : (
+							<ShoppingCart size={20} className="text-gray-600" />
+						)}
+					</button>
+				</div>
+
+				{/* ✅ BOTONES MÓVILES/TABLET - Exactamente la misma lógica */}
+				<div className="absolute bottom-2 right-2 flex gap-2 sm:hidden">
+					<button
+						onClick={handleAddToWishlist}
+						disabled={isAddingToWishlist}
+						className="bg-white/90 backdrop-blur-sm p-2 rounded-full hover:bg-white transition-all duration-200 disabled:opacity-50 shadow-md"
+						aria-label="Añadir a favoritos"
+					>
+						{isAddingToWishlist ? (
+							<div className="animate-spin rounded-full h-4 w-4 border-2 border-red-500 border-t-transparent"></div>
+						) : isFavorite ? (
+							<Heart size={16} className="text-red-500 fill-current" />
+						) : (
+							<Heart size={16} className="text-gray-600" />
+						)}
+					</button>
+					<button
+						onClick={handleAddToCart}
+						disabled={isAddingToCart || !hasStock}
+						className={`bg-white/90 backdrop-blur-sm p-2 rounded-full hover:bg-white transition-all duration-200 disabled:opacity-50 shadow-md ${!hasStock ? "cursor-not-allowed" : ""}`}
 						aria-label="Añadir al carrito"
 					>
 						{isAddingToCart ? (
-							<Check size={18} className="text-green-500" />
+							<div className="animate-spin rounded-full h-4 w-4 border-2 border-green-500 border-t-transparent"></div>
+						) : isInCart ? (
+							<Check size={16} className="text-green-500" />
+						) : !hasStock ? (
+							<ShoppingCart size={16} className="text-gray-400" />
 						) : (
-							<ShoppingCart size={18} />
+							<ShoppingCart size={16} className="text-gray-600" />
 						)}
 					</button>
 				</div>
@@ -296,10 +404,10 @@ const ProductCardCompact: React.FC<ProductCardProps> = ({
 
 				{/* Price */}
 				<div className="flex items-center justify-between">
-					<div className="flex items-center">
+					<div className="flex items-center flex-wrap">
 						{(discount && typeof discount === 'number' && discount > 0) ? (
 							<>
-								<span className="font-bold text-primary-600">
+								<span className="font-bold text-primary-600 text-lg">
 									${discountedPrice.toFixed(2)}
 								</span>
 								<span className="text-sm text-gray-500 line-through ml-2">
@@ -307,43 +415,58 @@ const ProductCardCompact: React.FC<ProductCardProps> = ({
 								</span>
 							</>
 						) : (
-							<span className="font-bold text-primary-600 product-price">
+							<span className="font-bold text-primary-600 product-price text-lg">
 								${price.toFixed(2)}
 							</span>
 						)}
 					</div>
 
-					{/* Botones de acción rápida para móvil */}
-					<div className="flex lg:hidden gap-1">
+					{/* ✅ BOTÓN SECUNDARIO MEJORADO - Exactamente la misma lógica */}
+					<div className="hidden xs:flex sm:hidden md:flex lg:hidden xl:flex gap-2">
 						<button
 							onClick={handleAddToWishlist}
 							disabled={isAddingToWishlist}
-							className="text-gray-500 hover:text-primary-600 transition-colors disabled:opacity-50"
+							className="text-gray-500 hover:text-red-500 transition-colors disabled:opacity-50 p-1 rounded-full hover:bg-gray-100"
 							aria-label="Añadir a favoritos"
 						>
-							{isAddingToWishlist || isFavorite ? (
-								<Heart size={16} className="text-red-500 fill-current" />
+							{isAddingToWishlist ? (
+								<div className="animate-spin rounded-full h-4 w-4 border-2 border-red-500 border-t-transparent"></div>
+							) : isFavorite ? (
+								<Heart size={18} className="text-red-500 fill-current" />
 							) : (
-								<Heart size={16} />
+								<Heart size={18} />
 							)}
 						</button>
 						<button
 							onClick={handleAddToCart}
 							disabled={isAddingToCart || !hasStock}
-							className={`text-gray-500 hover:text-primary-600 transition-colors disabled:opacity-50 ${!hasStock ? "cursor-not-allowed" : ""}`}
+							className={`text-gray-500 hover:text-primary-600 transition-colors disabled:opacity-50 p-1 rounded-full hover:bg-gray-100 ${!hasStock ? "cursor-not-allowed" : ""}`}
 							aria-label="Añadir al carrito"
 						>
 							{isAddingToCart ? (
-								<Check size={16} className="text-green-500" />
+								<div className="animate-spin rounded-full h-4 w-4 border-2 border-green-500 border-t-transparent"></div>
+							) : isInCart ? (
+								<Check size={18} className="text-green-500" />
+							) : !hasStock ? (
+								<ShoppingCart size={18} className="text-gray-400" />
 							) : (
-								<ShoppingCart size={16} />
+								<ShoppingCart size={18} />
 							)}
 						</button>
 					</div>
 				</div>
 
 				{/* Stock Availability */}
-				{!hasStock && <p className="text-xs text-red-500 mt-1">Agotado</p>}
+				<div className="mt-2 flex items-center justify-between">
+					{!hasStock && (
+						<p className="text-xs text-red-500 font-medium">Agotado</p>
+					)}
+					{hasStock && stock <= 5 && (
+						<p className="text-xs text-amber-600 font-medium">
+							Solo quedan {stock}
+						</p>
+					)}
+				</div>
 			</div>
 		</div>
 	);
