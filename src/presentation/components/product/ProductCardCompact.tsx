@@ -4,9 +4,9 @@ import {Link} from "react-router-dom";
 import RatingStars from "../common/RatingStars";
 import {useCart} from "../../hooks/useCart";
 import {useFavorites} from "../../hooks/useFavorites";
-import {useInvalidateCounters} from "../../hooks/useHeaderCounters"; // ✅ AÑADIDO
+import {useInvalidateCounters} from "../../hooks/useHeaderCounters";
 import {NotificationType} from "../../contexts/CartContext";
-import CacheService from "../../../infrastructure/services/CacheService"; // ✅ AÑADIDO
+import CacheService from "../../../infrastructure/services/CacheService";
 
 interface ProductCardProps {
 	id: number;
@@ -37,7 +37,7 @@ const ProductCardCompact: React.FC<ProductCardProps> = ({
 	category,
 	isNew = false,
 	color = true,
-	stock = 10, // Valor predeterminado para stock
+	stock = 10,
 	slug,
 	// Funciones externas opcionales
 	onAddToCart,
@@ -81,8 +81,8 @@ const ProductCardCompact: React.FC<ProductCardProps> = ({
 
 	// Función para agregar al carrito
 	const handleAddToCart = async (e: React.MouseEvent) => {
-		e.preventDefault(); // Evitar navegación
-		e.stopPropagation(); // Evitar propagación a elementos padres
+		e.preventDefault();
+		e.stopPropagation();
 
 		// ✅ PREVENIR DOBLES CLICKS
 		if (isAddingToCart) {
@@ -101,26 +101,25 @@ const ProductCardCompact: React.FC<ProductCardProps> = ({
 		setIsAddingToCart(true);
 
 		try {
-			// ✅ DIFERENTE COMPORTAMIENTO SEGÚN SI HAY FUNCIÓN EXTERNA
+			// ✅ SI HAY FUNCIÓN EXTERNA, USARLA SIN OPTIMIZACIÓN AQUÍ
 			if (onAddToCart) {
-				// ✅ SI HAY FUNCIÓN EXTERNA, NO HACER ACTUALIZACIÓN OPTIMISTA AQUÍ
-				// (La función externa ya lo hará desde ProductPage)
-				console.log("🔄 Usando función externa de carrito (ProductPage manejará optimización)");
+				console.log("🔄 Usando función externa de carrito");
 				onAddToCart(id);
 			} else {
-				// ✅ SI NO HAY FUNCIÓN EXTERNA, HACER ACTUALIZACIÓN OPTIMISTA Y API
-				console.log("🔄 Ejecutando optimización propia de carrito");
+				// ✅ SI ES FUNCIÓN PROPIA, HACER OPTIMIZACIÓN + API
+				console.log("🔄 Ejecutando optimización + API propia");
+				
+				// Actualización optimista inmediata
 				optimisticCartAdd();
 
+				// Llamada a la API
 				const success = await addToCart({
 					productId: id,
 					quantity: 1,
 				});
 
 				if (success) {
-					// ✅ INVALIDAR CACHE DESPUÉS DE ÉXITO
 					invalidateRelatedPages();
-
 					showNotification(
 						NotificationType.SUCCESS,
 						`${name} ha sido agregado al carrito`
@@ -136,7 +135,6 @@ const ProductCardCompact: React.FC<ProductCardProps> = ({
 				"Error al agregar producto al carrito. Inténtalo de nuevo."
 			);
 		} finally {
-			// ✅ TIMEOUT PARA PREVENIR SPAM
 			setTimeout(() => {
 				setIsAddingToCart(false);
 			}, 1500);
@@ -145,8 +143,8 @@ const ProductCardCompact: React.FC<ProductCardProps> = ({
 
 	// Función para agregar a favoritos
 	const handleAddToWishlist = async (e: React.MouseEvent) => {
-		e.preventDefault(); // Evitar navegación
-		e.stopPropagation(); // Evitar propagación a elementos padres
+		e.preventDefault();
+		e.stopPropagation();
 
 		// ✅ PREVENIR DOBLES CLICKS
 		if (isAddingToWishlist) {
@@ -157,29 +155,29 @@ const ProductCardCompact: React.FC<ProductCardProps> = ({
 		setIsAddingToWishlist(true);
 
 		try {
-			// ✅ DIFERENTE COMPORTAMIENTO SEGÚN SI HAY FUNCIÓN EXTERNA
+			// ✅ SI HAY FUNCIÓN EXTERNA, USARLA SIN OPTIMIZACIÓN AQUÍ
 			if (onAddToWishlist) {
-				// ✅ SI HAY FUNCIÓN EXTERNA, NO HACER ACTUALIZACIÓN OPTIMISTA AQUÍ
-				// (La función externa ya lo hará desde ProductPage)
-				console.log("🔄 Usando función externa de favoritos (ProductPage manejará optimización)");
+				console.log("🔄 Usando función externa de favoritos");
 				onAddToWishlist(id);
 				setIsFavorite(!isFavorite);
 			} else {
-				// ✅ SI NO HAY FUNCIÓN EXTERNA, HACER ACTUALIZACIÓN OPTIMISTA Y API
-				console.log("🔄 Ejecutando optimización propia de favoritos");
+				// ✅ SI ES FUNCIÓN PROPIA, HACER OPTIMIZACIÓN + API
+				console.log("🔄 Ejecutando optimización + API propia");
 				
-				// Verificar estado actual y hacer actualización optimista
+				// Verificar estado actual para decidir la optimización
 				const isCurrentlyFavorite = checkIsFavorite(id);
 				
+				// Actualización optimista inmediata
 				if (isCurrentlyFavorite) {
 					optimisticFavoriteRemove();
 				} else {
 					optimisticFavoriteAdd();
 				}
 
+				// Llamada a la API
 				const result = await toggleFavorite(id);
 
-				// ✅ INVALIDAR CACHE DESPUÉS DE ÉXITO
+				// Invalidar cache después de éxito
 				invalidateRelatedPages();
 
 				setIsFavorite(result);
@@ -203,7 +201,6 @@ const ProductCardCompact: React.FC<ProductCardProps> = ({
 				"Error al gestionar favoritos. Inténtalo de nuevo."
 			);
 		} finally {
-			// ✅ TIMEOUT PARA PREVENIR SPAM
 			setTimeout(() => {
 				setIsAddingToWishlist(false);
 			}, 1500);
@@ -222,23 +219,23 @@ const ProductCardCompact: React.FC<ProductCardProps> = ({
 					/>
 				</Link>
 
-				{/* ✅ DISCOUNT TAG - Solo si hay descuento válido */}
-				{(discount && typeof discount === 'number' && discount > 0) ? (
+				{/* Discount Tag - Solo si hay descuento válido */}
+				{(discount && typeof discount === 'number' && discount > 0) && (
 					<div
 						className={`absolute top-2 left-2 ${color ? "bg-red-500" : "bg-primary-600"} text-white text-xs font-bold py-1 px-2 rounded-md badge`}
 					>
 						-{discount}%
 					</div>
-				) : null}
+				)}
 
 				{/* New Product Tag */}
-				{isNew ? (
+				{isNew && (
 					<div
 						className={`absolute top-2 right-2 ${color ? "bg-green-500" : "bg-primary-800"} text-white text-xs font-bold py-1 px-2 rounded-md badge`}
 					>
 						Nuevo
 					</div>
-				) : null}
+				)}
 
 				{/* Quick Action Buttons */}
 				<div className="absolute inset-0 bg-black bg-opacity-30 opacity-0 group-hover:opacity-100 transition-opacity duration-300 items-center justify-center gap-2 hidden md:flex">
@@ -272,11 +269,11 @@ const ProductCardCompact: React.FC<ProductCardProps> = ({
 			{/* Product Info */}
 			<div className="p-3">
 				{/* Category */}
-				{category ? (
+				{category && (
 					<span className="text-xs text-gray-500 uppercase mb-1 block">
 						{category}
 					</span>
-				) : null}
+				)}
 
 				{/* Product Name */}
 				<Link to={`/products/${slug || id}`}>
@@ -285,8 +282,8 @@ const ProductCardCompact: React.FC<ProductCardProps> = ({
 					</h3>
 				</Link>
 
-				{/* ✅ RATING - Solo si hay rating válido */}
-				{(rating && typeof rating === 'number' && rating > 0) ? (
+				{/* Rating - Solo si hay rating válido */}
+				{(rating && typeof rating === 'number' && rating > 0) && (
 					<div className="mb-2">
 						<RatingStars
 							rating={rating}
@@ -295,7 +292,7 @@ const ProductCardCompact: React.FC<ProductCardProps> = ({
 							reviews={reviews}
 						/>
 					</div>
-				) : null}
+				)}
 
 				{/* Price */}
 				<div className="flex items-center justify-between">
@@ -346,7 +343,7 @@ const ProductCardCompact: React.FC<ProductCardProps> = ({
 				</div>
 
 				{/* Stock Availability */}
-				{!hasStock ? <p className="text-xs text-red-500 mt-1">Agotado</p> : null}
+				{!hasStock && <p className="text-xs text-red-500 mt-1">Agotado</p>}
 			</div>
 		</div>
 	);

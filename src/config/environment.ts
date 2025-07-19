@@ -5,12 +5,12 @@ const environments = {
 		debug: true,
 	},
 	staging: {
-		apiBaseUrl: "https://api.comersia.app",
+		apiBaseUrl: "https://api.comersia.app/api",
 		imageBaseUrl: "https://api.comersia.app/storage/",
 		debug: true,
 	},
 	production: {
-		apiBaseUrl: "https://api.comersia.app",
+		apiBaseUrl: "https://api.comersia.app/api",
 		imageBaseUrl: "https://api.comersia.app/storage/",
 		debug: false,
 	},
