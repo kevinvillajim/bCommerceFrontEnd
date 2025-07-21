@@ -10,7 +10,7 @@ export class GoogleAuthService {
   private static instance: GoogleAuthService;
   private isInitialized = false;
   private clientId = '581090375629-kds9jjgs2pk60iqe05fmjhpf6pps2nsv.apps.googleusercontent.com';
-  private baseApiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+  private baseApiUrl = import.meta.env.VITE_API_URL || 'https://api.comersia.app/api';
 
   private constructor() {}
 

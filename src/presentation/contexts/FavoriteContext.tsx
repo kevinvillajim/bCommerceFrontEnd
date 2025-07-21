@@ -1,4 +1,4 @@
-// src/presentation/contexts/FavoriteContext.tsx - OPTIMIZADO
+// src/presentation/contexts/FavoriteContext.tsx - OPTIMIZADO SIN LOOPS
 import React, {createContext, useState, useCallback} from "react";
 import type {ReactNode} from "react";
 import ApiClient from "../../infrastructure/api/apiClient";
@@ -46,7 +46,7 @@ export const FavoriteProvider: React.FC<FavoriteProviderProps> = ({
 	const {isAuthenticated} = useAuth();
 	const {invalidateMany} = useCacheInvalidation();
 
-	// ✅ HOOK SIMPLE SIN DEPENDENCIAS QUE CAUSEN LOOPS
+	// ✅ USO DE CACHE REACTIVO SIN DEPENDENCIAS QUE CAUSEN LOOPS
 	const {
 		data: favoritesData,
 		loading,
@@ -55,7 +55,7 @@ export const FavoriteProvider: React.FC<FavoriteProviderProps> = ({
 	} = useReactiveCache<Favorite[]>({
 		key: "user_favorites",
 		fetcher: async () => {
-			// ✅ VERIFICACIÓN DOBLE - No ejecutar si no autenticado
+			// ✅ VERIFICACIÓN INTERNA - No depender de dependencias externas
 			if (!isAuthenticated) {
 				console.log("🚫 No autenticado, no cargar favoritos");
 				return [];
@@ -76,17 +76,11 @@ export const FavoriteProvider: React.FC<FavoriteProviderProps> = ({
 		},
 		cacheTime: 10 * 60 * 1000,
 		invalidatePatterns: ["favorites_*", "header_counters"],
-		// ✅ SIN DEPENDENCIAS - Evitar loops
+		// ✅ SIN DEPENDENCIAS - Evitar loops infinitos
 		dependencies: [],
 	});
 
-	// ✅ EFECTO SEPARADO PARA MANEJAR CAMBIOS DE AUTENTICACIÓN
-	React.useEffect(() => {
-		if (isAuthenticated) {
-			// Solo cargar cuando el usuario se autentica
-			fetchFavorites();
-		}
-	}, [isAuthenticated, fetchFavorites]);
+	// ✅ NO USEEFFECT - Dejar que useReactiveCache maneje todo internamente
 
 	// ✅ SI NO AUTENTICADO, DEVOLVER DATOS VACÍOS
 	const favorites: Favorite[] = isAuthenticated ? (favoritesData || []) : [];

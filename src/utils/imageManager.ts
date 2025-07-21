@@ -20,7 +20,7 @@ const PLACEHOLDER_SVG = `data:image/svg+xml,${encodeURIComponent(`
  */
 function getApiBaseUrl(): string {
 	if (typeof window === "undefined") {
-		return "http://127.0.0.1:8000"; // Fallback para SSR
+		return environment?.apiBaseUrl?.replace('/api', '') || 'https://api.comersia.app';
 	}
 
 	const {protocol, hostname} = window.location;
