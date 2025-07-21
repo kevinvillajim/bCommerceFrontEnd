@@ -1,5 +1,5 @@
-// src/presentation/contexts/FavoriteContext.tsx - OPTIMIZADO SIN LOOPS
-import React, {createContext, useState, useCallback} from "react";
+// src/presentation/contexts/FavoriteContext.tsx - SOLUCIÓN SIMPLE SIN LOOPS
+import React, {createContext, useState, useCallback, useEffect} from "react";
 import type {ReactNode} from "react";
 import ApiClient from "../../infrastructure/api/apiClient";
 import {API_ENDPOINTS} from "../../constants/apiEndpoints";
@@ -8,10 +8,7 @@ import type {
 	FavoriteListResponse,
 } from "../../core/domain/entities/Favorite";
 import {useAuth} from "../hooks/useAuth";
-import {
-	useReactiveCache,
-	useCacheInvalidation,
-} from "../hooks/useReactiveCache";
+import CacheService from "../../infrastructure/services/CacheService";
 
 interface FavoriteContextProps {
 	favorites: Favorite[];
@@ -42,25 +39,33 @@ interface FavoriteProviderProps {
 export const FavoriteProvider: React.FC<FavoriteProviderProps> = ({
 	children,
 }) => {
+	const [favorites, setFavorites] = useState<Favorite[]>([]);
+	const [loading, setLoading] = useState<boolean>(false);
+	const [error, setError] = useState<string | null>(null);
 	const [favoriteCount, setFavoriteCount] = useState<number>(0);
 	const {isAuthenticated} = useAuth();
-	const {invalidateMany} = useCacheInvalidation();
 
-	// ✅ USO DE CACHE REACTIVO SIN DEPENDENCIAS QUE CAUSEN LOOPS
-	const {
-		data: favoritesData,
-		loading,
-		error,
-		refetch: fetchFavorites,
-	} = useReactiveCache<Favorite[]>({
-		key: "user_favorites",
-		fetcher: async () => {
-			// ✅ VERIFICACIÓN INTERNA - No depender de dependencias externas
-			if (!isAuthenticated) {
-				console.log("🚫 No autenticado, no cargar favoritos");
-				return [];
-			}
+	// ✅ FUNCIÓN SIMPLE PARA FETCH SIN LOOPS
+	const fetchFavorites = useCallback(async () => {
+		if (!isAuthenticated) {
+			setFavorites([]);
+			setFavoriteCount(0);
+			return;
+		}
 
+		// Verificar cache primero
+		const cachedFavorites = CacheService.getItem("user_favorites");
+		if (cachedFavorites) {
+			console.log("📦 Using cached favorites");
+			setFavorites(cachedFavorites);
+			setFavoriteCount(cachedFavorites.length);
+			return;
+		}
+
+		setLoading(true);
+		setError(null);
+
+		try {
 			console.log("🌐 Fetching favorites from API");
 			const response = await ApiClient.get<FavoriteListResponse>(
 				API_ENDPOINTS.FAVORITES.LIST
@@ -69,28 +74,32 @@ export const FavoriteProvider: React.FC<FavoriteProviderProps> = ({
 			if (response && response.data) {
 				const favoritesData = Array.isArray(response.data) ? response.data : [];
 				console.log(`✅ Favoritos cargados: ${favoritesData.length}`);
-				return favoritesData;
+				
+				setFavorites(favoritesData);
+				setFavoriteCount(favoritesData.length);
+				
+				// Guardar en cache por 10 minutos
+				CacheService.setItem("user_favorites", favoritesData, 10 * 60 * 1000);
+			} else {
+				setFavorites([]);
+				setFavoriteCount(0);
 			}
+		} catch (err) {
+			console.error("Error fetching favorites:", err);
+			setError(err instanceof Error ? err.message : "Error al cargar favoritos");
+			setFavorites([]);
+			setFavoriteCount(0);
+		} finally {
+			setLoading(false);
+		}
+	}, [isAuthenticated]);
 
-			return [];
-		},
-		cacheTime: 10 * 60 * 1000,
-		invalidatePatterns: ["favorites_*", "header_counters"],
-		// ✅ SIN DEPENDENCIAS - Evitar loops infinitos
-		dependencies: [],
-	});
+	// ✅ EFECTO SIMPLE - SOLO CUANDO CAMBIA isAuthenticated
+	useEffect(() => {
+		fetchFavorites();
+	}, [isAuthenticated, fetchFavorites]);
 
-	// ✅ NO USEEFFECT - Dejar que useReactiveCache maneje todo internamente
-
-	// ✅ SI NO AUTENTICADO, DEVOLVER DATOS VACÍOS
-	const favorites: Favorite[] = isAuthenticated ? (favoritesData || []) : [];
-
-	// Actualizar contador cuando cambien los favoritos
-	React.useEffect(() => {
-		setFavoriteCount(favorites.length);
-	}, [favorites]);
-
-	// ✅ CHECK SINCRÓNICO usando cache local
+	// ✅ CHECK SINCRÓNICO
 	const checkIsFavorite = useCallback(
 		(productId: number): boolean => {
 			if (!isAuthenticated) return false;
@@ -102,7 +111,7 @@ export const FavoriteProvider: React.FC<FavoriteProviderProps> = ({
 	// Alias para mayor claridad
 	const isProductFavorite = checkIsFavorite;
 
-	// ✅ TOGGLE OPTIMIZADO con verificación de autenticación
+	// ✅ TOGGLE SIMPLE
 	const toggleFavorite = useCallback(
 		async (productId: number): Promise<boolean> => {
 			if (!isAuthenticated) {
@@ -122,8 +131,10 @@ export const FavoriteProvider: React.FC<FavoriteProviderProps> = ({
 					{productId}
 				);
 
-				// ✅ INVALIDAR CACHE para refetch automático
-				invalidateMany(["favorites_*", "header_counters"]);
+				// Invalidar cache y refetch
+				CacheService.removeItem("user_favorites");
+				CacheService.removeItem("header_counters");
+				await fetchFavorites();
 
 				const newState =
 					response?.isFavorite !== undefined
@@ -140,28 +151,19 @@ export const FavoriteProvider: React.FC<FavoriteProviderProps> = ({
 				return wasFavorite;
 			}
 		},
-		[isAuthenticated, checkIsFavorite, invalidateMany]
+		[isAuthenticated, checkIsFavorite, fetchFavorites]
 	);
-
-	// ✅ FETCHFAVORITES QUE RESPETA AUTENTICACIÓN
-	const safeFetchFavorites = useCallback(async () => {
-		if (!isAuthenticated) {
-			console.log("🚫 No autenticado, no fetch favoritos");
-			return;
-		}
-		await fetchFavorites();
-	}, [isAuthenticated, fetchFavorites]);
 
 	return (
 		<FavoriteContext.Provider
 			value={{
 				favorites,
-				loading: isAuthenticated ? loading : false,
-				error: isAuthenticated ? (error || null) : null,
+				loading,
+				error,
 				favoriteCount,
 				toggleFavorite,
 				checkIsFavorite,
-				fetchFavorites: safeFetchFavorites,
+				fetchFavorites,
 				isProductFavorite,
 			}}
 		>
