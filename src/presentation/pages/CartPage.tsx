@@ -26,7 +26,6 @@ const CartPage: React.FC = () => {
 	const [couponApplied, setCouponApplied] = useState(false);
 	const [couponDiscount, setCouponDiscount] = useState(0);
 	const [loadingItem, setLoadingItem] = useState<number | null>(null);
-	const [lastCacheCheck, setLastCacheCheck] = useState(Date.now());
 
 	const navigate = useNavigate();
 
@@ -60,7 +59,7 @@ const CartPage: React.FC = () => {
 		optimisticFavoriteAdd
 	} = useInvalidateCounters();
 
-	// ✅ FUNCIÓN PARA INVALIDAR CACHE DE PÁGINAS ESPECÍFICAS
+	// ✅ FUNCIÓN SIMPLE PARA INVALIDAR CACHE
 	const invalidateRelatedPages = useCallback(() => {
 		CacheService.removeItem("cart_user_data");
 		CacheService.removeItem("cart_guest_data");
@@ -73,27 +72,6 @@ const CartPage: React.FC = () => {
 		
 		console.log("🔄 Cache invalidado desde CartPage");
 	}, []);
-
-	// ✅ DETECTOR DE CAMBIOS EN CACHE - Refresca automáticamente
-	useEffect(() => {
-		const interval = setInterval(() => {
-			// Verificar si el cache fue invalidado por otra página
-			const currentHeaderCache = CacheService.getItem("header_counters");
-			const currentCartCache = CacheService.getItem("cart_user_data") || CacheService.getItem("cart_guest_data");
-			
-			// Si no hay cache y habían datos antes, significa que fue invalidado
-			if (!currentHeaderCache || !currentCartCache) {
-				const now = Date.now();
-				if (now - lastCacheCheck > 2000) { // Evitar refrescos muy frecuentes
-					console.log("🔄 Cache invalidado detectado, refrescando cart...");
-					fetchCart();
-					setLastCacheCheck(now);
-				}
-			}
-		}, 1000); // Verificar cada segundo
-
-		return () => clearInterval(interval);
-	}, [fetchCart, lastCacheCheck]);
 
 	// ✅ FUNCIÓN OPTIMIZADA PARA OBTENER IMAGEN DEL PRODUCTO
 	const getProductImage = useCallback(
@@ -195,7 +173,7 @@ const CartPage: React.FC = () => {
 		}));
 	}, [cart?.items, calculateItemPrices, getProductImage]);
 
-	// Cargar el carrito al montar el componente
+	// ✅ CARGAR CARRITO SIMPLE - Solo al montar componente
 	useEffect(() => {
 		const loadCart = async () => {
 			setIsLoading(true);
@@ -215,7 +193,7 @@ const CartPage: React.FC = () => {
 		};
 
 		loadCart();
-	}, [fetchCart, showNotification, prefetchCartPageData]);
+	}, []); // ✅ DEPENDENCIAS VACÍAS - Solo ejecutar una vez
 
 	// Actualizar estado de carrito vacío cuando cambia el carrito
 	useEffect(() => {
@@ -234,7 +212,7 @@ const CartPage: React.FC = () => {
 
 			if (item) {
 				try {
-					// ✅ ACTUALIZACIÓN OPTIMISTA PARA INCREMENTO
+					// ✅ ACTUALIZACIÓN OPTIMISTA
 					optimisticCartAdd();
 
 					const result = await updateCartItem({
@@ -246,8 +224,9 @@ const CartPage: React.FC = () => {
 						throw new Error("No se pudo actualizar la cantidad");
 					}
 
-					// ✅ INVALIDAR CACHE
+					// ✅ INVALIDAR CACHE Y REFETCH
 					invalidateRelatedPages();
+					await fetchCart();
 				} catch (error) {
 					console.error("Error al aumentar cantidad:", error);
 					showNotification(
@@ -259,7 +238,7 @@ const CartPage: React.FC = () => {
 				}
 			}
 		},
-		[cart?.items, loadingItem, updateCartItem, showNotification, optimisticCartAdd, invalidateRelatedPages]
+		[cart?.items, loadingItem, updateCartItem, showNotification, optimisticCartAdd, invalidateRelatedPages, fetchCart]
 	);
 
 	const decreaseQuantity = useCallback(
@@ -271,7 +250,7 @@ const CartPage: React.FC = () => {
 
 			if (item && item.quantity > 1) {
 				try {
-					// ✅ ACTUALIZACIÓN OPTIMISTA PARA DECREMENTO
+					// ✅ ACTUALIZACIÓN OPTIMISTA
 					optimisticCartRemove();
 
 					const result = await updateCartItem({
@@ -283,8 +262,9 @@ const CartPage: React.FC = () => {
 						throw new Error("No se pudo actualizar la cantidad");
 					}
 
-					// ✅ INVALIDAR CACHE
+					// ✅ INVALIDAR CACHE Y REFETCH
 					invalidateRelatedPages();
+					await fetchCart();
 				} catch (error) {
 					console.error("Error al disminuir cantidad:", error);
 					showNotification(
@@ -296,7 +276,7 @@ const CartPage: React.FC = () => {
 				}
 			}
 		},
-		[cart?.items, loadingItem, updateCartItem, showNotification, optimisticCartRemove, invalidateRelatedPages]
+		[cart?.items, loadingItem, updateCartItem, showNotification, optimisticCartRemove, invalidateRelatedPages, fetchCart]
 	);
 
 	const handleRemoveFromCart = useCallback(
@@ -305,12 +285,10 @@ const CartPage: React.FC = () => {
 
 			setLoadingItem(id);
 			try {
-				// ✅ ACTUALIZACIÓN OPTIMISTA PARA ELIMINACIÓN COMPLETA
-				// Necesitamos saber cuántas unidades tiene el item para decrementar correctamente
+				// ✅ ACTUALIZACIÓN OPTIMISTA
 				const item = cart?.items.find((item) => item.id === id);
 				const itemQuantity = item?.quantity || 1;
 				
-				// Decrementar optimistamente por la cantidad total del item
 				for (let i = 0; i < itemQuantity; i++) {
 					optimisticCartRemove();
 				}
@@ -318,8 +296,9 @@ const CartPage: React.FC = () => {
 				const result = await removeFromCart(id);
 
 				if (result) {
-					// ✅ INVALIDAR CACHE
+					// ✅ INVALIDAR CACHE Y REFETCH
 					invalidateRelatedPages();
+					await fetchCart();
 
 					showNotification(
 						NotificationType.SUCCESS,
@@ -338,7 +317,7 @@ const CartPage: React.FC = () => {
 				setLoadingItem(null);
 			}
 		},
-		[loadingItem, removeFromCart, showNotification, invalidateRelatedPages, optimisticCartRemove, cart?.items]
+		[loadingItem, removeFromCart, showNotification, invalidateRelatedPages, optimisticCartRemove, cart?.items, fetchCart]
 	);
 
 	const moveToWishlist = useCallback(
@@ -347,14 +326,12 @@ const CartPage: React.FC = () => {
 
 			setLoadingItem(id);
 			try {
-				// ✅ ACTUALIZACIÓN OPTIMISTA PARA FAVORITOS
+				// ✅ ACTUALIZACIÓN OPTIMISTA
 				optimisticFavoriteAdd();
 
-				// ✅ ACTUALIZACIÓN OPTIMISTA PARA CARRITO (se va a eliminar)
 				const item = cart?.items.find((item) => item.id === id);
 				const itemQuantity = item?.quantity || 1;
 				
-				// Decrementar optimistamente por la cantidad total del item
 				for (let i = 0; i < itemQuantity; i++) {
 					optimisticCartRemove();
 				}
@@ -366,8 +343,9 @@ const CartPage: React.FC = () => {
 				const result = await removeFromCart(id);
 
 				if (result) {
-					// ✅ INVALIDAR CACHE
+					// ✅ INVALIDAR CACHE Y REFETCH
 					invalidateRelatedPages();
+					await fetchCart();
 
 					showNotification(
 						NotificationType.SUCCESS,
@@ -386,7 +364,7 @@ const CartPage: React.FC = () => {
 				setLoadingItem(null);
 			}
 		},
-		[loadingItem, toggleFavorite, removeFromCart, showNotification, optimisticFavoriteAdd, optimisticCartRemove, invalidateRelatedPages, cart?.items]
+		[loadingItem, toggleFavorite, removeFromCart, showNotification, optimisticFavoriteAdd, optimisticCartRemove, invalidateRelatedPages, cart?.items, fetchCart]
 	);
 
 	const applyCoupon = useCallback(() => {
@@ -403,11 +381,9 @@ const CartPage: React.FC = () => {
 		if (loading) return;
 
 		try {
-			// ✅ ACTUALIZACIÓN OPTIMISTA PARA VACIAR CARRITO COMPLETO
-			// Calcular total de items para decrementar correctamente
+			// ✅ ACTUALIZACIÓN OPTIMISTA
 			const totalItems = cart?.items.reduce((total, item) => total + item.quantity, 0) || 0;
 			
-			// Decrementar optimistamente por todos los items
 			for (let i = 0; i < totalItems; i++) {
 				optimisticCartRemove();
 			}
@@ -415,8 +391,9 @@ const CartPage: React.FC = () => {
 			const result = await clearCart();
 
 			if (result) {
-				// ✅ INVALIDAR CACHE
+				// ✅ INVALIDAR CACHE Y REFETCH
 				invalidateRelatedPages();
+				await fetchCart();
 
 				showNotification(
 					NotificationType.SUCCESS,
@@ -429,7 +406,7 @@ const CartPage: React.FC = () => {
 			console.error("Error al vaciar el carrito:", error);
 			showNotification(NotificationType.ERROR, "No se pudo vaciar el carrito");
 		}
-	}, [loading, clearCart, showNotification, invalidateRelatedPages, optimisticCartRemove, cart?.items]);
+	}, [loading, clearCart, showNotification, invalidateRelatedPages, optimisticCartRemove, cart?.items, fetchCart]);
 
 	// Función para proceder al checkout
 	const handleCheckout = useCallback(() => {

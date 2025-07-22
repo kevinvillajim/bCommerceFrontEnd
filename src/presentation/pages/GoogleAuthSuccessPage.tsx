@@ -234,7 +234,7 @@ const GoogleAuthSuccessPage: React.FC = () => {
 		<div className="min-h-screen flex items-center justify-center bg-gray-50">
 			<div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
 				<div className="text-green-500 text-6xl mb-4">
-					{state.isProcessing ? "🔄" : "🎉"}
+					{state.isProcessing ? "..." : "🎉"}
 				</div>
 				<h2 className="text-2xl font-bold text-gray-900 mb-4">
 					{state.isProcessing ? "Procesando autenticación..." : "¡Bienvenido!"}

@@ -208,7 +208,6 @@ const FavoritePage: React.FC = () => {
 	const [currentPage, setCurrentPage] = useState(1);
 	const [hasMore, setHasMore] = useState(false);
 	const [total, setTotal] = useState(0);
-	const [lastCacheCheck, setLastCacheCheck] = useState(Date.now());
 	const [isUpdating, setIsUpdating] = useState(false);
 
 	const limit = 10;
@@ -232,7 +231,7 @@ const FavoritePage: React.FC = () => {
 		optimisticFavoriteRemove
 	} = useInvalidateCounters();
 
-	// ✅ FUNCIÓN PARA INVALIDAR CACHE DE PÁGINAS ESPECÍFICAS
+	// ✅ FUNCIÓN SIMPLE PARA INVALIDAR CACHE
 	const invalidateRelatedPages = useCallback(() => {
 		CacheService.removeItem("cart_user_data");
 		CacheService.removeItem("cart_guest_data");
@@ -245,27 +244,6 @@ const FavoritePage: React.FC = () => {
 		
 		console.log("🔄 Cache invalidado desde FavoritePage");
 	}, []);
-
-	// ✅ DETECTOR DE CAMBIOS EN CACHE - Refresca automáticamente
-	useEffect(() => {
-		const interval = setInterval(() => {
-			// Verificar si el cache fue invalidado por otra página
-			const currentHeaderCache = CacheService.getItem("header_counters");
-			const currentFavoritesCache = CacheService.getItem(`user_favorites_${currentPage}_${limit}`);
-			
-			// Si no hay cache y habían datos antes, significa que fue invalidado
-			if (!currentHeaderCache || !currentFavoritesCache) {
-				const now = Date.now();
-				if (now - lastCacheCheck > 2000) { // Evitar refrescos muy frecuentes
-					console.log("🔄 Cache invalidado detectado, refrescando favorites...");
-					fetchFavorites();
-					setLastCacheCheck(now);
-				}
-			}
-		}, 1000); // Verificar cada segundo
-
-		return () => clearInterval(interval);
-	}, [lastCacheCheck, currentPage, limit]);
 
 	// ✅ FUNCIÓN OPTIMIZADA PARA OBTENER IMAGEN DEL PRODUCTO
 	const getProductImage = useCallback(
@@ -434,7 +412,7 @@ const FavoritePage: React.FC = () => {
 				invalidateRelatedPages();
 
 				// Recargar favoritos
-				fetchFavorites();
+				await fetchFavorites();
 			} catch (error) {
 				console.error("Error removing from favorites:", error);
 			} finally {
@@ -540,7 +518,7 @@ const FavoritePage: React.FC = () => {
 		});
 	}, [favorites, calculateDiscountedPrice, getProductImage, renderRatingStars]);
 
-	// ✅ INICIALIZACIÓN CON CACHE
+	// ✅ CARGA INICIAL SIMPLE - Solo cache y fetch
 	useEffect(() => {
 		if (!isAuthenticated) {
 			navigate("/login", {state: {from: "/favorites"}});
@@ -573,8 +551,7 @@ const FavoritePage: React.FC = () => {
 		} else {
 			fetchFavorites();
 		}
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [isAuthenticated, navigate]); // Dependencias mínimas
+	}, [isAuthenticated, navigate]); // ✅ DEPENDENCIAS MÍNIMAS
 
 	// ✅ EFFECT SEPARADO PARA PÁGINAS ADICIONALES
 	useEffect(() => {

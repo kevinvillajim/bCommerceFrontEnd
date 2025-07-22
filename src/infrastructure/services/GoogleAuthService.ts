@@ -1,4 +1,4 @@
-// src/infrastructure/services/GoogleAuthService.ts - COMPATIBLE CON FedCM
+// src/infrastructure/services/GoogleAuthService.ts - CORREGIDO PARA PRODUCCIÓN
 
 interface GoogleAuthResponse {
   success: boolean;
@@ -22,31 +22,43 @@ export class GoogleAuthService {
   }
 
   /**
-   * Método principal con configuración FedCM
+   * Método principal - Siempre usa redirect en producción
    */
   async authenticateWithGoogle(action: 'login' | 'register'): Promise<GoogleAuthResponse> {
     try {
-      console.log(`🔐 Iniciando ${action} con Google (FedCM compatible)...`);
+      console.log(`🔐 Iniciando ${action} con Google...`);
       
-      // Primero intentar método de redirect (más confiable)
+      // Debug info para producción
+      console.log('🔍 Debug OAuth:', {
+        hostname: window.location.hostname,
+        protocol: window.location.protocol,
+        isProduction: this.isProduction(),
+        baseApiUrl: this.baseApiUrl,
+        clientId: this.clientId.substring(0, 20) + '...'
+      });
+      
+      // En producción, siempre usar redirect (más confiable)
       if (this.shouldUseRedirect()) {
+        console.log('🔄 Usando método redirect (recomendado para producción)');
         return this.authenticateWithRedirect(action);
       }
 
-      // Método alternativo con FedCM
+      // Solo intentar FedCM en localhost si está disponible
+      console.log('🆕 Intentando método FedCM...');
       await this.initialize();
       return this.authenticateWithFedCM(action);
       
     } catch (error) {
       console.error('❌ Error en authenticateWithGoogle:', error);
       
-      // Fallback a redirect si falla FedCM
+      // Fallback a redirect siempre
+      console.log('🔄 Fallback a método redirect...');
       return this.authenticateWithRedirect(action);
     }
   }
 
   /**
-   * Método de redirect (más confiable)
+   * Método de redirect (más confiable para producción)
    */
   private async authenticateWithRedirect(action: 'login' | 'register'): Promise<GoogleAuthResponse> {
     try {
@@ -56,8 +68,15 @@ export class GoogleAuthService {
       localStorage.setItem('google_oauth_action', action);
       localStorage.setItem('google_oauth_return_url', window.location.pathname);
       
+      // Verificar configuración antes de redirigir
+      if (!this.clientId || !this.baseApiUrl) {
+        throw new Error('Configuración de Google OAuth incompleta');
+      }
+      
       // Redirigir al backend
       const redirectUrl = `${this.baseApiUrl}/auth/google/redirect?action=${action}`;
+      console.log('🌐 Redirigiendo a:', redirectUrl);
+      
       window.location.href = redirectUrl;
       
       // Esta promesa nunca se resuelve porque redirigimos
@@ -73,7 +92,7 @@ export class GoogleAuthService {
   }
 
   /**
-   * Método FedCM (nuevo estándar de Google)
+   * Método FedCM (solo para localhost/desarrollo)
    */
   private async authenticateWithFedCM(action: 'login' | 'register'): Promise<GoogleAuthResponse> {
     try {
@@ -93,7 +112,7 @@ export class GoogleAuthService {
           return;
         }
 
-        // Configuración con FedCM habilitado
+        // Configuración simplificada sin métodos deprecados
         window.google.accounts.id.initialize({
           client_id: this.clientId,
           callback: async (response: any) => {
@@ -110,37 +129,57 @@ export class GoogleAuthService {
           },
           auto_select: false,
           cancel_on_tap_outside: true,
-          // Configuración FedCM
-          use_fedcm_for_prompt: true,
-          use_fedcm_for_button: true,
-          // Configuración adicional para FedCM
+          // Configuración básica sin opciones experimentales
           itp_support: true,
         });
 
-        // Mostrar prompt - verificar nuevamente
+        // Timeout para evitar que se quede colgado
+        const timeout = setTimeout(() => {
+          resolve({
+            success: false,
+            error: 'Timeout en la autenticación con Google'
+          });
+        }, 30000); // 30 segundos
+
+        // Mostrar prompt con manejo simplificado
         if (window.google?.accounts?.id) {
           window.google.accounts.id.prompt((notification: any) => {
             console.log('📊 Notification:', notification);
+            clearTimeout(timeout);
             
-            // Manejar diferentes estados sin usar métodos deprecados
-            if (notification.isNotDisplayed?.()) {
-              console.log('❌ Prompt no se mostró');
-              resolve({
-                success: false,
-                error: 'No se pudo mostrar el prompt de Google'
-              });
-            } else if (notification.isSkippedMoment?.()) {
-              console.log('⏭️ Prompt fue omitido');
-              resolve({
-                success: false,
-                error: 'Autenticación omitida por el usuario'
-              });
-            } else if (notification.isDismissedMoment?.()) {
-              console.log('❌ Prompt fue cerrado');
-              resolve({
-                success: false,
-                error: 'Autenticación cancelada por el usuario'
-              });
+            // Usar getMomentType() si está disponible, sino usar los métodos legacy
+            const momentType = notification.getMomentType?.();
+            
+            if (momentType) {
+              // Nuevo API
+              if (momentType === 'dismissed' || momentType === 'skipped') {
+                console.log('❌ Prompt fue cerrado o saltado (nuevo API)');
+                resolve({
+                  success: false,
+                  error: 'Autenticación cancelada por el usuario'
+                });
+              }
+            } else {
+              // API legacy como fallback
+              if (notification.isNotDisplayed?.()) {
+                console.log('❌ Prompt no se mostró');
+                resolve({
+                  success: false,
+                  error: 'No se pudo mostrar el prompt de Google'
+                });
+              } else if (notification.isSkippedMoment?.()) {
+                console.log('⏭️ Prompt fue omitido');
+                resolve({
+                  success: false,
+                  error: 'Autenticación omitida por el usuario'
+                });
+              } else if (notification.isDismissedMoment?.()) {
+                console.log('❌ Prompt fue cerrado');
+                resolve({
+                  success: false,
+                  error: 'Autenticación cancelada por el usuario'
+                });
+              }
             }
           });
         }
@@ -206,15 +245,23 @@ export class GoogleAuthService {
   }
 
   /**
-   * Determinar si debe usar redirect
+   * Determinar si debe usar redirect - SIEMPRE true en producción
    */
   private shouldUseRedirect(): boolean {
-    // Usar redirect por defecto para mayor confiabilidad
+    // En producción (comersia.app), SIEMPRE usar redirect
+    const isProduction = this.isProduction();
     const forceRedirect = localStorage.getItem('google_auth_force_redirect') === 'true';
     const isLocalhost = window.location.hostname === 'localhost';
     
-    // Si estamos en localhost y no hay configuración específica, usar redirect
-    return forceRedirect || isLocalhost;
+    // Usar redirect en producción, cuando está forzado, o en localhost por defecto
+    return isProduction || forceRedirect || isLocalhost;
+  }
+
+  /**
+   * Verificar si estamos en producción
+   */
+  private isProduction(): boolean {
+    return window.location.hostname === 'comersia.app';
   }
 
   /**
@@ -222,6 +269,12 @@ export class GoogleAuthService {
    */
   private async sendCredentialToBackend(credential: string, action: 'login' | 'register'): Promise<GoogleAuthResponse> {
     try {
+      console.log('📤 Enviando credential al backend...', {
+        action,
+        apiUrl: this.baseApiUrl,
+        credentialLength: credential.length
+      });
+
       const response = await fetch(`${this.baseApiUrl}/auth/google/authenticate`, {
         method: 'POST',
         headers: {
@@ -234,12 +287,19 @@ export class GoogleAuthService {
         })
       });
 
+      console.log('📥 Respuesta del backend:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok
+      });
+
       const data = await response.json();
 
       if (!response.ok) {
         throw new Error(data.message || 'Error en la autenticación');
       }
 
+      console.log('✅ Backend response exitosa');
       return {
         success: true,
         user: data
@@ -266,6 +326,7 @@ export class GoogleAuthService {
       localStorage.removeItem('google_oauth_return_url');
       localStorage.removeItem('google_auth_force_redirect');
       
+      console.log('✅ Sesión de Google cerrada');
     } catch (error) {
       console.warn('Error al cerrar sesión de Google:', error);
     }
@@ -275,6 +336,7 @@ export class GoogleAuthService {
    * Configurar para usar método específico
    */
   setAuthMethod(method: 'redirect' | 'fedcm'): void {
+    console.log('🔧 Configurando método de auth:', method);
     localStorage.setItem('google_auth_force_redirect', method === 'redirect' ? 'true' : 'false');
   }
 
@@ -284,6 +346,8 @@ export class GoogleAuthService {
   async checkConfiguration(): Promise<{ isConfigured: boolean; errors: string[]; warnings: string[] }> {
     const errors: string[] = [];
     const warnings: string[] = [];
+    
+    console.log('🔍 Verificando configuración de Google OAuth...');
     
     // Verificar Client ID
     if (!this.clientId || this.clientId.includes('your-google-client-id')) {
@@ -301,12 +365,17 @@ export class GoogleAuthService {
       errors.push('Google OAuth requiere origen seguro (HTTPS o localhost)');
     }
     
-    // Verificar FedCM support
-    if (!window.CredentialsContainer) {
+    // Verificar FedCM support (solo warning)
+    if (!window.CredentialsContainer && !this.isProduction()) {
       warnings.push('FedCM no está disponible en este navegador');
     }
     
-    // Verificar CSP
+    // En producción, recomendar redirect
+    if (this.isProduction()) {
+      console.log('🏭 Producción detectada - usando método redirect');
+    }
+    
+    // Test básico de conectividad (no bloquear si falla)
     try {
       const testImg = new Image();
       testImg.src = 'https://accounts.google.com/favicon.ico';
@@ -314,11 +383,55 @@ export class GoogleAuthService {
       warnings.push('Posible problema con Content Security Policy');
     }
     
-    return {
+    const result = {
       isConfigured: errors.length === 0,
       errors,
       warnings
     };
+
+    console.log('📊 Resultado de configuración:', result);
+    
+    return result;
+  }
+
+  /**
+   * Diagnóstico completo para debugging
+   */
+  async diagnose(): Promise<void> {
+    console.log('🔬 === DIAGNÓSTICO GOOGLE OAUTH ===');
+    
+    const config = await this.checkConfiguration();
+    
+    console.log('🌍 Entorno:', {
+      hostname: window.location.hostname,
+      protocol: window.location.protocol,
+      userAgent: navigator.userAgent,
+      isProduction: this.isProduction(),
+      shouldUseRedirect: this.shouldUseRedirect()
+    });
+    
+    console.log('⚙️ Configuración:', {
+      clientId: this.clientId.substring(0, 20) + '...',
+      baseApiUrl: this.baseApiUrl,
+      hasGoogleScript: !!window.google,
+      isConfigured: config.isConfigured
+    });
+    
+    if (config.errors.length > 0) {
+      console.log('❌ Errores:', config.errors);
+    }
+    
+    if (config.warnings.length > 0) {
+      console.log('⚠️ Advertencias:', config.warnings);
+    }
+    
+    console.log('💾 LocalStorage:', {
+      oauth_action: localStorage.getItem('google_oauth_action'),
+      return_url: localStorage.getItem('google_oauth_return_url'),
+      force_redirect: localStorage.getItem('google_auth_force_redirect')
+    });
+    
+    console.log('🔬 === FIN DIAGNÓSTICO ===');
   }
 }
 

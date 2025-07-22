@@ -1,4 +1,4 @@
-// src/presentation/components/auth/GoogleAuthButton.tsx - COMPATIBLE CON FedCM
+// src/presentation/components/auth/GoogleAuthButton.tsx - CORREGIDO PARA PRODUCCIÓN
 
 import React, {useState, useEffect} from "react";
 import {useAuth} from "../../hooks/useAuth";
@@ -32,9 +32,19 @@ const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({
 			const config = await googleService.checkConfiguration();
 			setConfigStatus(config);
 
-			// Configurar método preferido
-			if (preferredMethod !== "auto") {
+			// En producción, siempre forzar redirect
+			const isProduction = window.location.hostname === 'comersia.app';
+			if (isProduction) {
+				console.log('🏭 Producción detectada - configurando método redirect');
+				googleService.setAuthMethod('redirect');
+			} else if (preferredMethod !== "auto") {
+				console.log('🔧 Configurando método preferido:', preferredMethod);
 				googleService.setAuthMethod(preferredMethod);
+			}
+
+			// Ejecutar diagnóstico en desarrollo
+			if (process.env.NODE_ENV === 'development') {
+				await googleService.diagnose();
 			}
 		};
 
@@ -52,8 +62,14 @@ const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({
 			console.log("🌐 Origin actual:", window.location.origin);
 
 			// Configurar método si no es auto
-			if (preferredMethod !== "auto") {
-				const googleService = GoogleAuthService.getInstance();
+			const googleService = GoogleAuthService.getInstance();
+			const isProduction = window.location.hostname === 'comersia.app';
+			
+			if (isProduction) {
+				// En producción, siempre usar redirect
+				console.log('🏭 Forzando método redirect para producción');
+				googleService.setAuthMethod('redirect');
+			} else if (preferredMethod !== "auto") {
 				googleService.setAuthMethod(preferredMethod);
 			}
 
@@ -65,15 +81,18 @@ const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({
 			}
 		} catch (error) {
 			console.error(`❌ Error en ${action} con Google:`, error);
+			
+			// Mostrar error al usuario
+			alert(`Error en ${action === 'login' ? 'inicio de sesión' : 'registro'}: ${error instanceof Error ? error.message : 'Error desconocido'}`);
 		} finally {
 			setIsProcessing(false);
 		}
 	};
 
 	const isLoading = loading || isProcessing;
-	const buttonText =
-		action === "login" ? "Iniciar sesión con Google" : "Registrarse con Google";
+	const buttonText = action === "login" ? "Iniciar sesión con Google" : "Registrarse con Google";
 	const hasErrors = configStatus.errors.length > 0;
+	const isProduction = window.location.hostname === 'comersia.app';
 
 	return (
 		<div className="space-y-2">
@@ -114,9 +133,7 @@ const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({
 								d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
 							/>
 						</svg>
-						{preferredMethod === "redirect"
-							? "Redirigiendo..."
-							: "Procesando..."}
+						{isProduction || preferredMethod === "redirect" ? "Redirigiendo..." : "Procesando..."}
 					</>
 				) : (
 					<>
@@ -150,12 +167,19 @@ const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({
 				)}
 			</button>
 
+			{/* Indicador de método en desarrollo */}
+			{process.env.NODE_ENV === 'development' && (
+				<div className="text-xs text-gray-500 text-center">
+					{isProduction ? '🏭 Producción: Método Redirect' : `🔧 Desarrollo: ${preferredMethod}`}
+				</div>
+			)}
+
 			{/* Mensajes de error */}
 			{hasErrors && (
 				<div className="bg-red-50 border border-red-200 rounded-md p-2">
 					<div className="flex">
 						<svg
-							className="h-5 w-5 text-red-400 mr-2"
+							className="h-5 w-5 text-red-400 mr-2 flex-shrink-0"
 							viewBox="0 0 20 20"
 							fill="currentColor"
 						>
@@ -178,11 +202,11 @@ const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({
 			)}
 
 			{/* Mensajes de advertencia */}
-			{configStatus.warnings.length > 0 && (
+			{configStatus.warnings.length > 0 && !isProduction && (
 				<div className="bg-yellow-50 border border-yellow-200 rounded-md p-2">
 					<div className="flex">
 						<svg
-							className="h-5 w-5 text-yellow-400 mr-2"
+							className="h-5 w-5 text-yellow-400 mr-2 flex-shrink-0"
 							viewBox="0 0 20 20"
 							fill="currentColor"
 						>
@@ -202,6 +226,24 @@ const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({
 						</div>
 					</div>
 				</div>
+			)}
+
+			{/* Información de debug en desarrollo */}
+			{process.env.NODE_ENV === "development" && (
+				<details className="text-xs">
+					<summary className="text-gray-500 cursor-pointer mb-2">
+						🔍 Información de debug
+					</summary>
+					<div className="bg-gray-100 p-2 rounded text-xs space-y-1">
+						<div><strong>Hostname:</strong> {window.location.hostname}</div>
+						<div><strong>Protocol:</strong> {window.location.protocol}</div>
+						<div><strong>Is Production:</strong> {isProduction.toString()}</div>
+						<div><strong>Preferred Method:</strong> {preferredMethod}</div>
+						<div><strong>Configurado:</strong> {configStatus.isConfigured.toString()}</div>
+						<div><strong>Errores:</strong> {configStatus.errors.length}</div>
+						<div><strong>Advertencias:</strong> {configStatus.warnings.length}</div>
+					</div>
+				</details>
 			)}
 		</div>
 	);
