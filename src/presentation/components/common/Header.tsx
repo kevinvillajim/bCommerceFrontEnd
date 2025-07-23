@@ -99,13 +99,15 @@ const Header: React.FC<HeaderProps> = ({
 		className,
 		children,
 		onClick,
+		...props
 	}: {
 		to: string;
 		className?: string;
 		children: React.ReactNode;
 		onClick?: () => void;
+		[key: string]: any; // Para permitir data-* attributes
 	}) => (
-		<a href={to} className={className} onClick={onClick}>
+		<a href={to} className={className} onClick={onClick} {...props}>
 			{children}
 		</a>
 	);
@@ -207,9 +209,10 @@ const Header: React.FC<HeaderProps> = ({
 
 						{isAuthenticated ? (
 							<>
-								{/* Notifications Icon - Only visible when authenticated */}
+								{/* ✅ BOTÓN DE NOTIFICACIONES CORREGIDO - Con atributo necesario */}
 								<Link
 									to="/notifications"
+									data-notification-button="true"
 									className="text-gray-700 hover:text-primary-600 transition-colors relative"
 								>
 									<Bell size={22} />
@@ -297,6 +300,23 @@ const Header: React.FC<HeaderProps> = ({
 					{/* Mobile Menu Button */}
 					<div className="md:hidden flex items-center space-x-4">
 						<ThemeToggle />
+						
+						{/* ✅ NOTIFICACIONES MÓVIL - Solo si está autenticado */}
+						{isAuthenticated && (
+							<Link 
+								to="/notifications" 
+								data-notification-button="true"
+								className="text-gray-700 relative"
+							>
+								<Bell size={22} />
+								{notificationCount > 0 && (
+									<span className="absolute -top-2 -right-2 bg-primary-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+										{notificationCountSanitized}
+									</span>
+								)}
+							</Link>
+						)}
+
 						{/* Cart Icon for Mobile */}
 						<Link to="/cart" className="text-gray-700 relative">
 							<ShoppingCart size={22} />
@@ -306,6 +326,7 @@ const Header: React.FC<HeaderProps> = ({
 								</span>
 							)}
 						</Link>
+						
 						{/* Favorites Icon for Mobile */}
 						<Link
 							to="/favorites"
@@ -318,6 +339,7 @@ const Header: React.FC<HeaderProps> = ({
 								</span>
 							)}
 						</Link>
+						
 						{/* User Icon for Mobile (only when authenticated) */}
 						{isAuthenticated && (
 							<div className="h-8 w-8 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center font-medium">
@@ -382,7 +404,22 @@ const Header: React.FC<HeaderProps> = ({
 									</p>
 								</div>
 							</div>
-							<div className="grid grid-cols-3 gap-2 mb-2">
+							<div className="grid grid-cols-4 gap-2 mb-2">
+								{/* ✅ NOTIFICACIONES EN MENÚ MÓVIL */}
+								<Link
+									to="/notifications"
+									data-notification-button="true"
+									className="flex flex-col items-center p-2 rounded-lg hover:bg-gray-50 relative"
+									onClick={toggleMobileMenu}
+								>
+									<Bell size={20} className="mb-1 text-gray-700" />
+									<span className="text-xs">Avisos</span>
+									{notificationCount > 0 && (
+										<span className="absolute -top-1 -right-1 bg-primary-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+											{notificationCountSanitized}
+										</span>
+									)}
+								</Link>
 								<Link
 									to="/profile"
 									className="flex flex-col items-center p-2 rounded-lg hover:bg-gray-50"

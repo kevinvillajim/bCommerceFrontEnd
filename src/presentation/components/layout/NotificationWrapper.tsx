@@ -1,4 +1,4 @@
-// src/presentation/components/layout/NotificationWrapper.tsx - OPTIMIZADO
+// src/presentation/components/layout/NotificationWrapper.tsx - VERSIÓN FINAL CORREGIDA
 import React, {useState, useEffect, useRef, useCallback, useMemo} from "react";
 import {NotificationToastContainer} from "../notifications/NotificationToast";
 import {useAuth} from "../../hooks/useAuth";
@@ -10,63 +10,90 @@ interface NotificationWrapperProps {
 }
 
 /**
- * Wrapper optimizado para notificaciones en tiempo real
- * ✅ REDUCIDOS RE-RENDERIZADOS Y LOGS EXCESIVOS
+ * Wrapper definitivamente corregido para notificaciones
+ * ✅ TOASTS SOLO SE MUESTRAN PARA NOTIFICACIONES NUEVAS, NO EN CADA CARGA
  */
 const NotificationWrapper: React.FC<NotificationWrapperProps> = ({
 	children,
 }) => {
-	const [toastNotifications, setToastNotifications] = useState<Notification[]>(
-		[]
-	);
-
+	const [toastNotifications, setToastNotifications] = useState<Notification[]>([]);
 	const {isAuthenticated} = useAuth();
 	const {unreadCount} = useNotifications();
 
-	// ✅ REFS PARA EVITAR RE-RENDERS
+	// ✅ REFS PARA CONTROL ESTRICTO
 	const lastUnreadCountRef = useRef<number>(0);
 	const isInitializedRef = useRef<boolean>(false);
-	const lastToastTimeRef = useRef<number>(0);
+	const sessionStartCountRef = useRef<number>(0); // Contador al iniciar sesión
 	const currentToastIdRef = useRef<number | null>(null);
 	const autoRemoveTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-	// ✅ MEMOIZAR FUNCIONES PARA EVITAR RE-CREACIONES
+	// ✅ FUNCIÓN PARA VERIFICAR SI LOS TOASTS ESTÁN DESHABILITADOS
+	const areToastsDisabled = useCallback((): boolean => {
+		// VERIFICACIÓN 1: Si estamos en /notifications
+		if (window.location.pathname === "/notifications") {
+			try {
+				localStorage.setItem('notifications_toasts_disabled', 'true');
+			} catch (error) {
+				console.error('Error setting localStorage:', error);
+			}
+			return true;
+		}
+		
+		// VERIFICACIÓN 2: localStorage
+		try {
+			const disabled = localStorage.getItem('notifications_toasts_disabled');
+			return disabled === 'true';
+		} catch (error) {
+			console.error('Error checking localStorage:', error);
+			return false;
+		}
+	}, []);
+
+	// ✅ FUNCIÓN PARA REMOVER TOAST
 	const removeToast = useCallback((id: number) => {
 		setToastNotifications((prev) =>
 			prev.filter((notification) => notification.id !== id)
 		);
 
-		// Limpiar la referencia del toast actual si es el que se está removiendo
 		if (currentToastIdRef.current === id) {
 			currentToastIdRef.current = null;
 		}
 
-		// Limpiar timer si existe
 		if (autoRemoveTimerRef.current) {
 			clearTimeout(autoRemoveTimerRef.current);
 			autoRemoveTimerRef.current = null;
 		}
 	}, []);
 
-	// ✅ FUNCIÓN OPTIMIZADA PARA CREAR TOAST (CONTROLADA)
+	// ✅ FUNCIÓN MEJORADA PARA CREAR TOAST (SOLO PARA AUMENTOS REALES)
 	const showNewNotificationToast = useCallback(
-		(newCount: number) => {
-			const now = Date.now();
+		(newCount: number, previousCount: number) => {
+			// VERIFICACIÓN PRINCIPAL: Toasts deshabilitados
+			if (areToastsDisabled()) {
+				console.log("🚫 Toasts deshabilitados - no mostrar");
+				return;
+			}
 
-			// CONTROL 1: No mostrar si ya hay un toast activo
+			// VERIFICACIÓN CRÍTICA: Solo mostrar si es un AUMENTO REAL desde la sesión
+			// No mostrar en cargas iniciales o si el contador baja
+			if (previousCount === 0 && newCount > 0 && !isInitializedRef.current) {
+				console.log("🚫 Carga inicial - no mostrar toast");
+				return;
+			}
+
+			// VERIFICACIÓN: Solo aumentos reales
+			if (newCount <= previousCount) {
+				console.log(`🚫 No es aumento real: ${previousCount} → ${newCount}`);
+				return;
+			}
+
+			// VERIFICACIÓN: No mostrar si ya hay un toast
 			if (currentToastIdRef.current !== null) {
+				console.log("🚫 Ya hay toast activo");
 				return;
 			}
 
-			// CONTROL 2: Throttling - mínimo 8 segundos entre toasts
-			if (now - lastToastTimeRef.current < 8000) {
-				return;
-			}
-
-			// CONTROL 3: No mostrar si estamos en la página de notificaciones
-			if (window.location.pathname === "/notifications") {
-				return;
-			}
+			console.log(`✅ Mostrando toast: ${previousCount} → ${newCount} notificaciones`);
 
 			// Crear el toast
 			const toastId = Date.now();
@@ -82,7 +109,6 @@ const NotificationWrapper: React.FC<NotificationWrapperProps> = ({
 			};
 
 			// Actualizar referencias de control
-			lastToastTimeRef.current = now;
 			currentToastIdRef.current = toastId;
 
 			// Mostrar el toast
@@ -93,15 +119,16 @@ const NotificationWrapper: React.FC<NotificationWrapperProps> = ({
 				removeToast(toastId);
 			}, 6000);
 		},
-		[removeToast]
+		[removeToast, areToastsDisabled]
 	);
 
-	// ✅ EFECTO PRINCIPAL OPTIMIZADO - Solo cambios reales
+	// ✅ EFECTO PRINCIPAL MEJORADO - SOLO AUMENTOS REALES
 	useEffect(() => {
 		if (!isAuthenticated) {
 			// Reset completo cuando no está autenticado
 			setToastNotifications([]);
 			lastUnreadCountRef.current = 0;
+			sessionStartCountRef.current = 0;
 			isInitializedRef.current = false;
 			currentToastIdRef.current = null;
 
@@ -109,13 +136,22 @@ const NotificationWrapper: React.FC<NotificationWrapperProps> = ({
 				clearTimeout(autoRemoveTimerRef.current);
 				autoRemoveTimerRef.current = null;
 			}
+			
+			// Limpiar localStorage cuando se desautentica
+			try {
+				localStorage.removeItem('notifications_toasts_disabled');
+			} catch (error) {
+				console.error('Error clearing localStorage:', error);
+			}
 			return;
 		}
 
-		// En la primera carga, solo establecer la línea base
+		// ✅ PRIMERA CARGA: Establecer línea base SIN mostrar toasts
 		if (!isInitializedRef.current) {
 			lastUnreadCountRef.current = unreadCount;
+			sessionStartCountRef.current = unreadCount;
 			isInitializedRef.current = true;
+			console.log(`📊 Sesión iniciada con ${unreadCount} notificaciones (no mostrar toast)`);
 			return;
 		}
 
@@ -124,9 +160,15 @@ const NotificationWrapper: React.FC<NotificationWrapperProps> = ({
 
 		// Solo procesar si hay cambios REALES
 		if (currentCount !== previousCount) {
-			// Solo mostrar toast si hay MÁS notificaciones que antes
-			if (currentCount > previousCount && previousCount >= 0) {
-				showNewNotificationToast(currentCount);
+			console.log(`📊 Cambio detectado: ${previousCount} → ${currentCount}`);
+			
+			// ✅ SOLO MOSTRAR TOAST SI ES UN AUMENTO REAL Y SIGNIFICATIVO
+			// No mostrar para decrementos o si estamos en el contador inicial de la sesión
+			if (currentCount > previousCount && 
+				previousCount >= sessionStartCountRef.current) {
+				showNewNotificationToast(currentCount, previousCount);
+			} else {
+				console.log(`🚫 No mostrar toast: ${previousCount} → ${currentCount} (sesión inició con ${sessionStartCountRef.current})`);
 			}
 
 			// Actualizar la referencia
@@ -134,13 +176,20 @@ const NotificationWrapper: React.FC<NotificationWrapperProps> = ({
 		}
 	}, [unreadCount, isAuthenticated, showNewNotificationToast]);
 
-	// ✅ EFECTO PARA LIMPIAR TOASTS EN NAVEGACIÓN Y ACTUALIZAR CONTADOR (OPTIMIZADO)
+	// ✅ EFECTO PARA DESHABILITAR TOASTS AL VISITAR /notifications
 	useEffect(() => {
 		const handleRouteChange = () => {
 			const currentPath = window.location.pathname;
 			
 			if (currentPath === "/notifications") {
-				console.log("📍 Usuario en página de notificaciones - limpiando toasts y actualizando contador");
+				console.log("📍 Usuario visitó /notifications - deshabilitando toasts permanentemente");
+				
+				// ✅ DESHABILITAR TOASTS PERMANENTEMENTE
+				try {
+					localStorage.setItem('notifications_toasts_disabled', 'true');
+				} catch (error) {
+					console.error('Error setting localStorage:', error);
+				}
 				
 				// Limpiar todos los toasts inmediatamente
 				setToastNotifications([]);
@@ -150,14 +199,6 @@ const NotificationWrapper: React.FC<NotificationWrapperProps> = ({
 					clearTimeout(autoRemoveTimerRef.current);
 					autoRemoveTimerRef.current = null;
 				}
-
-				// ✅ NUEVO: Actualizar contador inmediatamente al estar "viendo" las notificaciones
-				// Esto hace que la campana se actualice de inmediato sin esperar
-				setTimeout(() => {
-					// Simular que el usuario está "viendo" las notificaciones
-					// El hook useNotifications se encargará de la lógica real
-					lastUnreadCountRef.current = 0; // Reset local para evitar toasts adicionales
-				}, 100);
 			}
 		};
 
@@ -187,6 +228,44 @@ const NotificationWrapper: React.FC<NotificationWrapperProps> = ({
 		};
 	}, []);
 
+	// ✅ LISTENER GLOBAL PARA DESHABILITAR TOASTS AL HACER CLICK EN BOTÓN DE NOTIFICACIONES
+	useEffect(() => {
+		const handleNotificationButtonClick = (event: Event) => {
+			const target = event.target as HTMLElement;
+			
+			// Detectar click en botón de notificaciones
+			// Buscar por clases, data attributes, o elementos específicos
+			if (target.closest('[data-notification-button]') || 
+				target.closest('.notification-button') ||
+				target.closest('a[href="/notifications"]') ||
+				target.closest('button[onclick*="notifications"]')) {
+				
+				console.log("🔔 Click en botón de notificaciones detectado - deshabilitando toasts");
+				
+				try {
+					localStorage.setItem('notifications_toasts_disabled', 'true');
+				} catch (error) {
+					console.error('Error setting localStorage:', error);
+				}
+				
+				// Limpiar toasts inmediatamente
+				setToastNotifications([]);
+				currentToastIdRef.current = null;
+
+				if (autoRemoveTimerRef.current) {
+					clearTimeout(autoRemoveTimerRef.current);
+					autoRemoveTimerRef.current = null;
+				}
+			}
+		};
+
+		document.addEventListener('click', handleNotificationButtonClick, true);
+
+		return () => {
+			document.removeEventListener('click', handleNotificationButtonClick, true);
+		};
+	}, []);
+
 	// ✅ CLEANUP AL DESMONTAR
 	useEffect(() => {
 		return () => {
@@ -196,9 +275,20 @@ const NotificationWrapper: React.FC<NotificationWrapperProps> = ({
 		};
 	}, []);
 
-	// ✅ MEMOIZAR TOAST CONTAINER PARA EVITAR RE-RENDERS
+	// ✅ MEMOIZAR TOAST CONTAINER CON VERIFICACIÓN MEJORADA
 	const toastContainer = useMemo(() => {
-		if (!isAuthenticated || toastNotifications.length === 0) {
+		// No mostrar si no está autenticado
+		if (!isAuthenticated) {
+			return null;
+		}
+
+		// No mostrar si los toasts están deshabilitados
+		if (areToastsDisabled()) {
+			return null;
+		}
+
+		// No mostrar si no hay toasts
+		if (toastNotifications.length === 0) {
 			return null;
 		}
 
@@ -206,10 +296,10 @@ const NotificationWrapper: React.FC<NotificationWrapperProps> = ({
 			<NotificationToastContainer
 				notifications={toastNotifications}
 				onRemove={removeToast}
-				maxToasts={1} // MÁXIMO 1 toast a la vez
+				maxToasts={1}
 			/>
 		);
-	}, [isAuthenticated, toastNotifications, removeToast]);
+	}, [isAuthenticated, toastNotifications, removeToast, areToastsDisabled]);
 
 	return (
 		<>

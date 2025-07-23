@@ -229,27 +229,38 @@ const MessageForm: React.FC<MessageFormProps> = ({
 		// Detener indicador de escritura
 		stopTyping();
 
+		// ✅ LIMPIAR INMEDIATAMENTE AL INTENTAR ENVIAR (MÁS DIRECTO)
+		console.log("🧹 Limpiando form antes de enviar");
+		setMessage("");
+		
+		// Reset altura del textarea inmediatamente
+		if (textareaRef.current) {
+			textareaRef.current.style.height = "auto";
+		}
+
 		try {
 			console.log("Enviando mensaje:", messageToSend);
 			const success = await onSendMessage(messageToSend);
 
 			if (isMounted.current) {
 				if (success) {
-					console.log("Mensaje enviado correctamente");
-					setMessage("");
-					// Reset altura del textarea
+					console.log("✅ Mensaje enviado correctamente");
+					// Ya está limpio desde arriba
 					if (textareaRef.current) {
-						textareaRef.current.style.height = "auto";
 						textareaRef.current.focus();
 					}
 				} else {
-					console.error("Error al enviar mensaje");
+					console.error("❌ Error al enviar mensaje - restaurando contenido");
+					// Si falla, restaurar el mensaje
+					setMessage(messageToSend);
 					setError("No se pudo enviar el mensaje. Inténtalo de nuevo.");
 				}
 			}
 		} catch (error) {
 			console.error("Error al enviar mensaje:", error);
 			if (isMounted.current) {
+				// Si hay error, restaurar el mensaje
+				setMessage(messageToSend);
 				setError("Error al enviar mensaje. Por favor, inténtalo de nuevo.");
 			}
 		}

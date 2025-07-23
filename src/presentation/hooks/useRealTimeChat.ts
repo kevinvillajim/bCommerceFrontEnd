@@ -83,8 +83,8 @@ export const useRealTimeChat = ({
     try {
       isPollingRef.current = true;
       
-      // TODO: Reemplazar con tu endpoint real
-      const response = await ApiClient.get<UserStatusResponse>(`/api/users/${participantId}/status`);
+      // ✅ CORREGIDO: Sin /api duplicado
+      const response = await ApiClient.get<UserStatusResponse>(`/users/${participantId}/status`);
       
       if (response?.data) {
         const { is_online, last_seen, is_typing } = response.data;
@@ -149,6 +149,9 @@ export const useRealTimeChat = ({
   /**
    * Envía indicador de escritura al backend
    */
+  /**
+   * Envía indicador de escritura al backend
+   */
   const sendTypingIndicator = useCallback(async (isTyping: boolean): Promise<void> => {
     if (!enableTypingIndicator || !chatId || !user?.id || !isConnected) {
       return;
@@ -160,9 +163,13 @@ export const useRealTimeChat = ({
         clearTimeout(typingTimeoutRef.current);
       }
 
+      // ✅ DETECTAR SI ES VENDEDOR AUTOMÁTICAMENTE
+      const isSeller = window.location.pathname.includes('/seller/');
+      const baseRoute = isSeller ? '/seller/chats' : '/chats';
+
       if (isTyping) {
         // Enviar indicador de "escribiendo"
-        await ApiClient.post(`/api/chats/${chatId}/typing`, {
+        await ApiClient.post(`${baseRoute}/${chatId}/typing`, {
           user_id: user.id,
           is_typing: true
         });
@@ -173,7 +180,7 @@ export const useRealTimeChat = ({
         }, 3000);
       } else {
         // Enviar indicador de "dejó de escribir"
-        await ApiClient.post(`/api/chats/${chatId}/typing`, {
+        await ApiClient.post(`${baseRoute}/${chatId}/typing`, {
           user_id: user.id,
           is_typing: false
         });
@@ -250,8 +257,8 @@ export const useRealTimeChat = ({
     if (!user?.id || !isConnected) return;
 
     const handleBeforeUnload = () => {
-      // Enviar última actividad al backend
-      navigator.sendBeacon(`/api/users/${user.id}/activity`, 
+      // ✅ CORREGIDO: Sin /api duplicado
+      navigator.sendBeacon(`/users/${user.id}/activity`, 
         JSON.stringify({ last_seen: new Date().toISOString() })
       );
     };
