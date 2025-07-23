@@ -158,55 +158,141 @@ const CheckoutPage: React.FC = () => {
 	};
 
 	// Procesar el checkout
-	const processCheckout = async () => {
-		if (!validateForm()) {
-			showNotification(
-				NotificationType.ERROR,
-				"Por favor, completa todos los campos obligatorios"
-			);
-			return;
-		}
+	// Procesar el checkout - VERSIÓN CON DEBUG COMPLETO
+const processCheckout = async () => {
+	console.log("🛒 CheckoutPage.processCheckout INICIADO");
 
-		setIsLoading(true);
+	if (!validateForm()) {
+		console.log("❌ Validación de formulario falló");
+		showNotification(
+			NotificationType.ERROR,
+			"Por favor, completa todos los campos obligatorios"
+		);
+		return;
+	}
 
-		try {
-			const checkoutData = {
-				payment: {
-					...paymentInfo,
-					method: paymentMethod === "deuna" ? ("transfer" as PaymentMethod) : paymentMethod,
-				},
-				shipping: shippingInfo,
-				// ✅ NO ENVIAR seller_id - el backend lo obtiene de los productos
-			};
+	console.log("🛒 ANÁLISIS COMPLETO DEL CARRITO ANTES DEL CHECKOUT (CHECKOUT PAGE):");
+	console.log("📊 Cart desde CheckoutPage:", JSON.stringify(cart, null, 2));
+	console.log("📊 Total de items en carrito:", cart?.items?.length || 0);
+	console.log("📊 Total del carrito:", cart?.total);
 
-			console.log("Procesando checkout con datos:", checkoutData);
+	// ✅ NUEVO: Análisis detallado de cada item
+	if (cart && cart.items) {
+		console.log("🔍 ANÁLISIS ITEM POR ITEM (CHECKOUT PAGE):");
+		cart.items.forEach((item, index) => {
+			console.log(`📋 Item ${index + 1}:`, {
+				id: item.id,
+				productId: item.productId,
+				quantity: item.quantity,
+				price: item.price,
+				product: item.product ? {
+					id: item.product.id,
+					name: item.product.name,
+					price: item.product.price,
+					sellerId: item.product.sellerId,
+					seller_id: item.product.seller_id,
+					user_id: item.product.user_id
+				} : null,
+				completeItem: item
+			});
+		});
 
-			const response = await checkoutService.processCheckout(checkoutData);
-
-			if (response.status === "success") {
-				setOrderComplete(true);
-				setOrderDetails(response.data);
-				showNotification(
-					NotificationType.SUCCESS,
-					"¡Pedido completado con éxito!"
-				);
-				clearCart();
-			} else {
-				throw new Error(response.message || "Error al procesar el pedido");
+		// ✅ NUEVO: Detectar duplicados en el carrito
+		console.log("🔍 VERIFICANDO DUPLICADOS EN EL CARRITO (CHECKOUT PAGE):");
+		const itemsByProductId = cart.items.reduce((acc: any, item, index) => {
+			if (!acc[item.productId]) {
+				acc[item.productId] = [];
 			}
-		} catch (error) {
-			console.error("Error al procesar checkout:", error);
+			acc[item.productId].push({index, item});
+			return acc;
+		}, {});
 
-			const errorMessage = extractErrorMessage(
-				error,
-				"Error al procesar el pago. Por favor, intenta de nuevo más tarde."
+		console.log("📊 Items agrupados por productId:", itemsByProductId);
+
+		Object.keys(itemsByProductId).forEach(productId => {
+			const items = itemsByProductId[productId];
+			if (items.length > 1) {
+				console.warn(`⚠️ DUPLICADO EN CARRITO DETECTADO para productId ${productId}:`);
+				console.warn(`❌ Se encontraron ${items.length} items para el mismo producto`);
+				items.forEach((itemData: any, i: number) => {
+					console.warn(`   ${i + 1}. Item[${itemData.index}]:`, itemData.item);
+				});
+			} else {
+				console.log(`✅ Producto ${productId}: Sin duplicados (${items[0].item.quantity} unidades)`);
+			}
+		});
+	}
+
+	setIsLoading(true);
+
+	try {
+		const checkoutData = {
+			payment: {
+				...paymentInfo,
+				method: paymentMethod === "deuna" ? ("transfer" as PaymentMethod) : paymentMethod,
+			},
+			shipping: shippingInfo,
+			// ✅ NO ENVIAR seller_id - el backend lo obtiene de los productos
+		};
+
+		console.log("📦 Datos completos de checkout (CHECKOUT PAGE):", JSON.stringify(checkoutData, null, 2));
+		console.log("🚀 Enviando checkout al backend (CHECKOUT PAGE)...");
+
+		const response = await checkoutService.processCheckout(checkoutData);
+
+		console.log("✅ Respuesta del checkout recibida (CHECKOUT PAGE):", response);
+
+		if (response.status === "success") {
+			console.log("🎉 Checkout exitoso (CHECKOUT PAGE), limpiando carrito...");
+			setOrderComplete(true);
+			setOrderDetails(response.data);
+			showNotification(
+				NotificationType.SUCCESS,
+				"¡Pedido completado con éxito!"
 			);
+			clearCart();
 
-			showNotification(NotificationType.ERROR, errorMessage);
-		} finally {
-			setIsLoading(false);
+			// ✅ NUEVO: Análisis específico de la respuesta
+			if (response.data && typeof response.data === 'object') {
+				const orderData = response.data as any;
+				console.log("🔍 ANÁLISIS DE LA ORDEN CREADA (CHECKOUT PAGE):");
+				console.log("📊 Order ID:", orderData.order_id);
+				console.log("📊 Order Number:", orderData.order_number);
+				console.log("📊 Total:", orderData.total);
+				
+				if (orderData.items) {
+					console.log("📊 Items en la orden creada:", orderData.items.length);
+					orderData.items.forEach((item: any, index: number) => {
+						console.log(`📋 Order Item ${index + 1}:`, {
+							id: item.id,
+							product_id: item.product_id,
+							product_name: item.product_name,
+							quantity: item.quantity,
+							price: item.price
+						});
+					});
+				}
+			}
+		} else {
+			throw new Error(response.message || "Error al procesar el pedido");
 		}
-	};
+	} catch (error) {
+		console.error("❌ Error COMPLETO al procesar checkout (CHECKOUT PAGE):");
+		console.error("📊 Error object:", error);
+		console.error("📊 Error stack:", (error as any)?.stack);
+
+		const errorMessage = extractErrorMessage(
+			error,
+			"Error al procesar el pago. Por favor, intenta de nuevo más tarde."
+		);
+
+		console.error("📊 Error message final:", errorMessage);
+		showNotification(NotificationType.ERROR, errorMessage);
+	} finally {
+		setIsLoading(false);
+		console.log("🛒 CheckoutPage.processCheckout FINALIZADO");
+	}
+};
 
 	// Si el pedido está completo, mostrar pantalla de éxito
 	if (orderComplete && orderDetails) {

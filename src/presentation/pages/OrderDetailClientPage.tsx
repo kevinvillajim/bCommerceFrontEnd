@@ -5,6 +5,7 @@ import {formatCurrency} from "../../utils/formatters/formatCurrency";
 import {formatDate} from "../../utils/formatters/formatDate";
 import OrderStatusBadge from "../components/orders/OrderStatusBadge";
 import OrderServiceAdapter from "../../core/adapters/OrderServiceAdapter";
+import {getProductMainImage} from "../../utils/imageManager";
 import type {OrderDetail} from "../../core/domain/entities/Order";
 
 const OrderDetailClientPage: React.FC = () => {
@@ -25,9 +26,24 @@ const OrderDetailClientPage: React.FC = () => {
 
 		setLoading(true);
 		try {
-			// Obtener los detalles de la orden a través del adaptador
 			const orderDetail = await orderAdapter.getOrderDetails(id);
-			console.log("Detalles de la orden recibidos:", orderDetail);
+			console.log("🛍️ Detalles de la orden recibidos:", orderDetail);
+			console.log("📦 Items de la orden:", orderDetail?.items);
+			console.log("🔢 Cantidad de items:", orderDetail?.items?.length);
+			
+			// Debuggear cada item individualmente
+			orderDetail?.items?.forEach((item, index) => {
+				console.log(`📋 Item ${index + 1}:`, {
+					id: item.id,
+					product_name: item.product_name,
+					product_image: item.product_image,
+					price: item.price,
+					quantity: item.quantity,
+					productId: item.productId,
+					completeItem: item
+				});
+			});
+			
 			setOrder(orderDetail);
 			setError(null);
 		} catch (err) {
@@ -40,24 +56,37 @@ const OrderDetailClientPage: React.FC = () => {
 
 	// Función auxiliar para calcular subtotales
 	const calculateSubtotal = () => {
-		if (!order || !order.items || order.items.length === 0) return 0;
-		return order.items.reduce(
-			(sum, item) => sum + item.price * item.quantity,
-			0
-		);
+		if (!order || !order.items || order.items.length === 0) {
+			console.log("💰 calculateSubtotal: No hay items o order");
+			return 0;
+		}
+		
+		console.log("💰 calculateSubtotal - Items para calcular:", order.items);
+		const subtotal = order.items.reduce((sum, item, index) => {
+			const itemTotal = item.price * item.quantity;
+			console.log(`💰 Item ${index + 1}: ${item.product_name} - ${item.price} × ${item.quantity} = ${itemTotal}`);
+			return sum + itemTotal;
+		}, 0);
+		
+		console.log("💰 Subtotal total calculado:", subtotal);
+		return subtotal;
 	};
 
 	// Función auxiliar para calcular el IVA (15%)
 	const calculateTax = () => {
 		const subtotal = calculateSubtotal();
-		return subtotal * 0.15; // 15% IVA
+		const tax = subtotal * 0.15;
+		console.log("🧾 Impuesto calculado (15%):", tax, "sobre subtotal:", subtotal);
+		return tax;
 	};
 
 	// Función auxiliar para calcular el total (subtotal + IVA)
 	const calculateTotal = () => {
 		const subtotal = calculateSubtotal();
 		const tax = calculateTax();
-		return subtotal + tax;
+		const total = subtotal + tax;
+		console.log("🎯 Total final:", total, "(subtotal:", subtotal, "+ tax:", tax, ")");
+		return total;
 	};
 
 	if (loading) {
@@ -313,6 +342,18 @@ const OrderDetailClientPage: React.FC = () => {
 											</th>
 											<th
 												scope="col"
+												className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
+											>
+												Precio
+											</th>
+											<th
+												scope="col"
+												className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
+											>
+												Cantidad
+											</th>
+											<th
+												scope="col"
 												className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
 											>
 												Subtotal
@@ -320,46 +361,70 @@ const OrderDetailClientPage: React.FC = () => {
 										</tr>
 									</thead>
 									<tbody className="bg-white divide-y divide-gray-200">
-										{order.items.map((item) => (
-											<tr key={item.id}>
-												<td className="px-6 py-4 whitespace-nowrap">
-													<div className="flex items-center">
-														{item.product_image && (
-															<div className="flex-shrink-0 h-10 w-10 mr-3">
-																<img
-																	className="h-10 w-10 rounded-md object-cover"
-																	src={item.product_image}
-																	alt={item.product_name || "Producto"}
-																/>
+										{(() => {
+											console.log("🎨 Renderizando productos...");
+											console.log("📦 order.items antes del map:", order.items);
+											return order.items.map((item, index) => {
+												console.log(`🏷️ Renderizando item ${index + 1}:`, item);
+												
+												// Crear objeto para el sistema de imágenes
+												const productForImage = {
+													id: item.productId,
+													image: item.product_image,
+													main_image: item.product_image,
+													product_image: item.product_image
+												};
+												
+												console.log("🖼️ Objeto para imagen:", productForImage);
+												const imageUrl = getProductMainImage(productForImage);
+												console.log("🎯 URL final de imagen:", imageUrl);
+												
+												return (
+													<tr key={`item-${item.id || index}-${item.productId || 'unknown'}`}>
+														<td className="px-6 py-4 whitespace-nowrap">
+															<div className="flex items-center">
+																<div className="flex-shrink-0 h-12 w-12 mr-3">
+																	<img
+																		className="h-12 w-12 rounded-md object-cover"
+																		src={imageUrl}
+																		alt={item.product_name || "Producto"}
+																		onError={(_e) => {
+																			console.log("❌ Error cargando imagen:", imageUrl);
+																			console.log("📦 Item con error:", item);
+																		}}
+																		onLoad={() => {
+																			console.log("✅ Imagen cargada correctamente:", imageUrl);
+																		}}
+																	/>
+																</div>
+																<div>
+																	<div className="text-sm font-medium text-gray-900">
+																		{item.product_name || "Producto"}
+																	</div>
+																	{item.productId && (
+																		<Link
+																			to={`/products/${item.productId}`}
+																			className="text-xs text-primary-600 hover:underline"
+																		>
+																			Ver producto
+																		</Link>
+																	)}
+																</div>
 															</div>
-														)}
-														<div>
-															<div className="text-sm font-medium text-gray-900">
-																{item.product_name || "Producto"}
-															</div>
-															{/* Link al producto si es necesario */}
-															{item.productId && (
-																<Link
-																	to={`/products/${item.productId}`}
-																	className="text-xs text-primary-600 hover:underline"
-																>
-																	Ver producto
-																</Link>
-															)}
-														</div>
-													</div>
-												</td>
-												<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-													{formatCurrency(item.price)}
-												</td>
-												<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-													{item.quantity}
-												</td>
-												<td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-right">
-													{formatCurrency(item.price * item.quantity)}
-												</td>
-											</tr>
-										))}
+														</td>
+														<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">
+															{formatCurrency(item.price)}
+														</td>
+														<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">
+															{item.quantity}
+														</td>
+														<td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-right">
+															{formatCurrency(item.price * item.quantity)}
+														</td>
+													</tr>
+												);
+											});
+										})()}
 									</tbody>
 								</table>
 							</div>
@@ -377,7 +442,6 @@ const OrderDetailClientPage: React.FC = () => {
 										{formatCurrency(calculateSubtotal())}
 									</span>
 								</div>
-								{/* Mostrar impuestos */}
 								<div className="flex justify-between items-center pb-2">
 									<span className="text-gray-600">IVA (15%):</span>
 									<span className="text-gray-900">

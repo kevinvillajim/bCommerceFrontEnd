@@ -236,24 +236,78 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 
 	// ✅ NUEVO: Prueba completa de checkout (como TestCheckoutButton)
 	const handleCompleteTestCheckout = async () => {
+		console.log("🧪 DatafastPaymentButton.handleCompleteTestCheckout INICIADO");
+	
 		if (!cart || cart.items.length === 0) {
+			console.log("❌ Carrito vacío, abortando checkout");
 			showNotification(NotificationType.ERROR, "El carrito está vacío");
 			return;
 		}
-
+	
 		if (!validateFormData()) {
+			console.log("❌ Validación de formulario falló");
 			return;
 		}
-
+	
+		console.log("🛒 ANÁLISIS COMPLETO DEL CARRITO ANTES DEL CHECKOUT (DATAFAST):");
+		console.log("📊 Cart completo:", JSON.stringify(cart, null, 2));
+		console.log("📊 Total de items en carrito:", cart.items.length);
+		console.log("📊 Total del carrito:", cart.total);
+	
+		// ✅ NUEVO: Análisis detallado de cada item
+		console.log("🔍 ANÁLISIS ITEM POR ITEM (DATAFAST):");
+		cart.items.forEach((item, index) => {
+			console.log(`📋 Item ${index + 1}:`, {
+				id: item.id,
+				productId: item.productId,
+				quantity: item.quantity,
+				price: item.price,
+				product: item.product ? {
+					id: item.product.id,
+					name: item.product.name,
+					price: item.product.price,
+					sellerId: item.product.sellerId,
+					seller_id: item.product.seller_id,
+					user_id: item.product.user_id
+				} : null,
+				completeItem: item
+			});
+		});
+	
+		// ✅ NUEVO: Detectar duplicados en el carrito
+		console.log("🔍 VERIFICANDO DUPLICADOS EN EL CARRITO (DATAFAST):");
+		const itemsByProductId = cart.items.reduce((acc: any, item, index) => {
+			if (!acc[item.productId]) {
+				acc[item.productId] = [];
+			}
+			acc[item.productId].push({index, item});
+			return acc;
+		}, {});
+	
+		console.log("📊 Items agrupados por productId:", itemsByProductId);
+	
+		Object.keys(itemsByProductId).forEach(productId => {
+			const items = itemsByProductId[productId];
+			if (items.length > 1) {
+				console.warn(`⚠️ DUPLICADO EN CARRITO DETECTADO para productId ${productId}:`);
+				console.warn(`❌ Se encontraron ${items.length} items para el mismo producto`);
+				items.forEach((itemData: any, i: number) => {
+					console.warn(`   ${i + 1}. Item[${itemData.index}]:`, itemData.item);
+				});
+			} else {
+				console.log(`✅ Producto ${productId}: Sin duplicados (${items[0].item.quantity} unidades)`);
+			}
+		});
+	
 		setIsLoading(true);
-
+	
 		try {
-			console.log("Iniciando checkout de prueba completo...");
-
+			console.log("🚀 Iniciando checkout de prueba completo (DATAFAST)...");
+	
 			// ✅ OBTENER SELLER_ID DEL CARRITO
 			const sellerId = CheckoutService.getSellerIdFromCart(cart);
-			console.log("Seller ID obtenido:", sellerId);
-
+			console.log("🏪 Seller ID obtenido (DATAFAST):", sellerId);
+	
 			// Datos de prueba completos (similar al TestCheckoutButton original)
 			const testCheckoutData = {
 				payment: {
@@ -269,38 +323,68 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 				} as ShippingInfo,
 				seller_id: sellerId, // ✅ AGREGAR SELLER_ID
 			};
-
-			console.log("Procesando checkout de prueba:", testCheckoutData);
-
+	
+			console.log("📦 Datos completos de checkout (DATAFAST):", JSON.stringify(testCheckoutData, null, 2));
+			console.log("🚀 Enviando checkout al backend (DATAFAST)...");
+	
 			// Procesar directamente con CheckoutService (saltándose Datafast para la prueba)
 			const response = await checkoutService.processCheckout(testCheckoutData);
-
+	
+			console.log("✅ Respuesta del checkout recibida (DATAFAST):", response);
+	
 			if (response.status === "success") {
+				console.log("🎉 Checkout exitoso (DATAFAST), limpiando carrito...");
 				clearCart();
 				setShowWidget(false);
 				setShowForm(false);
-
+	
 				showNotification(
 					NotificationType.SUCCESS,
 					"¡Pedido de prueba completado con éxito!"
 				);
-
+	
 				// Mostrar los detalles de la orden
-				console.log("Detalles de la orden de prueba:", response.data);
-
+				console.log("📊 Detalles COMPLETOS de la orden (DATAFAST):", JSON.stringify(response.data, null, 2));
+	
+				// ✅ NUEVO: Análisis específico de la respuesta
+				if (response.data && typeof response.data === 'object') {
+					const orderData = response.data as any;
+					console.log("🔍 ANÁLISIS DE LA ORDEN CREADA (DATAFAST):");
+					console.log("📊 Order ID:", orderData.order_id);
+					console.log("📊 Order Number:", orderData.order_number);
+					console.log("📊 Total:", orderData.total);
+					
+					if (orderData.items) {
+						console.log("📊 Items en la orden creada:", orderData.items.length);
+						orderData.items.forEach((item: any, index: number) => {
+							console.log(`📋 Order Item ${index + 1}:`, {
+								id: item.id,
+								product_id: item.product_id,
+								product_name: item.product_name,
+								quantity: item.quantity,
+								price: item.price
+							});
+						});
+					}
+				}
+	
 				onSuccess?.(response.data);
 				navigate("/orders");
 			} else {
 				throw new Error(response.message || "Error en el checkout de prueba");
 			}
 		} catch (error) {
-			console.error("Error en el checkout de prueba completo:", error);
+			console.error("❌ Error COMPLETO en el checkout de prueba (DATAFAST):");
+			console.error("📊 Error object:", error);
+			console.error("📊 Error stack:", (error as any)?.stack);
 			const errorMessage =
 				error instanceof Error ? error.message : "Error al procesar el checkout de prueba";
+			console.error("📊 Error message final:", errorMessage);
 			showNotification(NotificationType.ERROR, errorMessage);
 			onError?.(errorMessage);
 		} finally {
 			setIsLoading(false);
+			console.log("🧪 DatafastPaymentButton.handleCompleteTestCheckout FINALIZADO");
 		}
 	};
 

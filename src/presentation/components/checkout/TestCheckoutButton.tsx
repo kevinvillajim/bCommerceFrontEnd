@@ -15,16 +15,69 @@ const TestCheckoutButton: React.FC<TestCheckoutButtonProps> = () => {
 	const [isLoading, setIsLoading] = useState(false);
 
 	const handleTestCheckout = async () => {
+		console.log("🧪 TestCheckoutButton.handleTestCheckout INICIADO");
+
 		if (!cart || cart.items.length === 0) {
+			console.log("❌ Carrito vacío, abortando checkout");
 			showNotification(NotificationType.ERROR, "El carrito está vacío");
 			return;
 		}
+
+		console.log("🛒 ANÁLISIS COMPLETO DEL CARRITO ANTES DEL CHECKOUT:");
+		console.log("📊 Cart completo:", JSON.stringify(cart, null, 2));
+		console.log("📊 Total de items en carrito:", cart.items.length);
+		console.log("📊 Total del carrito:", cart.total);
+
+		// ✅ NUEVO: Análisis detallado de cada item
+		console.log("🔍 ANÁLISIS ITEM POR ITEM:");
+		cart.items.forEach((item, index) => {
+			console.log(`📋 Item ${index + 1}:`, {
+				id: item.id,
+				productId: item.productId,
+				quantity: item.quantity,
+				price: item.price,
+				product: item.product ? {
+					id: item.product.id,
+					name: item.product.name,
+					price: item.product.price,
+					sellerId: item.product.sellerId,
+					seller_id: item.product.seller_id,
+					user_id: item.product.user_id
+				} : null,
+				completeItem: item
+			});
+		});
+
+		// ✅ NUEVO: Detectar duplicados en el carrito
+		console.log("🔍 VERIFICANDO DUPLICADOS EN EL CARRITO:");
+		const itemsByProductId = cart.items.reduce((acc: any, item, index) => {
+			if (!acc[item.productId]) {
+				acc[item.productId] = [];
+			}
+			acc[item.productId].push({index, item});
+			return acc;
+		}, {});
+
+		console.log("📊 Items agrupados por productId:", itemsByProductId);
+
+		Object.keys(itemsByProductId).forEach(productId => {
+			const items = itemsByProductId[productId];
+			if (items.length > 1) {
+				console.warn(`⚠️ DUPLICADO EN CARRITO DETECTADO para productId ${productId}:`);
+				console.warn(`❌ Se encontraron ${items.length} items para el mismo producto`);
+				items.forEach((itemData: any, i: number) => {
+					console.warn(`   ${i + 1}. Item[${itemData.index}]:`, itemData.item);
+				});
+			} else {
+				console.log(`✅ Producto ${productId}: Sin duplicados (${items[0].item.quantity} unidades)`);
+			}
+		});
 
 		setIsLoading(true);
 		try {
 			// ✅ OBTENER SELLER_ID DEL CARRITO
 			const sellerId = CheckoutService.getSellerIdFromCart(cart);
-			console.log("Seller ID obtenido para test:", sellerId);
+			console.log("🏪 Seller ID obtenido para test:", sellerId);
 
 			// Datos de prueba - agregado seller_id de vuelta
 			const testData = {
@@ -45,11 +98,15 @@ const TestCheckoutButton: React.FC<TestCheckoutButtonProps> = () => {
 				seller_id: sellerId, // ✅ AGREGAR SELLER_ID DE VUELTA
 			};
 
-			console.log("Procesando checkout de prueba con datos:", testData);
+			console.log("📦 Datos completos de checkout de prueba:", JSON.stringify(testData, null, 2));
+			console.log("🚀 Enviando checkout al backend...");
 
 			const response = await checkoutService.processCheckout(testData);
 
+			console.log("✅ Respuesta del checkout recibida:", response);
+
 			if (response.status === "success") {
+				console.log("🎉 Checkout exitoso, limpiando carrito...");
 				clearCart();
 				showNotification(
 					NotificationType.SUCCESS,
@@ -57,7 +114,29 @@ const TestCheckoutButton: React.FC<TestCheckoutButtonProps> = () => {
 				);
 
 				// Mostrar los detalles de la orden por consola
-				console.log("Detalles de la orden:", response.data);
+				console.log("📊 Detalles COMPLETOS de la orden:", JSON.stringify(response.data, null, 2));
+
+				// ✅ NUEVO: Análisis específico de la respuesta
+				if (response.data && typeof response.data === 'object') {
+					const orderData = response.data as any;
+					console.log("🔍 ANÁLISIS DE LA ORDEN CREADA:");
+					console.log("📊 Order ID:", orderData.order_id);
+					console.log("📊 Order Number:", orderData.order_number);
+					console.log("📊 Total:", orderData.total);
+					
+					if (orderData.items) {
+						console.log("📊 Items en la orden creada:", orderData.items.length);
+						orderData.items.forEach((item: any, index: number) => {
+							console.log(`📋 Order Item ${index + 1}:`, {
+								id: item.id,
+								product_id: item.product_id,
+								product_name: item.product_name,
+								quantity: item.quantity,
+								price: item.price
+							});
+						});
+					}
+				}
 
 				// Navegar a una página de confirmación o dashboard
 				navigate("/orders");
@@ -65,7 +144,9 @@ const TestCheckoutButton: React.FC<TestCheckoutButtonProps> = () => {
 				throw new Error(response.message || "Error en el checkout de prueba");
 			}
 		} catch (error) {
-			console.error("Error en el checkout de prueba:", error);
+			console.error("❌ Error COMPLETO en el checkout de prueba:");
+			console.error("📊 Error object:", error);
+			console.error("📊 Error stack:", (error as any)?.stack);
 
 			// Usar el extractor de mensajes de error
 			const errorMessage = extractErrorMessage(
@@ -73,9 +154,11 @@ const TestCheckoutButton: React.FC<TestCheckoutButtonProps> = () => {
 				"Error en el checkout de prueba. Por favor, intenta de nuevo más tarde."
 			);
 
+			console.error("📊 Error message final:", errorMessage);
 			showNotification(NotificationType.ERROR, errorMessage);
 		} finally {
 			setIsLoading(false);
+			console.log("🧪 TestCheckoutButton.handleTestCheckout FINALIZADO");
 		}
 	};
 
