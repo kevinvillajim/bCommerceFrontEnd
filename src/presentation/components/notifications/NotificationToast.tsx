@@ -111,7 +111,7 @@ const NotificationToast: React.FC<NotificationToastProps> = ({
       case 'discount':
         return <Gift className="text-purple-500" size={20} />;
       default:
-        return <Bell className="text-blue-500" size={20} />;
+        return <Bell className="text-primary-500" size={20} />;
     }
   };
 
@@ -141,9 +141,9 @@ const NotificationToast: React.FC<NotificationToastProps> = ({
         };
       default:
         return {
-          bg: 'bg-blue-50',
-          border: 'border-blue-200',
-          progress: 'bg-blue-500'
+          bg: 'bg-primary-50',
+          border: 'border-primary-200',
+          progress: 'bg-primary-500'
         };
     }
   };
@@ -218,8 +218,8 @@ const NotificationToast: React.FC<NotificationToastProps> = ({
               <div className="flex items-center">
                 {!notification.read && (
                   <>
-                    <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
-                    <span className="text-xs text-blue-600 font-medium">Nueva</span>
+                    <div className="w-2 h-2 bg-primary-500 rounded-full mr-2"></div>
+                    <span className="text-xs text-primary-600 font-medium">Nueva</span>
                   </>
                 )}
               </div>

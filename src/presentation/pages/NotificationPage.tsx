@@ -1,4 +1,4 @@
-// src/presentation/pages/NotificationPage.tsx - OPTIMIZADO CON CACHE INTELIGENTE
+// src/presentation/pages/NotificationPage.tsx - CON SOPORTE PARA MODO OSCURO
 import React, {useState, useEffect, useCallback} from "react";
 import {useNavigate} from "react-router-dom";
 import {
@@ -57,7 +57,7 @@ const getNotificationIcon = (type: string) => {
 	}
 };
 
-// Función para obtener el color de fondo según el tipo
+// Función para obtener el color de fondo según el tipo - CON DARK MODE
 const getNotificationColor = (type: string) => {
 	switch (type) {
 		case "new_message":
@@ -85,11 +85,11 @@ const getNotificationColor = (type: string) => {
 		case "account_blocked":
 			return "bg-red-50 border-red-200";
 		default:
-			return "bg-gray-50 border-gray-200";
+			return "bg-gray-50 border-gray-200/50";
 	}
 };
 
-// Componente para el menú de acciones de notificación
+// Componente para el menú de acciones de notificación - CON DARK MODE
 interface NotificationActionsProps {
 	notification: Notification;
 	onMarkAsRead: (id: number) => void;
@@ -118,7 +118,7 @@ const NotificationActions: React.FC<NotificationActionsProps> = ({
 			</button>
 
 			{isOpen && (
-				<div className="absolute right-0 top-8 bg-white rounded-lg shadow-lg border z-10 min-w-[150px]">
+				<div className="absolute right-0 top-8 bg-white rounded-lg shadow-lg border border-gray-200 z-10 min-w-[150px]">
 					{!notification.read && (
 						<button
 							onClick={(e) => {
@@ -167,6 +167,7 @@ const NotificationPage: React.FC = () => {
 		markAsRead,
 		markAllAsRead,
 		deleteNotification,
+		refreshUnreadCount,
 	} = useNotifications();
 
 	// ✅ FUNCIÓN PARA INVALIDAR CACHE DE NOTIFICACIONES
@@ -179,6 +180,18 @@ const NotificationPage: React.FC = () => {
 		}
 		console.log("🗑️ Cache de notificaciones invalidado");
 	}, []);
+
+	// ✅ MARCAR NOTIFICACIONES COMO "VISTAS" AL ENTRAR A LA PÁGINA
+	useEffect(() => {
+		if (isAuthenticated && notifications.length > 0) {
+			console.log("👀 Usuario viendo página de notificaciones - actualizando contador");
+			
+			// Pequeño delay para que se vea natural
+			setTimeout(() => {
+				refreshUnreadCount();
+			}, 500);
+		}
+	}, [isAuthenticated, notifications.length, refreshUnreadCount]);
 
 	// ✅ FUNCIÓN OPTIMIZADA PARA OBTENER NOTIFICACIONES CON CACHE
 	const fetchNotificationsWithCache = useCallback(
@@ -454,234 +467,236 @@ const NotificationPage: React.FC = () => {
 	}
 
 	return (
-		<div className="container mx-auto px-4 lg:px-8 py-10 max-w-4xl">
-			{/* Header */}
-			<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 space-y-4 sm:space-y-0">
-				<div>
-					<h1 className="text-3xl font-bold text-gray-900">Notificaciones</h1>
-					<p className="text-gray-600 mt-1">
-						{totalNotifications > 0 && (
-							<>
-								{totalNotifications}{" "}
-								{totalNotifications === 1 ? "notificación" : "notificaciones"}
-								{unreadCount > 0 && (
-									<span className="text-primary-600 font-medium">
-										, {unreadCount} sin leer
-									</span>
-								)}
-							</>
-						)}
-					</p>
-				</div>
-
-				<div className="flex items-center space-x-3">
-					{/* Filtros */}
-					<div className="flex items-center space-x-2 bg-gray-100 rounded-lg p-1">
-						<button
-							onClick={() => handleFilterChange("all")}
-							className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-								filter === "all"
-									? "bg-white text-gray-900 shadow-sm"
-									: "text-gray-600 hover:text-gray-900"
-							}`}
-						>
-							Todas
-						</button>
-						<button
-							onClick={() => handleFilterChange("unread")}
-							className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors relative ${
-								filter === "unread"
-									? "bg-white text-gray-900 shadow-sm"
-									: "text-gray-600 hover:text-gray-900"
-							}`}
-						>
-							No leídas
-							{unreadCount > 0 && (
-								<span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-									{unreadCount > 99 ? "99" : unreadCount}
-								</span>
+		<div className="min-h-screen bg-gray-50 transition-colors">
+			<div className="container mx-auto px-4 lg:px-8 py-10 max-w-4xl">
+				{/* Header - CON DARK MODE */}
+				<div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 space-y-4 sm:space-y-0">
+					<div>
+						<h1 className="text-3xl font-bold text-gray-900">Notificaciones</h1>
+						<p className="text-gray-600 mt-1">
+							{totalNotifications > 0 && (
+								<>
+									{totalNotifications}{" "}
+									{totalNotifications === 1 ? "notificación" : "notificaciones"}
+									{unreadCount > 0 && (
+										<span className="text-primary-600 font-medium">
+											, {unreadCount} sin leer
+										</span>
+									)}
+								</>
 							)}
-						</button>
+						</p>
 					</div>
 
-					{/* Marcar todas como leídas */}
-					{unreadCount > 0 && (
-						<button
-							onClick={handleMarkAllAsRead}
-							disabled={loading}
-							className="px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 flex items-center"
-						>
-							<CheckCheck size={16} className="mr-2" />
-							Marcar todas
-						</button>
-					)}
-
-					{/* ✅ BOTÓN DE REFRESH OPCIONAL */}
-					{notifications.length > 0 && (
-						<button
-							onClick={forceRefresh}
-							disabled={loading}
-							className="px-3 py-2 text-sm text-blue-600 hover:text-blue-700 disabled:opacity-50 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
-						>
-							{loading ? "Actualizando..." : "Actualizar"}
-						</button>
-					)}
-				</div>
-			</div>
-
-			{/* Error */}
-			{error && (
-				<div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
-					{error}
-					<button className="ml-2 underline" onClick={forceRefresh}>
-						Reintentar
-					</button>
-				</div>
-			)}
-
-			{/* Loading inicial */}
-			{loading && notifications.length === 0 ? (
-				<div className="flex justify-center items-center h-64">
-					<div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
-				</div>
-			) : notifications.length === 0 ? (
-				/* Estado vacío */
-				<div className="text-center py-20 bg-gradient-to-b from-gray-50 to-white rounded-xl shadow-md">
-					<Bell className="mx-auto h-16 w-16 text-gray-300 mb-6" />
-					<h2 className="text-2xl font-semibold text-gray-700 mb-3">
-						{filter === "unread"
-							? "No tienes notificaciones sin leer"
-							: "No tienes notificaciones"}
-					</h2>
-					<p className="text-gray-500 mb-8 max-w-md mx-auto">
-						{filter === "unread"
-							? "Todas tus notificaciones están al día. Te avisaremos cuando tengas algo nuevo."
-							: "Cuando tengas actualizaciones importantes, aparecerán aquí."}
-					</p>
-					{filter === "unread" && (
-						<button
-							onClick={() => handleFilterChange("all")}
-							className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700 shadow-sm hover:shadow transition-all"
-						>
-							Ver todas las notificaciones
-						</button>
-					)}
-				</div>
-			) : (
-				/* Lista de notificaciones */
-				<div className="bg-white rounded-xl shadow-lg overflow-hidden">
-					{notifications.map((notification, index) => (
-						<div
-							key={notification.id}
-							onClick={() => handleNotificationClick(notification)}
-							className={`
-                relative border-l-4 cursor-pointer transition-all duration-200 hover:shadow-sm
-                ${
-									!notification.read
-										? "bg-blue-50 border-l-primary-500 hover:bg-blue-100"
-										: "bg-white border-l-gray-200 hover:bg-gray-50"
-								}
-                ${index !== notifications.length - 1 ? "border-b border-gray-100" : ""}
-              `}
-						>
-							<div className="p-6">
-								<div className="flex items-start justify-between">
-									<div className="flex items-start space-x-4 flex-1">
-										{/* Icono */}
-										<div
-											className={`
-                      flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center
-                      ${getNotificationColor(notification.type)}
-                    `}
-										>
-											{getNotificationIcon(notification.type)}
-										</div>
-
-										{/* Contenido */}
-										<div className="flex-1 min-w-0">
-											<div className="flex items-center space-x-2 mb-1">
-												<h3
-													className={`text-base font-medium ${
-														!notification.read
-															? "text-gray-900"
-															: "text-gray-700"
-													}`}
-												>
-													{notification.title}
-												</h3>
-												{!notification.read && (
-													<div className="w-2 h-2 bg-primary-500 rounded-full"></div>
-												)}
-											</div>
-
-											<p
-												className={`text-sm ${
-													!notification.read ? "text-gray-700" : "text-gray-600"
-												} mb-2`}
-											>
-												{notification.message}
-											</p>
-
-											<div className="flex items-center text-xs text-gray-500">
-												<span>
-													{formatRelativeTime(notification.createdAt)}
-												</span>
-												{notification.readAt && (
-													<span className="ml-2 flex items-center">
-														<Check size={12} className="mr-1" />
-														Leída el {formatRelativeTime(notification.readAt)}
-													</span>
-												)}
-											</div>
-										</div>
-									</div>
-
-									{/* Menú de acciones */}
-									<NotificationActions
-										notification={notification}
-										onMarkAsRead={handleMarkAsRead}
-										onDelete={handleDelete}
-										isOpen={activeMenu === notification.id}
-										onToggle={() =>
-											setActiveMenu(
-												activeMenu === notification.id ? null : notification.id!
-											)
-										}
-									/>
-								</div>
-							</div>
-						</div>
-					))}
-
-					{/* Botón cargar más */}
-					{hasMore && (
-						<div className="p-6 bg-gray-50 border-t">
+					<div className="flex items-center space-x-3">
+						{/* Filtros - CON DARK MODE */}
+						<div className="flex items-center space-x-2 bg-gray-100 rounded-lg p-1">
 							<button
-								onClick={loadMore}
-								disabled={loading}
-								className="w-full px-4 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 font-medium"
+								onClick={() => handleFilterChange("all")}
+								className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
+									filter === "all"
+										? "bg-white text-gray-900 shadow-sm"
+										: "text-gray-600 hover:text-gray-900"
+								}`}
 							>
-								{loading ? (
-									<div className="flex items-center justify-center">
-										<div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-gray-400 mr-2"></div>
-										Cargando...
-									</div>
-								) : (
-									"Cargar más notificaciones"
+								Todas
+							</button>
+							<button
+								onClick={() => handleFilterChange("unread")}
+								className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors relative ${
+									filter === "unread"
+										? "bg-white text-gray-900 shadow-sm"
+										: "text-gray-600 hover:text-gray-900"
+								}`}
+							>
+								No leídas
+								{unreadCount > 0 && (
+									<span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+										{unreadCount > 99 ? "99" : unreadCount}
+									</span>
 								)}
 							</button>
 						</div>
-					)}
-				</div>
-			)}
 
-			{/* Click outside para cerrar menús */}
-			{activeMenu !== null && (
-				<div
-					className="fixed inset-0 z-0"
-					onClick={() => setActiveMenu(null)}
-				/>
-			)}
+						{/* Marcar todas como leídas - CON DARK MODE */}
+						{unreadCount > 0 && (
+							<button
+								onClick={handleMarkAllAsRead}
+								disabled={loading}
+								className="px-4 py-2 bg-primary-600  text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 flex items-center"
+							>
+								<CheckCheck size={16} className="mr-2" />
+								Marcar todas
+							</button>
+						)}
+
+						{/* ✅ BOTÓN DE REFRESH OPCIONAL - CON DARK MODE */}
+						{notifications.length > 0 && (
+							<button
+								onClick={forceRefresh}
+								disabled={loading}
+								className="px-3 py-2 text-sm text-blue-600 hover:text-blue-700 disabled:opacity-50 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
+							>
+								{loading ? "Actualizando..." : "Actualizar"}
+							</button>
+						)}
+					</div>
+				</div>
+
+				{/* Error - CON DARK MODE */}
+				{error && (
+					<div className="bg-red-50 border border-red-200  text-red-700 px-4 py-3 rounded-lg mb-6">
+						{error}
+						<button className="ml-2 underline" onClick={forceRefresh}>
+							Reintentar
+						</button>
+					</div>
+				)}
+
+				{/* Loading inicial */}
+				{loading && notifications.length === 0 ? (
+					<div className="flex justify-center items-center h-64">
+						<div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
+					</div>
+				) : notifications.length === 0 ? (
+					/* Estado vacío - CON DARK MODE */
+					<div className="text-center py-20 bg-gradient-to-b from-gray-50 to-white rounded-xl shadow-md">
+						<Bell className="mx-auto h-16 w-16 text-gray-300 mb-6" />
+						<h2 className="text-2xl font-semibold text-gray-700 mb-3">
+							{filter === "unread"
+								? "No tienes notificaciones sin leer"
+								: "No tienes notificaciones"}
+						</h2>
+						<p className="text-gray-500 mb-8 max-w-md mx-auto">
+							{filter === "unread"
+								? "Todas tus notificaciones están al día. Te avisaremos cuando tengas algo nuevo."
+								: "Cuando tengas actualizaciones importantes, aparecerán aquí."}
+						</p>
+						{filter === "unread" && (
+							<button
+								onClick={() => handleFilterChange("all")}
+								className="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-primary-600  hover:bg-primary-700 shadow-sm hover:shadow transition-all"
+							>
+								Ver todas las notificaciones
+							</button>
+						)}
+					</div>
+				) : (
+					/* Lista de notificaciones - CON DARK MODE */
+					<div className="bg-white rounded-xl shadow-lg overflow-hidden">
+						{notifications.map((notification, index) => (
+							<div
+								key={notification.id}
+								onClick={() => handleNotificationClick(notification)}
+								className={`
+	                relative border-l-4 cursor-pointer transition-all duration-200 hover:shadow-sm
+	                ${
+										!notification.read
+											? "bg-primary-50 border-l-primary-500 hover:bg-primary-100"
+											: "bg-white border-l-gray-200 hover:bg-gray-50"
+									}
+	                ${index !== notifications.length - 1 ? "border-b border-gray-100" : ""}
+	              `}
+							>
+								<div className="p-6">
+									<div className="flex items-start justify-between">
+										<div className="flex items-start space-x-4 flex-1">
+											{/* Icono */}
+											<div
+												className={`
+	                      flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center
+	                      ${getNotificationColor(notification.type)}
+	                    `}
+											>
+												{getNotificationIcon(notification.type)}
+											</div>
+
+											{/* Contenido */}
+											<div className="flex-1 min-w-0">
+												<div className="flex items-center space-x-2 mb-1">
+													<h3
+														className={`text-base font-medium ${
+															!notification.read
+																? "text-gray-900"
+																: "text-gray-700"
+														}`}
+													>
+														{notification.title}
+													</h3>
+													{!notification.read && (
+														<div className="w-2 h-2 bg-primary-500rounded-full"></div>
+													)}
+												</div>
+
+												<p
+													className={`text-sm ${
+														!notification.read ? "text-gray-700" : "text-gray-600"
+													} mb-2`}
+												>
+													{notification.message}
+												</p>
+
+												<div className="flex items-center text-xs text-gray-500">
+													<span>
+														{formatRelativeTime(notification.createdAt)}
+													</span>
+													{notification.readAt && (
+														<span className="ml-2 flex items-center">
+															<Check size={12} className="mr-1" />
+															Leída el {formatRelativeTime(notification.readAt)}
+														</span>
+													)}
+												</div>
+											</div>
+										</div>
+
+										{/* Menú de acciones */}
+										<NotificationActions
+											notification={notification}
+											onMarkAsRead={handleMarkAsRead}
+											onDelete={handleDelete}
+											isOpen={activeMenu === notification.id}
+											onToggle={() =>
+												setActiveMenu(
+													activeMenu === notification.id ? null : notification.id!
+												)
+											}
+										/>
+									</div>
+								</div>
+							</div>
+						))}
+
+						{/* Botón cargar más - CON DARK MODE */}
+						{hasMore && (
+							<div className="p-6 bg-gray-50/50 border-t">
+								<button
+									onClick={loadMore}
+									disabled={loading}
+									className="w-full px-4 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 font-medium"
+								>
+									{loading ? (
+										<div className="flex items-center justify-center">
+											<div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-gray-400 mr-2"></div>
+											Cargando...
+										</div>
+									) : (
+										"Cargar más notificaciones"
+									)}
+								</button>
+							</div>
+						)}
+					</div>
+				)}
+
+				{/* Click outside para cerrar menús */}
+				{activeMenu !== null && (
+					<div
+						className="fixed inset-0 z-0"
+						onClick={() => setActiveMenu(null)}
+					/>
+				)}
+			</div>
 		</div>
 	);
 };

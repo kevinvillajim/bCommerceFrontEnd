@@ -168,11 +168,11 @@ const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({
 			</button>
 
 			{/* Indicador de método en desarrollo */}
-			{process.env.NODE_ENV === 'development' && (
+			{/* {process.env.NODE_ENV === 'development' && (
 				<div className="text-xs text-gray-500 text-center">
 					{isProduction ? '🏭 Producción: Método Redirect' : `🔧 Desarrollo: ${preferredMethod}`}
 				</div>
-			)}
+			)} */}
 
 			{/* Mensajes de error */}
 			{hasErrors && (
@@ -229,7 +229,7 @@ const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({
 			)}
 
 			{/* Información de debug en desarrollo */}
-			{process.env.NODE_ENV === "development" && (
+			{/* {process.env.NODE_ENV === "development" && (
 				<details className="text-xs">
 					<summary className="text-gray-500 cursor-pointer mb-2">
 						🔍 Información de debug
@@ -244,7 +244,7 @@ const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({
 						<div><strong>Advertencias:</strong> {configStatus.warnings.length}</div>
 					</div>
 				</details>
-			)}
+			)} */}
 		</div>
 	);
 };

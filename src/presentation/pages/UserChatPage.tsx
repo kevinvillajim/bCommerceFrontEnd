@@ -293,18 +293,13 @@ const UserChatPage: React.FC = () => {
 		}
 	};
 
-	// CORREGIDO: Enviar un mensaje sin loading infinito
+	// CORREGIDO: Enviar un mensaje sin recargas adicionales
 	const handleSendMessage = async (content: string): Promise<boolean> => {
 		console.log("Enviando mensaje...");
 		
 		try {
 			const result = await sendMessage(content);
-
-			// Si el mensaje se envió correctamente, recargar mensajes
-			if (result && selectedChat?.id) {
-				await fetchChatMessages(selectedChat.id);
-			}
-
+			// El hook useChat ya maneja la recarga de mensajes internamente
 			return result;
 		} catch (error: any) {
 			console.error("Error al enviar mensaje:", error);

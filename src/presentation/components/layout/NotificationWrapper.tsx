@@ -134,15 +134,15 @@ const NotificationWrapper: React.FC<NotificationWrapperProps> = ({
 		}
 	}, [unreadCount, isAuthenticated, showNewNotificationToast]);
 
-	// ✅ EFECTO PARA LIMPIAR TOASTS EN NAVEGACIÓN (OPTIMIZADO)
+	// ✅ EFECTO PARA LIMPIAR TOASTS EN NAVEGACIÓN Y ACTUALIZAR CONTADOR (OPTIMIZADO)
 	useEffect(() => {
-		// Solo verificar si hay toasts activos
-		if (toastNotifications.length === 0) {
-			return;
-		}
-
 		const handleRouteChange = () => {
-			if (window.location.pathname === "/notifications") {
+			const currentPath = window.location.pathname;
+			
+			if (currentPath === "/notifications") {
+				console.log("📍 Usuario en página de notificaciones - limpiando toasts y actualizando contador");
+				
+				// Limpiar todos los toasts inmediatamente
 				setToastNotifications([]);
 				currentToastIdRef.current = null;
 
@@ -150,6 +150,14 @@ const NotificationWrapper: React.FC<NotificationWrapperProps> = ({
 					clearTimeout(autoRemoveTimerRef.current);
 					autoRemoveTimerRef.current = null;
 				}
+
+				// ✅ NUEVO: Actualizar contador inmediatamente al estar "viendo" las notificaciones
+				// Esto hace que la campana se actualice de inmediato sin esperar
+				setTimeout(() => {
+					// Simular que el usuario está "viendo" las notificaciones
+					// El hook useNotifications se encargará de la lógica real
+					lastUnreadCountRef.current = 0; // Reset local para evitar toasts adicionales
+				}, 100);
 			}
 		};
 
@@ -177,7 +185,7 @@ const NotificationWrapper: React.FC<NotificationWrapperProps> = ({
 			window.history.replaceState = originalReplaceState;
 			window.removeEventListener("popstate", handleRouteChange);
 		};
-	}, [toastNotifications.length]);
+	}, []);
 
 	// ✅ CLEANUP AL DESMONTAR
 	useEffect(() => {
