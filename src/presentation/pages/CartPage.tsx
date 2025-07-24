@@ -1,3 +1,4 @@
+// src/presentation/pages/CartPage.tsx - CON DESCUENTOS POR VOLUMEN FUNCIONALES
 import React, {useState, useEffect, useMemo, useCallback} from "react";
 import {Link, useNavigate} from "react-router-dom";
 import {
@@ -13,9 +14,10 @@ import {
 import {useCart} from "../hooks/useCart";
 import {useFavorites} from "../hooks/useFavorites";
 import {useInvalidateCounters} from "../hooks/useHeaderCounters";
-import {formatCurrency} from "../../utils/formatters/formatCurrency";
 import {NotificationType} from "../contexts/CartContext";
 import CacheService from "../../infrastructure/services/CacheService";
+import {useCartVolumeDiscounts} from "../contexts/VolumeDiscountContext"; // ✅ IMPORTAR CONTEXTO
+import {formatCurrency} from "../../utils/formatters/formatCurrency";
 
 // Importar hooks optimizados
 import {useImageCache} from "../hooks/useImageCache";
@@ -38,6 +40,13 @@ const CartPage: React.FC = () => {
 		delay: 500,
 		onPrefetchComplete: () => console.log("✅ Cart page prefetch completed"),
 	});
+
+	// ✅ USAR CONTEXTO DE DESCUENTOS POR VOLUMEN
+	const {
+		calculateCartItemDiscount,
+		calculateCartTotalDiscounts,
+		isEnabled: volumeDiscountsEnabled
+	} = useCartVolumeDiscounts();
 
 	// Obtener datos del carrito y funciones para manipularlo
 	const {
@@ -83,75 +92,36 @@ const CartPage: React.FC = () => {
 		[getOptimizedImageUrl]
 	);
 
-	// ✅ ACTUALIZADA: Función memoizada para calcular precios de item con descuentos por volumen
-	const calculateItemPrices = useCallback((item: any) => {
-		if (!item) return {original: 0, discounted: 0, discount: 0, subtotal: 0, volumeDiscount: null};
-
-		// Obtener precio original del item
-		const originalPrice = item.price || 0;
-
-		// Usar directamente final_price de la API
-		let discountedPrice = originalPrice;
-		let discountPercentage = 0;
-		let volumeDiscountInfo = null;
-
-		if (item.product) {
-			// PRIORIDAD 1: usar final_price si existe (viene calculado desde la API)
-			if (
-				item.product.final_price !== undefined &&
-				item.product.final_price !== null
-			) {
-				discountedPrice = item.product.final_price;
-			}
-			// FALLBACK: si no hay final_price, calcular manualmente
-			else {
-				discountPercentage =
-					item.product.discount_percentage ||
-					item.product.discountPercentage ||
-					item.product.discount ||
-					0;
-				if (discountPercentage > 0) {
-					discountedPrice =
-						originalPrice - originalPrice * (discountPercentage / 100);
-				}
-			}
-
-			// Obtener porcentaje de descuento para mostrar en UI
-			discountPercentage =
-				item.product.discount_percentage ||
-				item.product.discountPercentage ||
-				item.product.discount ||
-				0;
+	// ✅ CALCULAR DESCUENTOS POR VOLUMEN PARA CADA ITEM
+	const cartItemsWithDiscounts = useMemo(() => {
+		if (!cart?.items || !volumeDiscountsEnabled) {
+			return cart?.items?.map(item => ({
+				...item,
+				discount: {
+					originalPrice: item.price || 0,
+					discountedPrice: item.price || 0,
+					discountPercentage: 0,
+					savings: 0,
+					savingsTotal: 0,
+					hasDiscount: false
+				},
+				imageUrl: getProductImage(item.product)
+			})) || [];
 		}
 
-		// ✅ NUEVO: Verificar si hay descuentos por volumen aplicados
-		if (item.volume_discount && item.volume_discount > 0) {
-			volumeDiscountInfo = {
-				percentage: item.volume_discount,
-				discountedPrice: item.discounted_price || discountedPrice,
-				totalSavings: item.total_savings || 0,
-				label: item.discount_label
+		return cart.items.map(item => {
+			const discount = calculateCartItemDiscount(item);
+			return {
+				...item,
+				discount,
+				imageUrl: getProductImage(item.product)
 			};
-			
-			// Usar el precio con descuento por volumen
-			discountedPrice = item.discounted_price || discountedPrice;
-		}
+		});
+	}, [cart?.items, calculateCartItemDiscount, volumeDiscountsEnabled, getProductImage]);
 
-		// CALCULAR SUBTOTAL usando el precio con descuento (final_price + volume discount)
-		const subtotal = discountedPrice * item.quantity;
-
-		return {
-			original: originalPrice,
-			discounted: discountedPrice,
-			discount: discountPercentage,
-			subtotal: subtotal,
-			volumeDiscount: volumeDiscountInfo
-		};
-	}, []);
-
-	// ✅ ACTUALIZADA: Memoizar cálculos de totales del carrito con descuentos por volumen
+	// ✅ CALCULAR TOTALES DEL CARRITO CON DESCUENTOS POR VOLUMEN
 	const cartTotals = useMemo(() => {
-		if (!cart || !cart.items || cart.items.length === 0) {
+		if (!cartItemsWithDiscounts.length) {
 			return {
 				subtotal: 0,
 				tax: 0,
@@ -162,35 +132,17 @@ const CartPage: React.FC = () => {
 			};
 		}
 
-		// Usar los totales que vienen de la API si están disponibles
-		if (cart.total_volume_savings !== undefined && cart.volume_discounts_applied !== undefined) {
-			const taxRate = 0.15; // 15% IVA
-			const subtotal = cart.subtotal || cart.total || 0;
-			const tax = subtotal * taxRate;
-			const couponAmount = couponApplied ? subtotal * (couponDiscount / 100) : 0;
-			const total = subtotal + tax - couponAmount;
-
-			return {
-				subtotal: subtotal,
-				tax: tax,
-				couponAmount: couponAmount,
-				total: total,
-				totalVolumeSavings: cart.total_volume_savings || 0,
-				volumeDiscountsApplied: cart.volume_discounts_applied || false,
-			};
-		}
-
-		// Fallback: calcular manualmente si no vienen de la API
+		// Calcular subtotal con descuentos por volumen aplicados
 		let subtotal = 0;
 		let totalVolumeSavings = 0;
 		let volumeDiscountsApplied = false;
 
-		cart.items.forEach((item) => {
-			const itemPrices = calculateItemPrices(item);
-			subtotal += itemPrices.subtotal;
+		cartItemsWithDiscounts.forEach(item => {
+			const itemTotal = item.discount.discountedPrice * item.quantity;
+			subtotal += itemTotal;
 			
-			if (itemPrices.volumeDiscount && itemPrices.volumeDiscount.totalSavings > 0) {
-				totalVolumeSavings += itemPrices.volumeDiscount.totalSavings;
+			if (item.discount.hasDiscount) {
+				totalVolumeSavings += item.discount.savingsTotal;
 				volumeDiscountsApplied = true;
 			}
 		});
@@ -208,18 +160,7 @@ const CartPage: React.FC = () => {
 			totalVolumeSavings,
 			volumeDiscountsApplied,
 		};
-	}, [cart?.items, cart?.total_volume_savings, cart?.volume_discounts_applied, cart?.subtotal, cart?.total, couponApplied, couponDiscount, calculateItemPrices]);
-
-	// Memoizar items con sus precios calculados
-	const cartItemsWithPrices = useMemo(() => {
-		if (!cart?.items) return [];
-
-		return cart.items.map((item) => ({
-			...item,
-			prices: calculateItemPrices(item),
-			imageUrl: getProductImage(item.product),
-		}));
-	}, [cart?.items, calculateItemPrices, getProductImage]);
+	}, [cartItemsWithDiscounts, couponApplied, couponDiscount]);
 
 	// Cargar carrito simple - Solo al montar componente
 	useEffect(() => {
@@ -470,12 +411,10 @@ const CartPage: React.FC = () => {
 		navigate("/checkout");
 	}, [isEmpty, navigate, showNotification]);
 
-	// ✅ ACTUALIZADO: Componente memoizado para item del carrito con descuentos por volumen
+	// ✅ COMPONENTE ACTUALIZADO PARA ITEM DEL CARRITO CON DESCUENTOS POR VOLUMEN
 	const CartItem = React.memo(
 		({
 			item,
-			prices,
-			imageUrl,
 			onIncrease,
 			onDecrease,
 			onRemove,
@@ -483,148 +422,142 @@ const CartPage: React.FC = () => {
 			isLoading,
 		}: {
 			item: any;
-			prices: any;
-			imageUrl: string;
 			onIncrease: () => void;
 			onDecrease: () => void;
 			onRemove: () => void;
 			onMoveToWishlist: () => void;
 			isLoading: boolean;
-		}) => (
-			<div className="border-b border-gray-200 last:border-b-0">
-				<div className="grid sm:grid-cols-12 gap-4 p-5">
-					{/* Producto (imagen y nombre) */}
-					<div className="sm:col-span-6 flex">
-						<Link
-							to={`/products/${item.productId}`}
-							className="w-24 h-24 flex-shrink-0"
-						>
-							<img
-								src={imageUrl}
-								alt={item.product?.name || `Producto ${item.productId}`}
-								className="w-full h-full object-cover rounded"
-							/>
-						</Link>
-						<div className="ml-4 flex flex-col">
+		}) => {
+			const discount = item.discount;
+			
+			return (
+				<div className="border-b border-gray-200 last:border-b-0">
+					<div className="grid sm:grid-cols-12 gap-4 p-5">
+						{/* Producto (imagen y nombre) */}
+						<div className="sm:col-span-6 flex">
 							<Link
 								to={`/products/${item.productId}`}
-								className="font-medium text-lg mb-2 text-gray-800 hover:text-primary-600"
+								className="w-24 h-24 flex-shrink-0"
 							>
-								{item.product?.name || `Producto ${item.productId}`}
+								<img
+									src={item.imageUrl}
+									alt={item.product?.name || `Producto ${item.productId}`}
+									className="w-full h-full object-cover rounded"
+								/>
 							</Link>
+							<div className="ml-4 flex flex-col">
+								<Link
+									to={`/products/${item.productId}`}
+									className="font-medium text-lg mb-2 text-gray-800 hover:text-primary-600"
+								>
+									{item.product?.name || `Producto ${item.productId}`}
+								</Link>
 
-							{/* ✅ NUEVO: Mostrar descuentos aplicados */}
-							<div className="flex flex-wrap gap-2 mb-2">
-								{/* Descuento regular */}
-								{prices.discount > 0 && (
-									<span className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded">
-										{prices.discount}% OFF
-									</span>
-								)}
-								
-								{/* ✅ NUEVO: Descuento por volumen */}
-								{prices.volumeDiscount && (
-									<span className="text-xs bg-green-100 text-green-600 px-2 py-1 rounded flex items-center">
-										<Gift size={12} className="mr-1" />
-										Volumen: {prices.volumeDiscount.percentage}% OFF
-									</span>
-								)}
-							</div>
-
-							{/* ✅ NUEVO: Mostrar etiqueta de descuento por volumen */}
-							{prices.volumeDiscount?.label && (
-								<div className="text-xs text-green-600 mb-2">
-									{prices.volumeDiscount.label}
+								{/* ✅ MOSTRAR DESCUENTOS POR VOLUMEN */}
+								<div className="flex flex-wrap gap-2 mb-2">
+									{discount.hasDiscount && (
+										<span className="text-xs bg-green-100 text-green-600 px-2 py-1 rounded flex items-center">
+											<Gift size={12} className="mr-1" />
+											Volumen: {discount.discountPercentage}% OFF
+										</span>
+									)}
 								</div>
-							)}
 
-							<div className="mt-auto flex space-x-3 text-sm pt-3">
+								{/* ✅ MOSTRAR AHORROS */}
+								{discount.hasDiscount && (
+									<div className="text-xs text-green-600 mb-2">
+										Ahorras: {formatCurrency(discount.savingsTotal)}
+									</div>
+								)}
+
+								<div className="mt-auto flex space-x-3 text-sm pt-3">
+									<button
+										onClick={onRemove}
+										disabled={isLoading}
+										className="text-gray-500 hover:text-red-500 flex items-center disabled:opacity-50"
+									>
+										<Trash2 size={14} className="mr-1" />
+										Eliminar
+									</button>
+									<button
+										onClick={onMoveToWishlist}
+										disabled={isLoading}
+										className="text-gray-500 hover:text-primary-600 flex items-center disabled:opacity-50"
+									>
+										<Heart size={14} className="mr-1" />
+										Guardar
+									</button>
+								</div>
+							</div>
+						</div>
+
+						{/* Precio */}
+						<div className="sm:col-span-2 flex items-center justify-center sm:justify-center">
+							<div className="sm:hidden mr-2 font-medium text-gray-800">
+								Precio:
+							</div>
+							<div className="font-medium flex flex-col items-center">
+								<span className="text-gray-800">
+									{formatCurrency(discount.discountedPrice)}
+								</span>
+								{discount.hasDiscount && (
+									<span className="text-xs text-gray-500 line-through">
+										{formatCurrency(discount.originalPrice)}
+									</span>
+								)}
+							</div>
+						</div>
+
+						{/* Cantidad */}
+						<div className="sm:col-span-2 flex items-center justify-center">
+							<div className="sm:hidden mr-2 font-medium text-gray-800">
+								Cantidad:
+							</div>
+							<div className="flex items-center border border-gray-300 rounded-md">
 								<button
-									onClick={onRemove}
-									disabled={isLoading}
-									className="text-gray-500 hover:text-red-500 flex items-center disabled:opacity-50"
+									onClick={onDecrease}
+									disabled={item.quantity <= 1 || isLoading}
+									className="px-2 py-1 text-gray-600 hover:text-gray-800 disabled:opacity-50"
 								>
-									<Trash2 size={14} className="mr-1" />
-									Eliminar
+									<Minus size={14} />
 								</button>
+								<span className="px-3 py-1 text-gray-800 text-center w-10">
+									{isLoading ? (
+										<span className="inline-block h-4 w-4 border-2 border-t-primary-600 border-r-primary-600 border-b-primary-200 border-l-primary-200 rounded-full animate-spin"></span>
+									) : (
+										item.quantity
+									)}
+								</span>
 								<button
-									onClick={onMoveToWishlist}
+									onClick={onIncrease}
 									disabled={isLoading}
-									className="text-gray-500 hover:text-primary-600 flex items-center disabled:opacity-50"
+									className="px-2 py-1 text-gray-600 hover:text-gray-800 disabled:opacity-50"
 								>
-									<Heart size={14} className="mr-1" />
-									Guardar
+									<Plus size={14} />
 								</button>
 							</div>
 						</div>
-					</div>
 
-					{/* Precio */}
-					<div className="sm:col-span-2 flex items-center justify-center sm:justify-center">
-						<div className="sm:hidden mr-2 font-medium text-gray-800">
-							Precio:
-						</div>
-						<div className="font-medium flex flex-col items-center">
-							{/* ✅ ACTUALIZADO: Mostrar precio con descuentos por volumen */}
-							<span className="text-gray-800">
-								{formatCurrency(prices.discounted)}
-							</span>
-							{(prices.discount > 0 || prices.volumeDiscount) && (
-								<span className="text-xs text-gray-500 line-through">
-									{formatCurrency(prices.original)}
+						{/* Total */}
+						<div className="sm:col-span-2 flex items-center justify-center sm:justify-center">
+							<div className="sm:hidden mr-2 font-medium text-gray-800">
+								Total:
+							</div>
+							<div className="flex flex-col items-center">
+								<span className="font-bold text-gray-800">
+									{formatCurrency(discount.discountedPrice * item.quantity)}
 								</span>
-							)}
-							{/* ✅ NUEVO: Mostrar ahorros por descuento por volumen */}
-							{prices.volumeDiscount?.totalSavings > 0 && (
-								<span className="text-xs text-green-600 font-medium">
-									Ahorras: {formatCurrency(prices.volumeDiscount.totalSavings)}
-								</span>
-							)}
-						</div>
-					</div>
-
-					{/* Cantidad */}
-					<div className="sm:col-span-2 flex items-center justify-center">
-						<div className="sm:hidden mr-2 font-medium text-gray-800">
-							Cantidad:
-						</div>
-						<div className="flex items-center border border-gray-300 rounded-md">
-							<button
-								onClick={onDecrease}
-								disabled={item.quantity <= 1 || isLoading}
-								className="px-2 py-1 text-gray-600 hover:text-gray-800 disabled:opacity-50"
-							>
-								<Minus size={14} />
-							</button>
-							<span className="px-3 py-1 text-gray-800 text-center w-10">
-								{isLoading ? (
-									<span className="inline-block h-4 w-4 border-2 border-t-primary-600 border-r-primary-600 border-b-primary-200 border-l-primary-200 rounded-full animate-spin"></span>
-								) : (
-									item.quantity
+								{discount.hasDiscount && (
+									<span className="text-xs text-green-600">
+										(-{formatCurrency(discount.savingsTotal)})
+									</span>
 								)}
-							</span>
-							<button
-								onClick={onIncrease}
-								disabled={isLoading}
-								className="px-2 py-1 text-gray-600 hover:text-gray-800 disabled:opacity-50"
-							>
-								<Plus size={14} />
-							</button>
+							</div>
 						</div>
-					</div>
-
-					{/* Total */}
-					<div className="sm:col-span-2 flex items-center justify-center sm:justify-center">
-						<div className="sm:hidden mr-2 font-medium text-gray-800">
-							Total:
-						</div>
-						<span className="font-bold text-gray-800">
-							{formatCurrency(prices.subtotal)}
-						</span>
 					</div>
 				</div>
-			</div>
-		)
+			);
+		}
 	);
 
 	return (
@@ -655,7 +588,7 @@ const CartPage: React.FC = () => {
 				<div className="flex flex-col lg:flex-row gap-8">
 					{/* Lista de productos */}
 					<div className="lg:w-2/3">
-						{/* ✅ NUEVO: Mostrar resumen de descuentos por volumen si existen */}
+						{/* ✅ BANNER DE DESCUENTOS POR VOLUMEN */}
 						{cartTotals.volumeDiscountsApplied && (
 							<div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-4 mb-6">
 								<div className="flex items-center">
@@ -692,13 +625,11 @@ const CartPage: React.FC = () => {
 								</div>
 							</div>
 
-							{/* Productos - USANDO ITEMS MEMOIZADOS */}
-							{cartItemsWithPrices.map((item) => (
+							{/* ✅ PRODUCTOS CON DESCUENTOS CALCULADOS */}
+							{cartItemsWithDiscounts.map((item) => (
 								<CartItem
 									key={item.id}
 									item={item}
-									prices={item.prices}
-									imageUrl={item.imageUrl}
 									onIncrease={() => increaseQuantity(item.id)}
 									onDecrease={() => decreaseQuantity(item.id)}
 									onRemove={() => handleRemoveFromCart(item.id)}
@@ -738,7 +669,7 @@ const CartPage: React.FC = () => {
 						</div>
 					</div>
 
-					{/* ✅ ACTUALIZADO: Resumen del pedido con descuentos por volumen */}
+					{/* ✅ RESUMEN CON DESCUENTOS POR VOLUMEN */}
 					<div className="lg:w-1/3">
 						<div className="bg-white rounded-lg shadow-lg overflow-hidden">
 							<div className="p-6">
@@ -772,7 +703,7 @@ const CartPage: React.FC = () => {
 									)}
 								</div>
 
-								{/* ✅ ACTUALIZADO: Cálculos con descuentos por volumen */}
+								{/* ✅ CÁLCULOS CON DESCUENTOS POR VOLUMEN */}
 								<div className="space-y-4 border-t border-gray-200 pt-4">
 									<div className="flex justify-between">
 										<span className="text-gray-600">
@@ -783,7 +714,7 @@ const CartPage: React.FC = () => {
 										</span>
 									</div>
 
-									{/* ✅ NUEVO: Mostrar ahorros por descuentos por volumen */}
+									{/* ✅ MOSTRAR AHORROS POR DESCUENTOS POR VOLUMEN */}
 									{cartTotals.volumeDiscountsApplied && cartTotals.totalVolumeSavings > 0 && (
 										<div className="flex justify-between text-green-600">
 											<span className="flex items-center">
@@ -817,7 +748,7 @@ const CartPage: React.FC = () => {
 										</span>
 									</div>
 
-									{/* ✅ NUEVO: Resumen de ahorros totales */}
+									{/* ✅ RESUMEN DE AHORROS TOTALES */}
 									{(cartTotals.totalVolumeSavings > 0 || couponApplied) && (
 										<div className="bg-green-50 border border-green-200 rounded-lg p-3">
 											<div className="flex items-center justify-between">

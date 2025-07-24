@@ -330,7 +330,7 @@ export class VolumeDiscountService {
 	async hasVolumeDiscounts(productId: number): Promise<boolean> {
 		try {
 			const info = await this.getProductVolumeDiscountInfo(productId);
-			return Boolean(info?.data.enabled && info.data.tiers.length > 0);
+			return Boolean(info?.data?.enabled && info.data.tiers?.length > 0);
 		} catch (error) {
 			return false;
 		}

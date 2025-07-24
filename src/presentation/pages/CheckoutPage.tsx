@@ -1,9 +1,10 @@
-// src/presentation/pages/CheckoutPage.tsx
+// src/presentation/pages/CheckoutPage.tsx - CON DESCUENTOS POR VOLUMEN
 import {useState, useEffect} from "react";
 import {useNavigate} from "react-router-dom";
 import {useCart} from "../hooks/useCart";
-import {useAuth} from "../hooks/useAuth"; // ✅ AGREGAR PARA OBTENER DATOS DEL USUARIO
+import {useAuth} from "../hooks/useAuth";
 import {CheckoutService} from "../../core/services/CheckoutService";
+import {useCartVolumeDiscounts} from "../contexts/VolumeDiscountContext"; // ✅ IMPORTAR CONTEXTO
 import type {
 	ShippingInfo,
 	PaymentInfo,
@@ -12,24 +13,30 @@ import type {
 import {NotificationType} from "../contexts/CartContext";
 import CreditCardForm from "../components/checkout/CreditCardForm";
 import QRPaymentForm from "../components/checkout/QRPaymentForm"; 
-import OrderSummary from "../components/checkout/OrderSummary";
 import ShippingForm from "../components/checkout/ShippingForm";
 import TestCheckoutButton from "../components/checkout/TestCheckoutButton";
 import { extractErrorMessage } from "../../utils/errorHandler";
 import DatafastPaymentButton from "../components/checkout/DatafastPaymentButtonProps";
+import {formatCurrency} from "../../utils/formatters/formatCurrency";
+import {Gift, TrendingDown} from "lucide-react";
 
 const CheckoutPage: React.FC = () => {
 	const navigate = useNavigate();
 	const {cart, clearCart, showNotification} = useCart();
-	const {user} = useAuth(); // ✅ OBTENER DATOS DEL USUARIO
+	const {user} = useAuth();
 	const [isLoading, setIsLoading] = useState(false);
 	
-	// ✅ SOLO TARJETA DE CRÉDITO Y DEUNA (antes QR)
+	// ✅ USAR CONTEXTO DE DESCUENTOS POR VOLUMEN
+	const {
+		calculateCartTotalDiscounts,
+		calculateCartItemDiscount,
+		isEnabled: volumeDiscountsEnabled
+	} = useCartVolumeDiscounts();
+	
 	const [paymentMethod, setPaymentMethod] = useState<
 		"credit_card" | "deuna"
 	>("credit_card");
 	
-	// ✅ INICIALIZAR CON DATOS DEL USUARIO
 	const [shippingInfo, setShippingInfo] = useState<ShippingInfo>({
 		address: "",
 		city: "",
@@ -52,7 +59,46 @@ const CheckoutPage: React.FC = () => {
 
 	const checkoutService = new CheckoutService();
 
-	// ✅ CARGAR DATOS DEL USUARIO AL MONTAR EL COMPONENTE
+	// ✅ CALCULAR TOTALES CON DESCUENTOS POR VOLUMEN
+	const orderSummary = useState(() => {
+		if (!cart?.items?.length) {
+			return {
+				items: [],
+				subtotal: 0,
+				volumeDiscounts: 0,
+				tax: 0,
+				total: 0,
+				hasVolumeDiscounts: false
+			};
+		}
+
+		// Calcular descuentos para cada item
+		const itemsWithDiscounts = cart.items.map(item => {
+			const discount = calculateCartItemDiscount(item);
+			return {
+				...item,
+				discount,
+				itemTotal: discount.discountedPrice * item.quantity
+			};
+		});
+
+		// Calcular totales
+		const subtotal = itemsWithDiscounts.reduce((sum, item) => sum + item.itemTotal, 0);
+		const volumeDiscounts = itemsWithDiscounts.reduce((sum, item) => sum + item.discount.savingsTotal, 0);
+		const tax = subtotal * 0.15; // 15% IVA
+		const total = subtotal + tax;
+
+		return {
+			items: itemsWithDiscounts,
+			subtotal,
+			volumeDiscounts,
+			tax,
+			total,
+			hasVolumeDiscounts: volumeDiscounts > 0
+		};
+	})[0];
+
+	// Cargar datos del usuario al montar el componente
 	useEffect(() => {
 		if (user) {
 			setShippingInfo({
@@ -82,7 +128,6 @@ const CheckoutPage: React.FC = () => {
 		}
 	}, [cart, navigate, showNotification]);
 
-	// ✅ ACTUALIZAR TIPOS DE MÉTODO DE PAGO
 	const handlePaymentMethodChange = (method: "credit_card" | "deuna") => {
 		setPaymentMethod(method);
 		setPaymentInfo({
@@ -132,7 +177,7 @@ const CheckoutPage: React.FC = () => {
 			}
 		});
 
-		// ✅ VALIDAR SOLO TARJETA DE CRÉDITO (DeUna no necesita validación de campos)
+		// Validar solo tarjeta de crédito
 		if (paymentMethod === "credit_card") {
 			if (!paymentInfo.card_number) {
 				errors.card_number = "El número de tarjeta es obligatorio";
@@ -158,141 +203,214 @@ const CheckoutPage: React.FC = () => {
 	};
 
 	// Procesar el checkout
-	// Procesar el checkout - VERSIÓN CON DEBUG COMPLETO
-const processCheckout = async () => {
-	console.log("🛒 CheckoutPage.processCheckout INICIADO");
+	const processCheckout = async () => {
+		console.log("🛒 CheckoutPage.processCheckout INICIADO");
 
-	if (!validateForm()) {
-		console.log("❌ Validación de formulario falló");
-		showNotification(
-			NotificationType.ERROR,
-			"Por favor, completa todos los campos obligatorios"
-		);
-		return;
-	}
-
-	console.log("🛒 ANÁLISIS COMPLETO DEL CARRITO ANTES DEL CHECKOUT (CHECKOUT PAGE):");
-	console.log("📊 Cart desde CheckoutPage:", JSON.stringify(cart, null, 2));
-	console.log("📊 Total de items en carrito:", cart?.items?.length || 0);
-	console.log("📊 Total del carrito:", cart?.total);
-
-	// ✅ NUEVO: Análisis detallado de cada item
-	if (cart && cart.items) {
-		console.log("🔍 ANÁLISIS ITEM POR ITEM (CHECKOUT PAGE):");
-		cart.items.forEach((item, index) => {
-			console.log(`📋 Item ${index + 1}:`, {
-				id: item.id,
-				productId: item.productId,
-				quantity: item.quantity,
-				price: item.price,
-				product: item.product ? {
-					id: item.product.id,
-					name: item.product.name,
-					price: item.product.price,
-					sellerId: item.product.sellerId,
-					seller_id: item.product.seller_id,
-					user_id: item.product.user_id
-				} : null,
-				completeItem: item
-			});
-		});
-
-		// ✅ NUEVO: Detectar duplicados en el carrito
-		console.log("🔍 VERIFICANDO DUPLICADOS EN EL CARRITO (CHECKOUT PAGE):");
-		const itemsByProductId = cart.items.reduce((acc: any, item, index) => {
-			if (!acc[item.productId]) {
-				acc[item.productId] = [];
-			}
-			acc[item.productId].push({index, item});
-			return acc;
-		}, {});
-
-		console.log("📊 Items agrupados por productId:", itemsByProductId);
-
-		Object.keys(itemsByProductId).forEach(productId => {
-			const items = itemsByProductId[productId];
-			if (items.length > 1) {
-				console.warn(`⚠️ DUPLICADO EN CARRITO DETECTADO para productId ${productId}:`);
-				console.warn(`❌ Se encontraron ${items.length} items para el mismo producto`);
-				items.forEach((itemData: any, i: number) => {
-					console.warn(`   ${i + 1}. Item[${itemData.index}]:`, itemData.item);
-				});
-			} else {
-				console.log(`✅ Producto ${productId}: Sin duplicados (${items[0].item.quantity} unidades)`);
-			}
-		});
-	}
-
-	setIsLoading(true);
-
-	try {
-		const checkoutData = {
-			payment: {
-				...paymentInfo,
-				method: paymentMethod === "deuna" ? ("transfer" as PaymentMethod) : paymentMethod,
-			},
-			shipping: shippingInfo,
-			// ✅ NO ENVIAR seller_id - el backend lo obtiene de los productos
-		};
-
-		console.log("📦 Datos completos de checkout (CHECKOUT PAGE):", JSON.stringify(checkoutData, null, 2));
-		console.log("🚀 Enviando checkout al backend (CHECKOUT PAGE)...");
-
-		const response = await checkoutService.processCheckout(checkoutData);
-
-		console.log("✅ Respuesta del checkout recibida (CHECKOUT PAGE):", response);
-
-		if (response.status === "success") {
-			console.log("🎉 Checkout exitoso (CHECKOUT PAGE), limpiando carrito...");
-			setOrderComplete(true);
-			setOrderDetails(response.data);
+		if (!validateForm()) {
+			console.log("❌ Validación de formulario falló");
 			showNotification(
-				NotificationType.SUCCESS,
-				"¡Pedido completado con éxito!"
+				NotificationType.ERROR,
+				"Por favor, completa todos los campos obligatorios"
 			);
-			clearCart();
-
-			// ✅ NUEVO: Análisis específico de la respuesta
-			if (response.data && typeof response.data === 'object') {
-				const orderData = response.data as any;
-				console.log("🔍 ANÁLISIS DE LA ORDEN CREADA (CHECKOUT PAGE):");
-				console.log("📊 Order ID:", orderData.order_id);
-				console.log("📊 Order Number:", orderData.order_number);
-				console.log("📊 Total:", orderData.total);
-				
-				if (orderData.items) {
-					console.log("📊 Items en la orden creada:", orderData.items.length);
-					orderData.items.forEach((item: any, index: number) => {
-						console.log(`📋 Order Item ${index + 1}:`, {
-							id: item.id,
-							product_id: item.product_id,
-							product_name: item.product_name,
-							quantity: item.quantity,
-							price: item.price
-						});
-					});
-				}
-			}
-		} else {
-			throw new Error(response.message || "Error al procesar el pedido");
+			return;
 		}
-	} catch (error) {
-		console.error("❌ Error COMPLETO al procesar checkout (CHECKOUT PAGE):");
-		console.error("📊 Error object:", error);
-		console.error("📊 Error stack:", (error as any)?.stack);
 
-		const errorMessage = extractErrorMessage(
-			error,
-			"Error al procesar el pago. Por favor, intenta de nuevo más tarde."
-		);
+		console.log("🛒 ANÁLISIS COMPLETO DEL CARRITO CON DESCUENTOS POR VOLUMEN:");
+		console.log("📊 Cart desde CheckoutPage:", JSON.stringify(cart, null, 2));
+		console.log("📊 Order Summary:", orderSummary);
+		console.log("📊 Volume Discounts Applied:", orderSummary.hasVolumeDiscounts);
+		console.log("📊 Total Volume Savings:", formatCurrency(orderSummary.volumeDiscounts));
 
-		console.error("📊 Error message final:", errorMessage);
-		showNotification(NotificationType.ERROR, errorMessage);
-	} finally {
-		setIsLoading(false);
-		console.log("🛒 CheckoutPage.processCheckout FINALIZADO");
-	}
-};
+		setIsLoading(true);
+
+		try {
+			const checkoutData = {
+				payment: {
+					...paymentInfo,
+					method: paymentMethod === "deuna" ? ("transfer" as PaymentMethod) : paymentMethod,
+				},
+				shipping: shippingInfo,
+				// ✅ INCLUIR INFORMACIÓN DE DESCUENTOS POR VOLUMEN
+				volume_discounts: {
+					applied: orderSummary.hasVolumeDiscounts,
+					total_savings: orderSummary.volumeDiscounts,
+					items: orderSummary.items.map(item => ({
+						product_id: item.productId,
+						quantity: item.quantity,
+						original_price: item.discount.originalPrice,
+						discounted_price: item.discount.discountedPrice,
+						discount_percentage: item.discount.discountPercentage,
+						savings: item.discount.savingsTotal
+					}))
+				}
+			};
+
+			console.log("📦 Datos completos de checkout con descuentos:", JSON.stringify(checkoutData, null, 2));
+			console.log("🚀 Enviando checkout al backend...");
+
+			const response = await checkoutService.processCheckout(checkoutData);
+
+			console.log("✅ Respuesta del checkout recibida:", response);
+
+			if (response.status === "success") {
+				console.log("🎉 Checkout exitoso, limpiando carrito...");
+				setOrderComplete(true);
+				setOrderDetails(response.data);
+				
+				let successMessage = "¡Pedido completado con éxito!";
+				if (orderSummary.hasVolumeDiscounts) {
+					successMessage += ` Has ahorrado ${formatCurrency(orderSummary.volumeDiscounts)} con descuentos por volumen.`;
+				}
+				
+				showNotification(
+					NotificationType.SUCCESS,
+					successMessage
+				);
+				clearCart();
+
+				if (response.data && typeof response.data === 'object') {
+					const orderData = response.data as any;
+					console.log("🔍 ANÁLISIS DE LA ORDEN CREADA:");
+					console.log("📊 Order ID:", orderData.order_id);
+					console.log("📊 Order Number:", orderData.order_number);
+					console.log("📊 Total:", orderData.total);
+					console.log("📊 Volume Discounts Applied:", orderData.volume_discounts_applied);
+					console.log("📊 Total Volume Savings:", orderData.total_volume_savings);
+				}
+			} else {
+				throw new Error(response.message || "Error al procesar el pedido");
+			}
+		} catch (error) {
+			console.error("❌ Error COMPLETO al procesar checkout:");
+			console.error("📊 Error object:", error);
+
+			const errorMessage = extractErrorMessage(
+				error,
+				"Error al procesar el pago. Por favor, intenta de nuevo más tarde."
+			);
+
+			console.error("📊 Error message final:", errorMessage);
+			showNotification(NotificationType.ERROR, errorMessage);
+		} finally {
+			setIsLoading(false);
+			console.log("🛒 CheckoutPage.processCheckout FINALIZADO");
+		}
+	};
+
+	// ✅ COMPONENTE PARA RESUMEN DE PEDIDO CON DESCUENTOS
+	const OrderSummaryComponent = () => (
+		<div>
+			<h2 className="text-xl font-bold text-gray-800 mb-4">
+				Resumen del pedido
+			</h2>
+
+			{/* ✅ BANNER DE DESCUENTOS POR VOLUMEN */}
+			{orderSummary.hasVolumeDiscounts && (
+				<div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-4 mb-4">
+					<div className="flex items-center">
+						<TrendingDown size={18} className="text-green-600 mr-2" />
+						<div className="flex-1">
+							<h4 className="font-medium text-green-800 text-sm">
+								¡Descuentos por Volumen Aplicados!
+							</h4>
+							<p className="text-xs text-green-600">
+								Total ahorrado: {formatCurrency(orderSummary.volumeDiscounts)}
+							</p>
+						</div>
+					</div>
+				</div>
+			)}
+
+			{/* Lista de productos */}
+			<div className="space-y-3 mb-6">
+				{orderSummary.items.map((item, index) => (
+					<div key={index} className="flex items-center justify-between py-2 border-b border-gray-100">
+						<div className="flex-1">
+							<h4 className="text-sm font-medium text-gray-900">
+								{item.product?.name || `Producto ${item.productId}`}
+							</h4>
+							<div className="flex items-center space-x-2 mt-1">
+								<span className="text-xs text-gray-500">
+									Cantidad: {item.quantity}
+								</span>
+								{/* ✅ MOSTRAR DESCUENTO POR VOLUMEN */}
+								{item.discount.hasDiscount && (
+									<span className="text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded flex items-center">
+										<Gift size={10} className="mr-1" />
+										{item.discount.discountPercentage}% OFF
+									</span>
+								)}
+							</div>
+							{/* ✅ MOSTRAR AHORROS */}
+							{item.discount.hasDiscount && (
+								<div className="text-xs text-green-600 mt-1">
+									Precio unitario: {formatCurrency(item.discount.discountedPrice)} 
+									<span className="line-through text-gray-400 ml-1">
+										{formatCurrency(item.discount.originalPrice)}
+									</span>
+								</div>
+							)}
+						</div>
+						<div className="text-right">
+							<span className="text-sm font-medium text-gray-900">
+								{formatCurrency(item.itemTotal)}
+							</span>
+							{item.discount.hasDiscount && (
+								<div className="text-xs text-green-600">
+									(-{formatCurrency(item.discount.savingsTotal)})
+								</div>
+							)}
+						</div>
+					</div>
+				))}
+			</div>
+
+			{/* ✅ TOTALES CON DESCUENTOS POR VOLUMEN */}
+			<div className="space-y-3 border-t border-gray-200 pt-4">
+				<div className="flex justify-between text-sm">
+					<span className="text-gray-600">Subtotal:</span>
+					<span className="font-medium">{formatCurrency(orderSummary.subtotal)}</span>
+				</div>
+
+				{/* ✅ MOSTRAR AHORROS POR DESCUENTOS POR VOLUMEN */}
+				{orderSummary.hasVolumeDiscounts && (
+					<div className="flex justify-between text-sm text-green-600">
+						<span className="flex items-center">
+							<Gift size={14} className="mr-1" />
+							Descuentos por volumen:
+						</span>
+						<span className="font-medium">
+							-{formatCurrency(orderSummary.volumeDiscounts)}
+						</span>
+					</div>
+				)}
+
+				<div className="flex justify-between text-sm">
+					<span className="text-gray-600">IVA (15%):</span>
+					<span className="font-medium">{formatCurrency(orderSummary.tax)}</span>
+				</div>
+
+				<div className="flex justify-between text-lg font-bold border-t border-gray-200 pt-3">
+					<span>Total:</span>
+					<span>{formatCurrency(orderSummary.total)}</span>
+				</div>
+
+				{/* ✅ RESUMEN DE AHORROS */}
+				{orderSummary.hasVolumeDiscounts && (
+					<div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-3">
+						<div className="flex items-center justify-between">
+							<span className="text-sm font-medium text-green-800">
+								Total ahorrado con descuentos por volumen:
+							</span>
+							<span className="text-lg font-bold text-green-600">
+								{formatCurrency(orderSummary.volumeDiscounts)}
+							</span>
+						</div>
+					</div>
+				)}
+			</div>
+		</div>
+	);
 
 	// Si el pedido está completo, mostrar pantalla de éxito
 	if (orderComplete && orderDetails) {
@@ -323,6 +441,18 @@ const processCheckout = async () => {
 							Tu pedido ha sido procesado correctamente. Hemos enviado un correo
 							electrónico con los detalles.
 						</p>
+						
+						{/* ✅ MOSTRAR AHORROS EN PANTALLA DE ÉXITO */}
+						{orderSummary.hasVolumeDiscounts && (
+							<div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+								<div className="flex items-center justify-center">
+									<Gift className="h-5 w-5 text-green-600 mr-2" />
+									<span className="text-green-800 font-medium">
+										¡Has ahorrado {formatCurrency(orderSummary.volumeDiscounts)} con descuentos por volumen!
+									</span>
+								</div>
+							</div>
+						)}
 					</div>
 
 					<div className="border-t border-gray-200 pt-4 pb-2 mb-4">
@@ -333,8 +463,16 @@ const processCheckout = async () => {
 						</div>
 						<div className="flex justify-between py-2">
 							<span className="text-gray-600">Total:</span>
-							<span className="font-medium">{orderDetails.total}</span>
+							<span className="font-medium">{formatCurrency(orderSummary.total)}</span>
 						</div>
+						{orderSummary.hasVolumeDiscounts && (
+							<div className="flex justify-between py-2">
+								<span className="text-gray-600">Ahorros por volumen:</span>
+								<span className="font-medium text-green-600">
+									{formatCurrency(orderSummary.volumeDiscounts)}
+								</span>
+							</div>
+						)}
 						<div className="flex justify-between py-2">
 							<span className="text-gray-600">Estado del pago:</span>
 							<span
@@ -391,7 +529,6 @@ const processCheckout = async () => {
 					<div className="bg-white rounded-lg shadow-lg p-6 mb-6">
 						<h2 className="text-xl font-bold mb-4">Método de pago</h2>
 
-						{/* ✅ SOLO OPCIONES DE TARJETA DE CRÉDITO Y DEUNA */}
 						<div className="flex flex-wrap gap-4 mb-6">
 							<button
 								type="button"
@@ -437,10 +574,10 @@ const processCheckout = async () => {
 					</div>
 				</div>
 
-				{/* Resumen del pedido */}
+				{/* ✅ RESUMEN DEL PEDIDO CON DESCUENTOS */}
 				<div className="lg:w-1/3">
 					<div className="bg-white rounded-lg shadow-lg p-6 sticky top-24">
-						<OrderSummary cart={cart} />
+						<OrderSummaryComponent />
 
 						<button
 							onClick={processCheckout}
@@ -472,7 +609,7 @@ const processCheckout = async () => {
 									Procesando...
 								</>
 							) : (
-								"Finalizar compra"
+								`Finalizar compra - ${formatCurrency(orderSummary.total)}`
 							)}
 						</button>
 
@@ -487,6 +624,17 @@ const processCheckout = async () => {
 							</a>
 							.
 						</p>
+
+						{/* ✅ INFORMACIÓN ADICIONAL SOBRE DESCUENTOS */}
+						{orderSummary.hasVolumeDiscounts && (
+							<div className="mt-4 text-xs text-center">
+								<div className="bg-green-50 border border-green-200 rounded p-2">
+									<span className="text-green-700 font-medium">
+										✅ Descuentos por volumen aplicados automáticamente
+									</span>
+								</div>
+							</div>
+						)}
 					</div>
 				</div>
 			</div>

@@ -1,7 +1,5 @@
 // src/core/domain/entities/ShoppingCart.ts - ACTUALIZADO CON VOLUME DISCOUNTS
 
-import type { Product } from './Product';
-
 /**
  * ✅ ACTUALIZADA: Interfaz para item del carrito con descuentos por volumen
  */

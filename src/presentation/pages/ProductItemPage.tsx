@@ -1,4 +1,4 @@
-// src/presentation/pages/ProductItemPage.tsx - CORRECCIONES
+// src/presentation/pages/ProductItemPage.tsx - CON DESCUENTOS POR VOLUMEN FUNCIONALES
 import React, {useState, useEffect} from "react";
 import {useParams, Link, useNavigate} from "react-router-dom";
 import {
@@ -13,6 +13,8 @@ import {
 	Plus,
 	Loader,
 	MessageSquare,
+	Gift,
+	TrendingDown
 } from "lucide-react";
 import {ProductService} from "../../core/services/ProductService";
 import type {
@@ -27,7 +29,7 @@ import {useInvalidateCounters} from "../hooks/useHeaderCounters";
 import {NotificationType} from "../contexts/CartContext";
 import CacheService from "../../infrastructure/services/CacheService";
 import ApiClient from "../../infrastructure/api/apiClient";
-import { useProductVolumeDiscounts } from "../hooks/useVolumeDiscount"; // ✅ IMPORTAR HOOK
+import { useProductVolumeDiscount } from "../hooks/useVolumeDiscount";
 
 interface SellerApiResponse {
 	status?: string;
@@ -47,7 +49,6 @@ const ProductItemPage: React.FC = () => {
 	const [product, setProduct] = useState<ProductDetail | null>(null);
 	const [loading, setLoading] = useState<boolean>(true);
 	const [error, setError] = useState<string | null>(null);
-	const [quantity, setQuantity] = useState(1);
 	const [activeImage, setActiveImage] = useState(0);
 	const [activeTab, setActiveTab] = useState<
 		"description" | "specifications" | "reviews"
@@ -64,13 +65,17 @@ const ProductItemPage: React.FC = () => {
 		optimisticFavoriteRemove
 	} = useInvalidateCounters();
 
-	// ✅ HOOK PARA DESCUENTOS POR VOLUMEN - CORREGIDO
+	// ✅ USAR HOOK CORREGIDO PARA DESCUENTOS POR VOLUMEN
 	const {
-		volumeDiscountsEnabled,
-		productDiscountInfo,
-		savingsMessage
-		// Removido promotionalMessage ya que no se usa
-	} = useProductVolumeDiscounts(product, quantity);
+		quantity,
+		setQuantity,
+		discountResult,
+		discountInfo,
+		loading: discountLoading,
+		hasDiscount,
+		finalPrice,
+		totalSavings
+	} = useProductVolumeDiscount(product, 1);
 
 	// Initialize service
 	const productService = new ProductService();
@@ -140,9 +145,9 @@ const ProductItemPage: React.FC = () => {
 		fetchProductData();
 	}, [id]);
 
-	// Funciones de utilidad
+	// ✅ FUNCIÓN PARA CAMBIAR CANTIDAD - ACTUALIZADA
 	const handleQuantityChange = (newQuantity: number) => {
-		if (newQuantity >= 1 && newQuantity <= 10) {
+		if (newQuantity >= 1 && newQuantity <= 50) {
 			setQuantity(newQuantity);
 		}
 	};
@@ -167,7 +172,7 @@ const ProductItemPage: React.FC = () => {
 			return;
 		}
 
-		console.log(`Añadido al carrito: ${quantity} unidades de ${product.name}`);
+		console.log(`Añadido al carrito: ${quantity} unidades de ${product.name} con precio final: $${finalPrice}`);
 
 		try {
 			setIsUpdating(true);
@@ -184,9 +189,14 @@ const ProductItemPage: React.FC = () => {
 				// ✅ INVALIDAR CACHE DE PÁGINAS RELACIONADAS
 				invalidateRelatedPages();
 
+				let message = `${product.name} ha sido agregado al carrito`;
+				if (hasDiscount && totalSavings > 0) {
+					message += ` con ${discountResult?.discountPercentage}% de descuento (ahorro: $${totalSavings.toFixed(2)})`;
+				}
+
 				showNotification(
 					NotificationType.SUCCESS,
-					`${product.name} ha sido agregado al carrito`
+					message
 				);
 			} else {
 				throw new Error("No se pudo agregar el producto al carrito");
@@ -494,12 +504,6 @@ const ProductItemPage: React.FC = () => {
 		},
 	];
 
-	// ✅ CALCULAR PRECIO FINAL CON DESCUENTOS POR VOLUMEN
-	const finalPrice = productDiscountInfo?.discountedPrice || product.final_price || product.price;
-	const originalPrice = product.price;
-	const hasVolumeDiscount = productDiscountInfo?.hasDiscount || false; // ✅ CORREGIDO
-	const volumeSavings = productDiscountInfo?.totalSavings || 0;
-
 	return (
 		<div className="container mx-auto px-4 py-10">
 			<div className="max-w-7xl mx-auto">
@@ -570,15 +574,6 @@ const ProductItemPage: React.FC = () => {
 								</div>
 							) : null}
 
-							{/* Discount Badge */}
-							{(product.discount_percentage && 
-							  typeof product.discount_percentage === 'number' && 
-							  product.discount_percentage > 0) ? (
-								<span className="bg-red-100 text-red-700 px-2 py-0.5 rounded text-sm font-medium">
-									{product.discount_percentage}% DESCUENTO
-								</span>
-							) : null}
-
 							{/* Title */}
 							<h1 className="text-3xl font-bold text-gray-900">
 								{product.name}
@@ -601,47 +596,76 @@ const ProductItemPage: React.FC = () => {
 								</div>
 							) : null}
 
-							{/* ✅ PRECIO CON DESCUENTOS POR VOLUMEN */}
-							<div className="price-container">
-								<span className="text-3xl font-bold text-primary-700">
-									${finalPrice.toFixed(2)}
-								</span>
-								{(hasVolumeDiscount && finalPrice < originalPrice) ? (
-									<span className="ml-3 text-lg text-gray-500 line-through">
-										${originalPrice.toFixed(2)}
+							{/* ✅ SECCIÓN DE PRECIOS CON DESCUENTOS POR VOLUMEN ACTUALIZADOS */}
+							<div className="space-y-3">
+								{/* Precio principal */}
+								<div className="price-container">
+									<span className="text-3xl font-bold text-primary-700">
+										${finalPrice.toFixed(2)}
 									</span>
-								) : null}
+									{hasDiscount && (
+										<span className="ml-3 text-lg text-gray-500 line-through">
+											${(product.final_price || product.price).toFixed(2)}
+										</span>
+									)}
+									{hasDiscount && (
+										<span className="ml-2 px-2 py-1 bg-green-100 text-green-800 text-sm font-medium rounded">
+											{discountResult?.discountPercentage}% OFF
+										</span>
+									)}
+								</div>
+
+								{/* ✅ MOSTRAR AHORROS ACTUALES */}
+								{hasDiscount && totalSavings > 0 && (
+									<div className="flex items-center text-green-600">
+										<Gift size={16} className="mr-1" />
+										<span className="font-medium">
+											¡Ahorras ${totalSavings.toFixed(2)} con descuento por volumen!
+										</span>
+									</div>
+								)}
 							</div>
 
-							{/* ✅ MENSAJES DE AHORRO CON DESCUENTOS POR VOLUMEN */}
-							{hasVolumeDiscount && volumeSavings > 0 ? (
-								<p className="text-sm text-green-600 font-medium">
-									¡Ahorra ${volumeSavings.toFixed(2)} con descuento por volumen!
-								</p>
-							) : null}
-
-							{/* ✅ MOSTRAR MENSAJE DE AHORRO POTENCIAL */}
-							{volumeDiscountsEnabled && savingsMessage ? (
-								<p className="text-sm text-blue-600 font-medium">
-									{savingsMessage}
-								</p>
-							) : null}
-
-							{/* ✅ MOSTRAR NIVELES DE DESCUENTO DISPONIBLES */}
-							{volumeDiscountsEnabled && productDiscountInfo?.allTiers && productDiscountInfo.allTiers.length > 0 ? (
-								<div className="bg-blue-50 rounded-lg p-4">
-									<h4 className="text-sm font-medium text-blue-900 mb-2">
-										Descuentos por volumen disponibles:
-									</h4>
-									<div className="space-y-1">
-										{productDiscountInfo.allTiers.map((tier, index) => (
-											<div key={index} className="text-sm text-blue-800">
-												{tier.quantity}+ unidades = {tier.discount}% descuento
+							{/* ✅ MOSTRAR INFORMACIÓN DE DESCUENTOS DISPONIBLES */}
+							{discountInfo.enabled && discountInfo.tiers.length > 0 && (
+								<div className="bg-gradient-to-r from-blue-50 to-green-50 border border-blue-200 rounded-lg p-4">
+									<div className="flex items-start">
+										<TrendingDown size={20} className="text-blue-600 mr-2 mt-0.5" />
+										<div className="flex-1">
+											<h4 className="text-sm font-medium text-blue-900 mb-2">
+												¡Descuentos por volumen disponibles!
+											</h4>
+											<div className="space-y-1">
+												{discountInfo.tiers.map((tier, index) => (
+													<div key={index} className="flex items-center justify-between text-sm">
+														<span className={`${
+															quantity >= tier.quantity 
+																? "text-green-700 font-medium" 
+																: "text-blue-800"
+														}`}>
+															{tier.quantity}+ unidades = {tier.discount}% descuento
+														</span>
+														{quantity >= tier.quantity && (
+															<span className="text-green-600 text-xs font-medium">
+																✓ Aplicado
+															</span>
+														)}
+													</div>
+												))}
 											</div>
-										))}
+											
+											{/* ✅ MOSTRAR PRÓXIMO DESCUENTO DISPONIBLE */}
+											{discountResult?.nextTier && (
+												<div className="mt-2 pt-2 border-t border-blue-200">
+													<span className="text-xs text-blue-600">
+														¡Añade {discountResult.itemsNeededForNext} más y obtén {discountResult.nextTier.discount}% de descuento!
+													</span>
+												</div>
+											)}
+										</div>
 									</div>
 								</div>
-							) : null}
+							)}
 
 							{/* Color Selection */}
 							{colors.length > 0 ? (
@@ -679,60 +703,82 @@ const ProductItemPage: React.FC = () => {
 								</div>
 							) : null}
 
-							{/* Quantity and Add to Cart */}
-							<div className="flex flex-col sm:flex-row gap-4">
-								<div className="flex border border-gray-300 rounded-lg overflow-hidden h-12">
+							{/* ✅ CANTIDAD Y PRECIO TOTAL ACTUALIZADO EN TIEMPO REAL */}
+							<div className="space-y-4">
+								<div>
+									<h3 className="font-medium text-gray-900 mb-3">Cantidad:</h3>
+									<div className="flex items-center space-x-4">
+										<div className="flex border border-gray-300 rounded-lg overflow-hidden h-12">
+											<button
+												className="px-4 bg-gray-50 text-gray-600 hover:bg-gray-100 flex items-center justify-center disabled:opacity-50"
+												onClick={() => handleQuantityChange(quantity - 1)}
+												disabled={quantity <= 1}
+											>
+												<Minus size={18} />
+											</button>
+											<input
+												type="number"
+												className="w-20 text-center border-x border-gray-300 text-gray-700 font-medium focus:outline-none"
+												min="1"
+												max="50"
+												value={quantity}
+												onChange={(e) =>
+													handleQuantityChange(parseInt(e.target.value) || 1)
+												}
+											/>
+											<button
+												className="px-4 bg-gray-50 text-gray-600 hover:bg-gray-100 flex items-center justify-center disabled:opacity-50"
+												onClick={() => handleQuantityChange(quantity + 1)}
+												disabled={quantity >= 50}
+											>
+												<Plus size={18} />
+											</button>
+										</div>
+										
+										{/* ✅ MOSTRAR PRECIO TOTAL EN TIEMPO REAL */}
+										<div className="text-lg">
+											<span className="text-gray-600">Total: </span>
+											<span className="font-bold text-primary-700">
+												${(finalPrice * quantity).toFixed(2)}
+											</span>
+											{hasDiscount && (
+												<div className="text-sm text-green-600">
+													(Ahorras ${totalSavings.toFixed(2)})
+												</div>
+											)}
+										</div>
+									</div>
+								</div>
+
+								{/* ✅ BOTONES DE ACCIÓN */}
+								<div className="flex flex-col sm:flex-row gap-4">
 									<button
-										className="px-4 bg-gray-50 text-gray-600 hover:bg-gray-100 flex items-center justify-center"
-										onClick={() => handleQuantityChange(quantity - 1)}
-										disabled={quantity <= 1}
+										className="flex-grow h-12 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors duration-200 flex items-center justify-center disabled:opacity-50"
+										onClick={handleAddToCart}
+										disabled={!product.is_in_stock || isUpdating}
 									>
-										<Minus size={18} />
+										<ShoppingCart size={20} className="mr-2" />
+										{isUpdating ? "Agregando..." : product.is_in_stock
+											? `Añadir al Carrito - $${(finalPrice * quantity).toFixed(2)}`
+											: "Producto Agotado"}
 									</button>
-									<input
-										type="number"
-										className="w-16 text-center border-x border-gray-300 text-gray-700 font-medium"
-										min="1"
-										max="10"
-										value={quantity}
-										onChange={(e) =>
-											handleQuantityChange(parseInt(e.target.value) || 1)
-										}
-									/>
 									<button
-										className="px-4 bg-gray-50 text-gray-600 hover:bg-gray-100 flex items-center justify-center"
-										onClick={() => handleQuantityChange(quantity + 1)}
-										disabled={quantity >= 10}
+										className="h-12 w-12 border border-gray-300 rounded-lg flex items-center justify-center text-gray-600 hover:text-primary-600 hover:border-primary-600 transition-colors duration-200 disabled:opacity-50"
+										onClick={handleAddToWishlist}
+										disabled={isUpdating}
+										title="Añadir a favoritos"
 									>
-										<Plus size={18} />
+										<Heart size={20} />
+									</button>
+									<button
+										className="h-12 px-4 border border-gray-300 rounded-lg flex items-center justify-center text-gray-600 hover:text-primary-600 hover:border-primary-600 transition-colors duration-200"
+										onClick={handleChatWithSeller}
+										title="Chatear con el vendedor"
+									>
+										<MessageSquare size={20} className="mr-2" />
+										Contactar
 									</button>
 								</div>
-								<button
-									className="flex-grow h-12 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors duration-200 flex items-center justify-center disabled:opacity-50"
-									onClick={handleAddToCart}
-									disabled={!product.is_in_stock || isUpdating}
-								>
-									<ShoppingCart size={20} className="mr-2" />
-									{isUpdating ? "Agregando..." : product.is_in_stock
-										? "Añadir al Carrito"
-										: "Producto Agotado"}
-								</button>
-								<button
-									className="h-12 w-12 border border-gray-300 rounded-lg flex items-center justify-center text-gray-600 hover:text-primary-600 hover:border-primary-600 transition-colors duration-200 disabled:opacity-50"
-									onClick={handleAddToWishlist}
-									disabled={isUpdating}
-									title="Añadir a favoritos"
-								>
-									<Heart size={20} />
-								</button>
-								<button
-									className="h-12 px-4 border border-gray-300 rounded-lg flex items-center justify-center text-gray-600 hover:text-primary-600 hover:border-primary-600 transition-colors duration-200"
-									onClick={handleChatWithSeller}
-									title="Chatear con el vendedor"
-								>
-									<MessageSquare size={20} className="mr-2" />
-									Contactar
-								</button>
 							</div>
 
 							{/* Delivery and Benefits */}

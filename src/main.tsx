@@ -9,6 +9,7 @@ import {NotificationProvider} from "./presentation/contexts/NotificationContext"
 import {ThemeProvider} from "./presentation/contexts/ThemeContext";
 import NotificationWrapper from "./presentation/components/layout/NotificationWrapper";
 import PrefetchService from "./infrastructure/services/PrefetchService";
+import { VolumeDiscountProvider } from './presentation/contexts/VolumeDiscountContext';
 
 // Import main styles
 import "./styles/main.css";
@@ -70,7 +71,9 @@ if (root) {
 							<CartProvider>
 								<FavoriteProvider>
 									<NotificationWrapper>
+									<VolumeDiscountProvider>
 										<App />
+									</VolumeDiscountProvider>
 									</NotificationWrapper>
 								</FavoriteProvider>
 							</CartProvider>
