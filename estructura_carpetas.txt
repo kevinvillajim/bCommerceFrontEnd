@@ -1,5 +1,5 @@
 Listado de rutas de carpetas
-El n�mero de serie del volumen es 7C1B-BCDF
+El n�mero de serie del volumen es 204F-F5E4
 C:.
 |   .dockerignore
 |   .env
@@ -20,34 +20,13 @@ C:.
 |   tsconfig.node.json
 |   vite.config.ts
 |   
-+---.react-router
-|   \---types
-|       |   +register.ts
-|       |   +virtual.ts
-|       |   
-|       \---app
-|           +---+types
-|           |       root.ts
-|           |       
-|           \---routes
-|               \---+types
-|                       home.ts
-|                       
-+---.vscode
-|       launch.json
+|               
++---public
+|       .htaccess
+|       favicon.ico
+|       serviceWorker.js
 |       
-+---.VSCodeCounter
-|   \---2025-04-06_01-09-05
-|           details.md
-|           diff-details.md
-|           diff.csv
-|           diff.md
-|           diff.txt
-|           results.csv
-|           results.json
-|           results.md
-|           results.txt
-|           
++---scripts
 \---src
     |   App.tsx
     |   main.tsx
@@ -341,7 +320,6 @@ C:.
     |   |       CartContext.tsx
     |   |       FavoriteContext.tsx
     |   |       NotificationContext.tsx
-    |   |       OptimizedAuthContext.tsx
     |   |       ThemeContext.tsx
     |   |       
     |   +---hooks
@@ -352,6 +330,7 @@ C:.
     |   |       useAdminShipping.ts
     |   |       useAdminUsers.ts
     |   |       useAuth.ts
+    |   |       useAutoPrefetch.ts
     |   |       useCart.ts
     |   |       useCategories.ts
     |   |       useCategoriesSelect.ts
@@ -359,7 +338,9 @@ C:.
     |   |       useFavoriteApi.ts
     |   |       useFavorites.ts
     |   |       useFilterState.ts
+    |   |       useGlobalOptimization.ts
     |   |       useHeaderCounters.ts
+    |   |       useImageCache.ts
     |   |       useInvalidateCounters.ts
     |   |       useNotifications.ts
     |   |       useProductFilters.ts
@@ -369,7 +350,6 @@ C:.
     |   |       useReactiveCache.ts
     |   |       useRealTimeChat.ts
     |   |       useRealTimeNotifications.ts
-    |   |       useSecureAuth.ts
     |   |       useSellerAdmin.ts
     |   |       useSellerProducts.ts
     |   |       useSellerRatings.ts

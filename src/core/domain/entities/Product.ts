@@ -1,4 +1,48 @@
-// src/core/domain/entities/Product.ts - CORREGIDO
+// src/core/domain/entities/Product.ts - ACTUALIZADO CON VOLUME DISCOUNTS
+
+/**
+ * ✅ NUEVA: Interfaz para descuentos por volumen
+ */
+export interface VolumeDiscount {
+	id?: number;
+	quantity: number; // Cantidad mínima requerida
+	discount: number; // Porcentaje de descuento
+	label: string; // Etiqueta descriptiva
+	price_per_unit?: number; // Precio por unidad con descuento
+	total_price?: number; // Precio total para esa cantidad
+	savings_per_unit?: number; // Ahorro por unidad
+	total_savings?: number; // Ahorro total
+	is_current?: boolean; // Si es el nivel actual aplicado
+}
+
+/**
+ * ✅ NUEVA: Información de precios con descuentos por volumen
+ */
+export interface VolumePriceInfo {
+	enabled: boolean;
+	current_quantity: number;
+	tiers: VolumeDiscount[];
+	product: {
+		id: number;
+		name: string;
+		base_price: number;
+		final_price: number;
+	};
+}
+
+/**
+ * ✅ NUEVA: Configuración de descuentos por volumen
+ */
+export interface VolumeDiscountConfig {
+	enabled: boolean;
+	stackable: boolean; // Si se puede combinar con otros descuentos
+	show_savings_message: boolean;
+	default_tiers: Array<{
+		quantity: number;
+		discount: number;
+		label: string;
+	}>;
+}
 
 /**
  * Parámetros de filtro para búsqueda de productos - VERSIÓN COMPLETA
@@ -71,7 +115,7 @@ export interface ProductListResponse {
 }
 
 /**
- * Interfaz para imágenes de productos - CORREGIDA
+ * Interfaz para imágenes de productos
  */
 export interface ProductImage {
 	id?: number;
@@ -85,7 +129,7 @@ export interface ProductImage {
 }
 
 /**
- * Interfaz base para productos - CORREGIDA con todos los campos necesarios
+ * Interfaz base para productos - ACTUALIZADA con descuentos por volumen
  */
 export interface Product {
 	id?: number;
@@ -133,6 +177,11 @@ export interface Product {
 	createdAt?: string;
 	updatedAt?: string;
 
+	// ✅ NUEVOS: Campos para descuentos por volumen
+	has_volume_discounts?: boolean;
+	volume_discounts?: VolumeDiscount[];
+	volume_discount_info?: VolumePriceInfo;
+
 	// Relaciones
 	category?: Category;
 	seller?: Seller;
@@ -140,7 +189,7 @@ export interface Product {
 }
 
 /**
- * Interfaz detallada para productos (incluye relaciones)
+ * ✅ ACTUALIZADA: Interfaz detallada para productos (incluye descuentos por volumen)
  */
 export interface ProductDetail extends Product {
 	// Campos adicionales para vista detallada
@@ -164,6 +213,15 @@ export interface ProductDetail extends Product {
 	user_id?: number;
 	seller_id?: number;
 	category_id?: number;
+
+	// ✅ NUEVOS: Descuentos por volumen en detalle
+	volume_discount_tiers?: VolumeDiscount[];
+	next_volume_discount?: {
+		quantity: number;
+		discount: number;
+		label: string;
+		items_needed: number;
+	};
 }
 
 /**
@@ -193,6 +251,13 @@ export interface ProductCreationData {
 	published?: boolean;
 	status?: string;
 	discount_percentage?: number;
+	
+	// ✅ NUEVO: Descuentos por volumen en creación
+	volume_discounts?: Array<{
+		quantity: number;
+		discount: number;
+		label: string;
+	}>;
 }
 
 /**
@@ -200,7 +265,7 @@ export interface ProductCreationData {
  */
 export interface ProductUpdateData extends Partial<ProductCreationData> {
 	id: number;
-	// Campos específicos para actualización de imágenes - AGREGADOS
+	// Campos específicos para actualización de imágenes
 	replace_images?: boolean; // Si true, reemplaza todas las imágenes
 	remove_images?: string[]; // URLs de imágenes a eliminar
 
@@ -318,9 +383,29 @@ export const validateProduct = (product: Partial<Product>): string[] => {
 };
 
 /**
- * Helper function para calcular precio final
+ * ✅ ACTUALIZADA: Helper function para calcular precio final con descuentos por volumen
  */
-export const calculateFinalPrice = (product: Product): number => {
+export const calculateFinalPrice = (product: Product, quantity: number = 1): number => {
+  // Si tiene descuentos por volumen, usar el precio correspondiente
+  if (product.has_volume_discounts && product.volume_discounts && quantity > 1) {
+    // Buscar el descuento aplicable para la cantidad
+    let applicableDiscount: VolumeDiscount | null = null;
+    
+    for (const discount of product.volume_discounts) {
+      if (quantity >= discount.quantity) {
+        applicableDiscount = discount;
+      } else {
+        break; // Los descuentos están ordenados por cantidad
+      }
+    }
+    
+    if (applicableDiscount) {
+      const basePrice = product.final_price || product.finalPrice || product.price || 0;
+      return basePrice * (1 - applicableDiscount.discount / 100);
+    }
+  }
+  
+  // Fallback al cálculo normal
   if (product.final_price !== undefined && product.final_price !== null) {
     return product.final_price;
   }
@@ -340,6 +425,54 @@ export const calculateFinalPrice = (product: Product): number => {
   }
   
   return product.price;
+};
+
+/**
+ * ✅ NUEVA: Helper function para obtener el mejor descuento disponible
+ */
+export const getBestVolumeDiscount = (product: Product, quantity: number): VolumeDiscount | null => {
+  if (!product.has_volume_discounts || !product.volume_discounts) {
+    return null;
+  }
+  
+  let bestDiscount: VolumeDiscount | null = null;
+  
+  for (const discount of product.volume_discounts) {
+    if (quantity >= discount.quantity) {
+      bestDiscount = discount;
+    } else {
+      break;
+    }
+  }
+  
+  return bestDiscount;
+};
+
+/**
+ * ✅ NUEVA: Helper function para obtener el próximo nivel de descuento
+ */
+export const getNextVolumeDiscount = (product: Product, currentQuantity: number): VolumeDiscount | null => {
+  if (!product.has_volume_discounts || !product.volume_discounts) {
+    return null;
+  }
+  
+  for (const discount of product.volume_discounts) {
+    if (currentQuantity < discount.quantity) {
+      return discount;
+    }
+  }
+  
+  return null; // Ya tiene el máximo descuento
+};
+
+/**
+ * ✅ NUEVA: Helper function para calcular ahorros totales
+ */
+export const calculateVolumeSavings = (product: Product, quantity: number): number => {
+  const regularPrice = product.final_price || product.finalPrice || product.price || 0;
+  const volumePrice = calculateFinalPrice(product, quantity);
+  
+  return (regularPrice - volumePrice) * quantity;
 };
 
 /**
