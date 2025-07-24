@@ -73,6 +73,20 @@ export const API_ENDPOINTS = {
 		UPDATE_ITEM: (itemId: string | number) => `/cart/items/${itemId}`,
 		REMOVE_ITEM: (itemId: string | number) => `/cart/items/${itemId}`,
 		EMPTY: "/cart/empty",
+		VOLUME_DISCOUNT_INFO: (productId: string | number) => `/cart/volume-discount-info/${productId}`,
+	},
+
+	// ✅ NUEVO: Volume Discounts
+	VOLUME_DISCOUNTS: {
+		PRODUCT_INFO: (productId: string | number) => `/volume-discounts/product/${productId}`,
+		ADMIN: {
+			CONFIGURATION: "/admin/volume-discounts/configuration",
+			STATS: "/admin/volume-discounts/stats",
+			PRODUCT_DISCOUNTS: (productId: string | number) => `/admin/volume-discounts/product/${productId}`,
+			APPLY_DEFAULTS: (productId: string | number) => `/admin/volume-discounts/product/${productId}/apply-defaults`,
+			REMOVE_PRODUCT: (productId: string | number) => `/admin/volume-discounts/product/${productId}`,
+			BULK_APPLY: "/admin/volume-discounts/bulk/apply-defaults",
+		},
 	},
 
 	// Checkout
@@ -295,6 +309,16 @@ export const API_ENDPOINTS = {
 			PARTIAL_UPDATE: (id: string | number) => `/admin/products/${id}`, // PATCH
 			DELETE: (id: string | number) => `/admin/products/${id}`, // RUTA ADMIN ESPECÍFICA
 			STATS: "/admin/products/stats",
+		},
+		// ✅ NUEVO: Volume Discounts Administration
+		VOLUME_DISCOUNTS: {
+			CONFIGURATION: "/admin/volume-discounts/configuration",
+			STATS: "/admin/volume-discounts/stats",
+			PRODUCT_DISCOUNTS: (productId: string | number) => `/admin/volume-discounts/product/${productId}`,
+			UPDATE_PRODUCT: (productId: string | number) => `/admin/volume-discounts/product/${productId}`,
+			APPLY_DEFAULTS: (productId: string | number) => `/admin/volume-discounts/product/${productId}/apply-defaults`,
+			REMOVE_PRODUCT: (productId: string | number) => `/admin/volume-discounts/product/${productId}`,
+			BULK_APPLY: "/admin/volume-discounts/bulk/apply-defaults",
 		},
 	},
 

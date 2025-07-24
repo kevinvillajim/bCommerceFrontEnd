@@ -1,4 +1,4 @@
-// src/presentation/hooks/useVolumeDiscounts.ts
+// src/presentation/hooks/useVolumeDiscounts.ts - CORREGIDO
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { VolumeDiscountService } from "../../core/services/VolumeDiscountService";

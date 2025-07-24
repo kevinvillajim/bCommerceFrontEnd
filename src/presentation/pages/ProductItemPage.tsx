@@ -1,3 +1,4 @@
+// src/presentation/pages/ProductItemPage.tsx - CORRECCIONES
 import React, {useState, useEffect} from "react";
 import {useParams, Link, useNavigate} from "react-router-dom";
 import {
@@ -24,8 +25,9 @@ import {useFavorites} from "../hooks/useFavorites";
 import {useChat} from "../hooks/useChat";
 import {useInvalidateCounters} from "../hooks/useHeaderCounters";
 import {NotificationType} from "../contexts/CartContext";
-import CacheService from "../../infrastructure/services/CacheService"; // ✅ AÑADIDO
+import CacheService from "../../infrastructure/services/CacheService";
 import ApiClient from "../../infrastructure/api/apiClient";
+import { useProductVolumeDiscounts } from "../hooks/useVolumeDiscount"; // ✅ IMPORTAR HOOK
 
 interface SellerApiResponse {
 	status?: string;
@@ -50,7 +52,7 @@ const ProductItemPage: React.FC = () => {
 	const [activeTab, setActiveTab] = useState<
 		"description" | "specifications" | "reviews"
 	>("description");
-	const [isUpdating, setIsUpdating] = useState(false); // ✅ AÑADIDO para prevenir dobles clicks
+	const [isUpdating, setIsUpdating] = useState(false);
 	const {addToCart, showNotification} = useCart();
 	const {toggleFavorite, checkIsFavorite} = useFavorites();
 	const {createChat} = useChat();
@@ -61,6 +63,14 @@ const ProductItemPage: React.FC = () => {
 		optimisticFavoriteAdd,
 		optimisticFavoriteRemove
 	} = useInvalidateCounters();
+
+	// ✅ HOOK PARA DESCUENTOS POR VOLUMEN - CORREGIDO
+	const {
+		volumeDiscountsEnabled,
+		productDiscountInfo,
+		savingsMessage
+		// Removido promotionalMessage ya que no se usa
+	} = useProductVolumeDiscounts(product, quantity);
 
 	// Initialize service
 	const productService = new ProductService();
@@ -88,12 +98,10 @@ const ProductItemPage: React.FC = () => {
 
 	// ✅ FUNCIÓN PARA INVALIDAR CACHE DE PÁGINAS ESPECÍFICAS
 	const invalidateRelatedPages = () => {
-		// Invalidar cache de páginas de carrito y favoritos
 		CacheService.removeItem("cart_user_data");
 		CacheService.removeItem("cart_guest_data");
 		CacheService.removeItem("header_counters");
 		
-		// Invalidar cache de favoritos (todas las páginas)
 		for (let page = 1; page <= 10; page++) {
 			CacheService.removeItem(`user_favorites_${page}_10`);
 		}
@@ -109,16 +117,13 @@ const ProductItemPage: React.FC = () => {
 				setLoading(true);
 				setError(null);
 
-				// Call the service to get product details
 				const productId = parseInt(id);
 				const productData = await productService.getProductById(productId);
 
 				console.log("Product data from API:", productData);
 
-				// Set the product state with the fetched data
 				setProduct(productData);
 
-				// Track product view
 				productService
 					.trackProductView(productId)
 					.catch((e) => console.error("Error tracking product view:", e));
@@ -489,6 +494,12 @@ const ProductItemPage: React.FC = () => {
 		},
 	];
 
+	// ✅ CALCULAR PRECIO FINAL CON DESCUENTOS POR VOLUMEN
+	const finalPrice = productDiscountInfo?.discountedPrice || product.final_price || product.price;
+	const originalPrice = product.price;
+	const hasVolumeDiscount = productDiscountInfo?.hasDiscount || false; // ✅ CORREGIDO
+	const volumeSavings = productDiscountInfo?.totalSavings || 0;
+
 	return (
 		<div className="container mx-auto px-4 py-10">
 			<div className="max-w-7xl mx-auto">
@@ -590,40 +601,46 @@ const ProductItemPage: React.FC = () => {
 								</div>
 							) : null}
 
-							{/* Price */}
+							{/* ✅ PRECIO CON DESCUENTOS POR VOLUMEN */}
 							<div className="price-container">
 								<span className="text-3xl font-bold text-primary-700">
-									$
-									{(product.final_price && 
-									  typeof product.final_price === 'number' && 
-									  product.final_price > 0)
-										? product.final_price.toFixed(2)
-										: product.price.toFixed(2)}
+									${finalPrice.toFixed(2)}
 								</span>
-								{(product.discount_percentage && 
-								  typeof product.discount_percentage === 'number' && 
-								  product.discount_percentage > 0 && 
-								  product.final_price && 
-								  typeof product.final_price === 'number' && 
-								  product.final_price < product.price) ? (
+								{(hasVolumeDiscount && finalPrice < originalPrice) ? (
 									<span className="ml-3 text-lg text-gray-500 line-through">
-										${product.price.toFixed(2)}
+										${originalPrice.toFixed(2)}
 									</span>
 								) : null}
 							</div>
 
-							{/* Savings Message */}
-							{(product.discount_percentage && 
-							  typeof product.discount_percentage === 'number' && 
-							  product.discount_percentage > 0 && 
-							  product.final_price && 
-							  typeof product.final_price === 'number' && 
-							  product.final_price < product.price) ? (
+							{/* ✅ MENSAJES DE AHORRO CON DESCUENTOS POR VOLUMEN */}
+							{hasVolumeDiscount && volumeSavings > 0 ? (
 								<p className="text-sm text-green-600 font-medium">
-									¡Ahorra $
-									{(product.price - product.final_price).toFixed(2)}!
-									Oferta por tiempo limitado.
+									¡Ahorra ${volumeSavings.toFixed(2)} con descuento por volumen!
 								</p>
+							) : null}
+
+							{/* ✅ MOSTRAR MENSAJE DE AHORRO POTENCIAL */}
+							{volumeDiscountsEnabled && savingsMessage ? (
+								<p className="text-sm text-blue-600 font-medium">
+									{savingsMessage}
+								</p>
+							) : null}
+
+							{/* ✅ MOSTRAR NIVELES DE DESCUENTO DISPONIBLES */}
+							{volumeDiscountsEnabled && productDiscountInfo?.allTiers && productDiscountInfo.allTiers.length > 0 ? (
+								<div className="bg-blue-50 rounded-lg p-4">
+									<h4 className="text-sm font-medium text-blue-900 mb-2">
+										Descuentos por volumen disponibles:
+									</h4>
+									<div className="space-y-1">
+										{productDiscountInfo.allTiers.map((tier, index) => (
+											<div key={index} className="text-sm text-blue-800">
+												{tier.quantity}+ unidades = {tier.discount}% descuento
+											</div>
+										))}
+									</div>
+								</div>
 							) : null}
 
 							{/* Color Selection */}

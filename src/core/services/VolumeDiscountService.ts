@@ -1,7 +1,6 @@
-// src/core/services/VolumeDiscountService.ts
+// src/core/services/VolumeDiscountService.ts - CORREGIDO
 
 import ApiClient from "../../infrastructure/api/apiClient";
-import { API_ENDPOINTS } from "../../constants/apiEndpoints";
 import type {
 	VolumeDiscountInfoResponse,
 	AdminVolumeDiscountConfig,
@@ -331,7 +330,7 @@ export class VolumeDiscountService {
 	async hasVolumeDiscounts(productId: number): Promise<boolean> {
 		try {
 			const info = await this.getProductVolumeDiscountInfo(productId);
-			return info?.data.enabled && info.data.tiers.length > 0;
+			return Boolean(info?.data.enabled && info.data.tiers.length > 0);
 		} catch (error) {
 			return false;
 		}

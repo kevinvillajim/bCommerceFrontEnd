@@ -7,6 +7,8 @@ import {
 	Minus,
 	ArrowLeft,
 	Heart,
+	Gift,
+	TrendingDown
 } from "lucide-react";
 import {useCart} from "../hooks/useCart";
 import {useFavorites} from "../hooks/useFavorites";
@@ -15,7 +17,7 @@ import {formatCurrency} from "../../utils/formatters/formatCurrency";
 import {NotificationType} from "../contexts/CartContext";
 import CacheService from "../../infrastructure/services/CacheService";
 
-// ✅ IMPORTAR HOOKS OPTIMIZADOS
+// Importar hooks optimizados
 import {useImageCache} from "../hooks/useImageCache";
 import {useAutoPrefetch} from "../hooks/useAutoPrefetch";
 
@@ -29,7 +31,7 @@ const CartPage: React.FC = () => {
 
 	const navigate = useNavigate();
 
-	// ✅ HOOKS OPTIMIZADOS
+	// Hooks optimizados
 	const {getOptimizedImageUrl} = useImageCache();
 	const {prefetchCartPageData} = useAutoPrefetch({
 		enabled: true,
@@ -52,14 +54,14 @@ const CartPage: React.FC = () => {
 
 	const {toggleFavorite} = useFavorites();
 
-	// ✅ HOOK PARA ACTUALIZACIONES OPTIMISTAS
+	// Hook para actualizaciones optimistas
 	const {
 		optimisticCartAdd,
 		optimisticCartRemove,
 		optimisticFavoriteAdd
 	} = useInvalidateCounters();
 
-	// ✅ FUNCIÓN SIMPLE PARA INVALIDAR CACHE
+	// Función simple para invalidar cache
 	const invalidateRelatedPages = useCallback(() => {
 		CacheService.removeItem("cart_user_data");
 		CacheService.removeItem("cart_guest_data");
@@ -73,7 +75,7 @@ const CartPage: React.FC = () => {
 		console.log("🔄 Cache invalidado desde CartPage");
 	}, []);
 
-	// ✅ FUNCIÓN OPTIMIZADA PARA OBTENER IMAGEN DEL PRODUCTO
+	// Función optimizada para obtener imagen del producto
 	const getProductImage = useCallback(
 		(product: any): string => {
 			return getOptimizedImageUrl(product, "medium");
@@ -81,16 +83,17 @@ const CartPage: React.FC = () => {
 		[getOptimizedImageUrl]
 	);
 
-	// ✅ FUNCIÓN MEMOIZADA PARA CALCULAR PRECIOS DE ITEM
+	// ✅ ACTUALIZADA: Función memoizada para calcular precios de item con descuentos por volumen
 	const calculateItemPrices = useCallback((item: any) => {
-		if (!item) return {original: 0, discounted: 0, discount: 0, subtotal: 0};
+		if (!item) return {original: 0, discounted: 0, discount: 0, subtotal: 0, volumeDiscount: null};
 
 		// Obtener precio original del item
 		const originalPrice = item.price || 0;
 
-		// USAR DIRECTAMENTE final_price DE LA API
+		// Usar directamente final_price de la API
 		let discountedPrice = originalPrice;
 		let discountPercentage = 0;
+		let volumeDiscountInfo = null;
 
 		if (item.product) {
 			// PRIORIDAD 1: usar final_price si existe (viene calculado desde la API)
@@ -121,7 +124,20 @@ const CartPage: React.FC = () => {
 				0;
 		}
 
-		// CALCULAR SUBTOTAL usando el precio con descuento (final_price)
+		// ✅ NUEVO: Verificar si hay descuentos por volumen aplicados
+		if (item.volume_discount && item.volume_discount > 0) {
+			volumeDiscountInfo = {
+				percentage: item.volume_discount,
+				discountedPrice: item.discounted_price || discountedPrice,
+				totalSavings: item.total_savings || 0,
+				label: item.discount_label
+			};
+			
+			// Usar el precio con descuento por volumen
+			discountedPrice = item.discounted_price || discountedPrice;
+		}
+
+		// CALCULAR SUBTOTAL usando el precio con descuento (final_price + volume discount)
 		const subtotal = discountedPrice * item.quantity;
 
 		return {
@@ -129,10 +145,11 @@ const CartPage: React.FC = () => {
 			discounted: discountedPrice,
 			discount: discountPercentage,
 			subtotal: subtotal,
+			volumeDiscount: volumeDiscountInfo
 		};
 	}, []);
 
-	// ✅ MEMOIZAR CÁLCULOS DE TOTALES DEL CARRITO
+	// ✅ ACTUALIZADA: Memoizar cálculos de totales del carrito con descuentos por volumen
 	const cartTotals = useMemo(() => {
 		if (!cart || !cart.items || cart.items.length === 0) {
 			return {
@@ -140,14 +157,43 @@ const CartPage: React.FC = () => {
 				tax: 0,
 				couponAmount: 0,
 				total: 0,
+				totalVolumeSavings: 0,
+				volumeDiscountsApplied: false,
 			};
 		}
 
-		// Calcular subtotal sumando todos los subtotales con descuento
-		const subtotal = cart.items.reduce((sum, item) => {
+		// Usar los totales que vienen de la API si están disponibles
+		if (cart.total_volume_savings !== undefined && cart.volume_discounts_applied !== undefined) {
+			const taxRate = 0.15; // 15% IVA
+			const subtotal = cart.subtotal || cart.total || 0;
+			const tax = subtotal * taxRate;
+			const couponAmount = couponApplied ? subtotal * (couponDiscount / 100) : 0;
+			const total = subtotal + tax - couponAmount;
+
+			return {
+				subtotal: subtotal,
+				tax: tax,
+				couponAmount: couponAmount,
+				total: total,
+				totalVolumeSavings: cart.total_volume_savings || 0,
+				volumeDiscountsApplied: cart.volume_discounts_applied || false,
+			};
+		}
+
+		// Fallback: calcular manualmente si no vienen de la API
+		let subtotal = 0;
+		let totalVolumeSavings = 0;
+		let volumeDiscountsApplied = false;
+
+		cart.items.forEach((item) => {
 			const itemPrices = calculateItemPrices(item);
-			return sum + itemPrices.subtotal;
-		}, 0);
+			subtotal += itemPrices.subtotal;
+			
+			if (itemPrices.volumeDiscount && itemPrices.volumeDiscount.totalSavings > 0) {
+				totalVolumeSavings += itemPrices.volumeDiscount.totalSavings;
+				volumeDiscountsApplied = true;
+			}
+		});
 
 		const taxRate = 0.15; // 15% IVA
 		const tax = subtotal * taxRate;
@@ -159,10 +205,12 @@ const CartPage: React.FC = () => {
 			tax,
 			couponAmount,
 			total,
+			totalVolumeSavings,
+			volumeDiscountsApplied,
 		};
-	}, [cart?.items, couponApplied, couponDiscount, calculateItemPrices]);
+	}, [cart?.items, cart?.total_volume_savings, cart?.volume_discounts_applied, cart?.subtotal, cart?.total, couponApplied, couponDiscount, calculateItemPrices]);
 
-	// ✅ MEMOIZAR ITEMS CON SUS PRECIOS CALCULADOS
+	// Memoizar items con sus precios calculados
 	const cartItemsWithPrices = useMemo(() => {
 		if (!cart?.items) return [];
 
@@ -173,13 +221,13 @@ const CartPage: React.FC = () => {
 		}));
 	}, [cart?.items, calculateItemPrices, getProductImage]);
 
-	// ✅ CARGAR CARRITO SIMPLE - Solo al montar componente
+	// Cargar carrito simple - Solo al montar componente
 	useEffect(() => {
 		const loadCart = async () => {
 			setIsLoading(true);
 			try {
 				await fetchCart();
-				// ✅ PREFETCH DE DATOS RELACIONADOS DESPUÉS DE CARGAR CARRITO
+				// Prefetch de datos relacionados después de cargar carrito
 				prefetchCartPageData();
 			} catch (error) {
 				console.error("Error al cargar el carrito:", error);
@@ -193,7 +241,7 @@ const CartPage: React.FC = () => {
 		};
 
 		loadCart();
-	}, []); // ✅ DEPENDENCIAS VACÍAS - Solo ejecutar una vez
+	}, []);
 
 	// Actualizar estado de carrito vacío cuando cambia el carrito
 	useEffect(() => {
@@ -202,7 +250,7 @@ const CartPage: React.FC = () => {
 		}
 	}, [cart, loading]);
 
-	// ✅ FUNCIONES MEMOIZADAS PARA MANIPULAR EL CARRITO CON OPTIMIZACIÓN
+	// Funciones memoizadas para manipular el carrito con optimización
 	const increaseQuantity = useCallback(
 		async (id: number) => {
 			if (loadingItem) return;
@@ -212,7 +260,7 @@ const CartPage: React.FC = () => {
 
 			if (item) {
 				try {
-					// ✅ ACTUALIZACIÓN OPTIMISTA
+					// Actualización optimista
 					optimisticCartAdd();
 
 					const result = await updateCartItem({
@@ -224,7 +272,7 @@ const CartPage: React.FC = () => {
 						throw new Error("No se pudo actualizar la cantidad");
 					}
 
-					// ✅ INVALIDAR CACHE Y REFETCH
+					// Invalidar cache y refetch
 					invalidateRelatedPages();
 					await fetchCart();
 				} catch (error) {
@@ -250,7 +298,7 @@ const CartPage: React.FC = () => {
 
 			if (item && item.quantity > 1) {
 				try {
-					// ✅ ACTUALIZACIÓN OPTIMISTA
+					// Actualización optimista
 					optimisticCartRemove();
 
 					const result = await updateCartItem({
@@ -262,7 +310,7 @@ const CartPage: React.FC = () => {
 						throw new Error("No se pudo actualizar la cantidad");
 					}
 
-					// ✅ INVALIDAR CACHE Y REFETCH
+					// Invalidar cache y refetch
 					invalidateRelatedPages();
 					await fetchCart();
 				} catch (error) {
@@ -285,7 +333,7 @@ const CartPage: React.FC = () => {
 
 			setLoadingItem(id);
 			try {
-				// ✅ ACTUALIZACIÓN OPTIMISTA
+				// Actualización optimista
 				const item = cart?.items.find((item) => item.id === id);
 				const itemQuantity = item?.quantity || 1;
 				
@@ -296,7 +344,7 @@ const CartPage: React.FC = () => {
 				const result = await removeFromCart(id);
 
 				if (result) {
-					// ✅ INVALIDAR CACHE Y REFETCH
+					// Invalidar cache y refetch
 					invalidateRelatedPages();
 					await fetchCart();
 
@@ -326,7 +374,7 @@ const CartPage: React.FC = () => {
 
 			setLoadingItem(id);
 			try {
-				// ✅ ACTUALIZACIÓN OPTIMISTA
+				// Actualización optimista
 				optimisticFavoriteAdd();
 
 				const item = cart?.items.find((item) => item.id === id);
@@ -343,7 +391,7 @@ const CartPage: React.FC = () => {
 				const result = await removeFromCart(id);
 
 				if (result) {
-					// ✅ INVALIDAR CACHE Y REFETCH
+					// Invalidar cache y refetch
 					invalidateRelatedPages();
 					await fetchCart();
 
@@ -381,7 +429,7 @@ const CartPage: React.FC = () => {
 		if (loading) return;
 
 		try {
-			// ✅ ACTUALIZACIÓN OPTIMISTA
+			// Actualización optimista
 			const totalItems = cart?.items.reduce((total, item) => total + item.quantity, 0) || 0;
 			
 			for (let i = 0; i < totalItems; i++) {
@@ -391,7 +439,7 @@ const CartPage: React.FC = () => {
 			const result = await clearCart();
 
 			if (result) {
-				// ✅ INVALIDAR CACHE Y REFETCH
+				// Invalidar cache y refetch
 				invalidateRelatedPages();
 				await fetchCart();
 
@@ -422,7 +470,7 @@ const CartPage: React.FC = () => {
 		navigate("/checkout");
 	}, [isEmpty, navigate, showNotification]);
 
-	// ✅ COMPONENTE MEMOIZADO PARA ITEM DEL CARRITO
+	// ✅ ACTUALIZADO: Componente memoizado para item del carrito con descuentos por volumen
 	const CartItem = React.memo(
 		({
 			item,
@@ -460,17 +508,33 @@ const CartPage: React.FC = () => {
 						<div className="ml-4 flex flex-col">
 							<Link
 								to={`/products/${item.productId}`}
-								className="font-medium text-gray-800 hover:text-primary-600"
+								className="font-medium text-lg mb-2 text-gray-800 hover:text-primary-600"
 							>
 								{item.product?.name || `Producto ${item.productId}`}
 							</Link>
 
-							{/* Mostrar descuento si existe */}
-							{prices.discount > 0 && (
-								<div className="mt-1">
+							{/* ✅ NUEVO: Mostrar descuentos aplicados */}
+							<div className="flex flex-wrap gap-2 mb-2">
+								{/* Descuento regular */}
+								{prices.discount > 0 && (
 									<span className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded">
 										{prices.discount}% OFF
 									</span>
+								)}
+								
+								{/* ✅ NUEVO: Descuento por volumen */}
+								{prices.volumeDiscount && (
+									<span className="text-xs bg-green-100 text-green-600 px-2 py-1 rounded flex items-center">
+										<Gift size={12} className="mr-1" />
+										Volumen: {prices.volumeDiscount.percentage}% OFF
+									</span>
+								)}
+							</div>
+
+							{/* ✅ NUEVO: Mostrar etiqueta de descuento por volumen */}
+							{prices.volumeDiscount?.label && (
+								<div className="text-xs text-green-600 mb-2">
+									{prices.volumeDiscount.label}
 								</div>
 							)}
 
@@ -501,12 +565,19 @@ const CartPage: React.FC = () => {
 							Precio:
 						</div>
 						<div className="font-medium flex flex-col items-center">
+							{/* ✅ ACTUALIZADO: Mostrar precio con descuentos por volumen */}
 							<span className="text-gray-800">
 								{formatCurrency(prices.discounted)}
 							</span>
-							{prices.discount > 0 && (
+							{(prices.discount > 0 || prices.volumeDiscount) && (
 								<span className="text-xs text-gray-500 line-through">
 									{formatCurrency(prices.original)}
+								</span>
+							)}
+							{/* ✅ NUEVO: Mostrar ahorros por descuento por volumen */}
+							{prices.volumeDiscount?.totalSavings > 0 && (
+								<span className="text-xs text-green-600 font-medium">
+									Ahorras: {formatCurrency(prices.volumeDiscount.totalSavings)}
 								</span>
 							)}
 						</div>
@@ -584,6 +655,26 @@ const CartPage: React.FC = () => {
 				<div className="flex flex-col lg:flex-row gap-8">
 					{/* Lista de productos */}
 					<div className="lg:w-2/3">
+						{/* ✅ NUEVO: Mostrar resumen de descuentos por volumen si existen */}
+						{cartTotals.volumeDiscountsApplied && (
+							<div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-4 mb-6">
+								<div className="flex items-center">
+									<TrendingDown size={20} className="text-green-600 mr-3" />
+									<div className="flex-1">
+										<h3 className="font-medium text-green-800">
+											¡Descuentos por Volumen Aplicados!
+										</h3>
+										<p className="text-sm text-green-600 mt-1">
+											Total ahorrado: {formatCurrency(cartTotals.totalVolumeSavings)}
+										</p>
+									</div>
+									<div className="text-2xl font-bold text-green-600">
+										{formatCurrency(cartTotals.totalVolumeSavings)}
+									</div>
+								</div>
+							</div>
+						)}
+
 						<div className="bg-white rounded-lg shadow-lg overflow-hidden mb-6">
 							{/* Encabezado */}
 							<div className="hidden sm:grid sm:grid-cols-12 gap-4 p-5 bg-gray-50 border-b">
@@ -647,7 +738,7 @@ const CartPage: React.FC = () => {
 						</div>
 					</div>
 
-					{/* Resumen del pedido - USANDO TOTALES MEMOIZADOS */}
+					{/* ✅ ACTUALIZADO: Resumen del pedido con descuentos por volumen */}
 					<div className="lg:w-1/3">
 						<div className="bg-white rounded-lg shadow-lg overflow-hidden">
 							<div className="p-6">
@@ -681,7 +772,7 @@ const CartPage: React.FC = () => {
 									)}
 								</div>
 
-								{/* Cálculos - USANDO TOTALES MEMOIZADOS */}
+								{/* ✅ ACTUALIZADO: Cálculos con descuentos por volumen */}
 								<div className="space-y-4 border-t border-gray-200 pt-4">
 									<div className="flex justify-between">
 										<span className="text-gray-600">
@@ -691,6 +782,19 @@ const CartPage: React.FC = () => {
 											{formatCurrency(cartTotals.subtotal)}
 										</span>
 									</div>
+
+									{/* ✅ NUEVO: Mostrar ahorros por descuentos por volumen */}
+									{cartTotals.volumeDiscountsApplied && cartTotals.totalVolumeSavings > 0 && (
+										<div className="flex justify-between text-green-600">
+											<span className="flex items-center">
+												<Gift size={16} className="mr-1" />
+												Descuentos por volumen
+											</span>
+											<span className="font-medium">
+												-{formatCurrency(cartTotals.totalVolumeSavings)}
+											</span>
+										</div>
+									)}
 
 									<div className="flex justify-between">
 										<span className="text-gray-600">IVA (15%)</span>
@@ -712,6 +816,22 @@ const CartPage: React.FC = () => {
 											{formatCurrency(cartTotals.total)}
 										</span>
 									</div>
+
+									{/* ✅ NUEVO: Resumen de ahorros totales */}
+									{(cartTotals.totalVolumeSavings > 0 || couponApplied) && (
+										<div className="bg-green-50 border border-green-200 rounded-lg p-3">
+											<div className="flex items-center justify-between">
+												<span className="text-sm font-medium text-green-800">
+													Total ahorrado:
+												</span>
+												<span className="text-lg font-bold text-green-600">
+													{formatCurrency(
+														cartTotals.totalVolumeSavings + cartTotals.couponAmount
+													)}
+												</span>
+											</div>
+										</div>
+									)}
 								</div>
 
 								{/* Botón de checkout */}
@@ -733,6 +853,11 @@ const CartPage: React.FC = () => {
 										Aceptamos diversas formas de pago, incluyendo tarjetas de
 										crédito, transferencias bancarias y pago contra entrega.
 									</p>
+									{cartTotals.volumeDiscountsApplied && (
+										<p className="mt-2 text-green-600 font-medium">
+											¡Los descuentos por volumen ya están aplicados en tus productos!
+										</p>
+									)}
 								</div>
 							</div>
 						</div>
