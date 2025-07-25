@@ -1,4 +1,4 @@
-// src/presentation/pages/CartPage.tsx - CON DESCUENTOS POR VOLUMEN FUNCIONALES
+// src/presentation/pages/CartPage.tsx - CON VALIDACIÓN DE STOCK MEJORADA
 import React, {useState, useEffect, useMemo, useCallback} from "react";
 import {Link, useNavigate} from "react-router-dom";
 import {
@@ -9,14 +9,16 @@ import {
 	ArrowLeft,
 	Heart,
 	Gift,
-	TrendingDown
+	TrendingDown,
+	AlertTriangle
 } from "lucide-react";
 import {useCart} from "../hooks/useCart";
 import {useFavorites} from "../hooks/useFavorites";
 import {useInvalidateCounters} from "../hooks/useHeaderCounters";
+import {useErrorHandler} from "../hooks/useErrorHandler";
 import {NotificationType} from "../contexts/CartContext";
 import CacheService from "../../infrastructure/services/CacheService";
-import {useCartVolumeDiscounts} from "../contexts/VolumeDiscountContext"; // ✅ IMPORTAR CONTEXTO
+import {useCartVolumeDiscounts} from "../contexts/VolumeDiscountContext";
 import {formatCurrency} from "../../utils/formatters/formatCurrency";
 
 // Importar hooks optimizados
@@ -63,12 +65,35 @@ const CartPage: React.FC = () => {
 
 	const {toggleFavorite} = useFavorites();
 
+	// ✅ Hook para manejo de errores mejorado
+	const {handleError, handleSuccess, handleStockError} = useErrorHandler({
+		showNotification,
+		context: 'CartPage'
+	});
+
 	// Hook para actualizaciones optimistas
 	const {
 		optimisticCartAdd,
 		optimisticCartRemove,
 		optimisticFavoriteAdd
 	} = useInvalidateCounters();
+
+	// ✅ HELPER PARA OBTENER STOCK DISPONIBLE
+	const getAvailableStock = useCallback((product: any): number => {
+		if (typeof product.stockAvailable === 'number') {
+			return product.stockAvailable;
+		}
+		if (typeof product.stock === 'number') {
+			return product.stock;
+		}
+		return 0;
+	}, []);
+
+	// ✅ HELPER PARA VALIDAR DISPONIBILIDAD
+	const isStockAvailable = useCallback((product: any, requestedQuantity: number): boolean => {
+		const availableStock = getAvailableStock(product);
+		return availableStock >= requestedQuantity && product.is_in_stock !== false;
+	}, [getAvailableStock]);
 
 	// Función simple para invalidar cache
 	const invalidateRelatedPages = useCallback(() => {
@@ -170,12 +195,9 @@ const CartPage: React.FC = () => {
 				await fetchCart();
 				// Prefetch de datos relacionados después de cargar carrito
 				prefetchCartPageData();
-			} catch (error) {
+			} catch (error: any) {
 				console.error("Error al cargar el carrito:", error);
-				showNotification(
-					NotificationType.ERROR,
-					"No se pudo cargar el carrito. Inténtalo de nuevo."
-				);
+				handleError(error, "No se pudo cargar el carrito. Inténtalo de nuevo.");
 			} finally {
 				setIsLoading(false);
 			}
@@ -191,7 +213,7 @@ const CartPage: React.FC = () => {
 		}
 	}, [cart, loading]);
 
-	// Funciones memoizadas para manipular el carrito con optimización
+	// ✅ FUNCIÓN PARA INCREMENTAR CANTIDAD CON VALIDACIÓN DE STOCK
 	const increaseQuantity = useCallback(
 		async (id: number) => {
 			if (loadingItem) return;
@@ -201,12 +223,22 @@ const CartPage: React.FC = () => {
 
 			if (item) {
 				try {
+					// ✅ VALIDAR STOCK ANTES DE INCREMENTAR
+					const availableStock = getAvailableStock(item.product);
+					const newQuantity = item.quantity + 1;
+
+					if (!isStockAvailable(item.product, newQuantity)) {
+						handleStockError(availableStock, newQuantity);
+						setLoadingItem(null);
+						return;
+					}
+
 					// Actualización optimista
 					optimisticCartAdd();
 
 					const result = await updateCartItem({
 						itemId: id,
-						quantity: item.quantity + 1,
+						quantity: newQuantity,
 					});
 
 					if (!result) {
@@ -216,18 +248,25 @@ const CartPage: React.FC = () => {
 					// Invalidar cache y refetch
 					invalidateRelatedPages();
 					await fetchCart();
-				} catch (error) {
+				} catch (error: any) {
 					console.error("Error al aumentar cantidad:", error);
-					showNotification(
-						NotificationType.ERROR,
-						"No se pudo actualizar la cantidad"
-					);
+					
+					// Manejo específico de errores de stock
+					if (error?.response?.data?.message?.includes('stock') || 
+						error?.message?.includes('stock') ||
+						error?.response?.data?.message?.includes('insuficiente')) {
+						const availableStock = getAvailableStock(item.product);
+						handleStockError(availableStock, item.quantity + 1);
+					} else {
+						handleError(error, "No se pudo actualizar la cantidad");
+					}
 				} finally {
 					setLoadingItem(null);
 				}
 			}
 		},
-		[cart?.items, loadingItem, updateCartItem, showNotification, optimisticCartAdd, invalidateRelatedPages, fetchCart]
+		[cart?.items, loadingItem, updateCartItem, optimisticCartAdd, invalidateRelatedPages, fetchCart, 
+		 getAvailableStock, isStockAvailable, handleStockError, handleError]
 	);
 
 	const decreaseQuantity = useCallback(
@@ -254,18 +293,15 @@ const CartPage: React.FC = () => {
 					// Invalidar cache y refetch
 					invalidateRelatedPages();
 					await fetchCart();
-				} catch (error) {
+				} catch (error: any) {
 					console.error("Error al disminuir cantidad:", error);
-					showNotification(
-						NotificationType.ERROR,
-						"No se pudo actualizar la cantidad"
-					);
+					handleError(error, "No se pudo actualizar la cantidad");
 				} finally {
 					setLoadingItem(null);
 				}
 			}
 		},
-		[cart?.items, loadingItem, updateCartItem, showNotification, optimisticCartRemove, invalidateRelatedPages, fetchCart]
+		[cart?.items, loadingItem, updateCartItem, optimisticCartRemove, invalidateRelatedPages, fetchCart, handleError]
 	);
 
 	const handleRemoveFromCart = useCallback(
@@ -289,24 +325,18 @@ const CartPage: React.FC = () => {
 					invalidateRelatedPages();
 					await fetchCart();
 
-					showNotification(
-						NotificationType.SUCCESS,
-						"Producto eliminado del carrito"
-					);
+					handleSuccess("Producto eliminado del carrito");
 				} else {
 					throw new Error("No se pudo eliminar el producto");
 				}
-			} catch (error) {
+			} catch (error: any) {
 				console.error("Error al eliminar del carrito:", error);
-				showNotification(
-					NotificationType.ERROR,
-					"No se pudo eliminar el producto"
-				);
+				handleError(error, "No se pudo eliminar el producto");
 			} finally {
 				setLoadingItem(null);
 			}
 		},
-		[loadingItem, removeFromCart, showNotification, invalidateRelatedPages, optimisticCartRemove, cart?.items, fetchCart]
+		[loadingItem, removeFromCart, invalidateRelatedPages, optimisticCartRemove, cart?.items, fetchCart, handleSuccess, handleError]
 	);
 
 	const moveToWishlist = useCallback(
@@ -336,35 +366,29 @@ const CartPage: React.FC = () => {
 					invalidateRelatedPages();
 					await fetchCart();
 
-					showNotification(
-						NotificationType.SUCCESS,
-						"Producto movido a favoritos"
-					);
+					handleSuccess("Producto movido a favoritos");
 				} else {
 					throw new Error("No se pudo mover el producto a favoritos");
 				}
-			} catch (error) {
+			} catch (error: any) {
 				console.error("Error al mover a favoritos:", error);
-				showNotification(
-					NotificationType.ERROR,
-					"No se pudo mover el producto a favoritos"
-				);
+				handleError(error, "No se pudo mover el producto a favoritos");
 			} finally {
 				setLoadingItem(null);
 			}
 		},
-		[loadingItem, toggleFavorite, removeFromCart, showNotification, optimisticFavoriteAdd, optimisticCartRemove, invalidateRelatedPages, cart?.items, fetchCart]
+		[loadingItem, toggleFavorite, removeFromCart, optimisticFavoriteAdd, optimisticCartRemove, invalidateRelatedPages, cart?.items, fetchCart, handleSuccess, handleError]
 	);
 
 	const applyCoupon = useCallback(() => {
 		if (couponCode.toLowerCase() === "discount10") {
 			setCouponApplied(true);
 			setCouponDiscount(10);
-			showNotification(NotificationType.SUCCESS, "Cupón aplicado exitosamente");
+			handleSuccess("Cupón aplicado exitosamente");
 		} else {
 			showNotification(NotificationType.ERROR, "Código de cupón inválido");
 		}
-	}, [couponCode, showNotification]);
+	}, [couponCode, handleSuccess, showNotification]);
 
 	const handleEmptyCart = useCallback(async () => {
 		if (loading) return;
@@ -384,18 +408,15 @@ const CartPage: React.FC = () => {
 				invalidateRelatedPages();
 				await fetchCart();
 
-				showNotification(
-					NotificationType.SUCCESS,
-					"Carrito vaciado exitosamente"
-				);
+				handleSuccess("Carrito vaciado exitosamente");
 			} else {
 				throw new Error("No se pudo vaciar el carrito");
 			}
-		} catch (error) {
+		} catch (error: any) {
 			console.error("Error al vaciar el carrito:", error);
-			showNotification(NotificationType.ERROR, "No se pudo vaciar el carrito");
+			handleError(error, "No se pudo vaciar el carrito");
 		}
-	}, [loading, clearCart, showNotification, invalidateRelatedPages, optimisticCartRemove, cart?.items, fetchCart]);
+	}, [loading, clearCart, invalidateRelatedPages, optimisticCartRemove, cart?.items, fetchCart, handleSuccess, handleError]);
 
 	// Función para proceder al checkout
 	const handleCheckout = useCallback(() => {
@@ -411,7 +432,7 @@ const CartPage: React.FC = () => {
 		navigate("/checkout");
 	}, [isEmpty, navigate, showNotification]);
 
-	// ✅ COMPONENTE ACTUALIZADO PARA ITEM DEL CARRITO CON DESCUENTOS POR VOLUMEN
+	// ✅ COMPONENTE ACTUALIZADO PARA ITEM DEL CARRITO CON VALIDACIÓN DE STOCK
 	const CartItem = React.memo(
 		({
 			item,
@@ -429,6 +450,8 @@ const CartPage: React.FC = () => {
 			isLoading: boolean;
 		}) => {
 			const discount = item.discount;
+			const availableStock = getAvailableStock(item.product);
+			const isAtStockLimit = item.quantity >= availableStock;
 			
 			return (
 				<div className="border-b border-gray-200 last:border-b-0">
@@ -452,6 +475,23 @@ const CartPage: React.FC = () => {
 								>
 									{item.product?.name || `Producto ${item.productId}`}
 								</Link>
+
+								{/* ✅ MOSTRAR INFORMACIÓN DE STOCK */}
+								<div className="flex items-center space-x-2 mb-2">
+									{availableStock > 0 ? (
+										<div className="flex items-center text-sm">
+											<div className="w-2 h-2 bg-green-500 rounded-full mr-1"></div>
+											<span className="text-green-600">
+												{availableStock} en stock
+											</span>
+										</div>
+									) : (
+										<div className="flex items-center text-sm">
+											<AlertTriangle size={12} className="text-red-500 mr-1" />
+											<span className="text-red-600">Agotado</span>
+										</div>
+									)}
+								</div>
 
 								{/* ✅ MOSTRAR DESCUENTOS POR VOLUMEN */}
 								<div className="flex flex-wrap gap-2 mb-2">
@@ -513,28 +553,38 @@ const CartPage: React.FC = () => {
 							<div className="sm:hidden mr-2 font-medium text-gray-800">
 								Cantidad:
 							</div>
-							<div className="flex items-center border border-gray-300 rounded-md">
-								<button
-									onClick={onDecrease}
-									disabled={item.quantity <= 1 || isLoading}
-									className="px-2 py-1 text-gray-600 hover:text-gray-800 disabled:opacity-50"
-								>
-									<Minus size={14} />
-								</button>
-								<span className="px-3 py-1 text-gray-800 text-center w-10">
-									{isLoading ? (
-										<span className="inline-block h-4 w-4 border-2 border-t-primary-600 border-r-primary-600 border-b-primary-200 border-l-primary-200 rounded-full animate-spin"></span>
-									) : (
-										item.quantity
-									)}
-								</span>
-								<button
-									onClick={onIncrease}
-									disabled={isLoading}
-									className="px-2 py-1 text-gray-600 hover:text-gray-800 disabled:opacity-50"
-								>
-									<Plus size={14} />
-								</button>
+							<div className="flex flex-col items-center">
+								<div className="flex items-center border border-gray-300 rounded-md">
+									<button
+										onClick={onDecrease}
+										disabled={item.quantity <= 1 || isLoading}
+										className="px-2 py-1 text-gray-600 hover:text-gray-800 disabled:opacity-50"
+									>
+										<Minus size={14} />
+									</button>
+									<span className="px-3 py-1 text-gray-800 text-center w-10">
+										{isLoading ? (
+											<span className="inline-block h-4 w-4 border-2 border-t-primary-600 border-r-primary-600 border-b-primary-200 border-l-primary-200 rounded-full animate-spin"></span>
+										) : (
+											item.quantity
+										)}
+									</span>
+									<button
+										onClick={onIncrease}
+										disabled={isLoading || isAtStockLimit || availableStock === 0}
+										className="px-2 py-1 text-gray-600 hover:text-gray-800 disabled:opacity-50"
+									>
+										<Plus size={14} />
+									</button>
+								</div>
+								
+								{/* ✅ ADVERTENCIA DE STOCK LIMITADO */}
+								{isAtStockLimit && availableStock > 0 && (
+									<div className="text-xs text-amber-600 mt-1 flex items-center">
+										<AlertTriangle size={10} className="mr-1" />
+										Límite de stock
+									</div>
+								)}
 							</div>
 						</div>
 
@@ -625,7 +675,7 @@ const CartPage: React.FC = () => {
 								</div>
 							</div>
 
-							{/* ✅ PRODUCTOS CON DESCUENTOS CALCULADOS */}
+							{/* ✅ PRODUCTOS CON DESCUENTOS Y VALIDACIÓN DE STOCK */}
 							{cartItemsWithDiscounts.map((item) => (
 								<CartItem
 									key={item.id}

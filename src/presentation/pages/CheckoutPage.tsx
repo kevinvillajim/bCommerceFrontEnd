@@ -1,10 +1,11 @@
-// src/presentation/pages/CheckoutPage.tsx - CON DESCUENTOS POR VOLUMEN
+// src/presentation/pages/CheckoutPage.tsx - CON VALIDACIÓN MEJORADA
 import {useState, useEffect} from "react";
 import {useNavigate} from "react-router-dom";
 import {useCart} from "../hooks/useCart";
 import {useAuth} from "../hooks/useAuth";
+import {useErrorHandler} from "../hooks/useErrorHandler";
 import {CheckoutService} from "../../core/services/CheckoutService";
-import {useCartVolumeDiscounts} from "../contexts/VolumeDiscountContext"; // ✅ IMPORTAR CONTEXTO
+import {useCartVolumeDiscounts} from "../contexts/VolumeDiscountContext";
 import type {
 	ShippingInfo,
 	PaymentInfo,
@@ -15,10 +16,9 @@ import CreditCardForm from "../components/checkout/CreditCardForm";
 import QRPaymentForm from "../components/checkout/QRPaymentForm"; 
 import ShippingForm from "../components/checkout/ShippingForm";
 import TestCheckoutButton from "../components/checkout/TestCheckoutButton";
-import { extractErrorMessage } from "../../utils/errorHandler";
 import DatafastPaymentButton from "../components/checkout/DatafastPaymentButtonProps";
 import {formatCurrency} from "../../utils/formatters/formatCurrency";
-import {Gift, TrendingDown} from "lucide-react";
+import {Gift, TrendingDown, AlertTriangle} from "lucide-react";
 
 const CheckoutPage: React.FC = () => {
 	const navigate = useNavigate();
@@ -26,11 +26,15 @@ const CheckoutPage: React.FC = () => {
 	const {user} = useAuth();
 	const [isLoading, setIsLoading] = useState(false);
 	
+	// ✅ Hook para manejo de errores mejorado
+	const {handleError, handleSuccess} = useErrorHandler({
+		showNotification,
+		context: 'CheckoutPage'
+	});
+	
 	// ✅ USAR CONTEXTO DE DESCUENTOS POR VOLUMEN
 	const {
-		calculateCartTotalDiscounts,
-		calculateCartItemDiscount,
-		isEnabled: volumeDiscountsEnabled
+		calculateCartItemDiscount
 	} = useCartVolumeDiscounts();
 	
 	const [paymentMethod, setPaymentMethod] = useState<
@@ -59,7 +63,40 @@ const CheckoutPage: React.FC = () => {
 
 	const checkoutService = new CheckoutService();
 
-	// ✅ CALCULAR TOTALES CON DESCUENTOS POR VOLUMEN
+	// ✅ HELPER PARA OBTENER STOCK DISPONIBLE
+	const getAvailableStock = (product: any): number => {
+		if (typeof product.stockAvailable === 'number') {
+			return product.stockAvailable;
+		}
+		if (typeof product.stock === 'number') {
+			return product.stock;
+		}
+		return 0;
+	};
+
+	// ✅ VALIDAR STOCK DE TODOS LOS ITEMS
+	const validateCartStock = () => {
+		if (!cart?.items) return { valid: true, errors: [] };
+
+		const errors: string[] = [];
+
+		cart.items.forEach(item => {
+			const availableStock = getAvailableStock(item.product);
+			
+			if (!item.product?.is_in_stock) {
+				errors.push(`${item.product?.name || 'Producto'} está agotado`);
+			} else if (item.quantity > availableStock) {
+				errors.push(`${item.product?.name || 'Producto'}: solo hay ${availableStock} unidades disponibles (solicitaste ${item.quantity})`);
+			}
+		});
+
+		return {
+			valid: errors.length === 0,
+			errors
+		};
+	};
+
+	// ✅ CALCULAR TOTALES CON DESCUENTOS POR VOLUMEN Y VALIDACIÓN
 	const orderSummary = useState(() => {
 		if (!cart?.items?.length) {
 			return {
@@ -68,19 +105,35 @@ const CheckoutPage: React.FC = () => {
 				volumeDiscounts: 0,
 				tax: 0,
 				total: 0,
-				hasVolumeDiscounts: false
+				hasVolumeDiscounts: false,
+				stockIssues: []
 			};
 		}
 
 		// Calcular descuentos para cada item
 		const itemsWithDiscounts = cart.items.map(item => {
 			const discount = calculateCartItemDiscount(item);
+			const availableStock = getAvailableStock(item.product);
+			const hasStockIssue = item.quantity > availableStock || !item.product?.is_in_stock;
+			
 			return {
 				...item,
 				discount,
-				itemTotal: discount.discountedPrice * item.quantity
+				itemTotal: discount.discountedPrice * item.quantity,
+				availableStock,
+				hasStockIssue
 			};
 		});
+
+		// Identificar problemas de stock
+		const stockIssues = itemsWithDiscounts
+			.filter(item => item.hasStockIssue)
+			.map(item => ({
+				productName: item.product?.name || 'Producto',
+				requested: item.quantity,
+				available: item.availableStock,
+				isOutOfStock: !item.product?.is_in_stock
+			}));
 
 		// Calcular totales
 		const subtotal = itemsWithDiscounts.reduce((sum, item) => sum + item.itemTotal, 0);
@@ -94,7 +147,8 @@ const CheckoutPage: React.FC = () => {
 			volumeDiscounts,
 			tax,
 			total,
-			hasVolumeDiscounts: volumeDiscounts > 0
+			hasVolumeDiscounts: volumeDiscounts > 0,
+			stockIssues
 		};
 	})[0];
 
@@ -112,19 +166,34 @@ const CheckoutPage: React.FC = () => {
 		}
 	}, [user]);
 
-	const handleSuccess = (orderData: any) => {
+	const handleDatafastSuccess = (orderData: any) => {
 		console.log("Pago exitoso:", orderData);
 	};
 
-	const handleError = (error: string) => {
+	const handleDatafastError = (error: string) => {
 		console.error("Error:", error);
 	};
 
-	// Verificar si el carrito está vacío
+	// ✅ VERIFICAR CARRITO Y STOCK AL MONTAR
 	useEffect(() => {
 		if (!cart || cart.items.length === 0) {
 			showNotification(NotificationType.ERROR, "El carrito está vacío");
 			navigate("/cart");
+			return;
+		}
+
+		// Validar stock inmediatamente
+		const stockValidation = validateCartStock();
+		if (!stockValidation.valid) {
+			console.warn('⚠️ Problemas de stock detectados:', stockValidation.errors);
+			
+			// Mostrar primer error de stock
+			if (stockValidation.errors.length > 0) {
+				showNotification(
+					NotificationType.WARNING, 
+					`Problema de stock: ${stockValidation.errors[0]}`
+				);
+			}
 		}
 	}, [cart, navigate, showNotification]);
 
@@ -202,9 +271,26 @@ const CheckoutPage: React.FC = () => {
 		return Object.keys(errors).length === 0;
 	};
 
-	// Procesar el checkout
+	// ✅ PROCESAR CHECKOUT CON VALIDACIÓN DE STOCK MEJORADA
 	const processCheckout = async () => {
 		console.log("🛒 CheckoutPage.processCheckout INICIADO");
+
+		// ✅ VALIDAR STOCK ANTES DE PROCEDER
+		const stockValidation = validateCartStock();
+		if (!stockValidation.valid) {
+			console.log("❌ Validación de stock falló:", stockValidation.errors);
+			
+			// Mostrar todos los errores de stock
+			stockValidation.errors.forEach(error => {
+				showNotification(NotificationType.ERROR, error);
+			});
+			
+			showNotification(
+				NotificationType.WARNING,
+				"Por favor, ajusta las cantidades en tu carrito antes de continuar"
+			);
+			return;
+		}
 
 		if (!validateForm()) {
 			console.log("❌ Validación de formulario falló");
@@ -262,10 +348,7 @@ const CheckoutPage: React.FC = () => {
 					successMessage += ` Has ahorrado ${formatCurrency(orderSummary.volumeDiscounts)} con descuentos por volumen.`;
 				}
 				
-				showNotification(
-					NotificationType.SUCCESS,
-					successMessage
-				);
+				handleSuccess(successMessage);
 				clearCart();
 
 				if (response.data && typeof response.data === 'object') {
@@ -280,29 +363,72 @@ const CheckoutPage: React.FC = () => {
 			} else {
 				throw new Error(response.message || "Error al procesar el pedido");
 			}
-		} catch (error) {
+		} catch (error: any) {
 			console.error("❌ Error COMPLETO al procesar checkout:");
 			console.error("📊 Error object:", error);
 
-			const errorMessage = extractErrorMessage(
-				error,
-				"Error al procesar el pago. Por favor, intenta de nuevo más tarde."
-			);
-
-			console.error("📊 Error message final:", errorMessage);
-			showNotification(NotificationType.ERROR, errorMessage);
+			// ✅ MANEJO ESPECÍFICO DE ERRORES DE STOCK
+			if (error?.response?.data?.message?.includes('stock') || 
+				error?.message?.includes('stock') ||
+				error?.response?.data?.message?.includes('insuficiente')) {
+				
+				showNotification(
+					NotificationType.ERROR, 
+					"Algunos productos no tienen suficiente stock. Revisa tu carrito."
+				);
+				
+				// Redirigir al carrito para que ajusten las cantidades
+				setTimeout(() => {
+					navigate("/cart");
+				}, 2000);
+			} else {
+				handleError(error, "Error al procesar el pago. Por favor, intenta de nuevo más tarde.");
+			}
 		} finally {
 			setIsLoading(false);
 			console.log("🛒 CheckoutPage.processCheckout FINALIZADO");
 		}
 	};
 
-	// ✅ COMPONENTE PARA RESUMEN DE PEDIDO CON DESCUENTOS
+	// ✅ COMPONENTE PARA RESUMEN DE PEDIDO CON ADVERTENCIAS DE STOCK
 	const OrderSummaryComponent = () => (
 		<div>
 			<h2 className="text-xl font-bold text-gray-800 mb-4">
 				Resumen del pedido
 			</h2>
+
+			{/* ✅ ADVERTENCIAS DE STOCK */}
+			{orderSummary.stockIssues.length > 0 && (
+				<div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+					<div className="flex items-start">
+						<AlertTriangle size={18} className="text-red-600 mr-2 mt-0.5" />
+						<div className="flex-1">
+							<h4 className="font-medium text-red-800 text-sm mb-2">
+								Problemas de stock detectados
+							</h4>
+							<div className="space-y-1">
+								{orderSummary.stockIssues.map((issue, index) => (
+									<div key={index} className="text-xs text-red-700">
+										<strong>{issue.productName}:</strong> {
+											issue.isOutOfStock 
+												? "Producto agotado"
+												: `Solo ${issue.available} disponibles (solicitaste ${issue.requested})`
+										}
+									</div>
+								))}
+							</div>
+							<div className="mt-2">
+								<button
+									onClick={() => navigate("/cart")}
+									className="text-xs text-red-600 underline hover:no-underline"
+								>
+									Ir al carrito para ajustar cantidades
+								</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			)}
 
 			{/* ✅ BANNER DE DESCUENTOS POR VOLUMEN */}
 			{orderSummary.hasVolumeDiscounts && (
@@ -324,10 +450,15 @@ const CheckoutPage: React.FC = () => {
 			{/* Lista de productos */}
 			<div className="space-y-3 mb-6">
 				{orderSummary.items.map((item, index) => (
-					<div key={index} className="flex items-center justify-between py-2 border-b border-gray-100">
+					<div key={index} className={`flex items-center justify-between py-2 border-b border-gray-100 ${
+						item.hasStockIssue ? 'bg-red-50 px-2 rounded' : ''
+					}`}>
 						<div className="flex-1">
-							<h4 className="text-sm font-medium text-gray-900">
+							<h4 className={`text-sm font-medium ${item.hasStockIssue ? 'text-red-900' : 'text-gray-900'}`}>
 								{item.product?.name || `Producto ${item.productId}`}
+								{item.hasStockIssue && (
+									<span className="ml-2 text-xs text-red-600">⚠️</span>
+								)}
 							</h4>
 							<div className="flex items-center space-x-2 mt-1">
 								<span className="text-xs text-gray-500">
@@ -352,7 +483,7 @@ const CheckoutPage: React.FC = () => {
 							)}
 						</div>
 						<div className="text-right">
-							<span className="text-sm font-medium text-gray-900">
+							<span className={`text-sm font-medium ${item.hasStockIssue ? 'text-red-900' : 'text-gray-900'}`}>
 								{formatCurrency(item.itemTotal)}
 							</span>
 							{item.discount.hasDiscount && (
@@ -564,8 +695,8 @@ const CheckoutPage: React.FC = () => {
 								errors={formErrors}
 								onChange={handlePaymentChange}
 								content={<DatafastPaymentButton
-									onSuccess={handleSuccess}
-									onError={handleError}
+									onSuccess={handleDatafastSuccess}
+									onError={handleDatafastError}
 								/>}
 							/>
 						)}
@@ -574,14 +705,14 @@ const CheckoutPage: React.FC = () => {
 					</div>
 				</div>
 
-				{/* ✅ RESUMEN DEL PEDIDO CON DESCUENTOS */}
+				{/* ✅ RESUMEN DEL PEDIDO CON ADVERTENCIAS Y DESCUENTOS */}
 				<div className="lg:w-1/3">
 					<div className="bg-white rounded-lg shadow-lg p-6 sticky top-24">
 						<OrderSummaryComponent />
 
 						<button
 							onClick={processCheckout}
-							disabled={isLoading}
+							disabled={isLoading || orderSummary.stockIssues.length > 0}
 							className="mt-6 w-full bg-primary-600 hover:bg-primary-700 text-white font-medium py-3 px-4 rounded-md transition-colors disabled:opacity-50 flex items-center justify-center"
 						>
 							{isLoading ? (
@@ -608,10 +739,19 @@ const CheckoutPage: React.FC = () => {
 									</svg>
 									Procesando...
 								</>
+							) : orderSummary.stockIssues.length > 0 ? (
+								"Resuelve problemas de stock"
 							) : (
 								`Finalizar compra - ${formatCurrency(orderSummary.total)}`
 							)}
 						</button>
+
+						{/* ✅ MENSAJE DE ADVERTENCIA SI HAY PROBLEMAS DE STOCK */}
+						{orderSummary.stockIssues.length > 0 && (
+							<div className="mt-3 text-xs text-center text-red-600">
+								⚠️ Ajusta las cantidades en tu carrito antes de continuar
+							</div>
+						)}
 
 						<p className="mt-4 text-xs text-gray-500 text-center">
 							Al hacer clic en "Finalizar compra", aceptas nuestros{" "}

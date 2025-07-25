@@ -1,4 +1,4 @@
-// src/presentation/pages/ProductItemPage.tsx - CON DESCUENTOS POR VOLUMEN FUNCIONALES
+// src/presentation/pages/ProductItemPage.tsx - CON VALIDACIÓN DE STOCK
 import React, {useState, useEffect} from "react";
 import {useParams, Link, useNavigate} from "react-router-dom";
 import {
@@ -14,7 +14,8 @@ import {
 	Loader,
 	MessageSquare,
 	Gift,
-	TrendingDown
+	TrendingDown,
+	AlertTriangle
 } from "lucide-react";
 import {ProductService} from "../../core/services/ProductService";
 import type {
@@ -26,6 +27,7 @@ import {useCart} from "../hooks/useCart";
 import {useFavorites} from "../hooks/useFavorites";
 import {useChat} from "../hooks/useChat";
 import {useInvalidateCounters} from "../hooks/useHeaderCounters";
+import {useErrorHandler} from "../hooks/useErrorHandler";
 import {NotificationType} from "../contexts/CartContext";
 import CacheService from "../../infrastructure/services/CacheService";
 import ApiClient from "../../infrastructure/api/apiClient";
@@ -54,9 +56,16 @@ const ProductItemPage: React.FC = () => {
 		"description" | "specifications" | "reviews"
 	>("description");
 	const [isUpdating, setIsUpdating] = useState(false);
+	
 	const {addToCart, showNotification} = useCart();
 	const {toggleFavorite, checkIsFavorite} = useFavorites();
 	const {createChat} = useChat();
+	
+	// ✅ Hook para manejo de errores mejorado
+	const {handleError, handleSuccess, handleStockError} = useErrorHandler({
+		showNotification,
+		context: 'ProductItemPage'
+	});
 	
 	// ✅ Hook para actualizaciones optimistas
 	const {
@@ -79,6 +88,24 @@ const ProductItemPage: React.FC = () => {
 
 	// Initialize service
 	const productService = new ProductService();
+
+	// ✅ HELPER PARA OBTENER STOCK DISPONIBLE
+	const getAvailableStock = (product: ProductDetail): number => {
+		// Prioridad: stockAvailable > stock > 0
+		if (typeof product.stockAvailable === 'number') {
+			return product.stockAvailable;
+		}
+		if (typeof product.stock === 'number') {
+			return product.stock;
+		}
+		return 0;
+	};
+
+	// ✅ HELPER PARA VALIDAR DISPONIBILIDAD
+	const isStockAvailable = (product: ProductDetail, requestedQuantity: number): boolean => {
+		const availableStock = getAvailableStock(product);
+		return availableStock >= requestedQuantity && product.is_in_stock !== false;
+	};
 
 	// ✅ HELPER PARA VALIDAR VALORES
 	const hasValidValue = (value: any): boolean => {
@@ -145,25 +172,42 @@ const ProductItemPage: React.FC = () => {
 		fetchProductData();
 	}, [id]);
 
-	// ✅ FUNCIÓN PARA CAMBIAR CANTIDAD - ACTUALIZADA
+	// ✅ FUNCIÓN PARA CAMBIAR CANTIDAD CON VALIDACIÓN DE STOCK
 	const handleQuantityChange = (newQuantity: number) => {
-		if (newQuantity >= 1 && newQuantity <= 50) {
+		if (newQuantity < 1) return;
+		
+		if (!product) {
+			handleError(new Error("Producto no disponible"), "No se puede cambiar la cantidad");
+			return;
+		}
+
+		const availableStock = getAvailableStock(product);
+		
+		if (newQuantity > availableStock) {
+			handleStockError(availableStock, newQuantity);
+			return;
+		}
+
+		if (newQuantity <= 50) {
 			setQuantity(newQuantity);
+		} else {
+			showNotification(
+				NotificationType.WARNING,
+				"No puedes agregar más de 50 unidades por producto"
+			);
 		}
 	};
 
+	// ✅ FUNCIÓN PARA AGREGAR AL CARRITO CON VALIDACIÓN DE STOCK
 	const handleAddToCart = async () => {
-		// ✅ PREVENIR DOBLES CLICKS
 		if (isUpdating || !product) {
 			if (!product) {
-				showNotification(
-					NotificationType.ERROR,
-					"Error: No se pudo cargar la información del producto"
-				);
+				handleError(new Error("Producto no disponible"), "Error: No se pudo cargar la información del producto");
 			}
 			return;
 		}
 
+		// Validar disponibilidad general
 		if (!product.is_in_stock) {
 			showNotification(
 				NotificationType.ERROR,
@@ -172,7 +216,14 @@ const ProductItemPage: React.FC = () => {
 			return;
 		}
 
-		console.log(`Añadido al carrito: ${quantity} unidades de ${product.name} con precio final: $${finalPrice}`);
+		// Validar stock específico
+		const availableStock = getAvailableStock(product);
+		if (!isStockAvailable(product, quantity)) {
+			handleStockError(availableStock, quantity);
+			return;
+		}
+
+		console.log(`Añadiendo al carrito: ${quantity} unidades de ${product.name} con precio final: $${finalPrice}`);
 
 		try {
 			setIsUpdating(true);
@@ -194,19 +245,22 @@ const ProductItemPage: React.FC = () => {
 					message += ` con ${discountResult?.discountPercentage}% de descuento (ahorro: $${totalSavings.toFixed(2)})`;
 				}
 
-				showNotification(
-					NotificationType.SUCCESS,
-					message
-				);
+				handleSuccess(message);
 			} else {
 				throw new Error("No se pudo agregar el producto al carrito");
 			}
-		} catch (error) {
+		} catch (error: any) {
 			console.error("Error al agregar al carrito:", error);
-			showNotification(
-				NotificationType.ERROR,
-				"Error al agregar producto al carrito. Inténtalo de nuevo."
-			);
+			
+			// Manejo específico de errores de stock
+			if (error?.response?.data?.message?.includes('stock') || 
+				error?.message?.includes('stock') ||
+				error?.response?.data?.message?.includes('insuficiente')) {
+				const availableStock = getAvailableStock(product);
+				handleStockError(availableStock, quantity);
+			} else {
+				handleError(error, "Error al agregar producto al carrito. Inténtalo de nuevo.");
+			}
 		} finally {
 			// ✅ TIMEOUT PARA PREVENIR SPAM
 			setTimeout(() => {
@@ -216,13 +270,9 @@ const ProductItemPage: React.FC = () => {
 	};
 
 	const handleAddToWishlist = async () => {
-		// ✅ PREVENIR DOBLES CLICKS
 		if (isUpdating || !product) {
 			if (!product) {
-				showNotification(
-					NotificationType.ERROR,
-					"Error: No se pudo cargar la información del producto"
-				);
+				handleError(new Error("Producto no disponible"), "Error: No se pudo cargar la información del producto");
 			}
 			return;
 		}
@@ -247,24 +297,14 @@ const ProductItemPage: React.FC = () => {
 			invalidateRelatedPages();
 
 			if (result) {
-				showNotification(
-					NotificationType.SUCCESS,
-					"Producto añadido a favoritos"
-				);
+				handleSuccess("Producto añadido a favoritos");
 			} else {
-				showNotification(
-					NotificationType.INFO,
-					"Producto eliminado de favoritos"
-				);
+				showNotification(NotificationType.INFO, "Producto eliminado de favoritos");
 			}
-		} catch (error) {
+		} catch (error: any) {
 			console.error("Error al manejar favorito:", error);
-			showNotification(
-				NotificationType.ERROR,
-				"Error al gestionar favoritos. Inténtalo de nuevo."
-			);
+			handleError(error, "Error al gestionar favoritos. Inténtalo de nuevo.");
 		} finally {
-			// ✅ TIMEOUT PARA PREVENIR SPAM
 			setTimeout(() => {
 				setIsUpdating(false);
 			}, 1000);
@@ -273,10 +313,7 @@ const ProductItemPage: React.FC = () => {
 
 	const handleChatWithSeller = async () => {
 		if (!product) {
-			showNotification(
-				NotificationType.ERROR,
-				"Error: No se pudo cargar la información del producto"
-			);
+			handleError(new Error("Producto no disponible"), "Error: No se pudo cargar la información del producto");
 			return;
 		}
 
@@ -349,12 +386,9 @@ const ProductItemPage: React.FC = () => {
 			} else {
 				throw new Error("No se pudo crear el chat con el vendedor");
 			}
-		} catch (error) {
+		} catch (error: any) {
 			console.error("Error al iniciar chat con vendedor:", error);
-			showNotification(
-				NotificationType.ERROR,
-				"Error al iniciar chat con vendedor. Inténtalo de nuevo."
-			);
+			handleError(error, "Error al iniciar chat con vendedor. Inténtalo de nuevo.");
 		}
 	};
 
@@ -364,16 +398,10 @@ const ProductItemPage: React.FC = () => {
 		
 		try {
 			await navigator.clipboard.writeText(currentUrl);
-			showNotification(
-				NotificationType.SUCCESS,
-				"¡Enlace copiado al portapapeles!"
-			);
-		} catch (error) {
+			handleSuccess("¡Enlace copiado al portapapeles!");
+		} catch (error: any) {
 			console.error("Error al copiar enlace:", error);
-			showNotification(
-				NotificationType.ERROR,
-				"No se pudo copiar el enlace"
-			);
+			handleError(error, "No se pudo copiar el enlace");
 		}
 	};
 
@@ -449,6 +477,7 @@ const ProductItemPage: React.FC = () => {
 
 	// Process product data for display
 	const categories = product.category ? [product.category.name] : [];
+	const availableStock = getAvailableStock(product);
 
 	// Función helper para obtener URL de imagen
 	const getImageUrlFromProduct = (image: string | ProductImage): string => {
@@ -496,7 +525,7 @@ const ProductItemPage: React.FC = () => {
 		},
 		{
 			name: "Disponibilidad",
-			value: product.is_in_stock ? "En stock" : "Agotado",
+			value: product.is_in_stock ? `En stock (${availableStock} unidades)` : "Agotado",
 		},
 		{
 			name: "Categoría", 
@@ -578,6 +607,23 @@ const ProductItemPage: React.FC = () => {
 							<h1 className="text-3xl font-bold text-gray-900">
 								{product.name}
 							</h1>
+
+							{/* ✅ INFORMACIÓN DE STOCK PROMINENTE */}
+							<div className="flex items-center space-x-3">
+								{product.is_in_stock ? (
+									<div className="flex items-center">
+										<div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+										<span className="text-green-700 font-medium">
+											En stock ({availableStock} disponibles)
+										</span>
+									</div>
+								) : (
+									<div className="flex items-center">
+										<AlertTriangle size={16} className="text-red-500 mr-2" />
+										<span className="text-red-600 font-medium">Agotado</span>
+									</div>
+								)}
+							</div>
 
 							{/* Rating */}
 							{(product.rating && 
@@ -703,7 +749,7 @@ const ProductItemPage: React.FC = () => {
 								</div>
 							) : null}
 
-							{/* ✅ CANTIDAD Y PRECIO TOTAL ACTUALIZADO EN TIEMPO REAL */}
+							{/* ✅ CANTIDAD Y PRECIO TOTAL CON VALIDACIÓN DE STOCK */}
 							<div className="space-y-4">
 								<div>
 									<h3 className="font-medium text-gray-900 mb-3">Cantidad:</h3>
@@ -720,7 +766,7 @@ const ProductItemPage: React.FC = () => {
 												type="number"
 												className="w-20 text-center border-x border-gray-300 text-gray-700 font-medium focus:outline-none"
 												min="1"
-												max="50"
+												max={Math.min(availableStock, 50)}
 												value={quantity}
 												onChange={(e) =>
 													handleQuantityChange(parseInt(e.target.value) || 1)
@@ -729,7 +775,7 @@ const ProductItemPage: React.FC = () => {
 											<button
 												className="px-4 bg-gray-50 text-gray-600 hover:bg-gray-100 flex items-center justify-center disabled:opacity-50"
 												onClick={() => handleQuantityChange(quantity + 1)}
-												disabled={quantity >= 50}
+												disabled={quantity >= Math.min(availableStock, 50)}
 											>
 												<Plus size={18} />
 											</button>
@@ -748,6 +794,14 @@ const ProductItemPage: React.FC = () => {
 											)}
 										</div>
 									</div>
+
+									{/* ✅ MOSTRAR LÍMITE DE STOCK */}
+									{availableStock < 10 && availableStock > 0 && (
+										<div className="mt-2 text-sm text-amber-600 flex items-center">
+											<AlertTriangle size={14} className="mr-1" />
+											¡Solo quedan {availableStock} unidades disponibles!
+										</div>
+									)}
 								</div>
 
 								{/* ✅ BOTONES DE ACCIÓN */}
@@ -755,10 +809,10 @@ const ProductItemPage: React.FC = () => {
 									<button
 										className="flex-grow h-12 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors duration-200 flex items-center justify-center disabled:opacity-50"
 										onClick={handleAddToCart}
-										disabled={!product.is_in_stock || isUpdating}
+										disabled={!product.is_in_stock || isUpdating || availableStock === 0}
 									>
 										<ShoppingCart size={20} className="mr-2" />
-										{isUpdating ? "Agregando..." : product.is_in_stock
+										{isUpdating ? "Agregando..." : product.is_in_stock && availableStock > 0
 											? `Añadir al Carrito - $${(finalPrice * quantity).toFixed(2)}`
 											: "Producto Agotado"}
 									</button>

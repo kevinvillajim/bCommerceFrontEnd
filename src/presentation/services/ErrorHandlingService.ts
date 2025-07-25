@@ -1,4 +1,4 @@
-// src/presentation/services/ErrorHandlingService.ts
+// src/presentation/services/ErrorHandlingService.ts - MEJORADO
 export interface ApiError {
 	status: string;
 	message: string;
@@ -11,6 +11,12 @@ export interface ErrorResponse {
 	message: string;
 	data?: any;
 	code?: string;
+}
+
+export interface ErrorHandlingResult {
+	message: string;
+	type: 'error' | 'warning' | 'info';
+	shouldRetry: boolean;
 }
 
 export class ErrorHandlingService {
@@ -71,6 +77,8 @@ export class ErrorHandlingService {
 			'Stock insuficiente': 'No hay suficiente stock disponible. Reduce la cantidad.',
 			'Insufficient stock': 'No hay suficiente stock disponible. Reduce la cantidad.',
 			'Out of stock': 'Producto agotado. No hay unidades disponibles.',
+			'No hay suficiente stock': 'No hay suficiente stock disponible. Reduce la cantidad.',
+			'Producto agotado': 'Producto agotado. No hay unidades disponibles.',
 			
 			// Errores de autenticación
 			'Unauthorized': 'Debes iniciar sesión para realizar esta acción.',
@@ -116,7 +124,7 @@ export class ErrorHandlingService {
 		// Buscar por palabras clave
 		const lowerMessage = message.toLowerCase();
 		
-		if (lowerMessage.includes('stock')) {
+		if (lowerMessage.includes('stock') || lowerMessage.includes('existencia')) {
 			return 'Problema con el stock del producto. Verifica la disponibilidad.';
 		}
 		
@@ -124,12 +132,16 @@ export class ErrorHandlingService {
 			return 'Error en el procesamiento del pago. Verifica tus datos.';
 		}
 		
-		if (lowerMessage.includes('network') || lowerMessage.includes('connection')) {
+		if (lowerMessage.includes('network') || lowerMessage.includes('connection') || lowerMessage.includes('conexión')) {
 			return 'Error de conexión. Verifica tu conexión a internet.';
 		}
 		
-		if (lowerMessage.includes('timeout')) {
+		if (lowerMessage.includes('timeout') || lowerMessage.includes('tiempo')) {
 			return 'La operación tardó demasiado. Inténtalo de nuevo.';
+		}
+
+		if (lowerMessage.includes('cantidad') || lowerMessage.includes('disponible')) {
+			return 'Cantidad solicitada no disponible. Verifica el stock.';
 		}
 
 		// Si no hay traducción, devolver el mensaje original
@@ -145,6 +157,8 @@ export class ErrorHandlingService {
 
 		// Warnings para errores de validación o stock
 		if (lowerMessage.includes('stock') || 
+			lowerMessage.includes('existencia') ||
+			lowerMessage.includes('cantidad') ||
 			lowerMessage.includes('validation') || 
 			lowerMessage.includes('required')) {
 			return 'warning';
@@ -152,7 +166,9 @@ export class ErrorHandlingService {
 
 		// Info para errores de autenticación
 		if (lowerMessage.includes('unauthorized') || 
-			lowerMessage.includes('token')) {
+			lowerMessage.includes('token') ||
+			lowerMessage.includes('login') ||
+			lowerMessage.includes('sesión')) {
 			return 'info';
 		}
 
@@ -163,11 +179,7 @@ export class ErrorHandlingService {
 	/**
 	 * Maneja errores de API de manera consistente
 	 */
-	static handleApiError(error: any, context?: string): {
-		message: string;
-		type: 'error' | 'warning' | 'info';
-		shouldRetry: boolean;
-	} {
+	static handleApiError(error: any, context?: string): ErrorHandlingResult {
 		const message = this.extractUserMessage(error);
 		const type = this.getNotificationType(error);
 		
@@ -213,6 +225,43 @@ export class ErrorHandlingService {
 			return retryableCodes.includes(error.response.status);
 		}
 
+		// Errores de stock - no se puede reintentar sin cambiar datos
+		const message = error?.response?.data?.message || error?.message || '';
+		if (message.toLowerCase().includes('stock') || 
+			message.toLowerCase().includes('existencia') ||
+			message.toLowerCase().includes('cantidad')) {
+			return false;
+		}
+
 		return false;
 	}
+
+	/**
+	 * Maneja errores específicos de stock
+	 */
+	static handleStockError(availableStock: number, requestedQuantity: number): ErrorHandlingResult {
+		const message = `Solo hay ${availableStock} unidad${availableStock !== 1 ? 'es' : ''} disponible${availableStock !== 1 ? 's' : ''} en stock. Solicitaste ${requestedQuantity}.`;
+		
+		return {
+			message,
+			type: 'warning',
+			shouldRetry: false
+		};
+	}
+
+	/**
+	 * Maneja errores de validación de formularios
+	 */
+	static handleValidationError(validationErrors: Record<string, string[]>): ErrorHandlingResult {
+		const errors = Object.values(validationErrors).flat();
+		const message = errors.length > 0 ? errors.join('. ') : 'Error de validación';
+		
+		return {
+			message,
+			type: 'warning',
+			shouldRetry: false
+		};
+	}
 }
+
+export default ErrorHandlingService;
