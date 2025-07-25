@@ -1,4 +1,4 @@
-// src/core/services/VolumeDiscountService.ts - CORREGIDO
+// src/core/services/VolumeDiscountService.ts - SIMPLIFICADO Y CORREGIDO
 
 import ApiClient from "../../infrastructure/api/apiClient";
 import type {
@@ -10,10 +10,11 @@ import type {
 
 /**
  * Servicio para gestionar descuentos por volumen
+ * ✅ SIMPLIFICADO: El backend es la fuente de verdad para cálculos
  */
 export class VolumeDiscountService {
 	/**
-	 * Obtener información de descuentos por volumen para un producto
+	 * ✅ SIMPLIFICADO: Solo obtener información de descuentos, sin calcular precios
 	 */
 	async getProductVolumeDiscountInfo(
 		productId: number,
@@ -36,66 +37,45 @@ export class VolumeDiscountService {
 	}
 
 	/**
-	 * Calcular precio con descuento por volumen
+	 * ✅ OBSOLETO: Ya no calculamos precios en frontend, el backend los proporciona
+	 * @deprecated Usar precios que vienen del backend con descuentos ya aplicados
 	 */
 	async calculateVolumePrice(
-		productId: number,
-		basePrice: number,
-		quantity: number
-	): Promise<{
+		basePrice: number	): Promise<{
 		original_price: number;
 		discounted_price: number;
 		discount_percentage: number;
 		savings: number;
 		discount_label: string | null;
 	}> {
+		console.warn("⚠️ VolumeDiscountService.calculateVolumePrice está obsoleto. Usar precios del backend.");
+		
+		// Fallback simple sin API call
+		return {
+			original_price: basePrice,
+			discounted_price: basePrice,
+			discount_percentage: 0,
+			savings: 0,
+			discount_label: null
+		};
+	}
+
+	/**
+	 * ✅ NUEVO: Solicitar al backend que recalcule precios del carrito
+	 */
+	async requestCartPricingUpdate(): Promise<any> {
 		try {
-			const discountInfo = await this.getProductVolumeDiscountInfo(productId, quantity);
-			
-			if (!discountInfo?.data.enabled || !discountInfo.data.tiers.length) {
-				return {
-					original_price: basePrice,
-					discounted_price: basePrice,
-					discount_percentage: 0,
-					savings: 0,
-					discount_label: null
-				};
-			}
+			console.log("🔄 VolumeDiscountService: Solicitando actualización de precios del carrito");
 
-			// Buscar el tier aplicable para la cantidad
-			const applicableTier = discountInfo.data.tiers
-				.filter(tier => quantity >= tier.quantity)
-				.pop(); // Obtener el último (mayor descuento)
+			const response = await ApiClient.post<any>(
+				"/cart/update-pricing"
+			);
 
-			if (!applicableTier) {
-				return {
-					original_price: basePrice,
-					discounted_price: basePrice,
-					discount_percentage: 0,
-					savings: 0,
-					discount_label: null
-				};
-			}
-
-			const discountedPrice = basePrice * (1 - applicableTier.discount / 100);
-			const savings = basePrice - discountedPrice;
-
-			return {
-				original_price: basePrice,
-				discounted_price: discountedPrice,
-				discount_percentage: applicableTier.discount,
-				savings: savings,
-				discount_label: applicableTier.label
-			};
+			console.log("✅ VolumeDiscountService: Precios del carrito actualizados");
+			return response;
 		} catch (error) {
-			console.error("❌ Error calculando precio con descuento por volumen:", error);
-			return {
-				original_price: basePrice,
-				discounted_price: basePrice,
-				discount_percentage: 0,
-				savings: 0,
-				discount_label: null
-			};
+			console.error("❌ Error actualizando precios del carrito:", error);
+			return null;
 		}
 	}
 
@@ -360,7 +340,7 @@ export class VolumeDiscountService {
 	}
 
 	/**
-	 * Calcular ahorros totales para múltiples productos
+	 * ✅ SIMPLIFICADO: Calcular ahorros totales usando datos del backend
 	 */
 	calculateTotalSavings(
 		items: Array<{
@@ -387,6 +367,32 @@ export class VolumeDiscountService {
 		).join(", ");
 		
 		return `¡Descuentos por volumen disponibles! ${tierMessages}`;
+	}
+
+	/**
+	 * ✅ NUEVO: Obtener precios calculados del backend para múltiples productos
+	 */
+	async getCalculatedPricing(
+		items: Array<{
+			product_id: number;
+			quantity: number;
+			base_price: number;
+		}>
+	): Promise<any> {
+		try {
+			console.log("💰 VolumeDiscountService: Obteniendo precios calculados del backend");
+
+			const response = await ApiClient.post<any>(
+				"/volume-discounts/calculate-pricing",
+				{ items }
+			);
+
+			console.log("✅ VolumeDiscountService: Precios calculados obtenidos");
+			return response;
+		} catch (error) {
+			console.error("❌ Error obteniendo precios calculados:", error);
+			return null;
+		}
 	}
 }
 

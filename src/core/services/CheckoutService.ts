@@ -18,11 +18,17 @@ export interface CheckoutRequest {
 	payment: PaymentInfo;
 	shippingAddress: Address;
 	billingAddress?: Address;
-	seller_id?: number;
+	seller_id?: number | null; // ✅ CORREGIDO: Permitir null
 	items?: Array<{
 		product_id: number;
 		quantity: number;
 		price: number;
+		// ✅ NUEVOS: Campos para descuentos por volumen
+		final_price?: number;
+		discounted_price?: number;
+		original_price?: number;
+		volume_discount_percentage?: number;
+		volume_savings?: number;
 	}>;
 }
 
@@ -44,6 +50,10 @@ export interface BackendCheckoutRequest {
 		product_id: number;
 		quantity: number;
 		price: number;
+		// ✅ NUEVOS: Campos para el backend
+		base_price?: number;
+		volume_discount_percentage?: number;
+		original_price?: number;
 	}>;
 }
 
@@ -138,7 +148,7 @@ export class CheckoutService {
 	}
 
 	/**
-	 * ✅ ACTUALIZADO: Procesar el pago y finalizar la compra con validación robusta
+	 * ✅ CORREGIDO: Procesar el pago usando precios ya calculados del carrito
 	 */
 	async processCheckout(
 		checkoutData: CheckoutRequest,
@@ -152,7 +162,7 @@ export class CheckoutService {
 			console.log("📞 Llamando a API:", API_ENDPOINTS.CHECKOUT.PROCESS);
 			console.log("🔍 DEBUGGING - Método original:", checkoutData.payment.method);
 
-			// ✅ CORREGIDO: Mapear método de pago de manera más robusta
+			// ✅ MAPEAR método de pago de manera más robusta
 			let paymentMethod: PaymentMethod = checkoutData.payment.method;
 			
 			// Mapeo de métodos de pago
@@ -172,7 +182,7 @@ export class CheckoutService {
 
 			console.log("🔍 DEBUGGING - Método después de mapear:", paymentMethod);
 
-			// ✅ VALIDAR items antes de enviar
+			// ✅ VALIDAR Y PROCESAR ITEMS DEL CARRITO
 			const items = checkoutData.items || [];
 			console.log("🔍 DEBUGGING - Items recibidos:", items);
 
@@ -180,7 +190,7 @@ export class CheckoutService {
 				console.warn("⚠️ No se recibieron items en checkoutData");
 			}
 
-			// Validar estructura de cada item
+			// ✅ IMPORTANTE: Validar que los items tengan precios finales (con descuentos aplicados)
 			const validatedItems = items.map((item, index) => {
 				if (!item.product_id || typeof item.product_id !== 'number') {
 					throw new Error(`Item ${index}: product_id inválido (${item.product_id})`);
@@ -188,24 +198,40 @@ export class CheckoutService {
 				if (!item.quantity || typeof item.quantity !== 'number' || item.quantity <= 0) {
 					throw new Error(`Item ${index}: quantity inválida (${item.quantity})`);
 				}
-				if (typeof item.price !== 'number' || item.price <= 0) {
-					throw new Error(`Item ${index}: price inválido (${item.price})`);
+
+				// ✅ USAR PRECIO FINAL (con descuentos aplicados) si está disponible
+				let finalPrice = item.price;
+				if (item.final_price && typeof item.final_price === 'number') {
+					finalPrice = item.final_price;
+					console.log(`💰 Item ${index}: Usando precio final con descuentos: ${finalPrice} (precio base: ${item.price})`);
+				} else if (item.discounted_price && typeof item.discounted_price === 'number') {
+					finalPrice = item.discounted_price;
+					console.log(`💰 Item ${index}: Usando precio con descuento: ${finalPrice} (precio base: ${item.price})`);
+				}
+
+				if (typeof finalPrice !== 'number' || finalPrice <= 0) {
+					throw new Error(`Item ${index}: price inválido (${finalPrice})`);
 				}
 
 				console.log(`✅ Item ${index} validado:`, {
 					product_id: item.product_id,
 					quantity: item.quantity,
-					price: item.price
+					original_price: item.price,
+					final_price: finalPrice,
+					has_volume_discount: (item.volume_discount_percentage || 0) > 0
 				});
 
 				return {
 					product_id: parseInt(String(item.product_id)),
 					quantity: parseInt(String(item.quantity)),
-					price: parseFloat(String(item.price))
+					price: parseFloat(String(finalPrice)), // ✅ ENVIAR PRECIO FINAL, no base
+					base_price: parseFloat(String(item.price || finalPrice)), // ✅ ENVIAR PRECIO BASE también
+					volume_discount_percentage: item.volume_discount_percentage || 0,
+					original_price: item.original_price || item.price || finalPrice
 				};
 			});
 
-			console.log("✅ Items validados:", validatedItems);
+			console.log("✅ Items validados con precios finales:", validatedItems);
 
 			// Mapear dirección a formato requerido por backend
 			const nameParts = (checkoutData.shippingAddress.name || '').split(' ');
@@ -226,10 +252,10 @@ export class CheckoutService {
 					country: checkoutData.shippingAddress.country || ''
 				},
 				seller_id: checkoutData.seller_id,
-				items: validatedItems // ✅ Usar items validados
+				items: validatedItems // ✅ Usar items con precios finales
 			};
 
-			console.log("🔍 DEBUGGING - Datos completos que se enviarán al backend:", JSON.stringify(backendData, null, 2));
+			console.log("🔍 DEBUGGING - Datos completos enviados al backend:", JSON.stringify(backendData, null, 2));
 
 			// ✅ VALIDACIÓN FINAL antes de enviar
 			if (backendData.items && backendData.items.length > 0) {
@@ -242,7 +268,7 @@ export class CheckoutService {
 						throw new Error(`FATAL: Item ${i} tiene precio inválido: ${item.price} (tipo: ${typeof item.price})`);
 					}
 				}
-				console.log("✅ VALIDACIÓN FINAL: Todos los items tienen campo 'price' válido");
+				console.log("✅ VALIDACIÓN FINAL: Todos los items tienen precios finales válidos");
 			}
 
 			const response = await ApiClient.post<CheckoutResponse>(
@@ -250,28 +276,20 @@ export class CheckoutService {
 				backendData
 			);
 
-			console.log("✅ CheckoutService: Respuesta COMPLETA del backend:");
+			console.log("✅ CheckoutService: Respuesta del backend:");
 			console.log("📊 Status:", response.status);
 			console.log("💬 Message:", response.message);
-			console.log("📦 Data completa:", JSON.stringify(response.data, null, 2));
+			console.log("📦 Data:", JSON.stringify(response.data, null, 2));
 
+			// ✅ ANÁLISIS SIMPLIFICADO DE LA RESPUESTA
 			if (response.data && typeof response.data === "object") {
 				const dataObj = response.data as any;
 				if (dataObj.items) {
-					console.log("🔍 ANÁLISIS DETALLADO DE ITEMS:");
-					console.log("📊 Total de items en respuesta:", dataObj.items.length);
-
+					console.log("🔍 Items en respuesta:", dataObj.items.length);
+					
+					// Solo verificar duplicados si hay items
 					const itemsByProductId = dataObj.items.reduce(
-						(acc: any, item: any, index: number) => {
-							console.log(`📋 Item ${index + 1}:`, {
-								id: item.id,
-								product_id: item.product_id,
-								product_name: item.product_name,
-								quantity: item.quantity,
-								price: item.price,
-								completeItem: item,
-							});
-
+						(acc: any, item: any) => {
 							if (!acc[item.product_id]) {
 								acc[item.product_id] = [];
 							}
@@ -281,13 +299,10 @@ export class CheckoutService {
 						{}
 					);
 
-					console.log("🔍 Items agrupados por product_id:", itemsByProductId);
-
 					Object.keys(itemsByProductId).forEach((productId) => {
 						const items = itemsByProductId[productId];
 						if (items.length > 1) {
-							console.warn(`⚠️ DUPLICADO DETECTADO para product_id ${productId}:`, items);
-							console.warn(`❌ Se encontraron ${items.length} registros para el mismo producto`);
+							console.warn(`⚠️ DUPLICADO para product_id ${productId}: ${items.length} registros`);
 						}
 					});
 				}
@@ -296,11 +311,10 @@ export class CheckoutService {
 			console.log("🎉 CheckoutService.processCheckout COMPLETADO");
 			return response;
 		} catch (error) {
-			console.error("❌ CheckoutService: Error COMPLETO al procesar checkout:");
+			console.error("❌ CheckoutService: Error al procesar checkout:");
 			console.error("📊 Error object:", error);
 			console.error("📊 Error message:", (error as any)?.message);
-			console.error("📊 Error response:", (error as any)?.response);
-			console.error("📊 Error response data:", (error as any)?.response?.data);
+			console.error("📊 Error response:", (error as any)?.response?.data);
 
 			// ✅ DEBUGGING ADICIONAL para identificar el problema
 			if ((error as any)?.response?.status === 400) {
@@ -331,5 +345,28 @@ export class CheckoutService {
 			console.error("❌ Error al obtener carrito actual:", error);
 			return null;
 		}
+	}
+
+	/**
+	 * ✅ NUEVO: Preparar items del carrito con precios finales para checkout
+	 */
+	static prepareCartItemsForCheckout(cartItems: any[]): CheckoutRequest['items'] {
+		return cartItems.map(item => ({
+			product_id: item.productId,
+			quantity: item.quantity,
+			price: item.price, // Precio base
+			final_price: item.final_price || item.discounted_price || item.price, // Precio final con descuentos
+			original_price: item.original_price || item.price,
+			volume_discount_percentage: item.volume_discount_percentage || 0,
+			volume_savings: item.volume_savings || 0
+		}));
+	}
+
+	/**
+	 * ✅ NUEVO: Validar totales antes del checkout
+	 */
+	static validateCheckoutTotals(cartTotal: number, checkoutTotal: number, tolerance: number = 0.01): boolean {
+		const difference = Math.abs(cartTotal - checkoutTotal);
+		return difference <= tolerance;
 	}
 }

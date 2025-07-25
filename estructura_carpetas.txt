@@ -4,6 +4,7 @@ C:.
 |   .dockerignore
 |   .env
 |   .gitignore
+|   dist.zip
 |   Dockerfile
 |   estructura_carpetas.txt
 |   index.html
@@ -19,8 +20,7 @@ C:.
 |   tsconfig.json
 |   tsconfig.node.json
 |   vite.config.ts
-|   
-|               
+|                
 +---public
 |       .htaccess
 |       favicon.ico
@@ -102,6 +102,7 @@ C:.
     |   |       RecommendationService.ts
     |   |       SellerAdminService.ts
     |   |       SellerOrderService.ts
+    |   |       VolumeDiscountService.ts
     |   |       
     |   \---useCases
     |       +---admin
@@ -177,6 +178,7 @@ C:.
     |   |   |       RatingConfiguration.tsx
     |   |   |       SellerFormModal.tsx
     |   |   |       StatusUpdateModal.tsx
+    |   |   |       VolumeDiscountManager.tsx
     |   |   |       
     |   |   +---auth
     |   |   |       GoogleAuthButton.tsx
@@ -194,6 +196,7 @@ C:.
     |   |   |       MessageForm.tsx
     |   |   |       
     |   |   +---checkout
+    |   |   |       AddressForm.tsx
     |   |   |       CreditCardForm.tsx
     |   |   |       DatafastPaymentButtonProps.tsx
     |   |   |       OrderSummary.tsx
@@ -307,6 +310,9 @@ C:.
     |   |   +---shipping
     |   |   |       ShippingFormModal.tsx
     |   |   |       
+    |   |   +---Toast
+    |   |   |       EnhancedToast.tsx
+    |   |   |       
     |   |   +---ui
     |   |   |       CategoryIcon.tsx
     |   |   |       ProductImage.tsx
@@ -321,6 +327,7 @@ C:.
     |   |       FavoriteContext.tsx
     |   |       NotificationContext.tsx
     |   |       ThemeContext.tsx
+    |   |       VolumeDiscountContext.tsx
     |   |       
     |   +---hooks
     |   |       index.ts
@@ -335,6 +342,7 @@ C:.
     |   |       useCategories.ts
     |   |       useCategoriesSelect.ts
     |   |       useChat.ts
+    |   |       useErrorHandler.ts
     |   |       useFavoriteApi.ts
     |   |       useFavorites.ts
     |   |       useFilterState.ts
@@ -354,6 +362,7 @@ C:.
     |   |       useSellerProducts.ts
     |   |       useSellerRatings.ts
     |   |       useTheme.ts
+    |   |       useVolumeDiscount.ts
     |   |       
     |   +---layouts
     |   |   |   AdminLayout.tsx
@@ -426,6 +435,9 @@ C:.
     |   |           SellerShippingDetailsPage.tsx
     |   |           SellerShippingPage.tsx
     |   |           
+    |   +---services
+    |   |       ErrorHandlingService.ts
+    |   |       
     |   \---types
     |       |   ProductFilterParams.ts
     |       |   ratingTypes.ts

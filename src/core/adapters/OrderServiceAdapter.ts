@@ -1,4 +1,4 @@
-// src/core/adapters/OrderServiceAdapter.ts
+// src/core/adapters/OrderServiceAdapter.ts - CORREGIDO CON DESCUENTOS POR VOLUMEN
 import {OrderService} from "../services/OrderService";
 import {GetSellerOrdersUseCase} from "../useCases/order/GetSellerOrdersUseCase";
 import {GetOrderStatsUseCase} from "../useCases/order/GetOrderStatsUseCase";
@@ -21,7 +21,7 @@ export interface OrderStatUI {
 	isCurrency?: boolean;
 }
 
-// Interface para la respuesta adaptada para la UI
+// ✅ ACTUALIZADA: Interface para la respuesta adaptada para la UI con descuentos por volumen
 export interface OrderUI {
 	id: string;
 	orderNumber: string;
@@ -42,18 +42,42 @@ export interface OrderUI {
 		price: number;
 		subtotal: number;
 		image?: string;
+		// ✅ NUEVOS: Campos de descuentos por volumen
+		originalPrice?: number;
+		volumeDiscountPercentage?: number;
+		volumeSavings?: number;
+		discountLabel?: string;
+		hasVolumeDiscount?: boolean;
 	}[];
 	status: OrderStatus;
-	paymentStatus: "pending" | "paid" | "rejected" | "completed"; // Añadido "completed" para compatibilidad con la API
+	paymentStatus: "pending" | "paid" | "rejected" | "completed";
 	shippingAddress?: string;
 	notes?: string;
-	itemCount?: number; // Número de items en la orden - campo adicional
+	itemCount?: number;
+	// ✅ NUEVOS: Campos de información de descuentos por volumen
+	originalTotal?: number;
+	volumeDiscountSavings?: number;
+	volumeDiscountsApplied?: boolean;
+	shippingCost?: number;
+	freeShipping?: boolean;
+	totalDiscounts?: number;
+	pricingBreakdown?: any;
 }
 
-// Extendemos la interfaz Order para incluir el campo date que viene de la API pero no está en la definición
+// ✅ ACTUALIZADA: Extendemos la interfaz Order para incluir campos de descuentos por volumen
 interface OrderWithAPIFields extends Order {
 	date?: string;
-	itemCount?: number; // Número de items en la orden que podría venir del API
+	itemCount?: number;
+	// ✅ NUEVOS: Campos de descuentos por volumen que pueden venir del API
+	subtotal_products?: number;
+	iva_amount?: number;
+	original_total?: number;
+	volume_discount_savings?: number;
+	volume_discounts_applied?: boolean;
+	shipping_cost?: number;
+	free_shipping?: boolean;
+	total_discounts?: number;
+	pricing_breakdown?: any;
 }
 
 /**
@@ -265,6 +289,9 @@ export class OrderServiceAdapter {
 		}
 	}
 
+	/**
+	 * ✅ CORREGIDO: Obtener detalles de orden con información de descuentos por volumen
+	 */
 	async getOrderDetails(orderId: string | number): Promise<OrderDetail> {
 		try {
 			// Convertir orderId a número si viene como string
@@ -274,9 +301,8 @@ export class OrderServiceAdapter {
 			const response = await this.getOrderDetailUseCase.execute(id);
 
 			// Los datos vienen directamente del backend, asegurémonos de adaptarlos correctamente
-			// a la estructura que espera la interfaz de usuario
 			if (response) {
-				// Crear un objeto con estructura adecuada manteniendo la compatibilidad
+				// ✅ ADAPTAR CON INFORMACIÓN DE DESCUENTOS POR VOLUMEN
 				const orderDetail = {
 					...response,
 
@@ -291,7 +317,7 @@ export class OrderServiceAdapter {
 					orderNumber: response.orderNumber,
 					shippingData: response.shippingData,
 
-					// Procesar items con el formato esperado
+					// ✅ PROCESAR ITEMS CON INFORMACIÓN DE DESCUENTOS POR VOLUMEN
 					items:
 						response.items?.map((item) => ({
 							...item,
@@ -304,26 +330,56 @@ export class OrderServiceAdapter {
 							},
 							product_name: item.product_name,
 							product_sku: item.product_sku,
-							product_image: item.product_image
+							product_image: item.product_image,
+							// ✅ CAMPOS DE DESCUENTOS POR VOLUMEN
+							original_price: item.original_price,
+							volume_discount_percentage: item.volume_discount_percentage,
+							volume_savings: item.volume_savings,
+							discount_label: item.discount_label,
+							hasVolumeDiscount: (item.volume_discount_percentage || 0) > 0
 						})) || [],
+
+					// ✅ CAMPOS DE TOTALES CON DESCUENTOS
+					subtotal_products: response.subtotal_products,
+					iva_amount: response.iva_amount,
+					original_total: response.original_total,
+					volume_discount_savings: response.volume_discount_savings,
+					volume_discounts_applied: response.volume_discounts_applied,
+					shipping_cost: response.shipping_cost,
+					free_shipping: response.free_shipping,
+					total_discounts: response.total_discounts,
+					pricing_breakdown: response.pricing_breakdown
 				};
 
-				console.log("Orden adaptada para UI:", orderDetail);
+				console.log("✅ Orden adaptada para UI con descuentos por volumen:", orderDetail);
 
-				// Verificar si los cálculos son correctos
-				const subtotal =
-					orderDetail.items?.reduce(
-						(sum, item) => sum + item.price * item.quantity,
-						0
-					) || 0;
+				// ✅ USAR TOTALES QUE VIENEN DEL BACKEND (ya calculados)
+				if (orderDetail.subtotal_products && orderDetail.iva_amount) {
+					console.log("💰 Usando totales calculados del backend:", {
+						subtotal_products: orderDetail.subtotal_products,
+						iva_amount: orderDetail.iva_amount,
+						total: orderDetail.total,
+						volume_savings: orderDetail.volume_discount_savings
+					});
+				} else {
+					// Fallback: calcular si no vienen del backend
+					const subtotal =
+						orderDetail.items?.reduce(
+							(sum, item) => sum + item.price * item.quantity,
+							0
+						) || 0;
 
-				// Si el total parece incorrecto, corregirlo (asumiendo IVA del 15%)
-				const taxRate = 0.15;
-				const taxAmount = subtotal * taxRate;
-				const calculatedTotal = subtotal + taxAmount;
+					const taxRate = 0.15;
+					const taxAmount = subtotal * taxRate;
+					const calculatedTotal = subtotal + taxAmount;
 
-				if (Math.abs(orderDetail.total - calculatedTotal) > 0.01) {
-					orderDetail.total = calculatedTotal;
+					if (Math.abs(orderDetail.total - calculatedTotal) > 0.01) {
+						console.warn("⚠️ Diferencia en cálculo de totales, corrigiendo:", {
+							original: orderDetail.total,
+							calculated: calculatedTotal
+						});
+						orderDetail.total = calculatedTotal;
+					}
 				}
 
 				return orderDetail;
@@ -340,38 +396,35 @@ export class OrderServiceAdapter {
 	}
 
 	/**
-	 * Adapta una orden al formato requerido por la UI
-	 * @param order Orden proveniente del backend
-	 * @returns Orden formateada para la UI
+	 * ✅ CORREGIDO: Adapta una orden al formato requerido por la UI con descuentos por volumen
 	 */
 	private adaptOrderToUI(order: OrderWithAPIFields): OrderUI {
-		// Calcular subtotal y monto de impuesto
-		const subtotal =
-			order.items?.reduce((sum, item) => sum + item.price * item.quantity, 0) ||
-			0;
+		// ✅ USAR TOTALES QUE VIENEN DEL BACKEND (ya calculados con descuentos)
+		const subtotal = order.subtotal_products || 
+			order.items?.reduce((sum, item) => sum + (item.price * item.quantity), 0) || 0;
 
-		const taxRate = 0.15; // 15% IVA
-		const taxAmount = subtotal * taxRate;
-
-		// Asegurarse de que el total incluya el impuesto
-		// Si no hay subtotal calculado, usar directamente el total de la orden
-		const total = subtotal > 0 ? subtotal + taxAmount : order.total || 0;
+		const taxAmount = order.iva_amount || (subtotal * 0.15); // Fallback al 15%
+		const total = order.total || (subtotal + taxAmount);
 
 		// Determinar el número de ítems
-		// Si tenemos items, usar la longitud del array
-		// Si no, usar itemCount si existe, si no, no proporcionar un valor
 		const itemCount = order.items?.length || order.itemCount || undefined;
 
-		// Adaptar los items - si no hay items, dejamos un array vacío
+		// ✅ ADAPTAR ITEMS CON INFORMACIÓN DE DESCUENTOS POR VOLUMEN
 		const adaptedItems =
 			order.items?.map((item) => ({
 				id: item.id || 0,
 				productId: item.productId,
 				name: item.product?.name || item.product_name || "Producto",
 				quantity: item.quantity,
-				price: item.price,
+				price: item.price, // Precio final (con descuentos aplicados)
 				subtotal: item.price * item.quantity,
 				image: item.product?.image || item.product_image,
+				// ✅ INFORMACIÓN DE DESCUENTOS POR VOLUMEN
+				originalPrice: item.original_price || item.price,
+				volumeDiscountPercentage: item.volume_discount_percentage || 0,
+				volumeSavings: item.volume_savings || 0,
+				discountLabel: item.discount_label || null,
+				hasVolumeDiscount: (item.volume_discount_percentage || 0) > 0
 			})) || [];
 
 		// Construir dirección de envío
@@ -386,11 +439,10 @@ export class OrderServiceAdapter {
 			| "rejected"
 			| "completed";
 
-		// Construir objeto final
+		// ✅ CONSTRUIR OBJETO CON INFORMACIÓN DE DESCUENTOS POR VOLUMEN
 		return {
 			id: String(order.id),
 			orderNumber: order.orderNumber,
-			// Usar la fecha que viene de la API o caer en la fecha actual si no existe
 			date: order.date || order.createdAt || new Date().toISOString(),
 			customer: {
 				id: order.userId,
@@ -406,6 +458,53 @@ export class OrderServiceAdapter {
 			shippingAddress,
 			notes: order.shippingData?.notes,
 			itemCount: itemCount,
+			// ✅ INFORMACIÓN ADICIONAL DE DESCUENTOS POR VOLUMEN
+			originalTotal: order.original_total || total,
+			volumeDiscountSavings: order.volume_discount_savings || 0,
+			volumeDiscountsApplied: order.volume_discounts_applied || false,
+			shippingCost: order.shipping_cost || 0,
+			freeShipping: order.free_shipping || false,
+			totalDiscounts: order.total_discounts || 0,
+			pricingBreakdown: order.pricing_breakdown || null
+		};
+	}
+
+	/**
+	 * ✅ NUEVO: Obtener resumen de descuentos de una orden
+	 */
+	getOrderDiscountSummary(order: OrderUI): {
+		hasDiscounts: boolean;
+		totalSavings: number;
+		volumeDiscounts: boolean;
+		itemsWithDiscounts: number;
+	} {
+		const itemsWithDiscounts = order.items.filter(item => item.hasVolumeDiscount).length;
+		const totalSavings = order.volumeDiscountSavings || 0;
+		
+		return {
+			hasDiscounts: totalSavings > 0,
+			totalSavings,
+			volumeDiscounts: order.volumeDiscountsApplied || false,
+			itemsWithDiscounts
+		};
+	}
+
+	/**
+	 * ✅ NUEVO: Formatear información de pricing para mostrar en UI
+	 */
+	formatPricingBreakdown(order: OrderUI): {
+		subtotal: string;
+		tax: string;
+		shipping: string;
+		discounts: string;
+		total: string;
+	} {
+		return {
+			subtotal: `$${order.subtotal.toFixed(2)}`,
+			tax: `$${order.taxAmount.toFixed(2)}`,
+			shipping: order.freeShipping ? 'GRATIS' : `$${(order.shippingCost || 0).toFixed(2)}`,
+			discounts: order.volumeDiscountSavings > 0 ? `-$${order.volumeDiscountSavings.toFixed(2)}` : '$0.00',
+			total: `$${order.total.toFixed(2)}`
 		};
 	}
 }
