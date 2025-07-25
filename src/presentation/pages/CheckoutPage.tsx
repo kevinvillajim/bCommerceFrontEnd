@@ -323,12 +323,30 @@ const CheckoutPage: React.FC = () => {
 		try {
 			const sellerId = CheckoutService.getSellerIdFromCart(cart);
 			
-			// ✅ NUEVO: Construir items del carrito con precios
-			const items = cart?.items?.map(item => ({
-				product_id: item.productId,
-				quantity: item.quantity,
-				price: item.product?.final_price || item.product?.price || item.price || 0
-			})) || [];
+			// ✅ CORREGIDO: Construir items del carrito con precios válidos
+			const items = cart?.items?.map(item => {
+				// Priorizar precios válidos: product.final_price > product.price > item.price > subtotal/quantity
+				let price = 0;
+				
+				if (item.product?.final_price && item.product.final_price > 0) {
+					price = item.product.final_price;
+				} else if (item.product?.price && item.product.price > 0) {
+					price = item.product.price;
+				} else if (item.price && item.price > 0) {
+					price = item.price;
+				} else if (item.subtotal && item.quantity > 0) {
+					price = item.subtotal / item.quantity;
+				} else {
+					console.warn(`⚠️ No se pudo determinar precio para producto ${item.productId}, usando 1.00`);
+					price = 1.00; // Precio mínimo como fallback
+				}
+				
+				return {
+					product_id: item.productId,
+					quantity: item.quantity,
+					price: price
+				};
+			}) || [];
 			
 			console.log("🛒 Items formateados para checkout:", JSON.stringify(items, null, 2));
 			

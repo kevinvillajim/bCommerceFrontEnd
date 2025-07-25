@@ -292,7 +292,7 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 			const sellerId = CheckoutService.getSellerIdFromCart(cart);
 			console.log("🏪 Seller ID obtenido (DATAFAST):", sellerId);
 	
-			// ✅ NUEVO: Construir items del carrito con precios
+			// ✅ CORREGIDO: Construir items del carrito con precios válidos
 			const items = cart.items.map(item => {
 				console.log("🔍 DEBUGGING ITEM INDIVIDUAL:", {
 					item: item,
@@ -305,8 +305,22 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 					complete_product: item.product
 				});
 				
-				// Usar item.price primero (precio del item en el carrito), luego product prices como fallback
-				const price = item.price || item.product?.final_price || item.product?.price || 0;
+				// Priorizar precios válidos: product.final_price > product.price > item.price > subtotal/quantity
+				let price = 0;
+				
+				if (item.product?.final_price && item.product.final_price > 0) {
+					price = item.product.final_price;
+				} else if (item.product?.price && item.product.price > 0) {
+					price = item.product.price;
+				} else if (item.price && item.price > 0) {
+					price = item.price;
+				} else if (item.subtotal && item.quantity > 0) {
+					price = item.subtotal / item.quantity;
+				} else {
+					console.warn(`⚠️ No se pudo determinar precio para producto ${item.productId}, usando 1.00`);
+					price = 1.00; // Precio mínimo como fallback
+				}
+				
 				console.log("🔍 PRECIO FINAL CALCULADO:", price);
 				
 				return {
@@ -419,12 +433,30 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 				const sellerId = CheckoutService.getSellerIdFromCart(cart);
 				console.log("Seller ID obtenido:", sellerId);
 				
-				// ✅ NUEVO: Construir items del carrito con precios
-				const items = cart.items.map(item => ({
-					product_id: item.productId,
-					quantity: item.quantity,
-					price: item.product?.final_price || item.product?.price || item.price || 0
-				}));
+				// ✅ CORREGIDO: Construir items del carrito con precios válidos
+				const items = cart.items.map(item => {
+					// Priorizar precios válidos: product.final_price > product.price > item.price > subtotal/quantity
+					let price = 0;
+					
+					if (item.product?.final_price && item.product.final_price > 0) {
+						price = item.product.final_price;
+					} else if (item.product?.price && item.product.price > 0) {
+						price = item.product.price;
+					} else if (item.price && item.price > 0) {
+						price = item.price;
+					} else if (item.subtotal && item.quantity > 0) {
+						price = item.subtotal / item.quantity;
+					} else {
+						console.warn(`⚠️ No se pudo determinar precio para producto ${item.productId}, usando 1.00`);
+						price = 1.00; // Precio mínimo como fallback
+					}
+					
+					return {
+						product_id: item.productId,
+						quantity: item.quantity,
+						price: price
+					};
+				});
 				
 				const checkoutRequestData = {
 					payment: {

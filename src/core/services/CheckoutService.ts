@@ -138,7 +138,7 @@ export class CheckoutService {
 	}
 
 	/**
-	 * Procesar el pago y finalizar la compra
+	 * ✅ ACTUALIZADO: Procesar el pago y finalizar la compra con validación robusta
 	 */
 	async processCheckout(
 		checkoutData: CheckoutRequest,
@@ -146,26 +146,66 @@ export class CheckoutService {
 	): Promise<CheckoutResponse> {
 		try {
 			console.log("🚀 CheckoutService.processCheckout INICIADO");
-			console.log(
-				"📦 Datos de checkout enviados:",
-				JSON.stringify(checkoutData, null, 2)
-			);
+			console.log("📦 Datos de checkout enviados:", JSON.stringify(checkoutData, null, 2));
 
 			console.log("🛒 Verificando estado del carrito antes del checkout...");
-
 			console.log("📞 Llamando a API:", API_ENDPOINTS.CHECKOUT.PROCESS);
-
 			console.log("🔍 DEBUGGING - Método original:", checkoutData.payment.method);
 
-			// Mapear método de pago a los valores exactos del backend
+			// ✅ CORREGIDO: Mapear método de pago de manera más robusta
 			let paymentMethod: PaymentMethod = checkoutData.payment.method;
-			if (paymentMethod === "transfer") {
-				paymentMethod = "datafast" as PaymentMethod;
-			} else if (paymentMethod === "credit_card") {
-				paymentMethod = "credit_card" as PaymentMethod;
+			
+			// Mapeo de métodos de pago
+			const methodMapping: Record<string, PaymentMethod> = {
+				"transfer": "datafast",
+				"credit_card": "credit_card",
+				"debit_card": "debit_card", 
+				"paypal": "paypal",
+				"qr": "de_una",
+				"datafast": "datafast",
+				"de_una": "de_una"
+			};
+
+			if (methodMapping[paymentMethod]) {
+				paymentMethod = methodMapping[paymentMethod];
 			}
 
 			console.log("🔍 DEBUGGING - Método después de mapear:", paymentMethod);
+
+			// ✅ VALIDAR items antes de enviar
+			const items = checkoutData.items || [];
+			console.log("🔍 DEBUGGING - Items recibidos:", items);
+
+			if (items.length === 0) {
+				console.warn("⚠️ No se recibieron items en checkoutData");
+			}
+
+			// Validar estructura de cada item
+			const validatedItems = items.map((item, index) => {
+				if (!item.product_id || typeof item.product_id !== 'number') {
+					throw new Error(`Item ${index}: product_id inválido (${item.product_id})`);
+				}
+				if (!item.quantity || typeof item.quantity !== 'number' || item.quantity <= 0) {
+					throw new Error(`Item ${index}: quantity inválida (${item.quantity})`);
+				}
+				if (typeof item.price !== 'number' || item.price <= 0) {
+					throw new Error(`Item ${index}: price inválido (${item.price})`);
+				}
+
+				console.log(`✅ Item ${index} validado:`, {
+					product_id: item.product_id,
+					quantity: item.quantity,
+					price: item.price
+				});
+
+				return {
+					product_id: parseInt(String(item.product_id)),
+					quantity: parseInt(String(item.quantity)),
+					price: parseFloat(String(item.price))
+				};
+			});
+
+			console.log("✅ Items validados:", validatedItems);
 
 			// Mapear dirección a formato requerido por backend
 			const nameParts = (checkoutData.shippingAddress.name || '').split(' ');
@@ -186,10 +226,24 @@ export class CheckoutService {
 					country: checkoutData.shippingAddress.country || ''
 				},
 				seller_id: checkoutData.seller_id,
-				items: checkoutData.items
+				items: validatedItems // ✅ Usar items validados
 			};
 
 			console.log("🔍 DEBUGGING - Datos completos que se enviarán al backend:", JSON.stringify(backendData, null, 2));
+
+			// ✅ VALIDACIÓN FINAL antes de enviar
+			if (backendData.items && backendData.items.length > 0) {
+				for (let i = 0; i < backendData.items.length; i++) {
+					const item = backendData.items[i];
+					if (!item.hasOwnProperty('price') || item.price === undefined || item.price === null) {
+						throw new Error(`FATAL: Item ${i} no tiene campo 'price' definido. Item: ${JSON.stringify(item)}`);
+					}
+					if (typeof item.price !== 'number' || item.price <= 0) {
+						throw new Error(`FATAL: Item ${i} tiene precio inválido: ${item.price} (tipo: ${typeof item.price})`);
+					}
+				}
+				console.log("✅ VALIDACIÓN FINAL: Todos los items tienen campo 'price' válido");
+			}
 
 			const response = await ApiClient.post<CheckoutResponse>(
 				API_ENDPOINTS.CHECKOUT.PROCESS,
@@ -247,6 +301,14 @@ export class CheckoutService {
 			console.error("📊 Error message:", (error as any)?.message);
 			console.error("📊 Error response:", (error as any)?.response);
 			console.error("📊 Error response data:", (error as any)?.response?.data);
+
+			// ✅ DEBUGGING ADICIONAL para identificar el problema
+			if ((error as any)?.response?.status === 400) {
+				console.error("🔍 ERROR 400 DETECTADO - Analizando request enviada:");
+				console.error("📊 Payment method enviado:", checkoutData.payment.method);
+				console.error("📊 Items enviados:", checkoutData.items);
+				console.error("📊 Seller ID enviado:", checkoutData.seller_id);
+			}
 
 			const errorMessage = extractErrorMessage(
 				error,

@@ -6,7 +6,6 @@ import type {PaymentMethod} from "../../../core/services/CheckoutService";
 import {NotificationType} from "../../contexts/CartContext";
 import {extractErrorMessage} from "../../../utils/errorHandler";
 
-
 interface TestCheckoutButtonProps {}
 
 const TestCheckoutButton: React.FC<TestCheckoutButtonProps> = () => {
@@ -80,7 +79,34 @@ const TestCheckoutButton: React.FC<TestCheckoutButtonProps> = () => {
 			const sellerId = CheckoutService.getSellerIdFromCart(cart);
 			console.log("🏪 Seller ID obtenido para test:", sellerId);
 
-			// Datos de prueba - agregado seller_id de vuelta
+			// ✅ CORREGIDO: Construir items del carrito con precios válidos
+			const items = cart.items.map(item => {
+				// Priorizar precios válidos: product.final_price > product.price > item.price > subtotal/quantity
+				let price = 0;
+				
+				if (item.product?.final_price && item.product.final_price > 0) {
+					price = item.product.final_price;
+				} else if (item.product?.price && item.product.price > 0) {
+					price = item.product.price;
+				} else if (item.price && item.price > 0) {
+					price = item.price;
+				} else if (item.subtotal && item.quantity > 0) {
+					price = item.subtotal / item.quantity;
+				} else {
+					console.warn(`⚠️ No se pudo determinar precio para producto ${item.productId}, usando 1.00`);
+					price = 1.00; // Precio mínimo como fallback
+				}
+				
+				return {
+					product_id: item.productId,
+					quantity: item.quantity,
+					price: price
+				};
+			});
+
+			console.log("🛒 Items formateados para backend:", JSON.stringify(items, null, 2));
+
+			// Datos de prueba - agregado seller_id y items
 			const testData = {
 				payment: {
 					method: "credit_card" as PaymentMethod,
@@ -97,7 +123,8 @@ const TestCheckoutButton: React.FC<TestCheckoutButtonProps> = () => {
 					country: "País de Prueba",
 					phone: "123456789",
 				},
-				seller_id: sellerId, // ✅ AGREGAR SELLER_ID DE VUELTA
+				seller_id: sellerId,
+				items: items // ✅ AGREGAR ITEMS CON PRECIOS VÁLIDOS
 			};
 
 			console.log("📦 Datos completos de checkout de prueba:", JSON.stringify(testData, null, 2));
