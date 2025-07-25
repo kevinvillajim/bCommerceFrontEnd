@@ -45,8 +45,7 @@ const CartPage: React.FC = () => {
 
 	// ✅ USAR CONTEXTO DE DESCUENTOS POR VOLUMEN
 	const {
-		calculateCartItemDiscount,
-		calculateCartTotalDiscounts,
+				calculateCartItemDiscount,
 		isEnabled: volumeDiscountsEnabled
 	} = useCartVolumeDiscounts();
 

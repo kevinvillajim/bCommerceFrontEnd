@@ -13,6 +13,7 @@ import type {
 	AddToCartRequest,
 	CartItemUpdateData,
 } from "../../core/domain/entities/ShoppingCart";
+import type { Product } from "../../core/domain/entities/Product";
 import {LocalStorageService} from "../../infrastructure/services/LocalStorageService";
 import {AuthContext} from "./AuthContext";
 import {CartService} from "../../core/services/CartService";
@@ -210,7 +211,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 					id: response.data.id,
 					total: response.data.total,
 					items: response.data.items.map((item) => {
-						const product = item.product || {};
+						const product = item.product as Product || {} as Product;
 
 						return {
 							id: item.id,
@@ -228,16 +229,13 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 								discount_percentage: (product as any).discount_percentage ?? 0,
 								rating: (product as any).rating ?? 0,
 								rating_count: (product as any).rating_count ?? 0,
-								image: (product as any).main_image || product.image || "",
-								main_image: (product as any).main_image || product.image || "",
+								image: (product.main_image || product.image || (product.images && product.images.length > 0 ? (typeof product.images[0] === 'string' ? product.images[0] : product.images[0].original || product.images[0].medium || product.images[0].thumbnail) : undefined)),
+								main_image: (product.main_image || product.image || (product.images && product.images.length > 0 ? (typeof product.images[0] === 'string' ? product.images[0] : product.images[0].original || product.images[0].medium || product.images[0].thumbnail) : undefined)),
 								stockAvailable: product.stock || 0,
-								sellerId:
-									product.seller_id ||
-									product.sellerId ||
-									(product as any).user_id,
-								seller_id: product.seller_id || (product as any).user_id,
+								sellerId: product.sellerId || product.seller_id || (product.seller ? product.seller.id : undefined) || product.user_id,
+								seller_id: product.seller_id || product.sellerId || (product.seller ? product.seller.id : undefined) || product.user_id,
 								seller: product.seller,
-								user_id: (product as any).user_id,
+								user_id: product.user_id,
 								stock: product.stock || 0,
 								is_in_stock: (product as any).is_in_stock ?? true,
 							},

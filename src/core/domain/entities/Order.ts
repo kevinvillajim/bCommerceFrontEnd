@@ -2,6 +2,8 @@
  * Archivo: src/core/domain/entities/Order.ts
  * Entidades relacionadas con órdenes de compra y sus tipos - CORREGIDO
  */
+import type {Address} from "../valueObjects/Address";
+
 export interface Order {
 	id?: number;
 	userId: number;
@@ -61,7 +63,8 @@ export interface OrderDetail extends Order {
 export interface OrderCreationData {
 	sellerId?: number;
 	items: OrderItemCreationData[];
-	shippingData?: ShippingData;
+	shippingAddress: Address;
+	billingAddress?: Address;
 }
 
 /**

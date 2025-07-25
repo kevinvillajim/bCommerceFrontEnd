@@ -6,6 +6,7 @@ import type {PaymentMethod} from "../../../core/services/CheckoutService";
 import {NotificationType} from "../../contexts/CartContext";
 import {extractErrorMessage} from "../../../utils/errorHandler";
 
+
 interface TestCheckoutButtonProps {}
 
 const TestCheckoutButton: React.FC<TestCheckoutButtonProps> = () => {
@@ -87,12 +88,13 @@ const TestCheckoutButton: React.FC<TestCheckoutButtonProps> = () => {
 					card_expiry: "12/25",
 					card_cvc: "123",
 				},
-				shipping: {
-					address: "Calle de Prueba 123",
+				shippingAddress: {
+					name: "Test User",
+					street: "Calle de Prueba 123",
 					city: "Ciudad de Prueba",
 					state: "Estado de Prueba",
+					postalCode: "12345",
 					country: "País de Prueba",
-					postal_code: "12345",
 					phone: "123456789",
 				},
 				seller_id: sellerId, // ✅ AGREGAR SELLER_ID DE VUELTA

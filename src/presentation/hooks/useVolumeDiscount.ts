@@ -39,10 +39,10 @@ export const useVolumeDiscountFixed = (productId?: number) => {
 	useEffect(() => {
 		if (!productId) return;
 
-		loadDiscountInfo(productId);
+		loadDiscountInfo();
 	}, [productId]);
 
-	const loadDiscountInfo = useCallback(async (productIdParam: number) => {
+	const loadDiscountInfo = useCallback(async () => {
 		try {
 			setLoading(true);
 			setError(null);
@@ -174,7 +174,7 @@ export const useVolumeDiscountFixed = (productId?: number) => {
 		loading,
 		error,
 		calculateDiscount,
-		refreshDiscounts: () => productId && loadDiscountInfo(productId)
+		refreshDiscounts: () => loadDiscountInfo()
 	};
 };
 

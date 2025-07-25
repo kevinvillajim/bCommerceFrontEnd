@@ -4,8 +4,9 @@ import {useCart} from "../../hooks/useCart";
 import {DatafastService} from "../../../core/services/DatafastService";
 import {CheckoutService} from "../../../core/services/CheckoutService";
 import type {DatafastCheckoutRequest} from "../../../core/services/DatafastService";
-import type {PaymentMethod, ShippingInfo, PaymentInfo} from "../../../core/services/CheckoutService";
+import type {PaymentMethod, PaymentInfo} from "../../../core/services/CheckoutService";
 import {NotificationType} from "../../contexts/CartContext";
+
 
 interface DatafastPaymentButtonProps {
 	onSuccess?: (orderData: any) => void;
@@ -313,14 +314,15 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 				payment: {
 					method: "transfer" as PaymentMethod, // Datafast usa transfer
 				} as PaymentInfo,
-				shipping: {
-					address: formData.address || "Calle de Prueba 123",
+				shippingAddress: {
+					name: formData.given_name + " " + formData.surname,
+					street: formData.address || "Calle de Prueba 123",
 					city: formData.city || "Quito", 
 					state: formData.country || "Pichincha",
+					postalCode: "170000",
 					country: formData.country || "Ecuador",
-					postal_code: "170000",
 					phone: formData.phone || "0999999999",
-				} as ShippingInfo,
+				},
 				seller_id: sellerId, // ✅ AGREGAR SELLER_ID
 			};
 	
@@ -420,14 +422,15 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 					payment: {
 						method: "transfer" as PaymentMethod, // Datafast usa transfer
 					} as PaymentInfo,
-					shipping: {
-						address: formData.address,
+					shippingAddress: {
+						name: formData.given_name + " " + formData.surname,
+						street: formData.address,
 						city: formData.city,
 						state: formData.country, // Usar country como state para simplificar
+						postalCode: "00000", // Código postal por defecto
 						country: formData.country,
-						postal_code: "00000", // Código postal por defecto
 						phone: formData.phone,
-					} as ShippingInfo,
+					},
 					seller_id: sellerId, // ✅ AGREGAR SELLER_ID
 				};
 

@@ -29,7 +29,6 @@ const VolumeDiscountManager: React.FC = () => {
 
 	const {
 		loading: apiLoading,
-		error: apiError,
 		getAdminConfiguration,
 		updateAdminConfiguration
 	} = useVolumeDiscountsAdmin();

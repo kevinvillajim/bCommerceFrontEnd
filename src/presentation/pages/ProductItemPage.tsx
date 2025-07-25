@@ -80,7 +80,6 @@ const ProductItemPage: React.FC = () => {
 		setQuantity,
 		discountResult,
 		discountInfo,
-		loading: discountLoading,
 		hasDiscount,
 		finalPrice,
 		totalSavings
