@@ -1,12 +1,12 @@
 import React, {useState, useEffect} from "react";
 import {useNavigate} from "react-router-dom";
 import {useCart} from "../../hooks/useCart";
+import {useAuth} from "../../hooks/useAuth";
 import {DatafastService} from "../../../core/services/DatafastService";
 import {CheckoutService} from "../../../core/services/CheckoutService";
 import type {DatafastCheckoutRequest} from "../../../core/services/DatafastService";
 import type {PaymentMethod, PaymentInfo} from "../../../core/services/CheckoutService";
 import {NotificationType} from "../../contexts/CartContext";
-
 
 interface DatafastPaymentButtonProps {
 	onSuccess?: (orderData: any) => void;
@@ -30,13 +30,13 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 }) => {
 	const navigate = useNavigate();
 	const {cart, clearCart, showNotification} = useCart();
+	const {user} = useAuth();
 	const [isLoading, setIsLoading] = useState(false);
 	const [showWidget, setShowWidget] = useState(false);
 	const [checkoutData, setCheckoutData] = useState<any>(null);
 	const [showForm, setShowForm] = useState(false);
 	const [widgetLoaded, setWidgetLoaded] = useState(false);
 
-	// Datos del formulario básico
 	const [formData, setFormData] = useState<FormData>({
 		address: "Av. Test 123",
 		city: "Quito",
@@ -49,12 +49,10 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 	});
 
 	const datafastService = new DatafastService();
-	const checkoutService = new CheckoutService(); // ✅ AGREGAR CHECKOUT SERVICE
+	const checkoutService = new CheckoutService();
 
-	// Limpiar al desmontar componente
 	useEffect(() => {
 		return () => {
-			// Limpiar scripts de Datafast al desmontar
 			const script = document.getElementById("datafast-widget-script");
 			if (script) {
 				script.remove();
@@ -62,12 +60,10 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 		};
 	}, []);
 
-	// Manejar cambios en el formulario
 	const handleInputChange = (field: keyof FormData, value: string) => {
 		setFormData((prev) => ({...prev, [field]: value}));
 	};
 
-	// Validar datos del formulario
 	const validateFormData = (): boolean => {
 		const requiredFields: (keyof FormData)[] = [
 			"address",
@@ -89,7 +85,6 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 			}
 		}
 
-		// Validar formato de cédula (10 dígitos)
 		if (formData.doc_id.length !== 10 || !/^\d+$/.test(formData.doc_id)) {
 			showNotification(
 				NotificationType.ERROR,
@@ -101,7 +96,6 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 		return true;
 	};
 
-	// Iniciar proceso de pago con Datafast
 	const handleStartPayment = async () => {
 		if (!cart || cart.items.length === 0) {
 			showNotification(NotificationType.ERROR, "El carrito está vacío");
@@ -115,7 +109,6 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 		setIsLoading(true);
 
 		try {
-			// Preparar datos para Datafast
 			const requestData: DatafastCheckoutRequest = {
 				shipping: {
 					address: formData.address,
@@ -133,7 +126,6 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 
 			console.log("Iniciando checkout con Datafast...", requestData);
 
-			// Crear checkout en backend
 			const response = await datafastService.createCheckout(requestData);
 			console.log("Respuesta del checkout:", response);
 
@@ -142,7 +134,6 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 				setShowForm(false);
 				setShowWidget(true);
 
-				// Guardar transaction_id en localStorage para el resultado
 				localStorage.setItem(
 					"datafast_transaction_id",
 					response.data.transaction_id
@@ -153,7 +144,6 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 					"Checkout creado. Preparando formulario de pago..."
 				);
 
-				// Cargar widget después de que el DOM esté listo
 				setTimeout(() => {
 					if (response.data) {
 						loadDatafastWidget(response.data.checkout_id);
@@ -178,18 +168,15 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 		}
 	};
 
-	// Cargar widget de Datafast de forma más simple
 	const loadDatafastWidget = (checkoutId: string) => {
 		try {
 			console.log("Cargando widget de Datafast...", checkoutId);
 
-			// Remover script anterior si existe
 			const existingScript = document.getElementById("datafast-widget-script");
 			if (existingScript) {
 				existingScript.remove();
 			}
 
-			// Configurar opciones globales ANTES de cargar el script
 			(window as any).wpwlOptions = {
 				onReady: function () {
 					console.log("Widget de Datafast listo!");
@@ -207,7 +194,6 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 				},
 			};
 
-			// Crear y cargar script
 			const script = document.createElement("script");
 			script.id = "datafast-widget-script";
 			script.src = `https://eu-test.oppwa.com/v1/paymentWidgets.js?checkoutId=${checkoutId}`;
@@ -235,12 +221,11 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 		}
 	};
 
-	// ✅ NUEVO: Prueba completa de checkout (como TestCheckoutButton)
 	const handleCompleteTestCheckout = async () => {
 		console.log("🧪 DatafastPaymentButton.handleCompleteTestCheckout INICIADO");
 	
 		if (!cart || cart.items.length === 0) {
-			console.log("❌ Carrito vacío, abortando checkout");
+			console.log("❌ Carrito vacío o null, abortando checkout");
 			showNotification(NotificationType.ERROR, "El carrito está vacío");
 			return;
 		}
@@ -255,18 +240,18 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 		console.log("📊 Total de items en carrito:", cart.items.length);
 		console.log("📊 Total del carrito:", cart.total);
 	
-		// ✅ NUEVO: Análisis detallado de cada item
-		console.log("🔍 ANÁLISIS ITEM POR ITEM (DATAFAST):");
 		cart.items.forEach((item, index) => {
 			console.log(`📋 Item ${index + 1}:`, {
 				id: item.id,
 				productId: item.productId,
 				quantity: item.quantity,
 				price: item.price,
+				subtotal: item.subtotal,
 				product: item.product ? {
 					id: item.product.id,
 					name: item.product.name,
 					price: item.product.price,
+					final_price: item.product.final_price,
 					sellerId: item.product.sellerId,
 					seller_id: item.product.seller_id,
 					user_id: item.product.user_id
@@ -275,7 +260,6 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 			});
 		});
 	
-		// ✅ NUEVO: Detectar duplicados en el carrito
 		console.log("🔍 VERIFICANDO DUPLICADOS EN EL CARRITO (DATAFAST):");
 		const itemsByProductId = cart.items.reduce((acc: any, item, index) => {
 			if (!acc[item.productId]) {
@@ -305,14 +289,38 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 		try {
 			console.log("🚀 Iniciando checkout de prueba completo (DATAFAST)...");
 	
-			// ✅ OBTENER SELLER_ID DEL CARRITO
 			const sellerId = CheckoutService.getSellerIdFromCart(cart);
 			console.log("🏪 Seller ID obtenido (DATAFAST):", sellerId);
 	
-			// Datos de prueba completos (similar al TestCheckoutButton original)
+			// ✅ NUEVO: Construir items del carrito con precios
+			const items = cart.items.map(item => {
+				console.log("🔍 DEBUGGING ITEM INDIVIDUAL:", {
+					item: item,
+					productId: item.productId,
+					quantity: item.quantity,
+					item_price: item.price,
+					item_subtotal: item.subtotal,
+					product_final_price: item.product?.final_price,
+					product_price: item.product?.price,
+					complete_product: item.product
+				});
+				
+				// Usar item.price primero (precio del item en el carrito), luego product prices como fallback
+				const price = item.price || item.product?.final_price || item.product?.price || 0;
+				console.log("🔍 PRECIO FINAL CALCULADO:", price);
+				
+				return {
+					product_id: item.productId,
+					quantity: item.quantity,
+					price: price
+				};
+			});
+	
+			console.log("🛒 Items formateados para backend (DATAFAST):", JSON.stringify(items, null, 2));
+	
 			const testCheckoutData = {
 				payment: {
-					method: "transfer" as PaymentMethod, // Datafast usa transfer
+					method: "transfer" as PaymentMethod,
 				} as PaymentInfo,
 				shippingAddress: {
 					name: formData.given_name + " " + formData.surname,
@@ -323,14 +331,14 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 					country: formData.country || "Ecuador",
 					phone: formData.phone || "0999999999",
 				},
-				seller_id: sellerId, // ✅ AGREGAR SELLER_ID
+				seller_id: sellerId || undefined,
+				items: items
 			};
 	
 			console.log("📦 Datos completos de checkout (DATAFAST):", JSON.stringify(testCheckoutData, null, 2));
 			console.log("🚀 Enviando checkout al backend (DATAFAST)...");
 	
-			// Procesar directamente con CheckoutService (saltándose Datafast para la prueba)
-			const response = await checkoutService.processCheckout(testCheckoutData);
+			const response = await checkoutService.processCheckout(testCheckoutData, user?.email);
 	
 			console.log("✅ Respuesta del checkout recibida (DATAFAST):", response);
 	
@@ -345,10 +353,8 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 					"¡Pedido de prueba completado con éxito!"
 				);
 	
-				// Mostrar los detalles de la orden
 				console.log("📊 Detalles COMPLETOS de la orden (DATAFAST):", JSON.stringify(response.data, null, 2));
 	
-				// ✅ NUEVO: Análisis específico de la respuesta
 				if (response.data && typeof response.data === 'object') {
 					const orderData = response.data as any;
 					console.log("🔍 ANÁLISIS DE LA ORDEN CREADA (DATAFAST):");
@@ -390,7 +396,6 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 		}
 	};
 
-	// ✅ ACTUALIZADO: Verificar pago con proceso completo
 	const handleSimulatePaymentResult = async () => {
 		if (!checkoutData) {
 			showNotification(NotificationType.ERROR, "No hay datos de checkout");
@@ -401,7 +406,6 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 		try {
 			console.log("Simulando pago exitoso completo...");
 
-			// PASO 1: Simular el pago exitoso con Datafast
 			const verifyResponse = await datafastService.simulateSuccessfulPayment(
 				checkoutData.checkout_id,
 				checkoutData.transaction_id
@@ -410,37 +414,40 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 			console.log("Respuesta de verificación Datafast:", verifyResponse);
 
 			if (verifyResponse.success && verifyResponse.data) {
-				// PASO 2: Procesar el checkout completo en el sistema
 				console.log("Procesando checkout completo en el sistema...");
 				
-				// ✅ OBTENER SELLER_ID DEL CARRITO
 				const sellerId = CheckoutService.getSellerIdFromCart(cart);
 				console.log("Seller ID obtenido:", sellerId);
 				
-				// Preparar datos completos para el checkout
+				// ✅ NUEVO: Construir items del carrito con precios
+				const items = cart.items.map(item => ({
+					product_id: item.productId,
+					quantity: item.quantity,
+					price: item.product?.final_price || item.product?.price || item.price || 0
+				}));
+				
 				const checkoutRequestData = {
 					payment: {
-						method: "transfer" as PaymentMethod, // Datafast usa transfer
+						method: "transfer" as PaymentMethod,
 					} as PaymentInfo,
 					shippingAddress: {
 						name: formData.given_name + " " + formData.surname,
 						street: formData.address,
 						city: formData.city,
-						state: formData.country, // Usar country como state para simplificar
-						postalCode: "00000", // Código postal por defecto
+						state: formData.country,
+						postalCode: "00000",
 						country: formData.country,
 						phone: formData.phone,
 					},
-					seller_id: sellerId, // ✅ AGREGAR SELLER_ID
+					seller_id: sellerId || undefined,
+					items: items
 				};
 
-				// Procesar el checkout completo
-				const checkoutResponse = await checkoutService.processCheckout(checkoutRequestData);
+				const checkoutResponse = await checkoutService.processCheckout(checkoutRequestData, user?.email);
 				
 				console.log("Respuesta del checkout completo:", checkoutResponse);
 
 				if (checkoutResponse.status === "success") {
-					// PASO 3: Completar el proceso (limpiar carrito, notificar, navegar)
 					clearCart();
 					setShowWidget(false);
 
@@ -449,13 +456,12 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 						"¡Pago y pedido completados exitosamente!"
 					);
 
-					// Mostrar detalles de la orden
 					console.log("Detalles completos de la orden:", {
 						datafast: verifyResponse.data,
 						checkout: checkoutResponse.data
 					});
 
-					onSuccess?.(checkoutResponse.data); // Usar datos del checkout completo
+					onSuccess?.(checkoutResponse.data);
 					navigate("/orders");
 				} else {
 					throw new Error(checkoutResponse.message || "Error al procesar el checkout completo");
@@ -474,7 +480,6 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 		}
 	};
 
-	// Procesar pago real (cuando el usuario complete el formulario)
 	const handleRealPayment = () => {
 		showNotification(
 			NotificationType.INFO,
@@ -496,9 +501,7 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 						<p className="text-blue-700">ID: {checkoutData?.transaction_id}</p>
 					</div>
 
-					{/* Container para el widget - MUY SIMPLE */}
 					<div className="min-h-[400px] border border-gray-200 rounded-lg p-4">
-						{/* El formulario de Datafast aparecerá aquí automáticamente */}
 						<form
 							action={`${window.location.origin}/datafast-result`}
 							className="paymentWidgets"
@@ -517,7 +520,6 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 						</form>
 					</div>
 
-					{/* Información de prueba */}
 					<div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
 						<h4 className="font-semibold text-yellow-800 mb-2">
 							Datos de prueba para usar:
@@ -539,9 +541,7 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 						</div>
 					</div>
 
-					{/* ✅ BOTONES ACTUALIZADOS */}
 					<div className="mt-6 space-y-4">
-						{/* Botones principales */}
 						<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 							<button
 								onClick={handleRealPayment}
@@ -560,7 +560,6 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 							</button>
 						</div>
 
-						{/* Botón de prueba completa */}
 						<div className="border-t pt-4">
 							<button
 								onClick={handleCompleteTestCheckout}
@@ -586,14 +585,12 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 							</p>
 						</div>
 
-						{/* Botón volver */}
 						<div className="flex justify-center">
 							<button
 								onClick={() => {
 									setShowWidget(false);
 									setShowForm(true);
 									setWidgetLoaded(false);
-									// Limpiar script
 									const script = document.getElementById("datafast-widget-script");
 									if (script) script.remove();
 								}}

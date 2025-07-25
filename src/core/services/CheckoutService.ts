@@ -4,7 +4,7 @@ import {extractErrorMessage} from "../../utils/errorHandler";
 import type {Address} from "../domain/valueObjects/Address";
 import type {ShoppingCart} from "../domain/entities/ShoppingCart";
 
-export type PaymentMethod = "credit_card" | "paypal" | "transfer" | "qr";
+export type PaymentMethod = "credit_card" | "paypal" | "transfer" | "qr" | "datafast" | "debit_card" | "de_una";
 
 export interface PaymentInfo {
 	method: PaymentMethod;
@@ -14,13 +14,37 @@ export interface PaymentInfo {
 	paypal_email?: string;
 }
 
-// Re-using Address for shipping information
-export type ShippingInfo = Address;
-
 export interface CheckoutRequest {
 	payment: PaymentInfo;
 	shippingAddress: Address;
 	billingAddress?: Address;
+	seller_id?: number;
+	items?: Array<{
+		product_id: number;
+		quantity: number;
+		price: number;
+	}>;
+}
+
+export interface BackendCheckoutRequest {
+	payment: PaymentInfo;
+	shipping: {
+		first_name: string;
+		last_name: string;
+		email: string;
+		phone: string;
+		address: string;
+		city: string;
+		state: string;
+		postal_code: string;
+		country: string;
+	};
+	seller_id?: number;
+	items?: Array<{
+		product_id: number;
+		quantity: number;
+		price: number;
+	}>;
 }
 
 export interface CheckoutResponse {
@@ -56,7 +80,6 @@ export class CheckoutService {
 			})),
 		});
 
-		// Buscar el seller ID en el primer item del carrito
 		const firstItem = cart.items[0];
 		console.log("🛒 getSellerIdFromCart: Primer item del carrito:", firstItem);
 
@@ -68,55 +91,58 @@ export class CheckoutService {
 				user_id: firstItem.product.user_id,
 			});
 
-			// Prioridad 1: sellerId en el producto
 			if (firstItem.product.sellerId) {
-				console.log(
-					"✅ getSellerIdFromCart: Usando sellerId:",
-					firstItem.product.sellerId
-				);
+				console.log("✅ getSellerIdFromCart: Usando sellerId:", firstItem.product.sellerId);
 				return firstItem.product.sellerId;
 			}
 
-			// Prioridad 2: seller_id en el producto
 			if (firstItem.product.seller_id) {
-				console.log(
-					"✅ getSellerIdFromCart: Usando seller_id:",
-					firstItem.product.seller_id
-				);
+				console.log("✅ getSellerIdFromCart: Usando seller_id:", firstItem.product.seller_id);
 				return firstItem.product.seller_id;
 			}
 
-			// Prioridad 3: seller.id en el producto
 			if (firstItem.product.seller && firstItem.product.seller.id) {
-				console.log(
-					"✅ getSellerIdFromCart: Usando seller.id:",
-					firstItem.product.seller.id
-				);
+				console.log("✅ getSellerIdFromCart: Usando seller.id:", firstItem.product.seller.id);
 				return firstItem.product.seller.id;
 			}
 
-			// Prioridad 4: user_id como fallback
 			if (firstItem.product.user_id) {
-				console.log(
-					"✅ getSellerIdFromCart: Usando user_id como fallback:",
-					firstItem.product.user_id
-				);
+				console.log("✅ getSellerIdFromCart: Usando user_id como fallback:", firstItem.product.user_id);
 				return firstItem.product.user_id;
 			}
 		}
 
-		console.warn(
-			"❌ getSellerIdFromCart: No se pudo obtener seller ID del carrito:",
-			cart
-		);
+		console.warn("❌ getSellerIdFromCart: No se pudo obtener seller ID del carrito:", cart);
 		return null;
+	}
+
+	/**
+	 * Convierte Address a formato de shipping requerido por el backend
+	 */
+	private static convertAddressToShipping(address: Address, userEmail?: string): CheckoutRequest['shipping'] {
+		const nameParts = address.name.split(' ');
+		const firstName = nameParts[0] || '';
+		const lastName = nameParts.slice(1).join(' ') || '';
+
+		return {
+			first_name: firstName,
+			last_name: lastName,
+			email: userEmail || '',
+			phone: address.phone,
+			address: address.street,
+			city: address.city,
+			state: address.state,
+			postal_code: address.postalCode,
+			country: address.country
+		};
 	}
 
 	/**
 	 * Procesar el pago y finalizar la compra
 	 */
 	async processCheckout(
-		checkoutData: CheckoutRequest
+		checkoutData: CheckoutRequest,
+		userEmail?: string
 	): Promise<CheckoutResponse> {
 		try {
 			console.log("🚀 CheckoutService.processCheckout INICIADO");
@@ -125,18 +151,49 @@ export class CheckoutService {
 				JSON.stringify(checkoutData, null, 2)
 			);
 
-			// ✅ NUEVO: Verificar si hay algún carrito activo antes del checkout
 			console.log("🛒 Verificando estado del carrito antes del checkout...");
-
-			// Aquí podrías agregar una llamada para obtener el carrito actual
-			// const currentCart = await this.getCurrentCart();
-			// console.log("🛒 Carrito actual:", currentCart);
 
 			console.log("📞 Llamando a API:", API_ENDPOINTS.CHECKOUT.PROCESS);
 
+			console.log("🔍 DEBUGGING - Método original:", checkoutData.payment.method);
+
+			// Mapear método de pago a los valores exactos del backend
+			let paymentMethod: PaymentMethod = checkoutData.payment.method;
+			if (paymentMethod === "transfer") {
+				paymentMethod = "datafast" as PaymentMethod;
+			} else if (paymentMethod === "credit_card") {
+				paymentMethod = "credit_card" as PaymentMethod;
+			}
+
+			console.log("🔍 DEBUGGING - Método después de mapear:", paymentMethod);
+
+			// Mapear dirección a formato requerido por backend
+			const nameParts = (checkoutData.shippingAddress.name || '').split(' ');
+			const backendData: BackendCheckoutRequest = {
+				payment: {
+					...checkoutData.payment,
+					method: paymentMethod
+				},
+				shipping: {
+					first_name: nameParts[0] || '',
+					last_name: nameParts.slice(1).join(' ') || '',
+					email: userEmail || '',
+					phone: checkoutData.shippingAddress.phone || '',
+					address: checkoutData.shippingAddress.street || '',
+					city: checkoutData.shippingAddress.city || '',
+					state: checkoutData.shippingAddress.state || '',
+					postal_code: checkoutData.shippingAddress.postalCode || '',
+					country: checkoutData.shippingAddress.country || ''
+				},
+				seller_id: checkoutData.seller_id,
+				items: checkoutData.items
+			};
+
+			console.log("🔍 DEBUGGING - Datos completos que se enviarán al backend:", JSON.stringify(backendData, null, 2));
+
 			const response = await ApiClient.post<CheckoutResponse>(
 				API_ENDPOINTS.CHECKOUT.PROCESS,
-				checkoutData
+				backendData
 			);
 
 			console.log("✅ CheckoutService: Respuesta COMPLETA del backend:");
@@ -144,14 +201,12 @@ export class CheckoutService {
 			console.log("💬 Message:", response.message);
 			console.log("📦 Data completa:", JSON.stringify(response.data, null, 2));
 
-			// ✅ NUEVO: Verificar específicamente los items si están en la respuesta
 			if (response.data && typeof response.data === "object") {
 				const dataObj = response.data as any;
 				if (dataObj.items) {
 					console.log("🔍 ANÁLISIS DETALLADO DE ITEMS:");
 					console.log("📊 Total de items en respuesta:", dataObj.items.length);
 
-					// Agrupar por product_id para detectar duplicados
 					const itemsByProductId = dataObj.items.reduce(
 						(acc: any, item: any, index: number) => {
 							console.log(`📋 Item ${index + 1}:`, {
@@ -174,17 +229,11 @@ export class CheckoutService {
 
 					console.log("🔍 Items agrupados por product_id:", itemsByProductId);
 
-					// Detectar duplicados
 					Object.keys(itemsByProductId).forEach((productId) => {
 						const items = itemsByProductId[productId];
 						if (items.length > 1) {
-							console.warn(
-								`⚠️ DUPLICADO DETECTADO para product_id ${productId}:`,
-								items
-							);
-							console.warn(
-								`❌ Se encontraron ${items.length} registros para el mismo producto`
-							);
+							console.warn(`⚠️ DUPLICADO DETECTADO para product_id ${productId}:`, items);
+							console.warn(`❌ Se encontraron ${items.length} registros para el mismo producto`);
 						}
 					});
 				}
@@ -199,7 +248,6 @@ export class CheckoutService {
 			console.error("📊 Error response:", (error as any)?.response);
 			console.error("📊 Error response data:", (error as any)?.response?.data);
 
-			// Extraer un mensaje de error amigable del error
 			const errorMessage = extractErrorMessage(
 				error,
 				"Error al procesar el pago. Por favor, intenta de nuevo más tarde."
@@ -211,15 +259,12 @@ export class CheckoutService {
 	}
 
 	/**
-	 * ✅ NUEVO: Método para obtener el carrito actual (si existe un endpoint)
+	 * Obtener el carrito actual
 	 */
 	async getCurrentCart(): Promise<any> {
 		try {
 			console.log("🛒 Obteniendo carrito actual...");
-			// Aquí podrías hacer una llamada al endpoint del carrito si existe
-			// const cart = await ApiClient.get('/cart');
-			// return cart;
-			return null; // Por ahora retornar null
+			return null;
 		} catch (error) {
 			console.error("❌ Error al obtener carrito actual:", error);
 			return null;

@@ -1,4 +1,3 @@
-// src/presentation/pages/CheckoutPage.tsx - CON VALIDACIÓN MEJORADA
 import {useState, useEffect} from "react";
 import {useNavigate} from "react-router-dom";
 import {useCart} from "../hooks/useCart";
@@ -36,13 +35,11 @@ const CheckoutPage: React.FC = () => {
 		phone: "",
 	};
 
-	// ✅ Hook para manejo de errores mejorado
 	const {handleSuccess, handleError} = useErrorHandler({
 		showNotification,
 		context: "CheckoutPage",
 	});
 
-	// ✅ USAR CONTEXTO DE DESCUENTOS POR cantidad
 	const {calculateCartItemDiscount} = useCartVolumeDiscounts();
 
 	const [paymentMethod, setPaymentMethod] = useState<"credit_card" | "deuna">(
@@ -67,7 +64,6 @@ const CheckoutPage: React.FC = () => {
 
 	const checkoutService = new CheckoutService();
 
-	// ✅ HELPER PARA OBTENER STOCK DISPONIBLE
 	const getAvailableStock = (product: any): number => {
 		if (typeof product.stockAvailable === "number") {
 			return product.stockAvailable;
@@ -78,7 +74,6 @@ const CheckoutPage: React.FC = () => {
 		return 0;
 	};
 
-	// ✅ VALIDAR STOCK DE TODOS LOS ITEMS
 	const validateCartStock = () => {
 		if (!cart?.items) return {valid: true, errors: []};
 
@@ -102,7 +97,6 @@ const CheckoutPage: React.FC = () => {
 		};
 	};
 
-	// ✅ CALCULAR TOTALES CON DESCUENTOS POR cantidad Y VALIDACIÓN
 	const orderSummary = useState(() => {
 		if (!cart?.items?.length) {
 			return {
@@ -116,7 +110,6 @@ const CheckoutPage: React.FC = () => {
 			};
 		}
 
-		// Calcular descuentos para cada item
 		const itemsWithDiscounts = cart.items.map((item) => {
 			const discount = calculateCartItemDiscount(item);
 			const availableStock = getAvailableStock(item.product);
@@ -132,7 +125,6 @@ const CheckoutPage: React.FC = () => {
 			};
 		});
 
-		// Identificar problemas de stock
 		const stockIssues = itemsWithDiscounts
 			.filter((item) => item.hasStockIssue)
 			.map((item) => ({
@@ -142,7 +134,6 @@ const CheckoutPage: React.FC = () => {
 				isOutOfStock: !item.product?.is_in_stock,
 			}));
 
-		// Calcular totales
 		const subtotal = itemsWithDiscounts.reduce(
 			(sum, item) => sum + item.itemTotal,
 			0
@@ -151,7 +142,7 @@ const CheckoutPage: React.FC = () => {
 			(sum, item) => sum + item.discount.savingsTotal,
 			0
 		);
-		const tax = subtotal * 0.15; // 15% IVA
+		const tax = subtotal * 0.15;
 		const total = subtotal + tax;
 
 		return {
@@ -165,7 +156,6 @@ const CheckoutPage: React.FC = () => {
 		};
 	})[0];
 
-	// Cargar datos del usuario al montar el componente
 	useEffect(() => {
 		if (user) {
 			const userAddress: Address = {
@@ -190,7 +180,6 @@ const CheckoutPage: React.FC = () => {
 		console.error("Error:", error);
 	};
 
-	// ✅ VERIFICAR CARRITO Y STOCK AL MONTAR
 	useEffect(() => {
 		if (!cart || cart.items.length === 0) {
 			showNotification(NotificationType.ERROR, "El carrito está vacío");
@@ -198,12 +187,10 @@ const CheckoutPage: React.FC = () => {
 			return;
 		}
 
-		// Validar stock inmediatamente
 		const stockValidation = validateCartStock();
 		if (!stockValidation.valid) {
 			console.warn("⚠️ Problemas de stock detectados:", stockValidation.errors);
 
-			// Mostrar primer error de stock
 			if (stockValidation.errors.length > 0) {
 				showNotification(
 					NotificationType.WARNING,
@@ -217,11 +204,10 @@ const CheckoutPage: React.FC = () => {
 		setPaymentMethod(method);
 		setPaymentInfo({
 			...paymentInfo,
-			method: method === "deuna" ? "transfer" : method,
+			method: method === "deuna" ? "transfer" : "credit_card",
 		});
 	};
 
-	// Actualizar información de envío
 	const handleShippingChange = (field: keyof Address, value: string) => {
 		const newAddress = {...shippingAddress, [field]: value};
 		setShippingAddress(newAddress);
@@ -234,10 +220,8 @@ const CheckoutPage: React.FC = () => {
 		setBillingAddress({...billingAddress, [field]: value});
 	};
 
-	// Actualizar información de pago
 	const handlePaymentChange = (field: keyof PaymentInfo, value: string) => {
 		setPaymentInfo({...paymentInfo, [field]: value});
-		// Limpiar error si el campo tiene valor
 		if (value.trim() && formErrors[field]) {
 			const newErrors = {...formErrors};
 			delete newErrors[field];
@@ -245,7 +229,6 @@ const CheckoutPage: React.FC = () => {
 		}
 	};
 
-	// Validar el formulario
 	const validateForm = (): boolean => {
 		const errors: Record<string, string> = {};
 
@@ -272,7 +255,6 @@ const CheckoutPage: React.FC = () => {
 			validateAddress(billingAddress, "billing");
 		}
 
-		// Validar solo tarjeta de crédito
 		if (paymentMethod === "credit_card") {
 			if (!paymentInfo.card_number) {
 				errors.card_number = "El número de tarjeta es obligatorio";
@@ -297,16 +279,13 @@ const CheckoutPage: React.FC = () => {
 		return Object.keys(errors).length === 0;
 	};
 
-	// ✅ PROCESAR CHECKOUT CON VALIDACIÓN DE STOCK MEJORADA
 	const processCheckout = async () => {
 		console.log("🛒 CheckoutPage.processCheckout INICIADO");
 
-		// ✅ VALIDAR STOCK ANTES DE PROCEDER
 		const stockValidation = validateCartStock();
 		if (!stockValidation.valid) {
 			console.log("❌ Validación de stock falló:", stockValidation.errors);
 
-			// Mostrar todos los errores de stock
 			stockValidation.errors.forEach((error) => {
 				showNotification(NotificationType.ERROR, error);
 			});
@@ -342,29 +321,31 @@ const CheckoutPage: React.FC = () => {
 		setIsLoading(true);
 
 		try {
+			const sellerId = CheckoutService.getSellerIdFromCart(cart);
+			
+			// ✅ NUEVO: Construir items del carrito con precios
+			const items = cart?.items?.map(item => ({
+				product_id: item.productId,
+				quantity: item.quantity,
+				price: item.product?.final_price || item.product?.price || item.price || 0
+			})) || [];
+			
+			console.log("🛒 Items formateados para checkout:", JSON.stringify(items, null, 2));
+			
 			const checkoutData = {
 				payment: {
 					...paymentInfo,
 					method:
 						paymentMethod === "deuna"
 							? ("transfer" as PaymentMethod)
-							: paymentMethod,
+							: paymentMethod === "credit_card" 
+							? ("credit_card" as PaymentMethod)
+							: paymentInfo.method,
 				},
 				shippingAddress: shippingAddress,
 				billingAddress: useSameAddress ? shippingAddress : billingAddress,
-				// ✅ INCLUIR INFORMACIÓN DE DESCUENTOS POR cantidad
-				volume_discounts: {
-					applied: orderSummary.hasVolumeDiscounts,
-					total_savings: orderSummary.volumeDiscounts,
-					items: orderSummary.items.map((item) => ({
-						product_id: item.productId,
-						quantity: item.quantity,
-						original_price: item.discount.originalPrice,
-						discounted_price: item.discount.discountedPrice,
-						discount_percentage: item.discount.discountPercentage,
-						savings: item.discount.savingsTotal,
-					})),
-				},
+				seller_id: sellerId || undefined,
+				items: items
 			};
 
 			console.log(
@@ -373,7 +354,7 @@ const CheckoutPage: React.FC = () => {
 			);
 			console.log("🚀 Enviando checkout al backend...");
 
-			const response = await checkoutService.processCheckout(checkoutData);
+			const response = await checkoutService.processCheckout(checkoutData, user?.email);
 
 			console.log("✅ Respuesta del checkout recibida:", response);
 
@@ -415,7 +396,6 @@ const CheckoutPage: React.FC = () => {
 			console.error("📊 Error response:", (error as any)?.response);
 			console.error("📊 Error response data:", (error as any)?.response?.data);
 
-			// Extraer un mensaje de error amigable del error
 			handleError(
 				error,
 				"Error al procesar el pago. Por favor, intenta de nuevo más tarde."
@@ -426,14 +406,12 @@ const CheckoutPage: React.FC = () => {
 		}
 	};
 
-	// ✅ COMPONENTE PARA RESUMEN DE PEDIDO CON ADVERTENCIAS DE STOCK
 	const OrderSummaryComponent = () => (
 		<div>
 			<h2 className="text-xl font-bold text-gray-800 mb-4">
 				Resumen del pedido
 			</h2>
 
-			{/* ✅ ADVERTENCIAS DE STOCK */}
 			{orderSummary.stockIssues.length > 0 && (
 				<div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
 					<div className="flex items-start">
@@ -465,7 +443,6 @@ const CheckoutPage: React.FC = () => {
 				</div>
 			)}
 
-			{/* ✅ BANNER DE DESCUENTOS POR cantidad */}
 			{orderSummary.hasVolumeDiscounts && (
 				<div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-4 mb-4">
 					<div className="flex items-center">
@@ -481,7 +458,6 @@ const CheckoutPage: React.FC = () => {
 				</div>
 			)}
 
-			{/* Lista de productos */}
 			<div className="space-y-3 mb-6">
 				{orderSummary.items.map((item, index) => (
 					<div
@@ -503,7 +479,6 @@ const CheckoutPage: React.FC = () => {
 								<span className="text-xs text-gray-500">
 									Cantidad: {item.quantity}
 								</span>
-								{/* ✅ MOSTRAR DESCUENTO POR cantidad */}
 								{item.discount.hasDiscount && (
 									<span className="text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded flex items-center">
 										<Gift size={10} className="mr-1" />
@@ -511,7 +486,6 @@ const CheckoutPage: React.FC = () => {
 									</span>
 								)}
 							</div>
-							{/* ✅ MOSTRAR AHORROS */}
 							{item.discount.hasDiscount && (
 								<div className="text-xs text-green-600 mt-1">
 									Precio unitario:{" "}
@@ -538,7 +512,6 @@ const CheckoutPage: React.FC = () => {
 				))}
 			</div>
 
-			{/* ✅ TOTALES CON DESCUENTOS POR cantidad */}
 			<div className="space-y-3 border-t border-gray-200 pt-4">
 				<div className="flex justify-between text-sm">
 					<span className="text-gray-600">Subtotal:</span>
@@ -547,7 +520,6 @@ const CheckoutPage: React.FC = () => {
 					</span>
 				</div>
 
-				{/* ✅ MOSTRAR AHORROS POR DESCUENTOS POR cantidad */}
 				{orderSummary.hasVolumeDiscounts && (
 					<div className="flex justify-between text-sm text-green-600">
 						<span className="flex items-center">
@@ -572,7 +544,6 @@ const CheckoutPage: React.FC = () => {
 					<span>{formatCurrency(orderSummary.total)}</span>
 				</div>
 
-				{/* ✅ RESUMEN DE AHORROS */}
 				{orderSummary.hasVolumeDiscounts && (
 					<div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-3">
 						<div className="flex items-center justify-between">
@@ -589,7 +560,6 @@ const CheckoutPage: React.FC = () => {
 		</div>
 	);
 
-	// Si el pedido está completo, mostrar pantalla de éxito
 	if (orderComplete && orderDetails) {
 		return (
 			<div className="container mx-auto px-4 py-10">
@@ -619,7 +589,6 @@ const CheckoutPage: React.FC = () => {
 							electrónico con los detalles.
 						</p>
 
-						{/* ✅ MOSTRAR AHORROS EN PANTALLA DE ÉXITO */}
 						{orderSummary.hasVolumeDiscounts && (
 							<div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
 								<div className="flex items-center justify-center">
@@ -684,7 +653,6 @@ const CheckoutPage: React.FC = () => {
 		);
 	}
 
-	// Mostrar página de checkout
 	return (
 		<div className="container mx-auto px-4 py-10">
 			<div className="flex justify-between items-center mb-8">
@@ -693,9 +661,7 @@ const CheckoutPage: React.FC = () => {
 			</div>
 
 			<div className="flex flex-col lg:flex-row gap-8">
-				{/* Formulario de checkout */}
 				<div className="lg:w-2/3">
-					{/* Información de envío/facturación */}
 					<div className="bg-white rounded-lg shadow-lg p-6 mb-6">
 						<h2 className="text-xl font-bold mb-4">
 							Información de envío y facturación
@@ -737,7 +703,6 @@ const CheckoutPage: React.FC = () => {
 						)}
 					</div>
 
-					{/* Métodos de pago */}
 					<div className="bg-white rounded-lg shadow-lg p-6 mb-6">
 						<h2 className="text-xl font-bold mb-4">Método de pago</h2>
 
@@ -769,7 +734,6 @@ const CheckoutPage: React.FC = () => {
 							</button>
 						</div>
 
-						{/* Formulario según método de pago seleccionado */}
 						{paymentMethod === "credit_card" && (
 							<CreditCardForm
 								paymentInfo={paymentInfo}
@@ -788,7 +752,6 @@ const CheckoutPage: React.FC = () => {
 					</div>
 				</div>
 
-				{/* ✅ RESUMEN DEL PEDIDO CON ADVERTENCIAS Y DESCUENTOS */}
 				<div className="lg:w-1/3">
 					<div className="bg-white rounded-lg shadow-lg p-6 sticky top-24">
 						<OrderSummaryComponent />
@@ -829,7 +792,6 @@ const CheckoutPage: React.FC = () => {
 							)}
 						</button>
 
-						{/* ✅ MENSAJE DE ADVERTENCIA SI HAY PROBLEMAS DE STOCK */}
 						{orderSummary.stockIssues.length > 0 && (
 							<div className="mt-3 text-xs text-center text-red-600">
 								⚠️ Ajusta las cantidades en tu carrito antes de continuar
