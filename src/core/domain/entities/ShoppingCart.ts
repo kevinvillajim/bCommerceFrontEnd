@@ -11,11 +11,17 @@ export interface CartItem {
   subtotal: number; // Subtotal sin descuentos por volumen
   attributes?: Record<string, any>;
   
-  // ✅ NUEVOS: Campos para descuentos por volumen
-  volume_discount?: number; // Porcentaje de descuento por volumen aplicado
-  discounted_price?: number; // Precio por unidad con descuento por volumen
+  // ✅ CAMPOS NECESARIOS PARA CARTPAGE (resuelven errores TypeScript)
+  final_price?: number; // Precio final con descuentos aplicados
+  original_price?: number; // Precio original antes de descuentos
+  volume_discount_percentage?: number; // Porcentaje de descuento por volumen
+  volume_savings?: number; // Ahorros por descuento por volumen
+  discount_label?: string; // Etiqueta del descuento
+  discounted_price?: number; // Precio con descuento aplicado
   total_savings?: number; // Ahorro total por descuento por volumen
-  discount_label?: string; // Etiqueta del descuento aplicado
+  
+  // ✅ CAMPOS ADICIONALES para descuentos por volumen
+  volume_discount?: number; // Porcentaje de descuento por volumen aplicado
   
   // Información del producto
   product?: {
@@ -132,8 +138,24 @@ export interface ShoppingCartResponse {
       discounted_price?: number;
       total_savings?: number;
       discount_label?: string;
+      final_price?: number;
+      original_price?: number;
+      volume_discount_percentage?: number;
+      volume_savings?: number;
     }>;
     item_count: number;
+    
+    // ✅ NUEVOS: Información de pricing en respuesta
+    pricing_info?: {
+      subtotal_products?: number;
+      iva_amount?: number;
+      shipping_cost?: number;
+      total_discounts?: number;
+      volume_discount_savings?: number;
+      volume_discounts_applied?: boolean;
+      free_shipping?: boolean;
+      breakdown?: any;
+    };
   };
 }
 
@@ -269,9 +291,9 @@ export const calculateCartVolumeDiscount = (items: CartItem[]): CartVolumeDiscou
   items.forEach(item => {
     summary.total_items += item.quantity;
     
-    const originalPrice = item.price * item.quantity;
-    const discountedPrice = (item.discounted_price || item.price) * item.quantity;
-    const savings = item.total_savings || 0;
+    const originalPrice = (item.original_price || item.price) * item.quantity;
+    const discountedPrice = (item.discounted_price || item.final_price || item.price) * item.quantity;
+    const savings = item.total_savings || item.volume_savings || 0;
     
     summary.total_original_price += originalPrice;
     summary.total_discounted_price += discountedPrice;
@@ -294,9 +316,9 @@ export const calculateCartVolumeDiscount = (items: CartItem[]): CartVolumeDiscou
 };
 
 export const hasVolumeDiscountsInCart = (items: CartItem[]): boolean => {
-  return items.some(item => (item.total_savings || 0) > 0);
+  return items.some(item => (item.total_savings || item.volume_savings || 0) > 0);
 };
 
 export const getTotalVolumeDiscountSavings = (items: CartItem[]): number => {
-  return items.reduce((total, item) => total + (item.total_savings || 0), 0);
+  return items.reduce((total, item) => total + (item.total_savings || item.volume_savings || 0), 0);
 };

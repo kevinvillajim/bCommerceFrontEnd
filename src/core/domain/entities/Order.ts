@@ -1,6 +1,6 @@
 /**
  * Archivo: src/core/domain/entities/Order.ts
- * Entidades relacionadas con órdenes de compra y sus tipos - CORREGIDO
+ * Entidades relacionadas con órdenes de compra y sus tipos - CORREGIDO CON DESCUENTOS POR VOLUMEN
  */
 import type {Address} from "../valueObjects/Address";
 
@@ -21,10 +21,22 @@ export interface Order {
 	updatedAt?: string;
 	user_name?: string; // Añadido para compatibilidad con API
 	user_email?: string; // Añadido para compatibilidad con API
+	
+	// ✅ NUEVOS: Campos de descuentos por volumen y pricing detallado
+	original_total?: number;
+	volume_discount_savings?: number;
+	volume_discounts_applied?: boolean;
+	subtotal_products?: number;
+	iva_amount?: number;
+	shipping_cost?: number;
+	total_discounts?: number;
+	free_shipping?: boolean;
+	free_shipping_threshold?: number;
+	pricing_breakdown?: any;
 }
 
 /**
- * Order item entity
+ * Order item entity - ACTUALIZADO CON DESCUENTOS POR VOLUMEN
  */
 export interface OrderItem {
 	id?: number;
@@ -44,6 +56,13 @@ export interface OrderItem {
 	product_name?: string; // Para compatibilidad con API
 	product_sku?: string; // Para compatibilidad con API
 	product_image?: string; // Para compatibilidad con API
+	
+	// ✅ NUEVOS: Campos de descuentos por volumen
+	original_price?: number;
+	volume_discount_percentage?: number;
+	volume_savings?: number;
+	discount_label?: string;
+	hasVolumeDiscount?: boolean;
 }
 
 /**
@@ -54,6 +73,12 @@ export interface OrderDetail extends Order {
 		product_name?: string;
 		product_sku?: string;
 		product_image?: string;
+		// ✅ NUEVOS: Campos de descuentos por volumen en detalles
+		original_price?: number;
+		volume_discount_percentage?: number;
+		volume_savings?: number;
+		discount_label?: string;
+		hasVolumeDiscount?: boolean;
 	})[];
 }
 

@@ -82,7 +82,7 @@ const CACHE_KEYS = {
 };
 
 const CACHE_TIMES = {
-	CART: 3 * 60 * 1000, // 3 minutos - más corto que antes para datos más frescos
+	CART: 3 * 60 * 1000, // 3 minutos
 };
 
 // Provider component
@@ -165,7 +165,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 	const invalidateCartCache = useCallback(() => {
 		CacheService.removeItem(CACHE_KEYS.CART_USER);
 		CacheService.removeItem(CACHE_KEYS.CART_GUEST);
-		CacheService.removeItem("header_counters"); // Invalidar también contadores del header
+		CacheService.removeItem("header_counters");
 		console.log("🗑️ Cart cache invalidated");
 	}, []);
 
@@ -175,7 +175,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 		return cartItems.reduce((total, item) => total + item.quantity, 0);
 	}, []);
 
-	// Función para cargar el carrito desde la API con cache
+	// ✅ FUNCIÓN SIMPLE PARA CARGAR EL CARRITO (como funcionaba antes)
 	const fetchCartFromAPI = useCallback(async () => {
 		if (isFetchingRef.current) return null;
 
@@ -203,10 +203,11 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 			}
 
 			console.log("🌐 Fetching cart from API...");
+			// ✅ USAR EL CARTSERVICE SIMPLE ORIGINAL
 			const response = await cartService.getCart();
 
 			if (response && response.status === "success" && response.data) {
-				// Convertir datos de la API al formato de nuestro estado
+				// ✅ CONVERTIR DATOS DE LA API AL FORMATO DEL ESTADO (simple)
 				const cartData: ShoppingCart = {
 					id: response.data.id,
 					total: response.data.total,
@@ -220,15 +221,24 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 							price: item.price,
 							subtotal: item.subtotal,
 							attributes: item.attributes,
+							
+							// ✅ INCLUIR INFORMACIÓN DE DESCUENTOS SI VIENE DEL BACKEND
+							final_price: item.final_price || item.price,
+							original_price: item.original_price || item.price,
+							volume_discount_percentage: item.volume_discount_percentage || 0,
+							volume_savings: item.volume_savings || 0,
+							discount_label: item.discount_label || null,
+							pricing_info: item.pricing_info || null,
+							
 							product: {
 								id: product.id || 0,
 								name: product.name || "Producto sin nombre",
 								slug: product.slug,
 								price: product.price || 0,
-								final_price: (product as any).final_price ?? product.price ?? 0,
-								discount_percentage: (product as any).discount_percentage ?? 0,
-								rating: (product as any).rating ?? 0,
-								rating_count: (product as any).rating_count ?? 0,
+								final_price: product.final_price ?? product.price ?? 0,
+								discount_percentage: product.discount_percentage ?? 0,
+								rating: product.rating ?? 0,
+								rating_count: product.rating_count ?? 0,
 								image: (product.main_image || product.image || (product.images && product.images.length > 0 ? (typeof product.images[0] === 'string' ? product.images[0] : product.images[0].original || product.images[0].medium || product.images[0].thumbnail) : undefined)),
 								main_image: (product.main_image || product.image || (product.images && product.images.length > 0 ? (typeof product.images[0] === 'string' ? product.images[0] : product.images[0].original || product.images[0].medium || product.images[0].thumbnail) : undefined)),
 								stockAvailable: product.stock || 0,
@@ -237,11 +247,17 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 								seller: product.seller,
 								user_id: product.user_id,
 								stock: product.stock || 0,
-								is_in_stock: (product as any).is_in_stock ?? true,
+								is_in_stock: product.is_in_stock ?? true,
 							},
 						};
 					}),
 					item_count: response.data.item_count || 0,
+					
+					// ✅ INCLUIR INFORMACIÓN DE DESCUENTOS A NIVEL DE CARRITO SI VIENE
+					subtotal: response.data.subtotal || response.data.total,
+					total_volume_savings: response.data.total_volume_savings || response.data.volume_discount_savings || 0,
+					volume_discounts_applied: response.data.volume_discounts_applied || false,
+					pricing_info: response.data.pricing_info || null,
 				};
 
 				// ✅ GUARDAR EN CACHE
@@ -260,6 +276,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 					itemCount: itemCountValue,
 					total: cartData.total,
 					items: cartData.items.length,
+					volume_discounts_applied: cartData.volume_discounts_applied
 				});
 
 				return cartData;
@@ -347,7 +364,6 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 		isInitialized.current = true;
 	}, [isAuthenticated, fetchCart]);
 
-	// ✅ ELIMINADO POLLING AUTOMÁTICO - Solo carga inicial y manual
 	useEffect(() => {
 		fetchCart();
 	}, [fetchCart]);
@@ -464,7 +480,6 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 				setLoading(true);
 				const response = await cartService.addToCart(request);
 				if (response && response.status === "success") {
-					// ✅ INVALIDAR CACHE Y REFETCH
 					invalidateCartCache();
 					await fetchCart();
 					return true;

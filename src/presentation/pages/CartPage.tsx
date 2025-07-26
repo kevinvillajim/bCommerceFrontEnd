@@ -1,4 +1,4 @@
-// src/presentation/pages/CartPage.tsx - CORREGIDO PARA USAR PRECIOS DEL BACKEND
+// src/presentation/pages/CartPage.tsx - CON VALIDACIÓN DE STOCK MEJORADA
 import React, {useState, useEffect, useMemo, useCallback} from "react";
 import {Link, useNavigate} from "react-router-dom";
 import {
@@ -18,6 +18,7 @@ import {useInvalidateCounters} from "../hooks/useHeaderCounters";
 import {useErrorHandler} from "../hooks/useErrorHandler";
 import {NotificationType} from "../contexts/CartContext";
 import CacheService from "../../infrastructure/services/CacheService";
+import {useCartVolumeDiscounts} from "../contexts/VolumeDiscountContext";
 import {formatCurrency} from "../../utils/formatters/formatCurrency";
 
 // Importar hooks optimizados
@@ -41,6 +42,12 @@ const CartPage: React.FC = () => {
 		delay: 500,
 		onPrefetchComplete: () => console.log("✅ Cart page prefetch completed"),
 	});
+
+	// ✅ USAR CONTEXTO DE DESCUENTOS POR VOLUMEN
+	const {
+				calculateCartItemDiscount,
+		isEnabled: volumeDiscountsEnabled
+	} = useCartVolumeDiscounts();
 
 	// Obtener datos del carrito y funciones para manipularlo
 	const {
@@ -109,39 +116,36 @@ const CartPage: React.FC = () => {
 		[getOptimizedImageUrl]
 	);
 
-	// ✅ SIMPLIFICADO: Obtener items del carrito con precios ya calculados por el backend
-	const cartItemsWithPricing = useMemo(() => {
-		if (!cart?.items) {
-			return [];
+	// ✅ CALCULAR DESCUENTOS POR VOLUMEN PARA CADA ITEM
+	const cartItemsWithDiscounts = useMemo(() => {
+		if (!cart?.items || !volumeDiscountsEnabled) {
+			return cart?.items?.map(item => ({
+				...item,
+				discount: {
+					originalPrice: item.price || 0,
+					discountedPrice: item.price || 0,
+					discountPercentage: 0,
+					savings: 0,
+					savingsTotal: 0,
+					hasDiscount: false
+				},
+				imageUrl: getProductImage(item.product)
+			})) || [];
 		}
 
-		// El backend ya debe enviar los precios con descuentos aplicados
 		return cart.items.map(item => {
-			// ✅ USAR precios que vienen del backend (ya con descuentos aplicados)
-			const finalPrice = item.discounted_price || item.final_price || item.price;
-			const originalPrice = item.original_price || item.price;
-			const volumeDiscount = item.volume_discount_percentage || 0;
-			const volumeSavings = item.volume_savings || 0;
-			const hasDiscount = volumeDiscount > 0;
-
+			const discount = calculateCartItemDiscount(item);
 			return {
 				...item,
-				pricing: {
-					originalPrice: originalPrice,
-					finalPrice: finalPrice,
-					discountPercentage: volumeDiscount,
-					savings: volumeSavings,
-					savingsTotal: volumeSavings * item.quantity,
-					hasDiscount: hasDiscount
-				},
+				discount,
 				imageUrl: getProductImage(item.product)
 			};
 		});
-	}, [cart?.items, getProductImage]);
+	}, [cart?.items, calculateCartItemDiscount, volumeDiscountsEnabled, getProductImage]);
 
-	// ✅ SIMPLIFICADO: Calcular totales usando precios del backend
+	// ✅ CALCULAR TOTALES DEL CARRITO CON DESCUENTOS POR VOLUMEN
 	const cartTotals = useMemo(() => {
-		if (!cartItemsWithPricing.length) {
+		if (!cartItemsWithDiscounts.length) {
 			return {
 				subtotal: 0,
 				tax: 0,
@@ -152,17 +156,17 @@ const CartPage: React.FC = () => {
 			};
 		}
 
-		// ✅ USAR precios finales que ya vienen calculados del backend
+		// Calcular subtotal con descuentos por volumen aplicados
 		let subtotal = 0;
 		let totalVolumeSavings = 0;
 		let volumeDiscountsApplied = false;
 
-		cartItemsWithPricing.forEach(item => {
-			const itemTotal = item.pricing.finalPrice * item.quantity;
+		cartItemsWithDiscounts.forEach(item => {
+			const itemTotal = item.discount.discountedPrice * item.quantity;
 			subtotal += itemTotal;
 			
-			if (item.pricing.hasDiscount) {
-				totalVolumeSavings += item.pricing.savingsTotal;
+			if (item.discount.hasDiscount) {
+				totalVolumeSavings += item.discount.savingsTotal;
 				volumeDiscountsApplied = true;
 			}
 		});
@@ -180,7 +184,7 @@ const CartPage: React.FC = () => {
 			totalVolumeSavings,
 			volumeDiscountsApplied,
 		};
-	}, [cartItemsWithPricing, couponApplied, couponDiscount]);
+	}, [cartItemsWithDiscounts, couponApplied, couponDiscount]);
 
 	// Cargar carrito simple - Solo al montar componente
 	useEffect(() => {
@@ -427,7 +431,7 @@ const CartPage: React.FC = () => {
 		navigate("/checkout");
 	}, [isEmpty, navigate, showNotification]);
 
-	// ✅ COMPONENTE SIMPLIFICADO PARA ITEM DEL CARRITO
+	// ✅ COMPONENTE ACTUALIZADO PARA ITEM DEL CARRITO CON VALIDACIÓN DE STOCK
 	const CartItem = React.memo(
 		({
 			item,
@@ -444,7 +448,7 @@ const CartPage: React.FC = () => {
 			onMoveToWishlist: () => void;
 			isLoading: boolean;
 		}) => {
-			const pricing = item.pricing; // ✅ Usar pricing en lugar de discount
+			const discount = item.discount;
 			const availableStock = getAvailableStock(item.product);
 			const isAtStockLimit = item.quantity >= availableStock;
 			
@@ -490,18 +494,18 @@ const CartPage: React.FC = () => {
 
 								{/* ✅ MOSTRAR DESCUENTOS POR VOLUMEN */}
 								<div className="flex flex-wrap gap-2 mb-2">
-									{pricing.hasDiscount && (
+									{discount.hasDiscount && (
 										<span className="text-xs bg-green-100 text-green-600 px-2 py-1 rounded flex items-center">
 											<Gift size={12} className="mr-1" />
-											Volumen: {pricing.discountPercentage}% OFF
+											Volumen: {discount.discountPercentage}% OFF
 										</span>
 									)}
 								</div>
 
 								{/* ✅ MOSTRAR AHORROS */}
-								{pricing.hasDiscount && (
+								{discount.hasDiscount && (
 									<div className="text-xs text-green-600 mb-2">
-										Ahorras: {formatCurrency(pricing.savingsTotal)}
+										Ahorras: {formatCurrency(discount.savingsTotal)}
 									</div>
 								)}
 
@@ -533,11 +537,11 @@ const CartPage: React.FC = () => {
 							</div>
 							<div className="font-medium flex flex-col items-center">
 								<span className="text-gray-800">
-									{formatCurrency(pricing.finalPrice)}
+									{formatCurrency(discount.discountedPrice)}
 								</span>
-								{pricing.hasDiscount && (
+								{discount.hasDiscount && (
 									<span className="text-xs text-gray-500 line-through">
-										{formatCurrency(pricing.originalPrice)}
+										{formatCurrency(discount.originalPrice)}
 									</span>
 								)}
 							</div>
@@ -590,11 +594,11 @@ const CartPage: React.FC = () => {
 							</div>
 							<div className="flex flex-col items-center">
 								<span className="font-bold text-gray-800">
-									{formatCurrency(pricing.finalPrice * item.quantity)}
+									{formatCurrency(discount.discountedPrice * item.quantity)}
 								</span>
-								{pricing.hasDiscount && (
+								{discount.hasDiscount && (
 									<span className="text-xs text-green-600">
-										(-{formatCurrency(pricing.savingsTotal)})
+										(-{formatCurrency(discount.savingsTotal)})
 									</span>
 								)}
 							</div>
@@ -670,8 +674,8 @@ const CartPage: React.FC = () => {
 								</div>
 							</div>
 
-							{/* ✅ PRODUCTOS CON PRICING CALCULADO POR BACKEND */}
-							{cartItemsWithPricing.map((item) => (
+							{/* ✅ PRODUCTOS CON DESCUENTOS Y VALIDACIÓN DE STOCK */}
+							{cartItemsWithDiscounts.map((item) => (
 								<CartItem
 									key={item.id}
 									item={item}

@@ -14,11 +14,12 @@ export interface PaymentInfo {
 	paypal_email?: string;
 }
 
+// ✅ CORREGIDO: Interface CheckoutRequest con tipos seguros
 export interface CheckoutRequest {
 	payment: PaymentInfo;
 	shippingAddress: Address;
 	billingAddress?: Address;
-	seller_id?: number | null; // ✅ CORREGIDO: Permitir null
+	seller_id?: number; // ✅ CORREGIDO: Cambiar null por undefined para TypeScript
 	items?: Array<{
 		product_id: number;
 		quantity: number;
@@ -127,27 +128,6 @@ export class CheckoutService {
 	}
 
 	/**
-	 * Convierte Address a formato de shipping requerido por el backend
-	 */
-	private static convertAddressToShipping(address: Address, userEmail?: string): CheckoutRequest['shipping'] {
-		const nameParts = address.name.split(' ');
-		const firstName = nameParts[0] || '';
-		const lastName = nameParts.slice(1).join(' ') || '';
-
-		return {
-			first_name: firstName,
-			last_name: lastName,
-			email: userEmail || '',
-			phone: address.phone,
-			address: address.street,
-			city: address.city,
-			state: address.state,
-			postal_code: address.postalCode,
-			country: address.country
-		};
-	}
-
-	/**
 	 * ✅ CORREGIDO: Procesar el pago usando precios ya calculados del carrito
 	 */
 	async processCheckout(
@@ -161,6 +141,11 @@ export class CheckoutService {
 			console.log("🛒 Verificando estado del carrito antes del checkout...");
 			console.log("📞 Llamando a API:", API_ENDPOINTS.CHECKOUT.PROCESS);
 			console.log("🔍 DEBUGGING - Método original:", checkoutData.payment.method);
+
+			// ✅ VALIDACIÓN SEGURA: Verificar que address.name existe
+			if (!checkoutData.shippingAddress.name) {
+				throw new Error('El nombre en la dirección de envío es requerido');
+			}
 
 			// ✅ MAPEAR método de pago de manera más robusta
 			let paymentMethod: PaymentMethod = checkoutData.payment.method;
@@ -233,7 +218,7 @@ export class CheckoutService {
 
 			console.log("✅ Items validados con precios finales:", validatedItems);
 
-			// Mapear dirección a formato requerido por backend
+			// ✅ CONVERSIÓN SEGURA: Mapear dirección a formato requerido por backend
 			const nameParts = (checkoutData.shippingAddress.name || '').split(' ');
 			const backendData: BackendCheckoutRequest = {
 				payment: {
