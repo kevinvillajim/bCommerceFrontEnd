@@ -1,4 +1,4 @@
-// src/presentation/pages/CartPage.tsx - CON VALIDACIÓN DE STOCK MEJORADA
+// src/presentation/pages/CartPage.tsx - ACTUALIZADO CON DESCUENTOS POR VOLUMEN
 import React, {useState, useEffect, useMemo, useCallback} from "react";
 import {Link, useNavigate} from "react-router-dom";
 import {
@@ -18,8 +18,11 @@ import {useInvalidateCounters} from "../hooks/useHeaderCounters";
 import {useErrorHandler} from "../hooks/useErrorHandler";
 import {NotificationType} from "../contexts/CartContext";
 import CacheService from "../../infrastructure/services/CacheService";
-import {useCartVolumeDiscounts} from "../contexts/VolumeDiscountContext";
 import {formatCurrency} from "../../utils/formatters/formatCurrency";
+
+// ✅ NUEVO: Importar calculadora de descuentos por volumen
+import {calculateCartItemDiscounts} from "../../utils/volumeDiscountCalculator";
+import type {CartItemWithDiscounts} from "../../utils/volumeDiscountCalculator";
 
 // Importar hooks optimizados
 import {useImageCache} from "../hooks/useImageCache";
@@ -43,12 +46,6 @@ const CartPage: React.FC = () => {
 		onPrefetchComplete: () => console.log("✅ Cart page prefetch completed"),
 	});
 
-	// ✅ USAR CONTEXTO DE DESCUENTOS POR VOLUMEN
-	const {
-				calculateCartItemDiscount,
-		isEnabled: volumeDiscountsEnabled
-	} = useCartVolumeDiscounts();
-
 	// Obtener datos del carrito y funciones para manipularlo
 	const {
 		cart,
@@ -64,7 +61,7 @@ const CartPage: React.FC = () => {
 
 	const {toggleFavorite} = useFavorites();
 
-	// ✅ Hook para manejo de errores mejorado
+	// Hook para manejo de errores mejorado
 	const {handleError, handleSuccess, handleStockError} = useErrorHandler({
 		showNotification,
 		context: 'CartPage'
@@ -77,7 +74,7 @@ const CartPage: React.FC = () => {
 		optimisticFavoriteAdd
 	} = useInvalidateCounters();
 
-	// ✅ HELPER PARA OBTENER STOCK DISPONIBLE
+	// Helper para obtener stock disponible
 	const getAvailableStock = useCallback((product: any): number => {
 		if (typeof product.stockAvailable === 'number') {
 			return product.stockAvailable;
@@ -88,7 +85,7 @@ const CartPage: React.FC = () => {
 		return 0;
 	}, []);
 
-	// ✅ HELPER PARA VALIDAR DISPONIBILIDAD
+	// Helper para validar disponibilidad
 	const isStockAvailable = useCallback((product: any, requestedQuantity: number): boolean => {
 		const availableStock = getAvailableStock(product);
 		return availableStock >= requestedQuantity && product.is_in_stock !== false;
@@ -116,34 +113,25 @@ const CartPage: React.FC = () => {
 		[getOptimizedImageUrl]
 	);
 
-	// ✅ CALCULAR DESCUENTOS POR VOLUMEN PARA CADA ITEM
+	// ✅ ACTUALIZADO: Calcular descuentos por volumen para cada item
 	const cartItemsWithDiscounts = useMemo(() => {
-		if (!cart?.items || !volumeDiscountsEnabled) {
-			return cart?.items?.map(item => ({
-				...item,
-				discount: {
-					originalPrice: item.price || 0,
-					discountedPrice: item.price || 0,
-					discountPercentage: 0,
-					savings: 0,
-					savingsTotal: 0,
-					hasDiscount: false
-				},
-				imageUrl: getProductImage(item.product)
-			})) || [];
+		if (!cart?.items) {
+			return [];
 		}
 
 		return cart.items.map(item => {
-			const discount = calculateCartItemDiscount(item);
+			// ✅ Usar nueva calculadora de descuentos
+			const discount = calculateCartItemDiscounts(item);
+			
 			return {
 				...item,
 				discount,
 				imageUrl: getProductImage(item.product)
-			};
+			} as CartItemWithDiscounts;
 		});
-	}, [cart?.items, calculateCartItemDiscount, volumeDiscountsEnabled, getProductImage]);
+	}, [cart?.items, getProductImage]);
 
-	// ✅ CALCULAR TOTALES DEL CARRITO CON DESCUENTOS POR VOLUMEN
+	// ✅ ACTUALIZADO: Calcular totales del carrito con descuentos por volumen
 	const cartTotals = useMemo(() => {
 		if (!cartItemsWithDiscounts.length) {
 			return {
@@ -152,29 +140,46 @@ const CartPage: React.FC = () => {
 				couponAmount: 0,
 				total: 0,
 				totalVolumeSavings: 0,
+				totalSellerSavings: 0,
+				totalSavings: 0,
 				volumeDiscountsApplied: false,
 			};
 		}
 
-		// Calcular subtotal con descuentos por volumen aplicados
+		// ✅ Calcular subtotal con TODOS los descuentos aplicados
 		let subtotal = 0;
 		let totalVolumeSavings = 0;
+		let totalSellerSavings = 0;
 		let volumeDiscountsApplied = false;
 
 		cartItemsWithDiscounts.forEach(item => {
-			const itemTotal = item.discount.discountedPrice * item.quantity;
+			const itemTotal = item.discount.finalPricePerUnit * item.quantity;
 			subtotal += itemTotal;
 			
-			if (item.discount.hasDiscount) {
-				totalVolumeSavings += item.discount.savingsTotal;
+			// Acumular ahorros
+			totalSellerSavings += item.discount.sellerDiscountAmount * item.quantity;
+			totalVolumeSavings += item.discount.volumeDiscountAmount * item.quantity;
+			
+			if (item.discount.volumeDiscountAmount > 0) {
 				volumeDiscountsApplied = true;
 			}
 		});
 
+		const totalSavings = totalSellerSavings + totalVolumeSavings;
 		const taxRate = 0.15; // 15% IVA
 		const tax = subtotal * taxRate;
 		const couponAmount = couponApplied ? subtotal * (couponDiscount / 100) : 0;
 		const total = subtotal + tax - couponAmount;
+
+		console.log("💰 Totales calculados con descuentos por volumen:", {
+			subtotal,
+			totalSellerSavings,
+			totalVolumeSavings,
+			totalSavings,
+			tax,
+			total,
+			volumeDiscountsApplied
+		});
 
 		return {
 			subtotal,
@@ -182,6 +187,8 @@ const CartPage: React.FC = () => {
 			couponAmount,
 			total,
 			totalVolumeSavings,
+			totalSellerSavings,
+			totalSavings,
 			volumeDiscountsApplied,
 		};
 	}, [cartItemsWithDiscounts, couponApplied, couponDiscount]);
@@ -268,6 +275,7 @@ const CartPage: React.FC = () => {
 		 getAvailableStock, isStockAvailable, handleStockError, handleError]
 	);
 
+	// ✅ FUNCIÓN PARA DISMINUIR CANTIDAD
 	const decreaseQuantity = useCallback(
 		async (id: number) => {
 			if (loadingItem) return;
@@ -303,6 +311,7 @@ const CartPage: React.FC = () => {
 		[cart?.items, loadingItem, updateCartItem, optimisticCartRemove, invalidateRelatedPages, fetchCart, handleError]
 	);
 
+	// ✅ FUNCIÓN PARA ELIMINAR DEL CARRITO
 	const handleRemoveFromCart = useCallback(
 		async (id: number) => {
 			if (loadingItem) return;
@@ -338,6 +347,7 @@ const CartPage: React.FC = () => {
 		[loadingItem, removeFromCart, invalidateRelatedPages, optimisticCartRemove, cart?.items, fetchCart, handleSuccess, handleError]
 	);
 
+	// ✅ FUNCIÓN PARA MOVER A FAVORITOS
 	const moveToWishlist = useCallback(
 		async (id: number, productId: number) => {
 			if (loadingItem) return;
@@ -379,6 +389,7 @@ const CartPage: React.FC = () => {
 		[loadingItem, toggleFavorite, removeFromCart, optimisticFavoriteAdd, optimisticCartRemove, invalidateRelatedPages, cart?.items, fetchCart, handleSuccess, handleError]
 	);
 
+	// ✅ FUNCIÓN PARA APLICAR CUPÓN
 	const applyCoupon = useCallback(() => {
 		if (couponCode.toLowerCase() === "discount10") {
 			setCouponApplied(true);
@@ -389,6 +400,7 @@ const CartPage: React.FC = () => {
 		}
 	}, [couponCode, handleSuccess, showNotification]);
 
+	// ✅ FUNCIÓN PARA VACIAR CARRITO
 	const handleEmptyCart = useCallback(async () => {
 		if (loading) return;
 
@@ -417,7 +429,7 @@ const CartPage: React.FC = () => {
 		}
 	}, [loading, clearCart, invalidateRelatedPages, optimisticCartRemove, cart?.items, fetchCart, handleSuccess, handleError]);
 
-	// Función para proceder al checkout
+	// ✅ FUNCIÓN PARA PROCEDER AL CHECKOUT
 	const handleCheckout = useCallback(() => {
 		if (isEmpty) {
 			showNotification(
@@ -431,7 +443,7 @@ const CartPage: React.FC = () => {
 		navigate("/checkout");
 	}, [isEmpty, navigate, showNotification]);
 
-	// ✅ COMPONENTE ACTUALIZADO PARA ITEM DEL CARRITO CON VALIDACIÓN DE STOCK
+	// ✅ COMPONENTE ACTUALIZADO PARA ITEM DEL CARRITO CON DESCUENTOS POR VOLUMEN
 	const CartItem = React.memo(
 		({
 			item,
@@ -441,7 +453,7 @@ const CartPage: React.FC = () => {
 			onMoveToWishlist,
 			isLoading,
 		}: {
-			item: any;
+			item: CartItemWithDiscounts;
 			onIncrease: () => void;
 			onDecrease: () => void;
 			onRemove: () => void;
@@ -492,17 +504,23 @@ const CartPage: React.FC = () => {
 									)}
 								</div>
 
-								{/* ✅ MOSTRAR DESCUENTOS POR VOLUMEN */}
+								{/* ✅ MOSTRAR DESCUENTOS APLICADOS */}
 								<div className="flex flex-wrap gap-2 mb-2">
-									{discount.hasDiscount && (
-										<span className="text-xs bg-green-100 text-green-600 px-2 py-1 rounded flex items-center">
+									{discount.sellerDiscountAmount > 0 && (
+										<span className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded flex items-center">
 											<Gift size={12} className="mr-1" />
-											Volumen: {discount.discountPercentage}% OFF
+											Seller: {item.product?.discount_percentage || 0}% OFF
+										</span>
+									)}
+									{discount.volumeDiscountAmount > 0 && (
+										<span className="text-xs bg-green-100 text-green-600 px-2 py-1 rounded flex items-center">
+											<TrendingDown size={12} className="mr-1" />
+											Volumen: {discount.discountPercentage}% OFF adicional
 										</span>
 									)}
 								</div>
 
-								{/* ✅ MOSTRAR AHORROS */}
+								{/* ✅ MOSTRAR AHORROS TOTALES */}
 								{discount.hasDiscount && (
 									<div className="text-xs text-green-600 mb-2">
 										Ahorras: {formatCurrency(discount.savingsTotal)}
@@ -537,7 +555,7 @@ const CartPage: React.FC = () => {
 							</div>
 							<div className="font-medium flex flex-col items-center">
 								<span className="text-gray-800">
-									{formatCurrency(discount.discountedPrice)}
+									{formatCurrency(discount.finalPricePerUnit)}
 								</span>
 								{discount.hasDiscount && (
 									<span className="text-xs text-gray-500 line-through">
@@ -594,7 +612,7 @@ const CartPage: React.FC = () => {
 							</div>
 							<div className="flex flex-col items-center">
 								<span className="font-bold text-gray-800">
-									{formatCurrency(discount.discountedPrice * item.quantity)}
+									{formatCurrency(discount.finalPricePerUnit * item.quantity)}
 								</span>
 								{discount.hasDiscount && (
 									<span className="text-xs text-green-600">
@@ -637,21 +655,26 @@ const CartPage: React.FC = () => {
 				<div className="flex flex-col lg:flex-row gap-8">
 					{/* Lista de productos */}
 					<div className="lg:w-2/3">
-						{/* ✅ BANNER DE DESCUENTOS POR VOLUMEN */}
-						{cartTotals.volumeDiscountsApplied && (
+						{/* ✅ BANNER DE DESCUENTOS APLICADOS */}
+						{(cartTotals.totalSavings > 0) && (
 							<div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-4 mb-6">
 								<div className="flex items-center">
 									<TrendingDown size={20} className="text-green-600 mr-3" />
 									<div className="flex-1">
 										<h3 className="font-medium text-green-800">
-											¡Descuentos por Volumen Aplicados!
+											¡Descuentos Aplicados!
 										</h3>
-										<p className="text-sm text-green-600 mt-1">
-											Total ahorrado: {formatCurrency(cartTotals.totalVolumeSavings)}
-										</p>
+										<div className="text-sm text-green-600 mt-1 space-y-1">
+											{cartTotals.totalSellerSavings > 0 && (
+												<p>Descuentos del vendedor: {formatCurrency(cartTotals.totalSellerSavings)}</p>
+											)}
+											{cartTotals.totalVolumeSavings > 0 && (
+												<p>Descuentos por volumen: {formatCurrency(cartTotals.totalVolumeSavings)}</p>
+											)}
+										</div>
 									</div>
 									<div className="text-2xl font-bold text-green-600">
-										{formatCurrency(cartTotals.totalVolumeSavings)}
+										{formatCurrency(cartTotals.totalSavings)}
 									</div>
 								</div>
 							</div>
@@ -674,7 +697,7 @@ const CartPage: React.FC = () => {
 								</div>
 							</div>
 
-							{/* ✅ PRODUCTOS CON DESCUENTOS Y VALIDACIÓN DE STOCK */}
+							{/* ✅ PRODUCTOS CON DESCUENTOS CALCULADOS */}
 							{cartItemsWithDiscounts.map((item) => (
 								<CartItem
 									key={item.id}
@@ -682,9 +705,7 @@ const CartPage: React.FC = () => {
 									onIncrease={() => increaseQuantity(item.id)}
 									onDecrease={() => decreaseQuantity(item.id)}
 									onRemove={() => handleRemoveFromCart(item.id)}
-									onMoveToWishlist={() =>
-										moveToWishlist(item.id, item.productId)
-									}
+									onMoveToWishlist={() => moveToWishlist(item.id, item.productId)}
 									isLoading={loadingItem === item.id}
 								/>
 							))}
@@ -700,8 +721,7 @@ const CartPage: React.FC = () => {
 								</button>
 
 								<div className="text-sm text-gray-600">
-									{itemCount} {itemCount === 1 ? "producto" : "productos"} en el
-									carrito
+									{itemCount} {itemCount === 1 ? "producto" : "productos"} en el carrito
 								</div>
 							</div>
 						</div>
@@ -718,39 +738,13 @@ const CartPage: React.FC = () => {
 						</div>
 					</div>
 
-					{/* ✅ RESUMEN CON DESCUENTOS POR VOLUMEN */}
+					{/* ✅ RESUMEN CON TODOS LOS DESCUENTOS */}
 					<div className="lg:w-1/3">
 						<div className="bg-white rounded-lg shadow-lg overflow-hidden">
 							<div className="p-6">
 								<h2 className="text-xl font-bold text-gray-800 mb-4">
 									Resumen del pedido
 								</h2>
-
-								{/* Cupón */}
-								<div className="mb-6">
-									<div className="flex items-center mb-2">
-										<input
-											type="text"
-											placeholder="Código de cupón"
-											className="flex-1 border border-gray-300 rounded-l-md py-3 px-4 focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-											value={couponCode}
-											onChange={(e) => setCouponCode(e.target.value)}
-											disabled={couponApplied}
-										/>
-										<button
-											onClick={applyCoupon}
-											disabled={couponApplied || !couponCode}
-											className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-3 rounded-r-md disabled:opacity-50"
-										>
-											Aplicar
-										</button>
-									</div>
-									{couponApplied && (
-										<div className="text-green-600 text-sm">
-											Cupón aplicado: {couponDiscount}% de descuento
-										</div>
-									)}
-								</div>
 
 								{/* ✅ CÁLCULOS CON DESCUENTOS POR VOLUMEN */}
 								<div className="space-y-4 border-t border-gray-200 pt-4">
@@ -763,11 +757,23 @@ const CartPage: React.FC = () => {
 										</span>
 									</div>
 
-									{/* ✅ MOSTRAR AHORROS POR DESCUENTOS POR VOLUMEN */}
-									{cartTotals.volumeDiscountsApplied && cartTotals.totalVolumeSavings > 0 && (
-										<div className="flex justify-between text-green-600">
-											<span className="flex items-center">
+									{/* ✅ MOSTRAR AHORROS DESGLOSADOS */}
+									{cartTotals.totalSellerSavings > 0 && (
+										<div className="flex justify-between text-blue-600">
+											<span className="flex items-center text-sm">
 												<Gift size={16} className="mr-1" />
+												Descuentos del vendedor
+											</span>
+											<span className="font-medium">
+												-{formatCurrency(cartTotals.totalSellerSavings)}
+											</span>
+										</div>
+									)}
+
+									{cartTotals.totalVolumeSavings > 0 && (
+										<div className="flex justify-between text-green-600">
+											<span className="flex items-center text-sm">
+												<TrendingDown size={16} className="mr-1" />
 												Descuentos por volumen
 											</span>
 											<span className="font-medium">
@@ -798,16 +804,14 @@ const CartPage: React.FC = () => {
 									</div>
 
 									{/* ✅ RESUMEN DE AHORROS TOTALES */}
-									{(cartTotals.totalVolumeSavings > 0 || couponApplied) && (
+									{cartTotals.totalSavings > 0 && (
 										<div className="bg-green-50 border border-green-200 rounded-lg p-3">
 											<div className="flex items-center justify-between">
 												<span className="text-sm font-medium text-green-800">
 													Total ahorrado:
 												</span>
 												<span className="text-lg font-bold text-green-600">
-													{formatCurrency(
-														cartTotals.totalVolumeSavings + cartTotals.couponAmount
-													)}
+													{formatCurrency(cartTotals.totalSavings)}
 												</span>
 											</div>
 										</div>
@@ -833,9 +837,9 @@ const CartPage: React.FC = () => {
 										Aceptamos diversas formas de pago, incluyendo tarjetas de
 										crédito, transferencias bancarias y pago contra entrega.
 									</p>
-									{cartTotals.volumeDiscountsApplied && (
+									{cartTotals.totalSavings > 0 && (
 										<p className="mt-2 text-green-600 font-medium">
-											¡Los descuentos por volumen ya están aplicados en tus productos!
+											¡Tienes descuentos aplicados en tu carrito!
 										</p>
 									)}
 								</div>

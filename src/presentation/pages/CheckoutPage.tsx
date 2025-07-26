@@ -1,10 +1,12 @@
-import {useState, useEffect} from "react";
+// src/presentation/pages/CheckoutPage.tsx - ACTUALIZADO CON DESCUENTOS POR VOLUMEN
+import {useState, useEffect, useMemo} from "react";
 import {useNavigate} from "react-router-dom";
 import {useCart} from "../hooks/useCart";
 import {useAuth} from "../hooks/useAuth";
 import {useErrorHandler} from "../hooks/useErrorHandler";
 import {CheckoutService} from "../../core/services/CheckoutService";
-import {useCartVolumeDiscounts} from "../contexts/VolumeDiscountContext";
+import {CheckoutItemsService} from "../../infrastructure/services/CheckoutItemsService";
+import {calculateCartItemDiscounts} from "../../utils/volumeDiscountCalculator";
 import type {
 	PaymentInfo,
 	PaymentMethod,
@@ -17,7 +19,7 @@ import type {Address} from "../../core/domain/valueObjects/Address";
 import TestCheckoutButton from "../components/checkout/TestCheckoutButton";
 import DatafastPaymentButton from "../components/checkout/DatafastPaymentButtonProps";
 import {formatCurrency} from "../../utils/formatters/formatCurrency";
-import {Gift, AlertTriangle} from "lucide-react";
+import {Gift, AlertTriangle, TrendingDown} from "lucide-react";
 
 const CheckoutPage: React.FC = () => {
 	const navigate = useNavigate();
@@ -39,8 +41,6 @@ const CheckoutPage: React.FC = () => {
 		showNotification,
 		context: "CheckoutPage",
 	});
-
-	const {calculateCartItemDiscount} = useCartVolumeDiscounts();
 
 	const [paymentMethod, setPaymentMethod] = useState<"credit_card" | "deuna">(
 		"credit_card"
@@ -64,6 +64,67 @@ const CheckoutPage: React.FC = () => {
 
 	const checkoutService = new CheckoutService();
 
+	// ✅ NUEVO: Calcular totales y items con descuentos por volumen
+	const checkoutCalculations = useMemo(() => {
+		if (!cart?.items?.length) {
+			return {
+				items: [],
+				totals: {
+					subtotal: 0,
+					originalSubtotal: 0,
+					sellerDiscounts: 0,
+					volumeDiscounts: 0,
+					totalDiscounts: 0,
+					tax: 0,
+					shipping: 0,
+					total: 0,
+					freeShipping: false
+				},
+				stockIssues: [],
+				checkoutItems: []
+			};
+		}
+
+		// ✅ Calcular items con descuentos
+		const itemsWithDiscounts = cart.items.map((item) => {
+			const discount = calculateCartItemDiscounts(item);
+			const availableStock = item.product?.stockAvailable || item.product?.stock || 0;
+			const hasStockIssue = item.quantity > availableStock || !item.product?.is_in_stock;
+
+			return {
+				...item,
+				discount,
+				itemTotal: discount.finalPricePerUnit * item.quantity,
+				availableStock,
+				hasStockIssue,
+			};
+		});
+
+		// ✅ Identificar problemas de stock
+		const stockIssues = itemsWithDiscounts
+			.filter((item) => item.hasStockIssue)
+			.map((item) => ({
+				productName: item.product?.name || "Producto",
+				requested: item.quantity,
+				available: item.availableStock,
+				isOutOfStock: !item.product?.is_in_stock,
+			}));
+
+		// ✅ Calcular totales con descuentos por volumen
+		const totals = CheckoutItemsService.calculateCheckoutTotals(cart.items);
+
+		// ✅ Preparar items para envío al backend
+		const checkoutItems = CheckoutItemsService.prepareItemsForCheckout(cart.items);
+
+		return {
+			items: itemsWithDiscounts,
+			totals,
+			stockIssues,
+			checkoutItems
+		};
+	}, [cart?.items]);
+
+	// Funciones helper
 	const getAvailableStock = (product: any): number => {
 		if (typeof product.stockAvailable === "number") {
 			return product.stockAvailable;
@@ -96,65 +157,6 @@ const CheckoutPage: React.FC = () => {
 			errors,
 		};
 	};
-
-	const orderSummary = useState(() => {
-		if (!cart?.items?.length) {
-			return {
-				items: [],
-				subtotal: 0,
-				volumeDiscounts: 0,
-				tax: 0,
-				total: 0,
-				hasVolumeDiscounts: false,
-				stockIssues: [],
-			};
-		}
-
-		const itemsWithDiscounts = cart.items.map((item) => {
-			const discount = calculateCartItemDiscount(item);
-			const availableStock = getAvailableStock(item.product);
-			const hasStockIssue =
-				item.quantity > availableStock || !item.product?.is_in_stock;
-
-			return {
-				...item,
-				discount,
-				itemTotal: discount.discountedPrice * item.quantity,
-				availableStock,
-				hasStockIssue,
-			};
-		});
-
-		const stockIssues = itemsWithDiscounts
-			.filter((item) => item.hasStockIssue)
-			.map((item) => ({
-				productName: item.product?.name || "Producto",
-				requested: item.quantity,
-				available: item.availableStock,
-				isOutOfStock: !item.product?.is_in_stock,
-			}));
-
-		const subtotal = itemsWithDiscounts.reduce(
-			(sum, item) => sum + item.itemTotal,
-			0
-		);
-		const volumeDiscounts = itemsWithDiscounts.reduce(
-			(sum, item) => sum + item.discount.savingsTotal,
-			0
-		);
-		const tax = subtotal * 0.15;
-		const total = subtotal + tax;
-
-		return {
-			items: itemsWithDiscounts,
-			subtotal,
-			volumeDiscounts,
-			tax,
-			total,
-			hasVolumeDiscounts: volumeDiscounts > 0,
-			stockIssues,
-		};
-	})[0];
 
 	useEffect(() => {
 		if (user) {
@@ -280,7 +282,7 @@ const CheckoutPage: React.FC = () => {
 	};
 
 	const processCheckout = async () => {
-		console.log("🛒 CheckoutPage.processCheckout INICIADO");
+		console.log("🛒 CheckoutPage.processCheckout INICIADO CON DESCUENTOS POR VOLUMEN");
 
 		const stockValidation = validateCartStock();
 		if (!stockValidation.valid) {
@@ -306,49 +308,14 @@ const CheckoutPage: React.FC = () => {
 			return;
 		}
 
-		console.log("🛒 ANÁLISIS COMPLETO DEL CARRITO CON DESCUENTOS POR cantidad:");
-		console.log("📊 Cart desde CheckoutPage:", JSON.stringify(cart, null, 2));
-		console.log("📊 Order Summary:", orderSummary);
-		console.log(
-			"📊 Volume Discounts Applied:",
-			orderSummary.hasVolumeDiscounts
-		);
-		console.log(
-			"📊 Total Volume Savings:",
-			formatCurrency(orderSummary.volumeDiscounts)
-		);
+		console.log("🛒 ANÁLISIS COMPLETO DEL CARRITO CON DESCUENTOS POR VOLUMEN:");
+		console.log("📊 Totales calculados:", checkoutCalculations.totals);
+		console.log("📊 Items para checkout:", checkoutCalculations.checkoutItems);
 
 		setIsLoading(true);
 
 		try {
 			const sellerId = CheckoutService.getSellerIdFromCart(cart);
-			
-			// ✅ CORREGIDO: Construir items del carrito con precios válidos
-			const items = cart?.items?.map(item => {
-				// Priorizar precios válidos: product.final_price > product.price > item.price > subtotal/quantity
-				let price = 0;
-				
-				if (item.product?.final_price && item.product.final_price > 0) {
-					price = item.product.final_price;
-				} else if (item.product?.price && item.product.price > 0) {
-					price = item.product.price;
-				} else if (item.price && item.price > 0) {
-					price = item.price;
-				} else if (item.subtotal && item.quantity > 0) {
-					price = item.subtotal / item.quantity;
-				} else {
-					console.warn(`⚠️ No se pudo determinar precio para producto ${item.productId}, usando 1.00`);
-					price = 1.00; // Precio mínimo como fallback
-				}
-				
-				return {
-					product_id: item.productId,
-					quantity: item.quantity,
-					price: price
-				};
-			}) || [];
-			
-			console.log("🛒 Items formateados para checkout:", JSON.stringify(items, null, 2));
 			
 			const checkoutData = {
 				payment: {
@@ -363,11 +330,11 @@ const CheckoutPage: React.FC = () => {
 				shippingAddress: shippingAddress,
 				billingAddress: useSameAddress ? shippingAddress : billingAddress,
 				seller_id: sellerId || undefined,
-				items: items
+				items: checkoutCalculations.checkoutItems // ✅ Usar items con descuentos calculados
 			};
 
 			console.log(
-				"📦 Datos completos de checkout con descuentos:",
+				"📦 Datos completos de checkout con descuentos por volumen:",
 				JSON.stringify(checkoutData, null, 2)
 			);
 			console.log("🚀 Enviando checkout al backend...");
@@ -377,42 +344,35 @@ const CheckoutPage: React.FC = () => {
 			console.log("✅ Respuesta del checkout recibida:", response);
 
 			if (response.status === "success") {
-				console.log("🎉 Checkout exitoso, limpiando carrito...");
+				console.log("🎉 Checkout exitoso con descuentos por volumen, limpiando carrito...");
 				setOrderComplete(true);
 				setOrderDetails(response.data);
 
 				let successMessage = "¡Pedido completado con éxito!";
-				if (orderSummary.hasVolumeDiscounts) {
-					successMessage += ` Has ahorrado ${formatCurrency(orderSummary.volumeDiscounts)} con descuentos por cantidad.`;
+				if (checkoutCalculations.totals.totalDiscounts > 0) {
+					successMessage += ` Has ahorrado ${formatCurrency(checkoutCalculations.totals.totalDiscounts)} con descuentos aplicados.`;
 				}
 
 				handleSuccess(successMessage);
 				clearCart();
 
+				// ✅ Log de información de descuentos aplicados
 				if (response.data && typeof response.data === "object") {
 					const orderData = response.data as any;
-					console.log("🔍 ANÁLISIS DE LA ORDEN CREADA:");
+					console.log("🔍 ORDEN CREADA CON DESCUENTOS:");
 					console.log("📊 Order ID:", orderData.order_id);
 					console.log("📊 Order Number:", orderData.order_number);
 					console.log("📊 Total:", orderData.total);
-					console.log(
-						"📊 Volume Discounts Applied:",
-						orderData.volume_discounts_applied
-					);
-					console.log(
-						"📊 Total Volume Savings:",
-						orderData.total_volume_savings
-					);
+					console.log("📊 Total Savings:", orderData.total_savings);
+					console.log("📊 Volume Discounts Applied:", orderData.volume_discounts_applied);
 				}
 			} else {
 				throw new Error(response.message || "Error al procesar el pedido");
 			}
 		} catch (error: any) {
-			console.error("❌ Error COMPLETO al procesar checkout:");
+			console.error("❌ Error COMPLETO al procesar checkout con descuentos por volumen:");
 			console.error("📊 Error object:", error);
 			console.error("📊 Error message:", (error as any)?.message);
-			console.error("📊 Error response:", (error as any)?.response);
-			console.error("📊 Error response data:", (error as any)?.response?.data);
 
 			handleError(
 				error,
@@ -424,13 +384,14 @@ const CheckoutPage: React.FC = () => {
 		}
 	};
 
+	// ✅ COMPONENTE DE RESUMEN CON DESCUENTOS POR VOLUMEN
 	const OrderSummaryComponent = () => (
 		<div>
 			<h2 className="text-xl font-bold text-gray-800 mb-4">
 				Resumen del pedido
 			</h2>
 
-			{orderSummary.stockIssues.length > 0 && (
+			{checkoutCalculations.stockIssues.length > 0 && (
 				<div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
 					<div className="flex items-start">
 						<AlertTriangle size={18} className="text-red-600 mr-2 mt-0.5" />
@@ -439,7 +400,7 @@ const CheckoutPage: React.FC = () => {
 								Problemas de stock detectados
 							</h4>
 							<div className="space-y-1">
-								{orderSummary.stockIssues.map((issue, index) => (
+								{checkoutCalculations.stockIssues.map((issue, index) => (
 									<div key={index} className="text-xs text-red-700">
 										<strong>{issue.productName}:</strong>{" "}
 										{issue.isOutOfStock
@@ -461,23 +422,32 @@ const CheckoutPage: React.FC = () => {
 				</div>
 			)}
 
-			{orderSummary.hasVolumeDiscounts && (
+			{/* ✅ BANNER DE DESCUENTOS APLICADOS */}
+			{checkoutCalculations.totals.totalDiscounts > 0 && (
 				<div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-4 mb-4">
 					<div className="flex items-center">
 						<div className="flex-1">
 							<h4 className="font-medium text-green-800 text-sm">
-								¡Descuentos por Cantidad Aplicados!
+								¡Descuentos Aplicados!
 							</h4>
-							<p className="text-xs text-green-600">
-								Total ahorrado: {formatCurrency(orderSummary.volumeDiscounts)}
-							</p>
+							<div className="text-xs text-green-600 mt-1 space-y-1">
+								{checkoutCalculations.totals.sellerDiscounts > 0 && (
+									<p>Descuentos del vendedor: {formatCurrency(checkoutCalculations.totals.sellerDiscounts)}</p>
+								)}
+								{checkoutCalculations.totals.volumeDiscounts > 0 && (
+									<p>Descuentos por volumen: {formatCurrency(checkoutCalculations.totals.volumeDiscounts)}</p>
+								)}
+							</div>
+						</div>
+						<div className="text-lg font-bold text-green-600">
+							{formatCurrency(checkoutCalculations.totals.totalDiscounts)}
 						</div>
 					</div>
 				</div>
 			)}
 
 			<div className="space-y-3 mb-6">
-				{orderSummary.items.map((item, index) => (
+				{checkoutCalculations.items.map((item, index) => (
 					<div
 						key={index}
 						className={`flex items-center justify-between py-2 border-b border-gray-100 ${
@@ -497,20 +467,34 @@ const CheckoutPage: React.FC = () => {
 								<span className="text-xs text-gray-500">
 									Cantidad: {item.quantity}
 								</span>
-								{item.discount.hasDiscount && (
-									<span className="text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded flex items-center">
+								
+								{/* ✅ MOSTRAR DESCUENTOS APLICADOS */}
+								{item.discount.sellerDiscountAmount > 0 && (
+									<span className="text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded flex items-center">
 										<Gift size={10} className="mr-1" />
-										{item.discount.discountPercentage}% OFF
+										Seller: {item.product?.discount_percentage || 0}% OFF
+									</span>
+								)}
+								{item.discount.volumeDiscountAmount > 0 && (
+									<span className="text-xs bg-green-100 text-green-600 px-2 py-0.5 rounded flex items-center">
+										<TrendingDown size={10} className="mr-1" />
+										Volumen: {item.discount.discountPercentage}% OFF
 									</span>
 								)}
 							</div>
+							
+							{/* ✅ MOSTRAR PRECIO CON DESCUENTOS */}
 							{item.discount.hasDiscount && (
-								<div className="text-xs text-green-600 mt-1">
-									Precio unitario:{" "}
-									{formatCurrency(item.discount.discountedPrice)}
+								<div className="text-xs text-gray-600 mt-1">
+									Precio unitario: {formatCurrency(item.discount.finalPricePerUnit)}
 									<span className="line-through text-gray-400 ml-1">
 										{formatCurrency(item.discount.originalPrice)}
 									</span>
+									{item.discount.savingsTotal > 0 && (
+										<span className="text-green-600 ml-1">
+											(Ahorras: {formatCurrency(item.discount.savingsTotal)})
+										</span>
+									)}
 								</div>
 							)}
 						</div>
@@ -520,32 +504,41 @@ const CheckoutPage: React.FC = () => {
 							>
 								{formatCurrency(item.itemTotal)}
 							</span>
-							{item.discount.hasDiscount && (
-								<div className="text-xs text-green-600">
-									(-{formatCurrency(item.discount.savingsTotal)})
-								</div>
-							)}
 						</div>
 					</div>
 				))}
 			</div>
 
+			{/* ✅ TOTALES CON DESCUENTOS DESGLOSADOS */}
 			<div className="space-y-3 border-t border-gray-200 pt-4">
 				<div className="flex justify-between text-sm">
-					<span className="text-gray-600">Subtotal:</span>
+					<span className="text-gray-600">Subtotal (con descuentos):</span>
 					<span className="font-medium">
-						{formatCurrency(orderSummary.subtotal)}
+						{formatCurrency(checkoutCalculations.totals.subtotal)}
 					</span>
 				</div>
 
-				{orderSummary.hasVolumeDiscounts && (
-					<div className="flex justify-between text-sm text-green-600">
+				{/* ✅ MOSTRAR AHORROS DESGLOSADOS */}
+				{checkoutCalculations.totals.sellerDiscounts > 0 && (
+					<div className="flex justify-between text-sm text-blue-600">
 						<span className="flex items-center">
 							<Gift size={14} className="mr-1" />
-							Descuentos por cantidad:
+							Descuentos del vendedor:
 						</span>
 						<span className="font-medium">
-							-{formatCurrency(orderSummary.volumeDiscounts)}
+							-{formatCurrency(checkoutCalculations.totals.sellerDiscounts)}
+						</span>
+					</div>
+				)}
+
+				{checkoutCalculations.totals.volumeDiscounts > 0 && (
+					<div className="flex justify-between text-sm text-green-600">
+						<span className="flex items-center">
+							<TrendingDown size={14} className="mr-1" />
+							Descuentos por volumen:
+						</span>
+						<span className="font-medium">
+							-{formatCurrency(checkoutCalculations.totals.volumeDiscounts)}
 						</span>
 					</div>
 				)}
@@ -553,23 +546,34 @@ const CheckoutPage: React.FC = () => {
 				<div className="flex justify-between text-sm">
 					<span className="text-gray-600">IVA (15%):</span>
 					<span className="font-medium">
-						{formatCurrency(orderSummary.tax)}
+						{formatCurrency(checkoutCalculations.totals.tax)}
+					</span>
+				</div>
+
+				<div className="flex justify-between text-sm">
+					<span className="text-gray-600">Envío:</span>
+					<span className="font-medium">
+						{checkoutCalculations.totals.freeShipping ? 
+							"Gratis" : 
+							formatCurrency(checkoutCalculations.totals.shipping)
+						}
 					</span>
 				</div>
 
 				<div className="flex justify-between text-lg font-bold border-t border-gray-200 pt-3">
 					<span>Total:</span>
-					<span>{formatCurrency(orderSummary.total)}</span>
+					<span>{formatCurrency(checkoutCalculations.totals.total)}</span>
 				</div>
 
-				{orderSummary.hasVolumeDiscounts && (
+				{/* ✅ RESUMEN DE AHORROS TOTALES */}
+				{checkoutCalculations.totals.totalDiscounts > 0 && (
 					<div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-3">
 						<div className="flex items-center justify-between">
 							<span className="text-sm font-medium text-green-800">
-								Total ahorrado con descuentos por cantidad:
+								Total ahorrado:
 							</span>
 							<span className="text-lg font-bold text-green-600">
-								{formatCurrency(orderSummary.volumeDiscounts)}
+								{formatCurrency(checkoutCalculations.totals.totalDiscounts)}
 							</span>
 						</div>
 					</div>
@@ -607,13 +611,13 @@ const CheckoutPage: React.FC = () => {
 							electrónico con los detalles.
 						</p>
 
-						{orderSummary.hasVolumeDiscounts && (
+						{/* ✅ MOSTRAR AHORROS EN CONFIRMACIÓN */}
+						{checkoutCalculations.totals.totalDiscounts > 0 && (
 							<div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
 								<div className="flex items-center justify-center">
 									<Gift className="h-5 w-5 text-green-600 mr-2" />
 									<span className="text-green-800 font-medium">
-										¡Has ahorrado {formatCurrency(orderSummary.volumeDiscounts)}{" "}
-										con descuentos por cantidad!
+										¡Has ahorrado {formatCurrency(checkoutCalculations.totals.totalDiscounts)}!
 									</span>
 								</div>
 							</div>
@@ -629,14 +633,14 @@ const CheckoutPage: React.FC = () => {
 						<div className="flex justify-between py-2">
 							<span className="text-gray-600">Total:</span>
 							<span className="font-medium">
-								{formatCurrency(orderSummary.total)}
+								{formatCurrency(checkoutCalculations.totals.total)}
 							</span>
 						</div>
-						{orderSummary.hasVolumeDiscounts && (
+						{checkoutCalculations.totals.totalDiscounts > 0 && (
 							<div className="flex justify-between py-2">
-								<span className="text-gray-600">Ahorros por cantidad:</span>
+								<span className="text-gray-600">Total ahorrado:</span>
 								<span className="font-medium text-green-600">
-									{formatCurrency(orderSummary.volumeDiscounts)}
+									{formatCurrency(checkoutCalculations.totals.totalDiscounts)}
 								</span>
 							</div>
 						)}
@@ -776,7 +780,7 @@ const CheckoutPage: React.FC = () => {
 
 						<button
 							onClick={processCheckout}
-							disabled={isLoading || orderSummary.stockIssues.length > 0}
+							disabled={isLoading || checkoutCalculations.stockIssues.length > 0}
 							className="mt-6 w-full bg-primary-600 hover:bg-primary-700 text-white font-medium py-3 px-4 rounded-md transition-colors disabled:opacity-50 flex items-center justify-center"
 						>
 							{isLoading ? (
@@ -803,14 +807,14 @@ const CheckoutPage: React.FC = () => {
 									</svg>
 									Procesando...
 								</>
-							) : orderSummary.stockIssues.length > 0 ? (
+							) : checkoutCalculations.stockIssues.length > 0 ? (
 								"Resuelve problemas de stock"
 							) : (
-								`Finalizar compra - ${formatCurrency(orderSummary.total)}`
+								`Finalizar compra - ${formatCurrency(checkoutCalculations.totals.total)}`
 							)}
 						</button>
 
-						{orderSummary.stockIssues.length > 0 && (
+						{checkoutCalculations.stockIssues.length > 0 && (
 							<div className="mt-3 text-xs text-center text-red-600">
 								⚠️ Ajusta las cantidades en tu carrito antes de continuar
 							</div>

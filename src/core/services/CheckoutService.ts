@@ -1,8 +1,11 @@
+// src/core/services/CheckoutService.ts - ACTUALIZADO CON DESCUENTOS POR VOLUMEN
 import ApiClient from "../../infrastructure/api/apiClient";
 import {API_ENDPOINTS} from "../../constants/apiEndpoints";
 import {extractErrorMessage} from "../../utils/errorHandler";
 import type {Address} from "../domain/valueObjects/Address";
 import type {ShoppingCart} from "../domain/entities/ShoppingCart";
+import {CheckoutItemsService} from "../../infrastructure/services/CheckoutItemsService";
+import type {CheckoutItem} from "../../infrastructure/services/CheckoutItemsService";
 
 export type PaymentMethod = "credit_card" | "paypal" | "transfer" | "qr" | "datafast" | "debit_card" | "de_una";
 
@@ -14,23 +17,13 @@ export interface PaymentInfo {
 	paypal_email?: string;
 }
 
-// ✅ CORREGIDO: Interface CheckoutRequest con tipos seguros
+// ✅ ACTUALIZADO: Interface CheckoutRequest con precios finales
 export interface CheckoutRequest {
 	payment: PaymentInfo;
 	shippingAddress: Address;
 	billingAddress?: Address;
-	seller_id?: number; // ✅ CORREGIDO: Cambiar null por undefined para TypeScript
-	items?: Array<{
-		product_id: number;
-		quantity: number;
-		price: number;
-		// ✅ NUEVOS: Campos para descuentos por volumen
-		final_price?: number;
-		discounted_price?: number;
-		original_price?: number;
-		volume_discount_percentage?: number;
-		volume_savings?: number;
-	}>;
+	seller_id?: number;
+	items?: CheckoutItem[]; // ✅ Usar CheckoutItem con precios finales
 }
 
 export interface BackendCheckoutRequest {
@@ -47,15 +40,7 @@ export interface BackendCheckoutRequest {
 		country: string;
 	};
 	seller_id?: number;
-	items?: Array<{
-		product_id: number;
-		quantity: number;
-		price: number;
-		// ✅ NUEVOS: Campos para el backend
-		base_price?: number;
-		volume_discount_percentage?: number;
-		original_price?: number;
-	}>;
+	items?: CheckoutItem[]; // ✅ Usar CheckoutItem con precios finales
 }
 
 export interface CheckoutResponse {
@@ -66,14 +51,19 @@ export interface CheckoutResponse {
 		order_number: string;
 		total: string;
 		payment_status: string;
+		// ✅ NUEVOS: Campos de pricing con descuentos
+		billed_amount?: number;
+		paid_amount?: number;
+		total_savings?: number;
+		volume_discounts_applied?: boolean;
+		volume_discount_savings?: number;
+		seller_discount_savings?: number;
 	};
 }
 
 export class CheckoutService {
 	/**
 	 * Obtiene el seller ID del carrito de compras
-	 * @param cart Carrito de compras
-	 * @returns seller ID o null si no se encuentra
 	 */
 	static getSellerIdFromCart(cart: ShoppingCart | null): number | null {
 		if (!cart || !cart.items || cart.items.length === 0) {
@@ -128,19 +118,15 @@ export class CheckoutService {
 	}
 
 	/**
-	 * ✅ CORREGIDO: Procesar el pago usando precios ya calculados del carrito
+	 * ✅ ACTUALIZADO: Procesar el pago usando precios con descuentos por volumen
 	 */
 	async processCheckout(
 		checkoutData: CheckoutRequest,
 		userEmail?: string
 	): Promise<CheckoutResponse> {
 		try {
-			console.log("🚀 CheckoutService.processCheckout INICIADO");
+			console.log("🚀 CheckoutService.processCheckout INICIADO CON DESCUENTOS POR VOLUMEN");
 			console.log("📦 Datos de checkout enviados:", JSON.stringify(checkoutData, null, 2));
-
-			console.log("🛒 Verificando estado del carrito antes del checkout...");
-			console.log("📞 Llamando a API:", API_ENDPOINTS.CHECKOUT.PROCESS);
-			console.log("🔍 DEBUGGING - Método original:", checkoutData.payment.method);
 
 			// ✅ VALIDACIÓN SEGURA: Verificar que address.name existe
 			if (!checkoutData.shippingAddress.name) {
@@ -167,7 +153,7 @@ export class CheckoutService {
 
 			console.log("🔍 DEBUGGING - Método después de mapear:", paymentMethod);
 
-			// ✅ VALIDAR Y PROCESAR ITEMS DEL CARRITO
+			// ✅ PROCESAR ITEMS CON DESCUENTOS POR VOLUMEN
 			const items = checkoutData.items || [];
 			console.log("🔍 DEBUGGING - Items recibidos:", items);
 
@@ -175,48 +161,13 @@ export class CheckoutService {
 				console.warn("⚠️ No se recibieron items en checkoutData");
 			}
 
-			// ✅ IMPORTANTE: Validar que los items tengan precios finales (con descuentos aplicados)
-			const validatedItems = items.map((item, index) => {
-				if (!item.product_id || typeof item.product_id !== 'number') {
-					throw new Error(`Item ${index}: product_id inválido (${item.product_id})`);
-				}
-				if (!item.quantity || typeof item.quantity !== 'number' || item.quantity <= 0) {
-					throw new Error(`Item ${index}: quantity inválida (${item.quantity})`);
-				}
+			// ✅ VALIDAR que los items tengan precios finales correctos
+			const validation = CheckoutItemsService.validateItemsForCheckout(items);
+			if (!validation.valid) {
+				throw new Error(`Validación de items falló: ${validation.errors.join(', ')}`);
+			}
 
-				// ✅ USAR PRECIO FINAL (con descuentos aplicados) si está disponible
-				let finalPrice = item.price;
-				if (item.final_price && typeof item.final_price === 'number') {
-					finalPrice = item.final_price;
-					console.log(`💰 Item ${index}: Usando precio final con descuentos: ${finalPrice} (precio base: ${item.price})`);
-				} else if (item.discounted_price && typeof item.discounted_price === 'number') {
-					finalPrice = item.discounted_price;
-					console.log(`💰 Item ${index}: Usando precio con descuento: ${finalPrice} (precio base: ${item.price})`);
-				}
-
-				if (typeof finalPrice !== 'number' || finalPrice <= 0) {
-					throw new Error(`Item ${index}: price inválido (${finalPrice})`);
-				}
-
-				console.log(`✅ Item ${index} validado:`, {
-					product_id: item.product_id,
-					quantity: item.quantity,
-					original_price: item.price,
-					final_price: finalPrice,
-					has_volume_discount: (item.volume_discount_percentage || 0) > 0
-				});
-
-				return {
-					product_id: parseInt(String(item.product_id)),
-					quantity: parseInt(String(item.quantity)),
-					price: parseFloat(String(finalPrice)), // ✅ ENVIAR PRECIO FINAL, no base
-					base_price: parseFloat(String(item.price || finalPrice)), // ✅ ENVIAR PRECIO BASE también
-					volume_discount_percentage: item.volume_discount_percentage || 0,
-					original_price: item.original_price || item.price || finalPrice
-				};
-			});
-
-			console.log("✅ Items validados con precios finales:", validatedItems);
+			console.log("✅ Items validados correctamente:", items);
 
 			// ✅ CONVERSIÓN SEGURA: Mapear dirección a formato requerido por backend
 			const nameParts = (checkoutData.shippingAddress.name || '').split(' ');
@@ -237,7 +188,7 @@ export class CheckoutService {
 					country: checkoutData.shippingAddress.country || ''
 				},
 				seller_id: checkoutData.seller_id,
-				items: validatedItems // ✅ Usar items con precios finales
+				items: items // ✅ Usar items con precios finales calculados
 			};
 
 			console.log("🔍 DEBUGGING - Datos completos enviados al backend:", JSON.stringify(backendData, null, 2));
@@ -266,34 +217,25 @@ export class CheckoutService {
 			console.log("💬 Message:", response.message);
 			console.log("📦 Data:", JSON.stringify(response.data, null, 2));
 
-			// ✅ ANÁLISIS SIMPLIFICADO DE LA RESPUESTA
+			// ✅ LOG de información de descuentos si está disponible
 			if (response.data && typeof response.data === "object") {
 				const dataObj = response.data as any;
-				if (dataObj.items) {
-					console.log("🔍 Items en respuesta:", dataObj.items.length);
+				
+				if (dataObj.total_savings && dataObj.total_savings > 0) {
+					console.log("💰 DESCUENTOS APLICADOS EN LA ORDEN:");
+					console.log(`💵 Total ahorrado: $${dataObj.total_savings}`);
 					
-					// Solo verificar duplicados si hay items
-					const itemsByProductId = dataObj.items.reduce(
-						(acc: any, item: any) => {
-							if (!acc[item.product_id]) {
-								acc[item.product_id] = [];
-							}
-							acc[item.product_id].push(item);
-							return acc;
-						},
-						{}
-					);
-
-					Object.keys(itemsByProductId).forEach((productId) => {
-						const items = itemsByProductId[productId];
-						if (items.length > 1) {
-							console.warn(`⚠️ DUPLICADO para product_id ${productId}: ${items.length} registros`);
-						}
-					});
+					if (dataObj.volume_discount_savings) {
+						console.log(`📈 Descuentos por volumen: $${dataObj.volume_discount_savings}`);
+					}
+					
+					if (dataObj.seller_discount_savings) {
+						console.log(`🏪 Descuentos del seller: $${dataObj.seller_discount_savings}`);
+					}
 				}
 			}
 
-			console.log("🎉 CheckoutService.processCheckout COMPLETADO");
+			console.log("🎉 CheckoutService.processCheckout COMPLETADO CON DESCUENTOS POR VOLUMEN");
 			return response;
 		} catch (error) {
 			console.error("❌ CheckoutService: Error al procesar checkout:");
@@ -333,25 +275,43 @@ export class CheckoutService {
 	}
 
 	/**
-	 * ✅ NUEVO: Preparar items del carrito con precios finales para checkout
+	 * ✅ ACTUALIZADO: Preparar items del carrito con descuentos por volumen para checkout
 	 */
-	static prepareCartItemsForCheckout(cartItems: any[]): CheckoutRequest['items'] {
-		return cartItems.map(item => ({
-			product_id: item.productId,
-			quantity: item.quantity,
-			price: item.price, // Precio base
-			final_price: item.final_price || item.discounted_price || item.price, // Precio final con descuentos
-			original_price: item.original_price || item.price,
-			volume_discount_percentage: item.volume_discount_percentage || 0,
-			volume_savings: item.volume_savings || 0
-		}));
+	static prepareCartItemsForCheckout(cartItems: any[]): CheckoutItem[] {
+		console.log("🛒 Preparando items del carrito con descuentos por volumen");
+		
+		const checkoutItems = CheckoutItemsService.prepareItemsForCheckout(cartItems);
+		
+		// ✅ Debug para verificar consistencia
+		CheckoutItemsService.debugItemPricing(cartItems, checkoutItems);
+		
+		console.log("✅ Items preparados para checkout:", checkoutItems);
+		
+		return checkoutItems;
 	}
 
 	/**
-	 * ✅ NUEVO: Validar totales antes del checkout
+	 * ✅ NUEVO: Calcular totales para mostrar en checkout
+	 */
+	static calculateCheckoutTotals(cartItems: any[]) {
+		return CheckoutItemsService.calculateCheckoutTotals(cartItems);
+	}
+
+	/**
+	 * ✅ ACTUALIZADO: Validar totales considerando descuentos por volumen
 	 */
 	static validateCheckoutTotals(cartTotal: number, checkoutTotal: number, tolerance: number = 0.01): boolean {
 		const difference = Math.abs(cartTotal - checkoutTotal);
-		return difference <= tolerance;
+		const isValid = difference <= tolerance;
+		
+		console.log("🔍 Validación de totales:", {
+			cartTotal,
+			checkoutTotal,
+			difference,
+			tolerance,
+			isValid
+		});
+		
+		return isValid;
 	}
 }
