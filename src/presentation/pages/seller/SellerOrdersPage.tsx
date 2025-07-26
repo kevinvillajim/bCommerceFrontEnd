@@ -385,7 +385,7 @@ const SellerOrdersPage: React.FC = () => {
 			header: "Productos",
 			render: (order: SellerOrderUI) => (
 				<span className="text-center">
-					{order.items ? order.items.length : 0}
+					{order.items ? order.items.reduce((total, item) => total + item.quantity, 0) : 0}
 				</span>
 			),
 		},
@@ -505,7 +505,7 @@ const SellerOrdersPage: React.FC = () => {
 						<Eye size={18} />
 					</Link>
 
-					{/* Gestionar envío - AHORA ABRE EL MODAL */}
+					{/* Gestionar envío - AHORA ABRE EL MODAL MEJORADO */}
 					<button
 						onClick={() => handleShippingModal(order.id)}
 						disabled={!(order.status === "pending" || order.status === "processing") || isUpdating}
@@ -541,9 +541,10 @@ const SellerOrdersPage: React.FC = () => {
 
 	return (
 		<div className="space-y-6">
-			{/* Modal de envío */}
+			{/* Modal de envío mejorado */}
 			<ShippingFormModal
 				orderId={selectedOrderId || ""}
+				orderNumber={orders.find(o => o.id === selectedOrderId)?.orderNumber}
 				isOpen={isShippingModalOpen}
 				onClose={() => {
 					setIsShippingModalOpen(false);

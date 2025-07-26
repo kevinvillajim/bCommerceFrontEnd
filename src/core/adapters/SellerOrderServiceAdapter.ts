@@ -22,6 +22,8 @@ export interface SellerOrderUI {
 		price: number;
 		subtotal: number;
 		name?: string;
+		sku?: string;
+		image?: string;
 	}>;
 	status: OrderStatus;
 	paymentStatus: "pending" | "completed" | "failed" | "rejected";
@@ -177,18 +179,26 @@ export default class SellerOrderServiceAdapter {
 		const userName = order.customer?.name || "Cliente";
 		const userEmail = order.customer?.email || "sin@email.com";
 
-		// Asegurar que items sea un array
-		const items = Array.isArray(order.items) ? order.items : [];
+		// Asegurar que items sea un array y mapear correctamente
+		const items = Array.isArray(order.items) ? order.items.map((item: any) => ({
+			id: item.id,
+			product_id: item.product_id,
+			quantity: Number(item.quantity) || 1,
+			price: Number(item.price) || 0,
+			subtotal: Number(item.subtotal) || 0,
+			name: item.product?.name || item.product_name || `Producto ${item.product_id}`,
+			sku: item.product?.sku || item.product_sku || `SKU-${item.product_id}`,
+			image: item.product?.image || item.product_image || '/placeholder-product.jpg'
+		})) : [];
 
-		// SIMPLIFICADO: Usar el total que viene del backend directamente
-		// No calcular IVA adicional aquí
+		// Usar el total que viene del backend directamente
 		const total = typeof order.total === "string" 
 			? parseFloat(order.total) 
 			: order.total || 0;
 
 		return {
 			id: String(order.id || 0),
-			orderNumber: order.orderNumber || `#${order.id || 0}`,
+			orderNumber: order.orderNumber || order.order_number || `#${order.id || 0}`,
 			date: order.date || order.created_at || new Date().toISOString(),
 			customer: {
 				id: order.customer?.id || order.user_id || 0,
@@ -371,7 +381,6 @@ export default class SellerOrderServiceAdapter {
 				throw new Error("Respuesta vacía al obtener detalle de orden");
 			}
 
-			// SIMPLIFICADO: NO calcular IVA adicional, usar los datos tal como vienen del backend
 			let orderData = response.data;
 
 			// Crear un objeto con estructura adecuada manteniendo la compatibilidad
@@ -379,28 +388,39 @@ export default class SellerOrderServiceAdapter {
 				...orderData,
 
 				// Adaptaciones necesarias:
-				userId: orderData.user_id,
-				sellerId: orderData.seller_id,
-				paymentId: orderData.payment_id,
-				paymentMethod: orderData.payment_method,
-				paymentStatus: orderData.payment_status,
-				createdAt: orderData.created_at,
-				updatedAt: orderData.updated_at,
-				orderNumber: orderData.order_number,
-				shippingData: orderData.shipping_data,
+				userId: orderData.user_id || orderData.userId,
+				sellerId: orderData.seller_id || orderData.sellerId,
+				paymentId: orderData.payment_id || orderData.paymentId,
+				paymentMethod: orderData.payment_method || orderData.paymentMethod || "Tarjeta de crédito",
+				paymentStatus: orderData.payment_status || orderData.paymentStatus || "completed",
+				createdAt: orderData.created_at || orderData.createdAt || orderData.date,
+				updatedAt: orderData.updated_at || orderData.updatedAt,
+				orderNumber: orderData.order_number || orderData.orderNumber || `#${orderData.id}`,
+				shippingData: orderData.shipping_data || orderData.shippingData,
+				shippingAddress: orderData.shippingAddress || this.formatShippingAddress(orderData),
 
 				// Procesar items con el formato esperado
-				items:
-					orderData.items?.map((item: any) => ({
-						...item,
-						productId: item.product_id,
-						product: item.product || {
-							id: item.product_id,
-							name: item.product_name,
-							image: item.product_image,
-							sku: item.product_sku,
-						},
-					})) || [],
+				items: orderData.items?.map((item: any) => ({
+					...item,
+					productId: item.product_id || item.productId,
+					quantity: Number(item.quantity) || 1,
+					price: Number(item.price) || 0,
+					subtotal: Number(item.subtotal) || 0,
+					product: item.product || {
+						id: item.product_id || item.productId,
+						name: item.product?.name || item.product_name || `Producto ${item.product_id}`,
+						image: item.product?.image || item.product_image || '/placeholder-product.jpg',
+						sku: item.product?.sku || item.product_sku || `SKU-${item.product_id}`,
+						price: Number(item.price) || 0
+					},
+				})) || [],
+
+				// Información del cliente
+				customer: orderData.customer || {
+					id: orderData.user_id,
+					name: orderData.customer?.name || "Cliente",
+					email: orderData.customer?.email || "sin@email.com"
+				}
 			};
 
 			console.log("Orden adaptada para UI de vendedor:", orderDetail);
@@ -413,6 +433,31 @@ export default class SellerOrderServiceAdapter {
 			);
 			throw error;
 		}
+	}
+
+	/**
+	 * Formatea la dirección de envío desde los datos de la orden
+	 */
+	private formatShippingAddress(orderData: any): string {
+		const shipping = orderData.shippingAddress || orderData.shipping_address;
+		
+		if (typeof shipping === 'string') {
+			return shipping;
+		}
+		
+		if (shipping && typeof shipping === 'object') {
+			const parts = [
+				shipping.address,
+				shipping.city,
+				shipping.state || shipping.province,
+				shipping.country,
+				shipping.postal_code
+			].filter(Boolean);
+			
+			return parts.join(', ');
+		}
+		
+		return 'Dirección no disponible';
 	}
 
 	/**

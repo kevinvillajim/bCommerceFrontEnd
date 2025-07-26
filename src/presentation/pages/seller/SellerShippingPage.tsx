@@ -581,9 +581,10 @@ const SellerShippingPage: React.FC = () => {
 
 	return (
 		<div className="space-y-6">
-			{/* Modal para asignación de número de seguimiento */}
+			{/* Modal para asignación de número de seguimiento mejorado */}
 			<ShippingFormModal
 				orderId={selectedOrderId || ""}
+				orderNumber={shippingItems.find(item => item.orderId === selectedOrderId)?.orderNumber}
 				isOpen={isShippingModalOpen}
 				onClose={() => {
 					setIsShippingModalOpen(false);
