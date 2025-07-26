@@ -23,7 +23,7 @@ export interface SellerOrderUI {
 		subtotal: number;
 		name?: string;
 	}>;
-	status: OrderStatus; // ✅ CAMBIADO - Usar el tipo del dominio
+	status: OrderStatus;
 	paymentStatus: "pending" | "completed" | "failed" | "rejected";
 	shippingAddress?: string;
 }
@@ -32,7 +32,7 @@ export interface SellerOrderStatUI {
 	label: string;
 	value: number | string;
 	isCurrency?: boolean;
-	color: string; // CORREGIDO: requerido, no opcional
+	color: string;
 	icon?: React.ReactNode;
 }
 
@@ -180,6 +180,12 @@ export default class SellerOrderServiceAdapter {
 		// Asegurar que items sea un array
 		const items = Array.isArray(order.items) ? order.items : [];
 
+		// SIMPLIFICADO: Usar el total que viene del backend directamente
+		// No calcular IVA adicional aquí
+		const total = typeof order.total === "string" 
+			? parseFloat(order.total) 
+			: order.total || 0;
+
 		return {
 			id: String(order.id || 0),
 			orderNumber: order.orderNumber || `#${order.id || 0}`,
@@ -189,10 +195,7 @@ export default class SellerOrderServiceAdapter {
 				name: userName,
 				email: userEmail,
 			},
-			total:
-				typeof order.total === "string"
-					? parseFloat(order.total)
-					: order.total || 0,
+			total: total,
 			items: items,
 			status: order.status || "pending",
 			paymentStatus: order.paymentStatus || order.payment_status || "pending",
@@ -211,15 +214,15 @@ export default class SellerOrderServiceAdapter {
 	 */
 	public async updateOrderStatus(
 		orderId: string,
-		status: OrderStatus // ✅ CAMBIADO - Usar OrderStatus del dominio
+		status: OrderStatus
 	): Promise<boolean> {
 		try {
 			console.log(
 				`SellerOrderServiceAdapter: Actualizando orden ${orderId} a estado ${status}`
 			);
 
-			// Usar PUT según la documentación de la API
-			const response = await ApiClient.put<ServiceResponse>(
+			// Usar el endpoint de actualización de estado según los endpoints reales
+			const response = await ApiClient.patch<ServiceResponse>(
 				API_ENDPOINTS.ORDERS.UPDATE_STATUS(Number(orderId)),
 				{
 					status,
@@ -260,7 +263,7 @@ export default class SellerOrderServiceAdapter {
 				"SellerOrderServiceAdapter: Obteniendo estadísticas de órdenes"
 			);
 
-			// Llamar a la API usando la ruta específica para estadísticas de vendedor
+			// Usar el endpoint específico para estadísticas de vendedor
 			const response = await ApiClient.get<any>(API_ENDPOINTS.ORDERS.STATS);
 
 			console.log(
@@ -338,6 +341,7 @@ export default class SellerOrderServiceAdapter {
 			];
 		}
 	}
+
 	/**
 	 * Obtiene los detalles de una orden específica como vendedor
 	 * @param orderId ID de la orden
@@ -352,7 +356,7 @@ export default class SellerOrderServiceAdapter {
 				`SellerOrderServiceAdapter: Obteniendo detalle de orden ${id} como vendedor`
 			);
 
-			// Importante: Usar el endpoint específico para vendedores según la documentación
+			// Usar el endpoint específico para vendedores según los endpoints reales
 			const response = await ApiClient.get<any>(
 				API_ENDPOINTS.ORDERS.SELLER_ORDER_DETAILS(id)
 			);
@@ -367,29 +371,8 @@ export default class SellerOrderServiceAdapter {
 				throw new Error("Respuesta vacía al obtener detalle de orden");
 			}
 
-			// Si la respuesta viene con el total de precio incorrecto, corregirlo aquí
+			// SIMPLIFICADO: NO calcular IVA adicional, usar los datos tal como vienen del backend
 			let orderData = response.data;
-
-			// Verificar si necesitamos procesar o transformar datos
-			if (orderData.items && Array.isArray(orderData.items)) {
-				// Calcular el subtotal
-				const subtotal = orderData.items.reduce(
-					(sum: number, item: any) => sum + item.price * item.quantity,
-					0
-				);
-
-				// Calcular el IVA (15%)
-				const taxRate = 0.15;
-				const taxAmount = subtotal * taxRate;
-
-				// Calcular el total correcto (subtotal + IVA)
-				const correctTotal = subtotal + taxAmount;
-
-				// Si el total en la respuesta es incorrecto, actualizarlo
-				if (Math.abs(orderData.total - correctTotal) > 0.01) {
-					orderData.total = correctTotal;
-				}
-			}
 
 			// Crear un objeto con estructura adecuada manteniendo la compatibilidad
 			const orderDetail = {
@@ -444,7 +427,7 @@ export default class SellerOrderServiceAdapter {
 
 			console.log(`SellerOrderServiceAdapter: Completando orden ${id}`);
 
-			// Llamar al endpoint según la documentación
+			// Usar el endpoint para completar orden según los endpoints reales
 			const response = await ApiClient.post<any>(
 				API_ENDPOINTS.ORDERS.COMPLETE(id)
 			);
@@ -485,7 +468,7 @@ export default class SellerOrderServiceAdapter {
 				`SellerOrderServiceAdapter: Actualizando información de envío para orden ${id}`
 			);
 
-			// Llamar al endpoint según la documentación
+			// Usar el endpoint para actualizar información de envío
 			const response = await ApiClient.patch<any>(
 				API_ENDPOINTS.ORDERS.UPDATE_SHIPPING(id),
 				shippingInfo

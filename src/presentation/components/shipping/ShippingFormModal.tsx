@@ -1,256 +1,303 @@
-import React, {useState} from "react";
-import {X, Package} from "lucide-react";
+// src/presentation/components/shipping/ShippingFormModal.tsx
+import React, { useState } from "react";
+import { X, Package, Truck, Calendar } from "lucide-react";
 
-// Definir la interfaz para los datos del formulario
 export interface ShippingFormData {
 	tracking_number: string;
 	shipping_company: string;
-	estimated_delivery: string;
+	estimated_delivery?: string;
 	notes?: string;
 }
 
 interface ShippingFormModalProps {
-	isOpen: boolean;
 	orderId: string;
+	isOpen: boolean;
 	onClose: () => void;
-	onSubmit: (data: ShippingFormData) => void;
+	onSubmit: (data: ShippingFormData) => Promise<void>;
 	isLoading?: boolean;
 }
 
 const ShippingFormModal: React.FC<ShippingFormModalProps> = ({
-	isOpen,
 	orderId,
+	isOpen,
 	onClose,
 	onSubmit,
 	isLoading = false,
 }) => {
-	// Estados para los campos del formulario
-	const [trackingNumber, setTrackingNumber] = useState("");
-	const [shippingCompany, setShippingCompany] = useState("");
-	const [estimatedDelivery, setEstimatedDelivery] = useState("");
-	const [notes, setNotes] = useState("");
+	const [formData, setFormData] = useState<ShippingFormData>({
+		tracking_number: "",
+		shipping_company: "",
+		estimated_delivery: "",
+		notes: "",
+	});
+
 	const [errors, setErrors] = useState<Record<string, string>>({});
 
-	// Si el modal no está abierto, no renderizar nada
-	if (!isOpen) return null;
+	// Resetear formulario cuando se cierra el modal
+	React.useEffect(() => {
+		if (!isOpen) {
+			setFormData({
+				tracking_number: "",
+				shipping_company: "",
+				estimated_delivery: "",
+				notes: "",
+			});
+			setErrors({});
+		}
+	}, [isOpen]);
 
-	// Función para validar el formulario
+	// Validar formulario
 	const validateForm = (): boolean => {
 		const newErrors: Record<string, string> = {};
 
-		if (!trackingNumber.trim()) {
-			newErrors.trackingNumber = "El número de seguimiento es obligatorio";
+		if (!formData.tracking_number.trim()) {
+			newErrors.tracking_number = "El número de seguimiento es requerido";
 		}
 
-		if (!shippingCompany.trim()) {
-			newErrors.shippingCompany = "El transportista es obligatorio";
+		if (!formData.shipping_company.trim()) {
+			newErrors.shipping_company = "La empresa de envío es requerida";
 		}
 
-		// Fecha opcional, pero si se proporciona debe ser válida
-		if (estimatedDelivery && new Date(estimatedDelivery) < new Date()) {
-			newErrors.estimatedDelivery = "La fecha estimada debe ser futura";
+		// Validar fecha de entrega estimada (opcional pero si se proporciona debe ser válida)
+		if (formData.estimated_delivery) {
+			const selectedDate = new Date(formData.estimated_delivery);
+			const today = new Date();
+			today.setHours(0, 0, 0, 0);
+
+			if (selectedDate < today) {
+				newErrors.estimated_delivery = "La fecha de entrega debe ser futura";
+			}
 		}
 
 		setErrors(newErrors);
 		return Object.keys(newErrors).length === 0;
 	};
 
-	// Función para manejar el envío del formulario
-	const handleSubmit = (e: React.FormEvent) => {
+	// Manejar envío del formulario
+	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 
-		if (!validateForm()) return;
+		if (!validateForm()) {
+			return;
+		}
 
-		// Preparar datos para el envío
-		const shippingData: ShippingFormData = {
-			tracking_number: trackingNumber,
-			shipping_company: shippingCompany,
-			estimated_delivery: estimatedDelivery,
-			notes: notes.trim() || undefined,
-		};
-
-		// Llamar a la función onSubmit con los datos
-		onSubmit(shippingData);
+		try {
+			await onSubmit(formData);
+		} catch (error) {
+			console.error("Error al enviar formulario de shipping:", error);
+		}
 	};
+
+	// Manejar cambios en los inputs
+	const handleInputChange = (
+		e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+	) => {
+		const { name, value } = e.target;
+		setFormData((prev) => ({
+			...prev,
+			[name]: value,
+		}));
+
+		// Limpiar error del campo cuando el usuario empiece a escribir
+		if (errors[name]) {
+			setErrors((prev) => ({
+				...prev,
+				[name]: "",
+			}));
+		}
+	};
+
+	if (!isOpen) return null;
 
 	return (
 		<div className="fixed inset-0 z-50 overflow-y-auto">
-			{/* Fondo oscuro */}
-			<div
-				className="fixed inset-0 bg-black bg-opacity-50"
-				onClick={onClose}
-			></div>
+			<div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+				{/* Overlay */}
+				<div
+					className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
+					onClick={onClose}
+				></div>
 
-			{/* Modal */}
-			<div className="flex items-center justify-center min-h-screen p-4">
-				<div className="relative bg-white rounded-lg shadow-xl max-w-md w-full">
-					{/* Cabecera */}
-					<div className="flex justify-between items-center p-6 border-b border-gray-200">
-						<h2 className="text-xl font-semibold text-gray-900 flex items-center">
-							<Package className="h-5 w-5 mr-2" />
-							Información de Envío
-						</h2>
-						<button
-							onClick={onClose}
-							className="text-gray-400 hover:text-gray-500"
-							disabled={isLoading}
-						>
-							<X size={24} />
-						</button>
-					</div>
-
-					{/* Cuerpo del modal */}
-					<form onSubmit={handleSubmit}>
-						<div className="p-6 space-y-4">
-							{/* Orden ID (no editable) */}
-							<div>
-								<label className="block text-sm font-medium text-gray-700">
-									ID de Orden
-								</label>
-								<input
-									type="text"
-									value={orderId}
-									disabled
-									className="mt-1 block w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md text-gray-700"
-								/>
+				{/* Modal */}
+				<div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+					{/* Header */}
+					<div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+						<div className="flex items-center justify-between mb-4">
+							<div className="flex items-center">
+								<div className="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
+									<Package className="h-6 w-6 text-blue-600" />
+								</div>
+								<div className="ml-3">
+									<h3 className="text-lg leading-6 font-medium text-gray-900">
+										Asignar Número de Seguimiento
+									</h3>
+									<p className="text-sm text-gray-500">
+										Pedido #{orderId}
+									</p>
+								</div>
 							</div>
+							<button
+								onClick={onClose}
+								className="text-gray-400 hover:text-gray-600"
+								disabled={isLoading}
+							>
+								<X size={24} />
+							</button>
+						</div>
 
-							{/* Número de Tracking */}
+						{/* Formulario */}
+						<form onSubmit={handleSubmit} className="space-y-4">
+							{/* Número de seguimiento */}
 							<div>
-								<label className="block text-sm font-medium text-gray-700">
-									Número de Seguimiento <span className="text-red-500">*</span>
+								<label
+									htmlFor="tracking_number"
+									className="block text-sm font-medium text-gray-700 mb-1"
+								>
+									Número de Seguimiento *
 								</label>
 								<input
 									type="text"
-									value={trackingNumber}
-									onChange={(e) => setTrackingNumber(e.target.value)}
-									className={`mt-1 block w-full px-3 py-2 bg-white border ${
-										errors.trackingNumber
+									id="tracking_number"
+									name="tracking_number"
+									value={formData.tracking_number}
+									onChange={handleInputChange}
+									className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+										errors.tracking_number
 											? "border-red-500"
 											: "border-gray-300"
-									} rounded-md text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500`}
-									placeholder="Ej. TRA123456789"
+									}`}
+									placeholder="Ejemplo: 1Z999AA1234567890"
 									disabled={isLoading}
 								/>
-								{errors.trackingNumber && (
-									<p className="mt-1 text-sm text-red-500">
-										{errors.trackingNumber}
+								{errors.tracking_number && (
+									<p className="mt-1 text-sm text-red-600">
+										{errors.tracking_number}
 									</p>
 								)}
 							</div>
 
-							{/* Transportista */}
+							{/* Empresa de envío */}
 							<div>
-								<label className="block text-sm font-medium text-gray-700">
-									Transportista <span className="text-red-500">*</span>
+								<label
+									htmlFor="shipping_company"
+									className="block text-sm font-medium text-gray-700 mb-1"
+								>
+									Empresa de Envío *
 								</label>
 								<select
-									value={shippingCompany}
-									onChange={(e) => setShippingCompany(e.target.value)}
-									className={`mt-1 block w-full px-3 py-2 bg-white border ${
-										errors.shippingCompany
+									id="shipping_company"
+									name="shipping_company"
+									value={formData.shipping_company}
+									onChange={handleInputChange}
+									className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+										errors.shipping_company
 											? "border-red-500"
 											: "border-gray-300"
-									} rounded-md text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500`}
+									}`}
 									disabled={isLoading}
 								>
-									<option value="">Seleccionar transportista</option>
+									<option value="">Seleccionar empresa...</option>
 									<option value="Correos Express">Correos Express</option>
 									<option value="SEUR">SEUR</option>
 									<option value="MRW">MRW</option>
 									<option value="DHL">DHL</option>
 									<option value="FedEx">FedEx</option>
 									<option value="UPS">UPS</option>
+									<option value="Nacex">Nacex</option>
 									<option value="GLS">GLS</option>
-									<option value="Correos">Correos</option>
+									<option value="Envialia">Envialia</option>
+									<option value="Otro">Otro</option>
 								</select>
-								{errors.shippingCompany && (
-									<p className="mt-1 text-sm text-red-500">
-										{errors.shippingCompany}
+								{errors.shipping_company && (
+									<p className="mt-1 text-sm text-red-600">
+										{errors.shipping_company}
 									</p>
 								)}
 							</div>
 
-							{/* Fecha Estimada de Entrega */}
+							{/* Fecha de entrega estimada */}
 							<div>
-								<label className="block text-sm font-medium text-gray-700">
-									Fecha Estimada de Entrega
+								<label
+									htmlFor="estimated_delivery"
+									className="block text-sm font-medium text-gray-700 mb-1"
+								>
+									Fecha de Entrega Estimada
 								</label>
-								<input
-									type="date"
-									value={estimatedDelivery}
-									onChange={(e) => setEstimatedDelivery(e.target.value)}
-									className={`mt-1 block w-full px-3 py-2 bg-white border ${
-										errors.estimatedDelivery
-											? "border-red-500"
-											: "border-gray-300"
-									} rounded-md text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500`}
-									disabled={isLoading}
-								/>
-								{errors.estimatedDelivery && (
-									<p className="mt-1 text-sm text-red-500">
-										{errors.estimatedDelivery}
+								<div className="relative">
+									<input
+										type="date"
+										id="estimated_delivery"
+										name="estimated_delivery"
+										value={formData.estimated_delivery}
+										onChange={handleInputChange}
+										min={new Date().toISOString().split('T')[0]}
+										className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+											errors.estimated_delivery
+												? "border-red-500"
+												: "border-gray-300"
+										}`}
+										disabled={isLoading}
+									/>
+									<Calendar className="absolute right-3 top-2.5 h-5 w-5 text-gray-400 pointer-events-none" />
+								</div>
+								{errors.estimated_delivery && (
+									<p className="mt-1 text-sm text-red-600">
+										{errors.estimated_delivery}
 									</p>
 								)}
 							</div>
 
-							{/* Notas */}
+							{/* Notas adicionales */}
 							<div>
-								<label className="block text-sm font-medium text-gray-700">
-									Notas
+								<label
+									htmlFor="notes"
+									className="block text-sm font-medium text-gray-700 mb-1"
+								>
+									Notas Adicionales
 								</label>
 								<textarea
-									value={notes}
-									onChange={(e) => setNotes(e.target.value)}
-									className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+									id="notes"
+									name="notes"
+									value={formData.notes}
+									onChange={handleInputChange}
 									rows={3}
-									placeholder="Instrucciones especiales de entrega..."
+									className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+									placeholder="Información adicional sobre el envío..."
 									disabled={isLoading}
-								></textarea>
+								/>
 							</div>
-						</div>
+						</form>
+					</div>
 
-						{/* Pie del modal con botones */}
-						<div className="p-6 border-t border-gray-200 flex justify-end gap-3">
-							<button
-								type="button"
-								onClick={onClose}
-								className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500"
-								disabled={isLoading}
-							>
-								Cancelar
-							</button>
-							<button
-								type="submit"
-								className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500 flex items-center"
-								disabled={isLoading}
-							>
-								{isLoading && (
-									<svg
-										className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-										xmlns="http://www.w3.org/2000/svg"
-										fill="none"
-										viewBox="0 0 24 24"
-									>
-										<circle
-											className="opacity-25"
-											cx="12"
-											cy="12"
-											r="10"
-											stroke="currentColor"
-											strokeWidth="4"
-										></circle>
-										<path
-											className="opacity-75"
-											fill="currentColor"
-											d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-										></path>
-									</svg>
-								)}
-								Guardar
-							</button>
-						</div>
-					</form>
+					{/* Footer */}
+					<div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+						<button
+							type="submit"
+							onClick={handleSubmit}
+							disabled={isLoading}
+							className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+						>
+							{isLoading ? (
+								<div className="flex items-center">
+									<div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-white mr-2"></div>
+									Procesando...
+								</div>
+							) : (
+								<div className="flex items-center">
+									<Truck size={16} className="mr-2" />
+									Asignar y Enviar
+								</div>
+							)}
+						</button>
+						<button
+							type="button"
+							onClick={onClose}
+							disabled={isLoading}
+							className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50"
+						>
+							Cancelar
+						</button>
+					</div>
 				</div>
 			</div>
 		</div>

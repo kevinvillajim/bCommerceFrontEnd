@@ -98,6 +98,8 @@ export const API_ENDPOINTS = {
 	ORDERS: {
 		LIST: "/orders",
 		DETAILS: (id: number) => `/orders/${id}`,
+		CREATE: `/orders`,
+		UPDATE: (id: number) => `/orders/${id}`,
 		SELLER_ORDERS: "/seller/orders",
 		SELLER_ORDER_DETAILS: (id: number) => `/seller/orders/${id}`,
 		SELLER_ORDER_ITEMS: (id: number) => `/seller/orders/${id}/items`,
@@ -156,6 +158,13 @@ export const API_ENDPOINTS = {
 		HISTORY: (trackingNumber: string) => `/shipping/${trackingNumber}/history`,
 		ROUTE: (trackingNumber: string) => `/shipping/${trackingNumber}/route`,
 		ESTIMATE: "/shipping/estimate",
+		UPDATE_STATUS: `/shipping/update-status`,
+    EXTERNAL_UPDATE: `/shipping/external-status-update`,
+    
+    // Simulación (solo desarrollo)
+    SIMULATE_EVENTS: (trackingNumber: string) => `/shipping/${trackingNumber}/simulate`,
+    SIMULATE_API: `/shipping-api/status-update`,
+    SIMULATE_CYCLE: (trackingNumber: string) => `/shipping-api/${trackingNumber}/simulate-cycle`,
 	},
 
 	// Chat

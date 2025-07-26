@@ -109,6 +109,8 @@ const SellerShippingPage: React.FC = () => {
 				filters.dateTo = dateRange.to;
 			}
 
+			console.log("Cargando envíos con filtros:", filters);
+
 			// Obtener envíos del adaptador
 			const result = await shippingAdapter.getShippingsList(filters);
 
@@ -135,13 +137,19 @@ const SellerShippingPage: React.FC = () => {
 
 	// Procesar envío con datos del formulario
 	const handleShippingSubmit = async (shippingData: ShippingFormData) => {
-		if (!selectedOrderId) return;
+		if (!selectedOrderId) {
+			setIsUpdateSuccess(false);
+			setUpdateMessage("Error: No se ha seleccionado un pedido válido");
+			return;
+		}
 
 		setIsUpdating(true);
 		setIsUpdateSuccess(null);
 		setUpdateMessage("");
 
 		try {
+			console.log("Procesando envío para orden:", selectedOrderId, shippingData);
+
 			const success = await shippingAdapter.markAsShipped(
 				selectedOrderId,
 				shippingData
@@ -154,10 +162,10 @@ const SellerShippingPage: React.FC = () => {
 				// Actualizar el estado del envío en la lista local
 				setShippingItems((prevItems) =>
 					prevItems.map((item) => {
-						if (item.id === selectedOrderId) {
+						if (item.orderId === selectedOrderId) {
 							return {
 								...item,
-								status: "shipped", // Ajustado según el nuevo estado
+								status: "shipped",
 								trackingNumber: shippingData.tracking_number,
 								carrier: shippingData.shipping_company,
 								estimatedDelivery: shippingData.estimated_delivery,
@@ -170,6 +178,7 @@ const SellerShippingPage: React.FC = () => {
 
 				// Cerrar el modal
 				setIsShippingModalOpen(false);
+				setSelectedOrderId(null);
 
 				// Recargar los datos después de un breve retraso
 				setTimeout(() => {
@@ -177,7 +186,7 @@ const SellerShippingPage: React.FC = () => {
 					setIsUpdateSuccess(null);
 				}, 3000);
 			} else {
-				throw new Error("No se pudo procesar el envío");
+				throw new Error("El servidor no pudo procesar el envío");
 			}
 		} catch (error) {
 			console.error("Error al procesar envío:", error);
@@ -198,6 +207,8 @@ const SellerShippingPage: React.FC = () => {
 		setUpdateMessage("");
 
 		try {
+			console.log(`Actualizando estado del envío ${shippingId} a ${newStatus}`);
+
 			const success = await shippingAdapter.updateShippingStatus(
 				shippingId,
 				newStatus
@@ -227,7 +238,7 @@ const SellerShippingPage: React.FC = () => {
 					setIsUpdateSuccess(null);
 				}, 3000);
 			} else {
-				throw new Error("No se pudo actualizar el estado");
+				throw new Error("El servidor no pudo actualizar el estado");
 			}
 		} catch (error) {
 			console.error(`Error al actualizar estado a ${newStatus}:`, error);
@@ -252,6 +263,7 @@ const SellerShippingPage: React.FC = () => {
 	// Refrescar datos
 	const refreshData = () => {
 		setLoading(true);
+		setError(null);
 		fetchShippingItems();
 	};
 
@@ -263,7 +275,7 @@ const SellerShippingPage: React.FC = () => {
 			case "ready_to_ship":
 				return "Listo para enviar";
 			case "in_transit":
-			case "shipped": // Añadido para manejar el nuevo estado
+			case "shipped":
 				return "En tránsito";
 			case "delivered":
 				return "Entregado";
@@ -284,7 +296,7 @@ const SellerShippingPage: React.FC = () => {
 			case "ready_to_ship":
 				return "bg-blue-100 text-blue-800";
 			case "in_transit":
-			case "shipped": // Añadido para manejar el nuevo estado
+			case "shipped":
 				return "bg-indigo-100 text-indigo-800";
 			case "delivered":
 				return "bg-green-100 text-green-800";
@@ -322,20 +334,17 @@ const SellerShippingPage: React.FC = () => {
 						<div className="flex items-center">
 							<span className="font-mono text-sm">{item.trackingNumber}</span>
 							{item.carrier && (
-								<a
-									href="#"
-									className="ml-2 text-blue-600 hover:text-blue-800"
-									title={`Rastrear con ${item.carrier}`}
-									onClick={(e) => {
-										e.preventDefault();
-										// Aquí se podría abrir una ventana de rastreo del transportista
+								<button
+									onClick={() => {
 										alert(
 											`Redirigiendo al sitio de ${item.carrier} para rastrear ${item.trackingNumber}`
 										);
 									}}
+									className="ml-2 text-blue-600 hover:text-blue-800"
+									title={`Rastrear con ${item.carrier}`}
 								>
 									<ExternalLink size={14} />
-								</a>
+								</button>
 							)}
 						</div>
 					) : (
@@ -422,7 +431,7 @@ const SellerShippingPage: React.FC = () => {
 					{(item.status === "pending" || item.status === "ready_to_ship") &&
 						!item.trackingNumber && (
 							<button
-								onClick={() => assignTrackingNumber(item.id)}
+								onClick={() => assignTrackingNumber(item.orderId)}
 								className="p-1 text-green-600 hover:bg-green-100 rounded-md"
 								title="Asignar número de seguimiento"
 								disabled={isUpdating}
@@ -576,7 +585,10 @@ const SellerShippingPage: React.FC = () => {
 			<ShippingFormModal
 				orderId={selectedOrderId || ""}
 				isOpen={isShippingModalOpen}
-				onClose={() => setIsShippingModalOpen(false)}
+				onClose={() => {
+					setIsShippingModalOpen(false);
+					setSelectedOrderId(null);
+				}}
 				onSubmit={handleShippingSubmit}
 				isLoading={isUpdating}
 			/>
@@ -589,9 +601,9 @@ const SellerShippingPage: React.FC = () => {
 					<button
 						onClick={refreshData}
 						className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-						disabled={isUpdating}
+						disabled={isUpdating || loading}
 					>
-						<RefreshCw size={18} className="inline mr-2" />
+						<RefreshCw size={18} className={`inline mr-2 ${loading ? "animate-spin" : ""}`} />
 						Actualizar
 					</button>
 				</div>
@@ -675,42 +687,6 @@ const SellerShippingPage: React.FC = () => {
 						</select>
 					</div>
 
-					{/* Filtro de Fecha */}
-					<div className="flex items-center space-x-2">
-						<select
-							className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
-							value={dateFilter}
-							onChange={(e) => setDateFilter(e.target.value)}
-						>
-							<option value="all">Todas las fechas</option>
-							<option value="today">Hoy</option>
-							<option value="week">Esta semana</option>
-							<option value="month">Este mes</option>
-							<option value="custom">Personalizado</option>
-						</select>
-						{dateFilter === "custom" && (
-							<div className="flex items-center space-x-2">
-								<input
-									type="date"
-									className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
-									value={dateRange.from}
-									onChange={(e) =>
-										setDateRange({...dateRange, from: e.target.value})
-									}
-								/>
-								<span className="text-gray-500">a</span>
-								<input
-									type="date"
-									className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
-									value={dateRange.to}
-									onChange={(e) =>
-										setDateRange({...dateRange, to: e.target.value})
-									}
-								/>
-							</div>
-						)}
-					</div>
-
 					{/* Botón para limpiar filtros */}
 					<button
 						onClick={() => {
@@ -739,7 +715,6 @@ const SellerShippingPage: React.FC = () => {
 				searchFields={[
 					"orderNumber",
 					"trackingNumber",
-					"customer",
 					"shippingAddress",
 				]}
 				loading={loading}

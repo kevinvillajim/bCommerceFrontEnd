@@ -30,29 +30,74 @@ export class SellerOrderService {
 				filters
 			);
 
+			// Preparar parámetros de consulta
+			const params: any = {};
+
+			if (filters) {
+				if (filters.status && filters.status !== "all") {
+					params.status = filters.status;
+				}
+				if (filters.paymentStatus && filters.paymentStatus !== "all") {
+					params.payment_status = filters.paymentStatus;
+				}
+				if (filters.dateFrom) {
+					params.date_from = filters.dateFrom;
+				}
+				if (filters.dateTo) {
+					params.date_to = filters.dateTo;
+				}
+				if (filters.search) {
+					params.search = filters.search;
+				}
+				if (filters.page) {
+					params.page = filters.page;
+				}
+				if (filters.limit) {
+					params.limit = filters.limit;
+				}
+			}
+
 			const response = await ApiClient.get<any>(
 				API_ENDPOINTS.ORDERS.SELLER_ORDERS,
-				filters
+				params
 			);
 
 			console.log("SellerOrderService: Respuesta de órdenes:", response);
 
 			// Verificar la estructura de la respuesta
-			const orders = response?.data || [];
-			const pagination = response?.pagination || {
-				currentPage: 1,
-				totalPages: 1,
-				totalItems: 0,
-				itemsPerPage: 10,
+			if (!response) {
+				throw new Error("Respuesta vacía del servidor");
+			}
+
+			// Manejar diferentes formatos de respuesta
+			let orders = [];
+			let pagination = {
+				total: 0,
+				per_page: 10,
+				current_page: 1,
+				last_page: 1,
 			};
+
+			if (response.success && response.data) {
+				// Formato con success
+				orders = Array.isArray(response.data) ? response.data : [];
+				pagination = response.pagination || pagination;
+			} else if (response.data && Array.isArray(response.data)) {
+				// Formato directo con data
+				orders = response.data;
+				pagination = response.meta || response.pagination || pagination;
+			} else if (Array.isArray(response)) {
+				// Formato directo como array
+				orders = response;
+			}
 
 			return {
 				data: orders,
 				meta: {
-					total: pagination.totalItems,
-					per_page: pagination.itemsPerPage,
-					current_page: pagination.currentPage,
-					last_page: pagination.totalPages,
+					total: pagination.total || orders.length,
+					per_page: pagination.per_page || 10,
+					current_page: pagination.current_page || 1,
+					last_page: pagination.last_page || 1,
 				},
 			};
 		} catch (error) {
@@ -79,9 +124,9 @@ export class SellerOrderService {
 				`SellerOrderService: Obteniendo detalle de orden ${orderId} como vendedor`
 			);
 
-			// IMPORTANTE: Aquí usamos el endpoint específico para vendedores
+			// Usar el endpoint específico para vendedores
 			const response = await ApiClient.get<any>(
-				API_ENDPOINTS.ORDERS.DETAILS(orderId)
+				API_ENDPOINTS.ORDERS.SELLER_ORDER_DETAILS(orderId)
 			);
 
 			console.log(
@@ -90,34 +135,26 @@ export class SellerOrderService {
 			);
 
 			// Verificar si hay datos en la respuesta
-			if (!response || !response.data) {
+			if (!response) {
 				throw new Error("Respuesta vacía al obtener detalle de orden");
 			}
 
-			// Si la respuesta viene con el total de precio incorrecto, corregirlo aquí
-			let orderData = response.data;
-
-			// Verificar si necesitamos procesar o transformar datos
-			if (orderData.items && Array.isArray(orderData.items)) {
-				// Calcular el subtotal
-				const subtotal = orderData.items.reduce(
-					(sum: number, item: any) => sum + item.price * item.quantity,
-					0
-				);
-
-				// Calcular el IVA (15%)
-				const taxRate = 0.15;
-				const taxAmount = subtotal * taxRate;
-
-				// Calcular el total correcto (subtotal + IVA)
-				const correctTotal = subtotal + taxAmount;
-
-				// Si el total en la respuesta es incorrecto, actualizarlo
-				if (Math.abs(orderData.total - correctTotal) > 0.01) {
-					orderData.total = correctTotal;
-				}
+			// Manejar diferentes formatos de respuesta
+			let orderData;
+			if (response.success && response.data) {
+				orderData = response.data;
+			} else if (response.data) {
+				orderData = response.data;
+			} else {
+				orderData = response;
 			}
 
+			if (!orderData) {
+				throw new Error("No se encontraron datos de la orden");
+			}
+
+			// SIMPLIFICADO: Usar los datos tal como vienen del backend
+			// No hacer cálculos adicionales de IVA
 			return orderData;
 		} catch (error) {
 			console.error(
@@ -151,11 +188,22 @@ export class SellerOrderService {
 			);
 
 			// Verificar si hay datos en la respuesta
-			if (!response || !response.data) {
+			if (!response) {
 				throw new Error("Respuesta vacía al actualizar estado de orden");
 			}
 
-			return response.data;
+			// Manejar diferentes formatos de respuesta
+			let orderData;
+			if (response.success && response.data) {
+				orderData = response.data;
+			} else if (response.data) {
+				orderData = response.data;
+			} else {
+				// Si no hay datos específicos, devolver un objeto básico
+				orderData = { id: orderId, status: data.status };
+			}
+
+			return orderData;
 		} catch (error) {
 			console.error(
 				`SellerOrderService: Error al actualizar estado de orden ${orderId}:`,
@@ -177,11 +225,32 @@ export class SellerOrderService {
 			console.log("SellerOrderService: Respuesta de estadísticas:", response);
 
 			// Verificar si hay datos en la respuesta
-			if (!response || !response.data) {
+			if (!response) {
 				throw new Error("Respuesta vacía al obtener estadísticas");
 			}
 
-			return response.data;
+			// Manejar diferentes formatos de respuesta
+			let statsData;
+			if (response.success && response.data) {
+				statsData = response.data;
+			} else if (response.data) {
+				statsData = response.data;
+			} else {
+				statsData = response;
+			}
+
+			// Asegurar que tengamos un objeto con propiedades básicas
+			const defaultStats = {
+				totalOrders: 0,
+				pendingOrders: 0,
+				processingOrders: 0,
+				shippedOrders: 0,
+				deliveredOrders: 0,
+				cancelledOrders: 0,
+				totalSales: 0,
+			};
+
+			return { ...defaultStats, ...statsData };
 		} catch (error) {
 			console.error(
 				"SellerOrderService: Error al obtener estadísticas:",
@@ -197,6 +266,76 @@ export class SellerOrderService {
 				cancelledOrders: 0,
 				totalSales: 0,
 			};
+		}
+	}
+
+	/**
+	 * Completa una orden específica
+	 */
+	async completeOrder(orderId: number): Promise<boolean> {
+		try {
+			console.log(`SellerOrderService: Completando orden ${orderId}`);
+
+			const response = await ApiClient.post<any>(
+				API_ENDPOINTS.ORDERS.COMPLETE(orderId)
+			);
+
+			console.log(`SellerOrderService: Respuesta al completar orden:`, response);
+
+			// Verificar diferentes formatos de respuesta exitosa
+			return response && (
+				response.success === true ||
+				response.status === "success" ||
+				response.message?.includes("success") ||
+				response.data
+			);
+		} catch (error) {
+			console.error(
+				`SellerOrderService: Error al completar orden ${orderId}:`,
+				error
+			);
+			return false;
+		}
+	}
+
+	/**
+	 * Actualiza la información de envío de una orden
+	 */
+	async updateShippingInfo(
+		orderId: number,
+		shippingInfo: {
+			tracking_number?: string;
+			shipping_company?: string;
+			estimated_delivery?: string;
+			notes?: string;
+		}
+	): Promise<boolean> {
+		try {
+			console.log(
+				`SellerOrderService: Actualizando información de envío para orden ${orderId}`,
+				shippingInfo
+			);
+
+			const response = await ApiClient.patch<any>(
+				API_ENDPOINTS.ORDERS.UPDATE_SHIPPING(orderId),
+				shippingInfo
+			);
+
+			console.log(`SellerOrderService: Respuesta al actualizar envío:`, response);
+
+			// Verificar diferentes formatos de respuesta exitosa
+			return response && (
+				response.success === true ||
+				response.status === "success" ||
+				response.message?.includes("success") ||
+				response.data
+			);
+		} catch (error) {
+			console.error(
+				`SellerOrderService: Error al actualizar información de envío para orden ${orderId}:`,
+				error
+			);
+			return false;
 		}
 	}
 }

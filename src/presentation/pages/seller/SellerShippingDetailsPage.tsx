@@ -50,6 +50,8 @@ const SellerShippingDetailsPage: React.FC = () => {
 		setLoading(true);
 		setError(null);
 		try {
+			console.log(`Cargando detalles del envío ${id}`);
+
 			// Obtener detalles del envío
 			const shipment = await shippingAdapter.getShippingDetails(id || "");
 
@@ -118,6 +120,8 @@ const SellerShippingDetailsPage: React.FC = () => {
 		setUpdateMessage("");
 
 		try {
+			console.log(`Actualizando estado del envío ${shipping.id} a ${newStatus}`);
+
 			const success = await shippingAdapter.updateShippingStatus(
 				shipping.id,
 				newStatus
@@ -176,7 +180,7 @@ const SellerShippingDetailsPage: React.FC = () => {
 			case "ready_to_ship":
 				return "Listo para enviar";
 			case "in_transit":
-			case "shipped": // Añadido para compatibilidad
+			case "shipped":
 				return "En tránsito";
 			case "delivered":
 				return "Entregado";
@@ -197,7 +201,7 @@ const SellerShippingDetailsPage: React.FC = () => {
 			case "ready_to_ship":
 				return "bg-blue-100 text-blue-800";
 			case "in_transit":
-			case "shipped": // Añadido para compatibilidad
+			case "shipped":
 				return "bg-indigo-100 text-indigo-800";
 			case "delivered":
 				return "bg-green-100 text-green-800";
@@ -220,7 +224,7 @@ const SellerShippingDetailsPage: React.FC = () => {
 			case "ready_to_ship":
 				return <Package className="h-5 w-5 text-blue-600" />;
 			case "in_transit":
-			case "shipped": // Añadido para compatibilidad
+			case "shipped":
 				return (
 					<Truck className="h-5 w-5 text-indigo-600" />
 				);
@@ -281,12 +285,20 @@ const SellerShippingDetailsPage: React.FC = () => {
 					<p className="text-gray-600 mb-6">
 						{error || "No se pudo encontrar el envío solicitado"}
 					</p>
-					<button
-						onClick={() => navigate(-1)}
-						className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg transition-colors"
-					>
-						Volver
-					</button>
+					<div className="flex gap-4 justify-center">
+						<button
+							onClick={() => navigate(-1)}
+							className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors"
+						>
+							Volver
+						</button>
+						<button
+							onClick={fetchShippingDetails}
+							className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg transition-colors"
+						>
+							Reintentar
+						</button>
+					</div>
 				</div>
 			</div>
 		);
@@ -376,7 +388,7 @@ const SellerShippingDetailsPage: React.FC = () => {
 						disabled={isUpdating}
 						className="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 flex items-center gap-2 disabled:opacity-50"
 					>
-						<RefreshCw size={18} />
+						<RefreshCw size={18} className={isUpdating ? "animate-spin" : ""} />
 						<span>Actualizar</span>
 					</button>
 				</div>
@@ -451,20 +463,17 @@ const SellerShippingDetailsPage: React.FC = () => {
 											{shipping.trackingNumber}
 										</span>
 										{shipping.carrier && (
-											<a
-												href="#"
+											<button
 												className="ml-2 text-blue-600 hover:text-blue-800"
 												title={`Rastrear con ${shipping.carrier}`}
-												onClick={(e) => {
-													e.preventDefault();
-													// Aquí iría la lógica para abrir el sitio de rastreo del transportista
+												onClick={() => {
 													alert(
 														`Redirigiendo al sitio de ${shipping.carrier} para rastrear ${shipping.trackingNumber}`
 													);
 												}}
 											>
 												<ExternalLink size={14} />
-											</a>
+											</button>
 										)}
 									</div>
 								</div>
@@ -526,24 +535,22 @@ const SellerShippingDetailsPage: React.FC = () => {
 									{shipping.customer.email}
 								</div>
 							</div>
-							<div>
-								{shipping.customer.phone && (
-									<div>
-										<label className="block text-sm font-medium text-gray-600">
-											Teléfono:
-										</label>
-										<div className="mt-1 text-gray-900">
-											{shipping.customer.phone}
-										</div>
-									</div>
-								)}
+							{shipping.customer.phone && (
 								<div>
 									<label className="block text-sm font-medium text-gray-600">
-										Dirección de envío:
+										Teléfono:
 									</label>
 									<div className="mt-1 text-gray-900">
-										{shipping.shippingAddress || "No disponible"}
+										{shipping.customer.phone}
 									</div>
+								</div>
+							)}
+							<div>
+								<label className="block text-sm font-medium text-gray-600">
+									Dirección de envío:
+								</label>
+								<div className="mt-1 text-gray-900">
+									{shipping.shippingAddress || "No disponible"}
 								</div>
 							</div>
 						</div>

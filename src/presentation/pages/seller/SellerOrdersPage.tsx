@@ -6,7 +6,6 @@ import {
 	Filter,
 	RefreshCw,
 	Eye,
-	FileText,
 	Truck,
 	Package,
 	BarChart2,
@@ -20,6 +19,8 @@ import type {
 	SellerOrderUI,
 	SellerOrderStatUI,
 } from "../../../core/adapters/SellerOrderServiceAdapter";
+import ShippingFormModal from "../../components/shipping/ShippingFormModal";
+import type {ShippingFormData} from "../../components/shipping/ShippingFormModal";
 
 // Esta función ayuda a extraer la dirección de envío desde el string JSON
 const parseShippingAddress = (shippingAddressStr?: string): string => {
@@ -65,6 +66,11 @@ const SellerOrdersPage: React.FC = () => {
 		from: "",
 		to: "",
 	});
+	const [isUpdating, setIsUpdating] = useState(false);
+
+	// Estado para el modal de envío
+	const [isShippingModalOpen, setIsShippingModalOpen] = useState(false);
+	const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
 
 	// Cargar datos de pedidos
 	useEffect(() => {
@@ -237,7 +243,7 @@ const SellerOrdersPage: React.FC = () => {
 		newStatus: SellerOrderUI["status"]
 	) => {
 		try {
-			setLoading(true);
+			setIsUpdating(true);
 			const success = await orderAdapter.updateOrderStatus(orderId, newStatus);
 
 			if (success) {
@@ -257,7 +263,55 @@ const SellerOrdersPage: React.FC = () => {
 		} catch (error) {
 			console.error(`Error al actualizar estado de orden ${orderId}:`, error);
 		} finally {
-			setLoading(false);
+			setIsUpdating(false);
+		}
+	};
+
+	// Manejar apertura del modal de envío
+	const handleShippingModal = (orderId: string) => {
+		setSelectedOrderId(orderId);
+		setIsShippingModalOpen(true);
+	};
+
+	// Manejar envío del formulario de shipping
+	const handleShippingSubmit = async (shippingData: ShippingFormData) => {
+		if (!selectedOrderId) return;
+
+		try {
+			setIsUpdating(true);
+			
+			// Actualizar información de envío usando el adaptador
+			const success = await orderAdapter.updateShippingInfo(
+				selectedOrderId,
+				shippingData
+			);
+
+			if (success) {
+				// Actualizar la orden localmente
+				setOrders((prevOrders) =>
+					prevOrders.map((order) => {
+						if (order.id === selectedOrderId) {
+							return {
+								...order,
+								status: "shipped" as SellerOrderUI["status"],
+							};
+						}
+						return order;
+					})
+				);
+
+				// Cerrar modal
+				setIsShippingModalOpen(false);
+				setSelectedOrderId(null);
+
+				// Recargar datos
+				fetchOrders();
+				fetchStats();
+			}
+		} catch (error) {
+			console.error("Error al procesar envío:", error);
+		} finally {
+			setIsUpdating(false);
 		}
 	};
 
@@ -404,7 +458,7 @@ const SellerOrdersPage: React.FC = () => {
 							"bg-yellow-100 text-yellow-800";
 						paymentText = "Pendiente";
 						break;
-					case "completed": // Manejar "completed" como "Pagado"
+					case "completed":
 						paymentClass =
 							"bg-green-100 text-green-800";
 						paymentText = "Pagado";
@@ -451,23 +505,15 @@ const SellerOrdersPage: React.FC = () => {
 						<Eye size={18} />
 					</Link>
 
-					{/* Generar factura */}
-					<Link
-						to={`/seller/invoices/generate/${order.id}`}
-						className="p-1 text-indigo-600 hover:bg-indigo-100 rounded-md"
-						title="Generar factura"
-					>
-						<FileText size={18} />
-					</Link>
-
-					{/* Gestionar envío */}
-					<Link
-						to={`/seller/shipping/${order.id}`}
+					{/* Gestionar envío - AHORA ABRE EL MODAL */}
+					<button
+						onClick={() => handleShippingModal(order.id)}
+						disabled={!(order.status === "pending" || order.status === "processing") || isUpdating}
 						className={`p-1 rounded-md ${
 							order.status === "pending" || order.status === "processing"
 								? "text-green-600 hover:bg-green-100"
 								: "text-gray-400 cursor-not-allowed"
-						}`}
+						} disabled:opacity-50`}
 						title={
 							order.status === "pending" || order.status === "processing"
 								? "Gestionar envío"
@@ -475,13 +521,14 @@ const SellerOrdersPage: React.FC = () => {
 						}
 					>
 						<Truck size={18} />
-					</Link>
+					</button>
 
 					{/* Preparar pedido - solo visible para pedidos pendientes */}
 					{order.status === "pending" && (
 						<button
 							onClick={() => updateOrderStatus(order.id, "processing")}
-							className="p-1 text-orange-600 hover:bg-orange-100 rounded-md"
+							disabled={isUpdating}
+							className="p-1 text-orange-600 hover:bg-orange-100 rounded-md disabled:opacity-50"
 							title="Preparar pedido"
 						>
 							<Package size={18} />
@@ -494,6 +541,18 @@ const SellerOrdersPage: React.FC = () => {
 
 	return (
 		<div className="space-y-6">
+			{/* Modal de envío */}
+			<ShippingFormModal
+				orderId={selectedOrderId || ""}
+				isOpen={isShippingModalOpen}
+				onClose={() => {
+					setIsShippingModalOpen(false);
+					setSelectedOrderId(null);
+				}}
+				onSubmit={handleShippingSubmit}
+				isLoading={isUpdating}
+			/>
+
 			<div className="flex justify-between items-center">
 				<h1 className="text-2xl font-bold text-gray-900">
 					Gestión de Pedidos
@@ -501,9 +560,10 @@ const SellerOrdersPage: React.FC = () => {
 				<div className="flex space-x-2">
 					<button
 						onClick={refreshData}
-						className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+						disabled={loading}
+						className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50"
 					>
-						<RefreshCw size={18} className="inline mr-2" />
+						<RefreshCw size={18} className={`inline mr-2 ${loading ? "animate-spin" : ""}`} />
 						Actualizar
 					</button>
 				</div>
@@ -610,7 +670,6 @@ const SellerOrdersPage: React.FC = () => {
 			{/* Estadísticas resumidas */}
 			<div className="grid grid-cols-1 md:grid-cols-4 gap-4">
 				<SellerStatCardList
-					// Asegurarnos de que el tipo sea compatible con el componente
 					items={statsData}
 				/>
 			</div>
