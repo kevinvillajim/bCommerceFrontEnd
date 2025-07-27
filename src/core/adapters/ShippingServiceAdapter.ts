@@ -166,11 +166,10 @@ export default class ShippingServiceAdapter {
 		try {
 			console.log(`ShippingServiceAdapter: Actualizando estado de la orden ${orderIdOrShippingId} a ${newStatus}`);
 
-			// Intentar actualizar usando el endpoint de shipping
-			const response = await ApiClient.post<any>(
-				API_ENDPOINTS.SHIPPING.UPDATE_STATUS,
+			// ✅ CORREGIDO: Usar el endpoint correcto que existe en las rutas
+			const response = await ApiClient.patch<any>(
+				API_ENDPOINTS.ORDERS.UPDATE_SHIPPING(Number(orderIdOrShippingId)),
 				{
-					shipping_id: orderIdOrShippingId,
 					status: newStatus,
 				}
 			);
@@ -187,23 +186,7 @@ export default class ShippingServiceAdapter {
 			return isSuccess;
 		} catch (error) {
 			console.error(`ShippingServiceAdapter: Error al actualizar estado:`, error);
-			
-			// Si falla, intentar con el endpoint de orden
-			try {
-				console.log("Intentando actualizar vía endpoint de orden...");
-				const response = await ApiClient.patch<any>(
-					API_ENDPOINTS.ORDERS.UPDATE_SHIPPING(Number(orderIdOrShippingId)),
-					{
-						status: newStatus,
-					}
-				);
-
-				console.log("Respuesta vía orden:", response);
-				return response && (response.status === "success" || response.success === true);
-			} catch (secondError) {
-				console.error("También falló el segundo intento:", secondError);
-				return false;
-			}
+			return false;
 		}
 	}
 
@@ -340,7 +323,7 @@ export default class ShippingServiceAdapter {
 		let shippingStatus: ShippingItem["status"] = "pending";
 		
 		// Mapear estados de orden a estados de envío
-		switch (apiOrder.status) {
+		    	switch (apiOrder.status) {
 			case "shipped":
 				shippingStatus = "shipped";
 				break;
@@ -352,6 +335,18 @@ export default class ShippingServiceAdapter {
 				break;
 			case "in_transit":
 				shippingStatus = "in_transit";
+				break;
+			case "failed":
+				shippingStatus = "failed";
+				break;
+			case "returned":
+				shippingStatus = "returned";
+				break;
+			case "cancelled":
+				shippingStatus = "failed"; // Cancelado se muestra como fallido en shipping
+				break;
+			case "completed":
+				shippingStatus = "delivered"; // Completado se muestra como entregado
 				break;
 			default:
 				shippingStatus = "pending";
@@ -431,7 +426,7 @@ export default class ShippingServiceAdapter {
 	/**
 	 * Mapea el estado del API al formato de la UI
 	 */
-	private mapStatusFromAPI(apiStatus: string): ShippingItem["status"] {
+		private mapStatusFromAPI(apiStatus: string): ShippingItem["status"] {
 		if (!apiStatus) return "pending";
 
 		switch (apiStatus.toLowerCase()) {
@@ -439,17 +434,20 @@ export default class ShippingServiceAdapter {
 				return "pending";
 			case "processing":
 			case "ready_for_pickup":
+			case "ready_to_ship":
 				return "ready_to_ship";
 			case "picked_up":
-			case "in_transit":
 			case "shipped":
 				return "shipped";
+			case "in_transit":
 			case "out_for_delivery":
 				return "in_transit";
 			case "delivered":
+			case "completed":
 				return "delivered";
 			case "exception":
 			case "failed":
+			case "cancelled":
 				return "failed";
 			case "returned":
 				return "returned";

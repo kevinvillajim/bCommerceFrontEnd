@@ -179,8 +179,9 @@ const SellerShippingDetailsPage: React.FC = () => {
 				return "Pendiente";
 			case "ready_to_ship":
 				return "Listo para enviar";
-			case "in_transit":
 			case "shipped":
+				return "Enviado";
+			case "in_transit":
 				return "En tránsito";
 			case "delivered":
 				return "Entregado";
@@ -200,8 +201,9 @@ const SellerShippingDetailsPage: React.FC = () => {
 				return "bg-yellow-100 text-yellow-800";
 			case "ready_to_ship":
 				return "bg-blue-100 text-blue-800";
-			case "in_transit":
 			case "shipped":
+				return "bg-purple-100 text-purple-800";
+			case "in_transit":
 				return "bg-indigo-100 text-indigo-800";
 			case "delivered":
 				return "bg-green-100 text-green-800";
@@ -223,8 +225,9 @@ const SellerShippingDetailsPage: React.FC = () => {
 				);
 			case "ready_to_ship":
 				return <Package className="h-5 w-5 text-blue-600" />;
-			case "in_transit":
 			case "shipped":
+				return <Truck className="h-5 w-5 text-purple-600" />;
+			case "in_transit":
 				return (
 					<Truck className="h-5 w-5 text-indigo-600" />
 				);

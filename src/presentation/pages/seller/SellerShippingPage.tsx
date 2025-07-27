@@ -13,6 +13,7 @@ import {
 	MapPin,
 	ClipboardList,
 	BarChart2,
+	ChevronDown,
 } from "lucide-react";
 import Table from "../../components/dashboard/Table";
 import {formatCurrency} from "../../../utils/formatters/formatCurrency";
@@ -21,6 +22,119 @@ import ShippingServiceAdapter from "../../../core/adapters/ShippingServiceAdapte
 import type {ShippingItem} from "../../../core/adapters/ShippingServiceAdapter";
 import ShippingFormModal from "../../components/shipping/ShippingFormModal";
 import type {ShippingFormData} from "../../components/shipping/ShippingFormModal";
+
+// Componente Dropdown para cambiar estado de envío
+const ShippingStatusDropdown: React.FC<{
+	currentStatus: ShippingItem["status"];
+	shippingId: string;
+	onStatusChange: (id: string, status: ShippingItem["status"]) => Promise<void>;
+	disabled?: boolean;
+}> = ({ currentStatus, shippingId, onStatusChange, disabled = false }) => {
+	const [isOpen, setIsOpen] = useState(false);
+	const [isUpdating, setIsUpdating] = useState(false);
+
+	// Mapeo de estados con labels amigables
+	const SHIPPING_STATUSES = [
+		{ value: 'pending' as const, label: 'Pendiente', color: 'bg-yellow-100 text-yellow-800' },
+		{ value: 'ready_to_ship' as const, label: 'Listo para enviar', color: 'bg-blue-100 text-blue-800' },
+		{ value: 'shipped' as const, label: 'Enviado', color: 'bg-purple-100 text-purple-800' },
+		{ value: 'in_transit' as const, label: 'En tránsito', color: 'bg-indigo-100 text-indigo-800' },
+		{ value: 'delivered' as const, label: 'Entregado', color: 'bg-green-100 text-green-800' },
+		{ value: 'failed' as const, label: 'Fallido', color: 'bg-red-100 text-red-800' },
+		{ value: 'returned' as const, label: 'Devuelto', color: 'bg-orange-100 text-orange-800' },
+	];
+
+	// Encontrar el estado actual para mostrar
+	const currentStatusInfo = SHIPPING_STATUSES.find(s => s.value === currentStatus) || SHIPPING_STATUSES[0];
+
+	const handleStatusChange = async (newStatus: ShippingItem["status"]) => {
+		if (newStatus === currentStatus || isUpdating) return;
+		
+		setIsUpdating(true);
+		setIsOpen(false);
+		
+		try {
+			await onStatusChange(shippingId, newStatus);
+		} catch (error) {
+			console.error('Error al actualizar estado:', error);
+		} finally {
+			setIsUpdating(false);
+		}
+	};
+
+	return (
+		<div className="relative inline-block text-left">
+			{/* Botón principal */}
+			<button
+				onClick={() => setIsOpen(!isOpen)}
+				disabled={disabled || isUpdating}
+				className={`
+					inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-full
+					${currentStatusInfo.color}
+					${disabled || isUpdating ? 'opacity-50 cursor-not-allowed' : 'hover:opacity-80 cursor-pointer'}
+					transition-all duration-200
+				`}
+			>
+				<span className={`w-2 h-2 rounded-full ${
+					isUpdating ? 'animate-pulse bg-current' : 'bg-current'
+				}`}></span>
+				{isUpdating ? 'Actualizando...' : currentStatusInfo.label}
+				
+				{/* Icono de flecha */}
+				<ChevronDown 
+					className={`w-3 h-3 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+				/>
+			</button>
+
+			{/* Dropdown menu */}
+			{isOpen && !disabled && !isUpdating && (
+				<>
+					{/* Overlay para cerrar */}
+					<div 
+						className="fixed inset-0 z-10"
+						onClick={() => setIsOpen(false)}
+					></div>
+					
+					{/* Menu - CORREGIDO: posicionamiento absoluto hacia abajo */}
+					<div className="absolute top-full left-0 z-20 mt-1 w-48 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+						<div className="flex flex-col divide-y divide-gray-200">
+							{SHIPPING_STATUSES.map((status) => (
+								<button
+									key={status.value}
+									onClick={() => handleStatusChange(status.value)}
+									className={`
+										w-full cursor-pointer text-left px-4 py-2 text-sm transition-colors duration-150
+										${status.value === currentStatus 
+											? 'bg-gray-100 text-gray-900 font-medium' 
+											: 'text-gray-700 hover:bg-gray-50'
+										}
+									`}
+								>
+									<div className="flex items-center gap-3">
+										<span className={`w-2 h-2 rounded-full ${
+											status.color.includes('bg-yellow') ? 'bg-yellow-500' :
+											status.color.includes('bg-blue') ? 'bg-blue-500' :
+											status.color.includes('bg-purple') ? 'bg-purple-500' :
+											status.color.includes('bg-indigo') ? 'bg-indigo-500' :
+											status.color.includes('bg-green') ? 'bg-green-500' :
+											status.color.includes('bg-red') ? 'bg-red-500' :
+											status.color.includes('bg-orange') ? 'bg-orange-500' :
+											'bg-gray-400'
+										}`}></span>
+										<span>{status.label}</span>
+										{status.value === currentStatus && (
+											<span className="ml-auto text-xs text-gray-500">Actual</span>
+										)}
+									</div>
+								</button>
+							))}
+						</div>
+					</div>
+				</>
+			)}
+		</div>
+	);
+};
 
 const SellerShippingPage: React.FC = () => {
 	// Instanciar el adaptador de servicio
@@ -384,12 +498,14 @@ const SellerShippingPage: React.FC = () => {
 			header: "Estado",
 			sortable: true,
 			render: (item: ShippingItem) => {
+				// ✅ NUEVO: Usar el dropdown en lugar del badge estático
 				return (
-					<span
-						className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusClass(item.status)}`}
-					>
-						{getStatusText(item.status)}
-					</span>
+					<ShippingStatusDropdown
+						currentStatus={item.status}
+						shippingId={item.id}
+						onStatusChange={updateShippingStatus}
+						disabled={isUpdating}
+					/>
 				);
 			},
 		},
@@ -440,19 +556,6 @@ const SellerShippingPage: React.FC = () => {
 							</button>
 						)}
 
-					{/* Marcar como enviado - solo para listos para enviar con tracking */}
-					{(item.status === "ready_to_ship" || item.status === "pending") &&
-						item.trackingNumber && (
-							<button
-								onClick={() => updateShippingStatus(item.id, "shipped")}
-								className="p-1 text-indigo-600 hover:bg-indigo-100 rounded-md"
-								title="Marcar como enviado"
-								disabled={isUpdating}
-							>
-								<Truck size={18} />
-							</button>
-						)}
-
 					{/* Imprimir etiqueta - solo para pedidos con número de seguimiento */}
 					{item.trackingNumber &&
 						(item.status === "shipped" || item.status === "in_transit") && (
@@ -468,19 +571,7 @@ const SellerShippingPage: React.FC = () => {
 							</button>
 						)}
 
-					{/* Marcar como entregado - solo para envíos en tránsito */}
-					{(item.status === "in_transit" || item.status === "shipped") && (
-						<button
-							onClick={() => updateShippingStatus(item.id, "delivered")}
-							className="p-1 text-green-600 hover:bg-green-100 rounded-md"
-							title="Marcar como entregado"
-							disabled={isUpdating}
-						>
-							<PackageCheck size={18} />
-						</button>
-					)}
-
-					{/* Marcar como fallido - para envíos pendientes, listos o en tránsito */}
+					{/* ✅ MANTENER: Marcar como fallido - para envíos pendientes, listos o en tránsito */}
 					{(item.status === "ready_to_ship" ||
 						item.status === "in_transit" ||
 						item.status === "shipped" ||

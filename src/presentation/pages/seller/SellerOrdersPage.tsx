@@ -418,20 +418,40 @@ const SellerOrdersPage: React.FC = () => {
 							"bg-indigo-100 text-indigo-800";
 						statusText = "Enviado";
 						break;
-					case "delivered":
+					case "in_transit":
 						statusClass =
 							"bg-purple-100 text-purple-800";
+						statusText = "En Tránsito";
+						break;
+					case "delivered":
+						statusClass =
+							"bg-green-100 text-green-800";
 						statusText = "Entregado";
 						break;
 					case "completed":
 						statusClass =
-							"bg-green-100 text-green-800";
+							"bg-emerald-100 text-emerald-800";
 						statusText = "Completado";
+						break;
+					case "failed":
+						statusClass =
+							"bg-red-100 text-red-800";
+						statusText = "Fallido";
+						break;
+					case "returned":
+						statusClass =
+							"bg-orange-100 text-orange-800";
+						statusText = "Devuelto";
 						break;
 					case "cancelled":
 						statusClass =
-							"bg-red-100 text-red-800";
+							"bg-gray-100 text-gray-800";
 						statusText = "Cancelado";
+						break;
+					default:
+						statusClass =
+							"bg-gray-100 text-gray-800";
+						statusText = "Desconocido";
 						break;
 				}
 
@@ -596,8 +616,13 @@ const SellerOrdersPage: React.FC = () => {
 							<option value="all">Todos los estados</option>
 							<option value="pending">Pendientes</option>
 							<option value="processing">En Proceso</option>
+							<option value="paid">Pagados</option>
 							<option value="shipped">Enviados</option>
+							<option value="in_transit">En Tránsito</option>
 							<option value="delivered">Entregados</option>
+							<option value="completed">Completados</option>
+							<option value="failed">Fallidos</option>
+							<option value="returned">Devueltos</option>
 							<option value="cancelled">Cancelados</option>
 						</select>
 					</div>
