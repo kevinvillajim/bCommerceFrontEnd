@@ -418,7 +418,7 @@ const SellerOrdersPage: React.FC = () => {
 							"bg-indigo-100 text-indigo-800";
 						statusText = "Enviado";
 						break;
-					case "in_transit":
+					case "processing":
 						statusClass =
 							"bg-purple-100 text-purple-800";
 						statusText = "En Tránsito";
@@ -433,12 +433,12 @@ const SellerOrdersPage: React.FC = () => {
 							"bg-emerald-100 text-emerald-800";
 						statusText = "Completado";
 						break;
-					case "failed":
+					case "cancelled":
 						statusClass =
 							"bg-red-100 text-red-800";
 						statusText = "Fallido";
 						break;
-					case "returned":
+					case "rejected":
 						statusClass =
 							"bg-orange-100 text-orange-800";
 						statusText = "Devuelto";

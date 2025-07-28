@@ -1,4 +1,4 @@
-// src/presentation/pages/CartPage.tsx - ACTUALIZADO CON DESCUENTOS POR VOLUMEN
+// src/presentation/pages/CartPage.tsx - ACTUALIZADO CON DESCUENTOS Y CUPONES
 import React, {useState, useEffect, useMemo, useCallback} from "react";
 import {Link, useNavigate} from "react-router-dom";
 import {
@@ -10,7 +10,8 @@ import {
 	Heart,
 	Gift,
 	TrendingDown,
-	AlertTriangle
+	AlertTriangle,
+	Tag // ✅ NUEVO: Icono para cupón
 } from "lucide-react";
 import {useCart} from "../hooks/useCart";
 import {useFavorites} from "../hooks/useFavorites";
@@ -389,7 +390,7 @@ const CartPage: React.FC = () => {
 		[loadingItem, toggleFavorite, removeFromCart, optimisticFavoriteAdd, optimisticCartRemove, invalidateRelatedPages, cart?.items, fetchCart, handleSuccess, handleError]
 	);
 
-	// ✅ FUNCIÓN PARA APLICAR CUPÓN
+	// ✅ FUNCIÓN PARA APLICAR CUPÓN - AHORA EN USO
 	const applyCoupon = useCallback(() => {
 		if (couponCode.toLowerCase() === "discount10") {
 			setCouponApplied(true);
@@ -746,8 +747,33 @@ const CartPage: React.FC = () => {
 									Resumen del pedido
 								</h2>
 
+								{/* ✅ SECCIÓN DE CUPÓN - AÑADIDA PARA CORREGIR ERRORES */}
+								<div className="mb-4 pb-4 border-b border-gray-200">
+									<label htmlFor="coupon" className="flex items-center text-sm font-medium text-gray-700 mb-2">
+										<Tag size={16} className="mr-2" /> ¿Tienes un cupón?
+									</label>
+									<div className="flex">
+										<input
+											type="text"
+											id="coupon"
+											value={couponCode}
+											onChange={(e) => setCouponCode(e.target.value)}
+											placeholder="Código de cupón"
+											disabled={couponApplied}
+											className="flex-grow p-2 border border-gray-300 rounded-l-md focus:ring-primary-500 focus:border-primary-500 disabled:bg-gray-100"
+										/>
+										<button
+											onClick={applyCoupon}
+											disabled={!couponCode || couponApplied}
+											className="px-4 py-2 bg-gray-800 text-white font-semibold rounded-r-md hover:bg-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+										>
+											Aplicar
+										</button>
+									</div>
+								</div>
+
 								{/* ✅ CÁLCULOS CON DESCUENTOS POR VOLUMEN */}
-								<div className="space-y-4 border-t border-gray-200 pt-4">
+								<div className="space-y-4 pt-4">
 									<div className="flex justify-between">
 										<span className="text-gray-600">
 											Subtotal (con descuentos)

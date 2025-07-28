@@ -1,10 +1,9 @@
 // src/presentation/pages/NotificationPage.tsx - CORREGIDO con soporte para rating_request
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
 	Bell,
 	Check,
-	X,
 	Trash2,
 	MessageCircle,
 	Package,
@@ -14,13 +13,11 @@ import {
 	AlertTriangle,
 	ShoppingBag,
 	CreditCard,
-	Store,
 	RefreshCw,
 	Filter,
 	Search,
 	CheckCircle,
 	Calendar,
-	User,
 	ExternalLink,
 } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
@@ -53,7 +50,7 @@ interface NotificationListResponse {
 
 const NotificationPage: React.FC = () => {
 	const navigate = useNavigate();
-	const { user, isSeller } = useAuth();
+	const { isSeller } = useAuth();
 
 	// Estados
 	const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -136,7 +133,7 @@ const NotificationPage: React.FC = () => {
 	};
 
 	// ✅ FUNCIÓN ACTUALIZADA: getNotificationUrl con casos de rating_request y rating_reminder
-	const getNotificationUrl = (notification: Notification) => {
+	const getNotificationUrl = async (notification: Notification) => {
 		const { type, data } = notification;
 
 		switch (type) {
@@ -149,31 +146,31 @@ const NotificationPage: React.FC = () => {
 			case "order_status":
 			case "new_order":
 				if (data.order_id) {
-					return isSeller 
+					return await isSeller()
 						? `/seller/orders/${data.order_id}` 
 						: `/orders/${data.order_id}`;
 				}
-				return isSeller ? "/seller/orders" : "/orders";
+				return await isSeller() ? "/seller/orders" : "/orders";
 
 			case "shipping_update":
 				if (data.tracking_number) {
 					return `/shipping/track/${data.tracking_number}`;
 				}
 				if (data.order_id) {
-					return isSeller 
+					return await isSeller() 
 						? `/seller/orders/${data.order_id}` 
 						: `/orders/${data.order_id}`;
 				}
-				return isSeller ? "/seller/orders" : "/orders";
+				return await isSeller() ? "/seller/orders" : "/orders";
 
 			case "product_update":
 			case "low_stock":
 				if (data.product_id) {
-					return isSeller 
+					return await isSeller() 
 						? `/seller/products/${data.product_id}` 
 						: `/products/${data.product_id}`;
 				}
-				return isSeller ? "/seller/products" : "/products";
+				return await isSeller() ? "/seller/products" : "/products";
 
 			case "payment_received":
 				if (data.order_id) {
@@ -186,17 +183,17 @@ const NotificationPage: React.FC = () => {
 				if (data.rating_id) {
 					return `/ratings/${data.rating_id}`;
 				}
-				return isSeller ? "/seller/ratings" : "/ratings";
+				return await isSeller() ? "/seller/ratings" : "/ratings";
 
 			// ✅ NUEVOS CASOS AGREGADOS:
 			case "rating_request":
 			case "rating_reminder":
 				if (data.order_id) {
-					return isSeller 
+					return await isSeller() 
 						? `/seller/orders/${data.order_id}` 
 						: `/orders/${data.order_id}/rate`;
 				}
-				return isSeller ? "/seller/orders" : "/orders";
+				return await isSeller()  ? "/seller/orders" : "/orders";
 
 			default:
 				return "/";
@@ -279,9 +276,9 @@ const NotificationPage: React.FC = () => {
 
 	const markAsUnread = async (notificationId: number) => {
 		try {
-			await ApiClient.patch(
-				API_ENDPOINTS.NOTIFICATIONS.MARK_AS_UNREAD(notificationId)
-			);
+			// ✅ CORREGIDO: Crear endpoint MARK_AS_UNREAD usando MARK_AS_READ como base
+			const endpoint = API_ENDPOINTS.NOTIFICATIONS.MARK_AS_READ(notificationId).replace('/mark-as-read', '/mark-as-unread');
+			await ApiClient.patch(endpoint);
 
 			// Actualizar el estado local
 			setNotifications(prevNotifications =>
@@ -332,7 +329,9 @@ const NotificationPage: React.FC = () => {
 		if (selectedNotifications.length === 0) return;
 
 		try {
-			await ApiClient.delete(API_ENDPOINTS.NOTIFICATIONS.DELETE_MULTIPLE, {
+			// ✅ CORREGIDO: Crear endpoint DELETE_MULTIPLE usando DELETE como base
+			const endpoint = API_ENDPOINTS.NOTIFICATIONS.DELETE('').replace('/0', '/multiple');
+			await ApiClient.delete(endpoint, {
 				data: { ids: selectedNotifications }
 			});
 
@@ -355,7 +354,7 @@ const NotificationPage: React.FC = () => {
 		}
 
 		// Navegar a la URL correspondiente
-		const url = getNotificationUrl(notification);
+		const url = await getNotificationUrl(notification);
 		if (url && url !== "/") {
 			navigate(url);
 		}

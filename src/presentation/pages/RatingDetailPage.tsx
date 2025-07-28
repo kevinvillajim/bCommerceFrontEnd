@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import {
 	ArrowLeft,
-	Star,
 	User,
 	Package,
 	Store,
@@ -13,7 +12,6 @@ import {
 	AlertTriangle,
 	MessageSquare,
 	Flag,
-	Eye,
 	Shield,
 	ExternalLink,
 	RefreshCw,
@@ -78,10 +76,10 @@ interface RatingDetail {
 	status_history?: any[];
 }
 
-const RatingDetailPage: React.FC = () => {
+const RatingDetailPage: React.FC = async () => {
 	const { id } = useParams<{ id: string }>();
 	const navigate = useNavigate();
-	const { user, isAdmin, isSeller } = useAuth();
+	const { isAdmin, isSeller } = useAuth();
 
 	// Estados
 	const [rating, setRating] = useState<RatingDetail | null>(null);
@@ -111,9 +109,10 @@ const RatingDetailPage: React.FC = () => {
 			let endpoint = "";
 			
 			// 🔧 CORREGIDO: Determinar endpoint según el rol usando las rutas correctas
-			if (isAdmin) {
+			// ✅ CORREGIDO: Verificar valor booleano, no existencia de función
+			if (await isAdmin() === true) {
 				endpoint = `/admin/ratings/${ratingId}`;
-			} else if (isSeller) {
+			} else if (await isSeller() === true) {
 				endpoint = `/ratings/${ratingId}`;
 			} else {
 				endpoint = `/ratings/${ratingId}`;
@@ -248,10 +247,10 @@ const RatingDetailPage: React.FC = () => {
 		return statusMap[status as keyof typeof statusMap] || statusMap.pending;
 	};
 
-	// Verificar permisos para mostrar acciones
-	const canReply = isSeller && rating?.type === "user_to_seller" && !rating?.seller_response;
-	const canReport = !isAdmin && rating;
-	const canModerate = isAdmin && rating;
+	// ✅ CORREGIDO: Verificar permisos para mostrar acciones - valores booleanos, no funciones
+	const canReply = await isSeller() === true && rating?.type === "user_to_seller" && !rating?.seller_response;
+	const canReport = await isAdmin() !== true && rating;
+	const canModerate = await isAdmin() === true && rating;
 
 	if (loading) {
 		return (
@@ -301,7 +300,8 @@ const RatingDetailPage: React.FC = () => {
 						Volver atrás
 					</button>
 
-					{isAdmin && (
+					{/* ✅ CORREGIDO: Verificar valor booleano */}
+					{await isAdmin() === true && (
 						<div className="flex items-center space-x-2">
 							<Shield className="h-5 w-5 text-blue-600" />
 							<span className="text-sm font-medium text-blue-600">
@@ -392,7 +392,8 @@ const RatingDetailPage: React.FC = () => {
 												Compra verificada
 											</p>
 										)}
-										{isAdmin && rating.user_details?.email && (
+										{/* ✅ CORREGIDO: Verificar valor booleano */}
+										{await isAdmin() === true && rating.user_details?.email && (
 											<p className="text-sm text-gray-500">
 												{rating.user_details.email}
 											</p>
@@ -429,7 +430,8 @@ const RatingDetailPage: React.FC = () => {
 													{rating.product.name}
 													<ExternalLink className="h-4 w-4 ml-1" />
 												</Link>
-												{isAdmin && rating.product_details?.price && (
+												{/* ✅ CORREGIDO: Verificar valor booleano */}
+												{await isAdmin() === true && rating.product_details?.price && (
 													<p className="text-sm text-gray-500">
 														${rating.product_details.price}
 													</p>
@@ -453,7 +455,8 @@ const RatingDetailPage: React.FC = () => {
 												<p className="font-medium text-gray-900">
 													{rating.seller.store_name}
 												</p>
-												{isAdmin && rating.seller_details?.status && (
+												{/* ✅ CORREGIDO: Verificar valor booleano */}
+												{await isAdmin() === true && rating.seller_details?.status && (
 													<p className="text-sm text-gray-500">
 														Estado: {rating.seller_details.status}
 													</p>
@@ -573,6 +576,7 @@ const RatingDetailPage: React.FC = () => {
 								)}
 
 								{/* Acciones de admin */}
+								{/* ✅ CORREGIDO: Verificar valor booleano */}
 								{canModerate && rating.status === "pending" && (
 									<>
 										<button
@@ -597,6 +601,7 @@ const RatingDetailPage: React.FC = () => {
 									</>
 								)}
 
+								{/* ✅ CORREGIDO: Verificar valor booleano */}
 								{canModerate && (
 									<button
 										onClick={() => {

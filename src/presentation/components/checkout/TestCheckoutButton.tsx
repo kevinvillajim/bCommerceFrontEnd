@@ -123,7 +123,7 @@ const TestCheckoutButton: React.FC<TestCheckoutButtonProps> = () => {
 					country: "País de Prueba",
 					phone: "123456789",
 				},
-				seller_id: sellerId,
+				seller_id: sellerId || undefined,
 				items: items // ✅ AGREGAR ITEMS CON PRECIOS VÁLIDOS
 			};
 

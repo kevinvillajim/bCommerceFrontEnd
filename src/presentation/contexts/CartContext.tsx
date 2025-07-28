@@ -227,8 +227,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 							original_price: item.original_price || item.price,
 							volume_discount_percentage: item.volume_discount_percentage || 0,
 							volume_savings: item.volume_savings || 0,
-							discount_label: item.discount_label || null,
-							pricing_info: item.pricing_info || null,
+							discount_label: item.discount_label || undefined,
 							
 							product: {
 								id: product.id || 0,
@@ -255,9 +254,8 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 					
 					// ✅ INCLUIR INFORMACIÓN DE DESCUENTOS A NIVEL DE CARRITO SI VIENE
 					subtotal: response.data.subtotal || response.data.total,
-					total_volume_savings: response.data.total_volume_savings || response.data.volume_discount_savings || 0,
+					total_volume_savings: response.data.total_volume_savings || 0,
 					volume_discounts_applied: response.data.volume_discounts_applied || false,
-					pricing_info: response.data.pricing_info || null,
 				};
 
 				// ✅ GUARDAR EN CACHE
