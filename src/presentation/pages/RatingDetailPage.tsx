@@ -110,30 +110,45 @@ const RatingDetailPage: React.FC = () => {
 		try {
 			let endpoint = "";
 			
-			// Determinar endpoint según el rol
+			// 🔧 CORREGIDO: Determinar endpoint según el rol usando las rutas correctas
 			if (isAdmin) {
-				endpoint = API_ENDPOINTS.ADMIN.RATINGS.LIST + `/${ratingId}/details`;
+				endpoint = `/admin/ratings/${ratingId}`;
+			} else if (isSeller) {
+				endpoint = `/ratings/${ratingId}`;
 			} else {
-				endpoint = API_ENDPOINTS.RATINGS.PRODUCT(ratingId).replace('/product/', '/');
+				endpoint = `/ratings/${ratingId}`;
 			}
+
+			console.log("🔍 Obteniendo detalles de valoración desde:", endpoint);
 
 			const response = await ApiClient.get<{
 				status: string;
 				data: RatingDetail;
+				message?: string;
 			}>(endpoint);
 
-			if (response.status === "success") {
+			console.log("📦 Respuesta del servidor:", response);
+
+			if (response.status === "success" && response.data) {
 				setRating(response.data);
 			} else {
-				throw new Error("Error al obtener detalles de la valoración");
+				throw new Error(response.message || "Error al obtener detalles de la valoración");
 			}
 		} catch (err) {
-			console.error("Error fetching rating details:", err);
-			setError(
-				err instanceof Error 
-					? err.message 
-					: "Error al cargar los detalles de la valoración"
-			);
+			console.error("❌ Error fetching rating details:", err);
+			
+			// Manejo específico de errores 403 y otros códigos de estado
+			if (err instanceof Error && err.message.includes('403')) {
+				setError("No tienes permiso para ver esta valoración");
+			} else if (err instanceof Error && err.message.includes('404')) {
+				setError("La valoración no fue encontrada");
+			} else {
+				setError(
+					err instanceof Error 
+						? err.message 
+						: "Error al cargar los detalles de la valoración"
+				);
+			}
 		} finally {
 			setLoading(false);
 		}
