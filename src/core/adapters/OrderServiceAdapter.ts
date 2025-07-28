@@ -46,7 +46,7 @@ export interface OrderUI {
 		originalPrice?: number;
 		volumeDiscountPercentage?: number;
 		volumeSavings?: number;
-		discountLabel?: string;
+		discountLabel?: string | null; // ✅ CORREGIDO: permite null
 		hasVolumeDiscount?: boolean;
 	}[];
 	status: OrderStatus;
@@ -423,7 +423,7 @@ export class OrderServiceAdapter {
 				originalPrice: item.original_price || item.price,
 				volumeDiscountPercentage: item.volume_discount_percentage || 0,
 				volumeSavings: item.volume_savings || 0,
-				discountLabel: item.discount_label || null,
+				discountLabel: item.discount_label || null, // ✅ CORREGIDO: null en lugar de undefined
 				hasVolumeDiscount: (item.volume_discount_percentage || 0) > 0
 			})) || [];
 
@@ -460,7 +460,7 @@ export class OrderServiceAdapter {
 			itemCount: itemCount,
 			// ✅ INFORMACIÓN ADICIONAL DE DESCUENTOS POR VOLUMEN
 			originalTotal: order.original_total || total,
-			volumeDiscountSavings: order.volume_discount_savings || 0,
+			volumeDiscountSavings: order.volume_discount_savings || 0, // ✅ CORREGIDO: valor por defecto
 			volumeDiscountsApplied: order.volume_discounts_applied || false,
 			shippingCost: order.shipping_cost || 0,
 			freeShipping: order.free_shipping || false,
@@ -479,7 +479,7 @@ export class OrderServiceAdapter {
 		itemsWithDiscounts: number;
 	} {
 		const itemsWithDiscounts = order.items.filter(item => item.hasVolumeDiscount).length;
-		const totalSavings = order.volumeDiscountSavings || 0;
+		const totalSavings = order.volumeDiscountSavings || 0; // ✅ CORREGIDO: valor por defecto
 		
 		return {
 			hasDiscounts: totalSavings > 0,
@@ -503,7 +503,7 @@ export class OrderServiceAdapter {
 			subtotal: `$${order.subtotal.toFixed(2)}`,
 			tax: `$${order.taxAmount.toFixed(2)}`,
 			shipping: order.freeShipping ? 'GRATIS' : `$${(order.shippingCost || 0).toFixed(2)}`,
-			discounts: order.volumeDiscountSavings > 0 ? `-$${order.volumeDiscountSavings.toFixed(2)}` : '$0.00',
+			discounts: (order.volumeDiscountSavings || 0) > 0 ? `-$${(order.volumeDiscountSavings || 0).toFixed(2)}` : '$0.00',
 			total: `$${order.total.toFixed(2)}`
 		};
 	}

@@ -1,4 +1,4 @@
-// src/core/adapters/ShippingServiceAdapter.ts
+// src/core/adapters/ShippingServiceAdapter.ts - CORREGIDO
 import ApiClient from "../../infrastructure/api/apiClient";
 import { API_ENDPOINTS } from "../../constants/apiEndpoints";
 
@@ -99,10 +99,11 @@ export default class ShippingServiceAdapter {
 			return {
 				items,
 				pagination: {
-					currentPage: Number(pagination.currentPage) || Number(pagination.current_page) || 1,
-					totalPages: Number(pagination.totalPages) || Number(pagination.last_page) || 1,
-					totalItems: Number(pagination.totalItems) || Number(pagination.total) || items.length,
-					itemsPerPage: Number(pagination.itemsPerPage) || Number(pagination.per_page) || 10,
+					// ✅ CORREGIDO: Usar propiedades correctas con fallbacks completos
+					currentPage: Number(pagination.currentPage) || Number((pagination as any).current_page) || 1,
+					totalPages: Number(pagination.totalPages) || Number((pagination as any).last_page) || 1,
+					totalItems: Number(pagination.totalItems) || Number((pagination as any).total) || items.length,
+					itemsPerPage: Number(pagination.itemsPerPage) || Number((pagination as any).per_page) || 10,
 				},
 			};
 		} catch (error) {
@@ -323,7 +324,7 @@ export default class ShippingServiceAdapter {
 		let shippingStatus: ShippingItem["status"] = "pending";
 		
 		// Mapear estados de orden a estados de envío
-		    	switch (apiOrder.status) {
+		switch (apiOrder.status) {
 			case "shipped":
 				shippingStatus = "shipped";
 				break;
@@ -381,52 +382,9 @@ export default class ShippingServiceAdapter {
 	}
 
 	/**
-	 * Mapea un objeto de envío del API al formato de la UI
-	 */
-	private mapShippingFromAPI(apiShipping: any): ShippingItem {
-		// Manejar caso donde el objeto es null o undefined
-		if (!apiShipping) {
-			return this.getDefaultShippingItem();
-		}
-
-		// Extraer información del cliente (puede venir anidado en order)
-		const customer = apiShipping.order?.user || apiShipping.user || {};
-		
-		// Extraer dirección de envío
-		const shippingData = apiShipping.order?.shipping_data || {};
-		const shippingAddress = typeof shippingData === 'object' 
-			? [shippingData.address, shippingData.city, shippingData.state, shippingData.country]
-				.filter(Boolean)
-				.join(', ')
-			: shippingData || '';
-
-		return {
-			id: String(apiShipping.id || 0),
-			orderId: String(apiShipping.order_id || apiShipping.orderId || 0),
-			orderNumber: apiShipping.order?.order_number || apiShipping.orderNumber || `#${apiShipping.order_id || 0}`,
-			date: apiShipping.created_at || apiShipping.date || new Date().toISOString(),
-			customer: {
-				id: customer.id || 0,
-				name: customer.name || apiShipping.user_name || "Cliente",
-				email: customer.email || "sin@email.com",
-				phone: customer.phone || shippingData.phone,
-			},
-			status: this.mapStatusFromAPI(apiShipping.status),
-			trackingNumber: apiShipping.tracking_number || undefined,
-			carrier: apiShipping.carrier_name || apiShipping.carrier || undefined,
-			estimatedDelivery: apiShipping.estimated_delivery || undefined,
-			lastUpdate: apiShipping.last_updated || apiShipping.updated_at || undefined,
-			shippingAddress: shippingAddress || undefined,
-			shippingMethod: apiShipping.shipping_method || "Estándar",
-			weight: apiShipping.weight ? Number(apiShipping.weight) : undefined,
-			shippingCost: apiShipping.shipping_cost ? Number(apiShipping.shipping_cost) : undefined,
-		};
-	}
-
-	/**
 	 * Mapea el estado del API al formato de la UI
 	 */
-		private mapStatusFromAPI(apiStatus: string): ShippingItem["status"] {
+	private mapStatusFromAPI(apiStatus: string): ShippingItem["status"] {
 		if (!apiStatus) return "pending";
 
 		switch (apiStatus.toLowerCase()) {

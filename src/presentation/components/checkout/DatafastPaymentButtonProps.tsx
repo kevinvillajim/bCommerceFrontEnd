@@ -229,17 +229,17 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 			showNotification(NotificationType.ERROR, "El carrito está vacío");
 			return;
 		}
-	
+
 		if (!validateFormData()) {
 			console.log("❌ Validación de formulario falló");
 			return;
 		}
-	
+
 		console.log("🛒 ANÁLISIS COMPLETO DEL CARRITO ANTES DEL CHECKOUT (DATAFAST):");
 		console.log("📊 Cart completo:", JSON.stringify(cart, null, 2));
 		console.log("📊 Total de items en carrito:", cart.items.length);
 		console.log("📊 Total del carrito:", cart.total);
-	
+
 		cart.items.forEach((item, index) => {
 			console.log(`📋 Item ${index + 1}:`, {
 				id: item.id,
@@ -259,7 +259,7 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 				completeItem: item
 			});
 		});
-	
+
 		console.log("🔍 VERIFICANDO DUPLICADOS EN EL CARRITO (DATAFAST):");
 		const itemsByProductId = cart.items.reduce((acc: any, item, index) => {
 			if (!acc[item.productId]) {
@@ -268,9 +268,9 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 			acc[item.productId].push({index, item});
 			return acc;
 		}, {});
-	
+
 		console.log("📊 Items agrupados por productId:", itemsByProductId);
-	
+
 		Object.keys(itemsByProductId).forEach(productId => {
 			const items = itemsByProductId[productId];
 			if (items.length > 1) {
@@ -283,15 +283,16 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 				console.log(`✅ Producto ${productId}: Sin duplicados (${items[0].item.quantity} unidades)`);
 			}
 		});
-	
+
 		setIsLoading(true);
-	
+
 		try {
 			console.log("🚀 Iniciando checkout de prueba completo (DATAFAST)...");
-	
-			const sellerId = CheckoutService.getSellerIdFromCart(cart);
+
+			// ✅ CORREGIDO: Agregar null check para cart
+			const sellerId = cart ? CheckoutService.getSellerIdFromCart(cart) : null;
 			console.log("🏪 Seller ID obtenido (DATAFAST):", sellerId);
-	
+
 			// ✅ CORREGIDO: Construir items del carrito con precios válidos
 			const items = cart.items.map(item => {
 				console.log("🔍 DEBUGGING ITEM INDIVIDUAL:", {
@@ -329,9 +330,9 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 					price: price
 				};
 			});
-	
+
 			console.log("🛒 Items formateados para backend (DATAFAST):", JSON.stringify(items, null, 2));
-	
+
 			const testCheckoutData = {
 				payment: {
 					method: "transfer" as PaymentMethod,
@@ -348,27 +349,27 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 				seller_id: sellerId || undefined,
 				items: items
 			};
-	
+
 			console.log("📦 Datos completos de checkout (DATAFAST):", JSON.stringify(testCheckoutData, null, 2));
 			console.log("🚀 Enviando checkout al backend (DATAFAST)...");
-	
+
 			const response = await checkoutService.processCheckout(testCheckoutData, user?.email);
-	
+
 			console.log("✅ Respuesta del checkout recibida (DATAFAST):", response);
-	
+
 			if (response.status === "success") {
 				console.log("🎉 Checkout exitoso (DATAFAST), limpiando carrito...");
 				clearCart();
 				setShowWidget(false);
 				setShowForm(false);
-	
+
 				showNotification(
 					NotificationType.SUCCESS,
 					"¡Pedido de prueba completado con éxito!"
 				);
-	
+
 				console.log("📊 Detalles COMPLETOS de la orden (DATAFAST):", JSON.stringify(response.data, null, 2));
-	
+
 				if (response.data && typeof response.data === 'object') {
 					const orderData = response.data as any;
 					console.log("🔍 ANÁLISIS DE LA ORDEN CREADA (DATAFAST):");
@@ -389,7 +390,7 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 						});
 					}
 				}
-	
+
 				onSuccess?.(response.data);
 				navigate("/orders");
 			} else {
@@ -430,11 +431,12 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 			if (verifyResponse.success && verifyResponse.data) {
 				console.log("Procesando checkout completo en el sistema...");
 				
-				const sellerId = CheckoutService.getSellerIdFromCart(cart);
+				// ✅ CORREGIDO: Agregar null check para cart
+				const sellerId = cart ? CheckoutService.getSellerIdFromCart(cart) : null;
 				console.log("Seller ID obtenido:", sellerId);
 				
-				// ✅ CORREGIDO: Construir items del carrito con precios válidos
-				const items = cart.items.map(item => {
+				// ✅ CORREGIDO: Construir items del carrito con precios válidos solo si cart existe
+				const items = cart ? cart.items.map(item => {
 					// Priorizar precios válidos: product.final_price > product.price > item.price > subtotal/quantity
 					let price = 0;
 					
@@ -456,7 +458,7 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 						quantity: item.quantity,
 						price: price
 					};
-				});
+				}) : [];
 				
 				const checkoutRequestData = {
 					payment: {

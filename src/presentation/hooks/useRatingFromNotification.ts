@@ -1,7 +1,14 @@
-// src/presentation/hooks/useRatingFromNotification.ts
+// src/presentation/hooks/useRatingFromNotification.ts - CORREGIDO
 import { useState, useCallback } from 'react';
 import ApiClient from '../../infrastructure/api/apiClient';
 import { API_ENDPOINTS } from '../../constants/apiEndpoints';
+
+// ✅ NUEVA INTERFACE AGREGADA para tipear responses
+interface ApiResponse<T = any> {
+  status: string;
+  data: T;
+  message?: string;
+}
 
 interface RatingSubmissionData {
   rating: number;
@@ -37,7 +44,8 @@ export const useRatingFromNotification = (): UseRatingFromNotificationReturn => 
       setIsSubmitting(true);
       setError(null);
 
-      const response = await ApiClient.post(API_ENDPOINTS.RATINGS.RATE_PRODUCT, {
+      // ✅ CORREGIDO: Tipear response como ApiResponse
+      const response: ApiResponse = await ApiClient.post(API_ENDPOINTS.RATINGS.RATE_PRODUCT, {
         product_id: data.entityId,
         order_id: data.orderId,
         rating: data.rating,
@@ -66,7 +74,8 @@ export const useRatingFromNotification = (): UseRatingFromNotificationReturn => 
       setIsSubmitting(true);
       setError(null);
 
-      const response = await ApiClient.post(API_ENDPOINTS.RATINGS.RATE_SELLER, {
+      // ✅ CORREGIDO: Tipear response como ApiResponse
+      const response: ApiResponse = await ApiClient.post(API_ENDPOINTS.RATINGS.RATE_SELLER, {
         seller_id: data.entityId,
         order_id: data.orderId,
         rating: data.rating,
@@ -96,8 +105,8 @@ export const useRatingFromNotification = (): UseRatingFromNotificationReturn => 
       setIsSubmitting(true);
       setError(null);
 
-      // Primero obtener información de la orden para encontrar el vendedor
-      const orderResponse = await ApiClient.get(`/orders/${data.orderId}`);
+      // ✅ CORREGIDO: Tipear orderResponse como ApiResponse
+      const orderResponse: ApiResponse = await ApiClient.get(`/orders/${data.orderId}`);
       
       if (orderResponse.status !== 'success') {
         throw new Error('No se pudo obtener información de la orden');

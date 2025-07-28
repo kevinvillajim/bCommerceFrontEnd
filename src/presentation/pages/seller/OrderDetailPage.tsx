@@ -1,4 +1,4 @@
-// src/presentation/pages/seller/OrderDetailPage.tsx - versión corregida
+// src/presentation/pages/seller/OrderDetailPage.tsx - CORREGIDO (imports limpiados)
 import React, {useState, useEffect} from "react";
 import {useParams, useNavigate, Link} from "react-router-dom";
 import {ArrowLeft, Truck, Package, Check, X, FileText} from "lucide-react";
@@ -6,16 +6,15 @@ import {formatCurrency} from "../../../utils/formatters/formatCurrency";
 import {formatDate} from "../../../utils/formatters/formatDate";
 // Importar el adaptador específico para vendedores
 import SellerOrderServiceAdapter from "../../../core/adapters/SellerOrderServiceAdapter";
-// Importar el adaptador y modal de envío
-import ShippingServiceAdapter from "../../../core/adapters/ShippingServiceAdapter";
+// Importar el modal de envío
 import ShippingFormModal from "../../components/shipping/ShippingFormModal";
 import type {ShippingFormData} from "../../components/shipping/ShippingFormModal";
 import {
 	canTransitionTo,
 	isValidOrderStatus,
-	type OrderDetail,
 	type OrderStatus,
 } from "../../../core/domain/entities/Order";
+// ✅ CORREGIDO: Eliminados imports no utilizados (OrderDetail, ShippingServiceAdapter)
 
 const OrderDetailPage: React.FC = () => {
 	const {id} = useParams<{id: string}>();
@@ -28,9 +27,9 @@ const OrderDetailPage: React.FC = () => {
 	// Estado para controlar la visibilidad del modal de envío
 	const [isShippingModalOpen, setIsShippingModalOpen] = useState(false);
 
-	// Utilizar los adaptadores
+	// Utilizar el adaptador
 	const sellerOrderAdapter = new SellerOrderServiceAdapter();
-	const shippingAdapter = new ShippingServiceAdapter();
+	// ✅ CORREGIDO: Eliminada variable no utilizada shippingAdapter
 
 	useEffect(() => {
 		fetchOrderDetails();
