@@ -354,19 +354,16 @@ export default class SellerOrderServiceAdapter {
 
 	/**
 	 * Obtiene los detalles de una orden específica como vendedor
-	 * @param orderId ID de la orden
-	 * @returns Detalles de la orden o lanza un error si no se puede obtener
+	 * CORREGIDO: Se adapta exactamente a la respuesta del backend
 	 */
 	async getOrderDetails(orderId: string | number): Promise<any> {
 		try {
-			// Convertir orderId a número si viene como string
 			const id = typeof orderId === "string" ? parseInt(orderId) : orderId;
 
 			console.log(
 				`SellerOrderServiceAdapter: Obteniendo detalle de orden ${id} como vendedor`
 			);
 
-			// Usar el endpoint específico para vendedores según los endpoints reales
 			const response = await ApiClient.get<any>(
 				API_ENDPOINTS.ORDERS.SELLER_ORDER_DETAILS(id)
 			);
@@ -376,56 +373,68 @@ export default class SellerOrderServiceAdapter {
 				response
 			);
 
-			// Verificar si hay datos en la respuesta
 			if (!response || !response.data) {
 				throw new Error("Respuesta vacía al obtener detalle de orden");
 			}
 
-			let orderData = response.data;
+			const orderData = response.data;
 
-			// Crear un objeto con estructura adecuada manteniendo la compatibilidad
+			// SIMPLIFICADO: Usar los datos tal como vienen del backend
+			// Mapear solo los campos necesarios sin cambiar la estructura
 			const orderDetail = {
-				...orderData,
-
-				// Adaptaciones necesarias:
-				userId: orderData.user_id || orderData.userId,
-				sellerId: orderData.seller_id || orderData.sellerId,
-				paymentId: orderData.payment_id || orderData.paymentId,
-				paymentMethod: orderData.payment_method || orderData.paymentMethod || "Tarjeta de crédito",
-				paymentStatus: orderData.payment_status || orderData.paymentStatus || "completed",
-				createdAt: orderData.created_at || orderData.createdAt || orderData.date,
-				updatedAt: orderData.updated_at || orderData.updatedAt,
-				orderNumber: orderData.order_number || orderData.orderNumber || `#${orderData.id}`,
-				shippingData: orderData.shipping_data || orderData.shippingData,
-				shippingAddress: orderData.shippingAddress || this.formatShippingAddress(orderData),
-
-				// Procesar items con el formato esperado
-				items: orderData.items?.map((item: any) => ({
-					...item,
-					productId: item.product_id || item.productId,
+				// Datos básicos de la orden
+				id: orderData.id,
+				orderNumber: orderData.orderNumber || orderData.order_number || `#${orderData.id}`,
+				orderDate: orderData.orderDate || orderData.order_date || orderData.date,
+				status: orderData.status,
+				total: Number(orderData.total) || 0,
+				
+				// Items de la orden
+				items: Array.isArray(orderData.items) ? orderData.items.map((item: any) => ({
+					id: item.id,
+					product_id: item.product_id,
+					product_name: item.product_name || `Producto ${item.product_id}`,
 					quantity: Number(item.quantity) || 1,
 					price: Number(item.price) || 0,
 					subtotal: Number(item.subtotal) || 0,
-					product: item.product || {
-						id: item.product_id || item.productId,
-						name: item.product?.name || item.product_name || `Producto ${item.product_id}`,
-						image: item.product?.image || item.product_image || '/placeholder-product.jpg',
-						sku: item.product?.sku || item.product_sku || `SKU-${item.product_id}`,
-						price: Number(item.price) || 0
-					},
-				})) || [],
+					product_image: item.product_image || '/placeholder-product.jpg',
+					product_slug: item.product_slug || null
+				})) : [],
 
-				// Información del cliente
+				// Datos del cliente
 				customer: orderData.customer || {
-					id: orderData.user_id,
-					name: orderData.customer?.name || "Cliente",
-					email: orderData.customer?.email || "sin@email.com"
-				}
+					id: orderData.user_id || 0,
+					name: "Cliente",
+					email: "sin@email.com"
+				},
+
+				// Datos de envío
+				shippingData: orderData.shippingData || orderData.shipping_data || {},
+				shipping: orderData.shipping || null,
+
+				// Datos de pago - CORREGIDO para usar la estructura del backend
+				payment: orderData.payment || {
+					method: "Tarjeta de crédito",
+					status: "completed",
+					payment_id: null
+				},
+
+				// Campos adicionales para compatibilidad
+				paymentMethod: orderData.payment?.method || "Tarjeta de crédito",
+				paymentStatus: orderData.payment?.status || "completed",
+				paymentId: orderData.payment?.payment_id || null,
+				
+				// Fechas
+				createdAt: orderData.orderDate || orderData.order_date || orderData.date,
+				updatedAt: orderData.updated_at || orderData.orderDate,
+
+				// Dirección de envío formateada
+				shippingAddress: this.formatShippingAddress(orderData)
 			};
 
 			console.log("Orden adaptada para UI de vendedor:", orderDetail);
-
 			return orderDetail;
+
 		} catch (error) {
 			console.error(
 				`SellerOrderServiceAdapter: Error al obtener detalle de orden ${orderId}:`,
@@ -439,22 +448,36 @@ export default class SellerOrderServiceAdapter {
 	 * Formatea la dirección de envío desde los datos de la orden
 	 */
 	private formatShippingAddress(orderData: any): string {
-		const shipping = orderData.shippingAddress || orderData.shipping_address;
+		// Intentar diferentes ubicaciones de los datos de envío
+		const shippingData = orderData.shippingData || orderData.shipping_data || {};
 		
-		if (typeof shipping === 'string') {
-			return shipping;
+		if (typeof shippingData === 'string') {
+			try {
+				const parsed = JSON.parse(shippingData);
+				const parts = [
+					parsed.address,
+					parsed.city,
+					parsed.state || parsed.province,
+					parsed.country,
+					parsed.postal_code
+				].filter(Boolean);
+				
+				return parts.length > 0 ? parts.join(', ') : 'Dirección no disponible';
+			} catch (e) {
+				return shippingData;
+			}
 		}
 		
-		if (shipping && typeof shipping === 'object') {
+		if (shippingData && typeof shippingData === 'object') {
 			const parts = [
-				shipping.address,
-				shipping.city,
-				shipping.state || shipping.province,
-				shipping.country,
-				shipping.postal_code
+				shippingData.address,
+				shippingData.city,
+				shippingData.state || shippingData.province,
+				shippingData.country,
+				shippingData.postal_code
 			].filter(Boolean);
 			
-			return parts.join(', ');
+			return parts.length > 0 ? parts.join(', ') : 'Dirección no disponible';
 		}
 		
 		return 'Dirección no disponible';
@@ -462,24 +485,19 @@ export default class SellerOrderServiceAdapter {
 
 	/**
 	 * Completa una orden específica
-	 * @param orderId ID de la orden
-	 * @returns true si la operación tuvo éxito, false en caso contrario
 	 */
 	async completeOrder(orderId: string | number): Promise<boolean> {
 		try {
-			// Convertir orderId a número si viene como string
 			const id = typeof orderId === "string" ? parseInt(orderId) : orderId;
 
 			console.log(`SellerOrderServiceAdapter: Completando orden ${id}`);
 
-			// Usar el endpoint para completar orden según los endpoints reales
 			const response = await ApiClient.post<any>(
 				API_ENDPOINTS.ORDERS.COMPLETE(id)
 			);
 
 			console.log(`Respuesta al completar orden ${id}:`, response);
 
-			// Verificar respuesta con el campo 'success'
 			return response && response.success === true;
 		} catch (error) {
 			console.error(
@@ -492,9 +510,6 @@ export default class SellerOrderServiceAdapter {
 
 	/**
 	 * Actualiza la información de envío de una orden
-	 * @param orderId ID de la orden
-	 * @param shippingInfo Información de envío
-	 * @returns true si la operación tuvo éxito, false en caso contrario
 	 */
 	async updateShippingInfo(
 		orderId: string | number,
@@ -506,14 +521,12 @@ export default class SellerOrderServiceAdapter {
 		}
 	): Promise<boolean> {
 		try {
-			// Convertir orderId a número si viene como string
 			const id = typeof orderId === "string" ? parseInt(orderId) : orderId;
 
 			console.log(
 				`SellerOrderServiceAdapter: Actualizando información de envío para orden ${id}`
 			);
 
-			// Usar el endpoint para actualizar información de envío
 			const response = await ApiClient.patch<any>(
 				API_ENDPOINTS.ORDERS.UPDATE_SHIPPING(id),
 				shippingInfo
@@ -521,7 +534,6 @@ export default class SellerOrderServiceAdapter {
 
 			console.log(`Respuesta al actualizar información de envío:`, response);
 
-			// Verificar respuesta con el campo 'success'
 			return response && response.success === true;
 		} catch (error) {
 			console.error(

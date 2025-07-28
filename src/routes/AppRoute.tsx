@@ -143,6 +143,7 @@ const DatafastResultPage = lazy(
 const AdminCreateCategoryPage = lazy(()=> import("../presentation/pages/admin/AdminCreateCategoryPage")) ;
 const AdminEditCategoryPage = lazy(()=> import("../presentation/pages/admin/AdminEditCategoryPage")) ;
 const GoogleAuthSuccessPage = lazy(()=> import("../presentation/pages/GoogleAuthSuccessPage"));
+const RatingDetailPage = lazy(() => import("../presentation/pages/RatingDetailPage"));
 
 //Route Guards
 import PrivateRoute from "./PrivateRoute";
@@ -315,6 +316,14 @@ const appRoutes: RouteObject[] = [
 					</PrivateRoute>
 				),
 			},
+			{
+				path: "ratings/:id",
+				element: (
+					<PrivateRoute>
+						<RatingDetailPage />
+					</PrivateRoute>
+				),
+			},
 
 			//Datafast
 			{
@@ -436,6 +445,10 @@ const appRoutes: RouteObject[] = [
 				path: "ratings",
 				element: <SellerRatingsPage />,
 			},
+			{
+				path: "ratings/:id",
+				element: <RatingDetailPage />,
+			},
 			// Messages
 			{
 				path: "messages",
@@ -534,6 +547,10 @@ const appRoutes: RouteObject[] = [
 			{
 				path: "ratings",
 				element: <AdminRatingsPage />,
+			},
+			{
+				path: "ratings/:id",
+				element: <RatingDetailPage />,
 			},
 			{
 				path: "feedback",

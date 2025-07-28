@@ -23,7 +23,8 @@ import type {
 } from "../../../core/adapters/ShippingServiceAdapter";
 
 const SellerShippingDetailsPage: React.FC = () => {
-	const {id} = useParams<{id: string}>();
+	// ✅ CORREGIDO: Usar orderId en lugar de id para que coincida con la ruta
+	const {orderId} = useParams<{orderId: string}>();
 	const navigate = useNavigate();
 	const [shipping, setShipping] = useState<ShippingItem | null>(null);
 	const [shippingHistory, setShippingHistory] = useState<ShippingHistoryItem[]>(
@@ -41,24 +42,33 @@ const SellerShippingDetailsPage: React.FC = () => {
 
 	// Cargar detalles del envío
 	useEffect(() => {
-		if (!id) return;
+		// ✅ CORREGIDO: Usar orderId en lugar de id
+		if (!orderId) {
+			console.error("No se proporcionó orderId en la URL");
+			setError("ID de envío no válido");
+			setLoading(false);
+			return;
+		}
+		console.log(`Iniciando carga de detalles para orderId: ${orderId}`);
 		fetchShippingDetails();
-	}, [id]);
+	}, [orderId]);
 
 	// Función para obtener detalles del envío
 	const fetchShippingDetails = async () => {
 		setLoading(true);
 		setError(null);
 		try {
-			console.log(`Cargando detalles del envío ${id}`);
+			// ✅ CORREGIDO: Usar orderId en lugar de id
+			console.log(`Cargando detalles del envío ${orderId}`);
 
 			// Obtener detalles del envío
-			const shipment = await shippingAdapter.getShippingDetails(id || "");
+			const shipment = await shippingAdapter.getShippingDetails(orderId || "");
 
 			if (!shipment) {
 				throw new Error("No se pudo obtener la información del envío");
 			}
 
+			console.log("Detalles del envío obtenidos:", shipment);
 			setShipping(shipment);
 
 			// Si hay número de seguimiento, obtener también el historial y la ruta
@@ -172,7 +182,7 @@ const SellerShippingDetailsPage: React.FC = () => {
 		alert(`Imprimiendo etiqueta para envío ${shipping.trackingNumber}`);
 	};
 
-	// Obtener texto según el estado
+	// Obtener texto según el estado - CORREGIDO
 	const getStatusText = (status: ShippingItem["status"]): string => {
 		switch (status) {
 			case "pending":
@@ -194,7 +204,7 @@ const SellerShippingDetailsPage: React.FC = () => {
 		}
 	};
 
-	// Obtener clase CSS según el estado
+	// Obtener clase CSS según el estado - CORREGIDO
 	const getStatusClass = (status: ShippingItem["status"]): string => {
 		switch (status) {
 			case "pending":
@@ -216,7 +226,7 @@ const SellerShippingDetailsPage: React.FC = () => {
 		}
 	};
 
-	// Obtener icono según el estado
+	// Obtener icono según el estado - CORREGIDO
 	const getStatusIcon = (status: string) => {
 		switch (status) {
 			case "pending":
@@ -264,12 +274,22 @@ const SellerShippingDetailsPage: React.FC = () => {
 		}
 	};
 
+	// ✅ AGREGAR: Log de depuración
+	console.log("SellerShippingDetailsPage - Estados:", {
+		orderId,
+		loading,
+		error,
+		hasShipping: !!shipping,
+		shippingStatus: shipping?.status,
+		historyCount: shippingHistory.length
+	});
+
 	if (loading) {
 		return (
 			<div className="flex flex-col items-center justify-center min-h-screen p-4">
 				<div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-500"></div>
 				<p className="mt-4 text-gray-700">
-					Cargando detalles del envío...
+					Cargando detalles del envío para orden {orderId}...
 				</p>
 			</div>
 		);
@@ -633,7 +653,7 @@ const SellerShippingDetailsPage: React.FC = () => {
 						) : (
 							<div className="relative">
 								{/* Línea de tiempo */}
-								<div className="absolute left-9 top-0 bottom-0 w-0.5 bg-gray-200"></div>
+								
 
 								{/* Eventos */}
 								<ul className="space-y-6">

@@ -150,6 +150,8 @@ export const API_ENDPOINTS = {
 		REPLY: "/ratings/reply",
 		REPORT: "/ratings/report",
 		REPORT_PROBLEM: "/ratings/report-problem",
+		DETAILS: (id: string | number) => `/ratings/${id}`,
+		ORDER_RATINGS: (orderId: string | number) => `/ratings/order/${orderId}`,
 	},
 
 	// Shipping

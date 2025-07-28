@@ -1,4 +1,4 @@
-// src/presentation/pages/seller/OrderDetailPage.tsx - versión actualizada
+// src/presentation/pages/seller/OrderDetailPage.tsx - versión corregida
 import React, {useState, useEffect} from "react";
 import {useParams, useNavigate, Link} from "react-router-dom";
 import {ArrowLeft, Truck, Package, Check, X, FileText} from "lucide-react";
@@ -20,7 +20,7 @@ import {
 const OrderDetailPage: React.FC = () => {
 	const {id} = useParams<{id: string}>();
 	const navigate = useNavigate();
-	const [order, setOrder] = useState<OrderDetail | null>(null);
+	const [order, setOrder] = useState<any | null>(null); // Cambiado a any para flexibilidad
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 	const [isUpdating, setIsUpdating] = useState(false);
@@ -43,6 +43,7 @@ const OrderDetailPage: React.FC = () => {
 		try {
 			// Utilizar el método getOrderDetails del adaptador de vendedores
 			const orderDetail = await sellerOrderAdapter.getOrderDetails(id);
+			console.log('OrderDetailPage: Datos recibidos:', orderDetail);
 			setOrder(orderDetail);
 			setError(null);
 		} catch (err) {
@@ -83,7 +84,7 @@ const OrderDetailPage: React.FC = () => {
 
 			if (success) {
 				// Actualizar el estado de la orden localmente
-				setOrder((prev) => (prev ? {...prev, status: newStatus} : null));
+				setOrder((prev: any) => (prev ? {...prev, status: newStatus} : null));
 				setSuccessMessage(
 					`El estado del pedido ha sido actualizado a ${getStatusText(newStatus)}`
 				);
@@ -112,36 +113,33 @@ const OrderDetailPage: React.FC = () => {
 		setError(null);
 
 		try {
-			// Usar el adaptador de envío para marcar como enviado y actualizar la información
-			const success = await shippingAdapter.markAsShipped(id, shippingData);
+			// Usar el adaptador para actualizar información de envío
+			const success = await sellerOrderAdapter.updateShippingInfo(Number(id), shippingData);
 
 			if (success) {
 				// Cerrar el modal
 				setIsShippingModalOpen(false);
 
 				// Actualizar el estado de la orden localmente
-				setOrder((prev) => {
+				setOrder((prev: any) => {
 					if (!prev) return null;
-
-					// Asegurarse de mantener los campos obligatorios de shippingData
-					const updatedShippingData = {
-						// Conservar valores obligatorios existentes
-						address: prev.shippingData?.address || "",
-						city: prev.shippingData?.city || "",
-						state: prev.shippingData?.state || "",
-						country: prev.shippingData?.country || "",
-						postalCode: prev.shippingData?.postalCode || "",
-						// Agregar nuevos valores del formulario
-						tracking_number: shippingData.tracking_number,
-						shipping_company: shippingData.shipping_company,
-						estimated_delivery: shippingData.estimated_delivery,
-						notes: shippingData.notes,
-					};
 
 					return {
 						...prev,
 						status: "shipped",
-						shippingData: updatedShippingData,
+						shipping: {
+							...prev.shipping,
+							tracking_number: shippingData.tracking_number,
+							carrier_name: shippingData.shipping_company,
+							estimated_delivery: shippingData.estimated_delivery,
+						},
+						shippingData: {
+							...prev.shippingData,
+							tracking_number: shippingData.tracking_number,
+							shipping_company: shippingData.shipping_company,
+							estimated_delivery: shippingData.estimated_delivery,
+							notes: shippingData.notes,
+						}
 					};
 				});
 
@@ -178,7 +176,7 @@ const OrderDetailPage: React.FC = () => {
 				return "bg-green-100 text-green-800";
 			case "cancelled":
 				return "bg-red-100 text-red-800";
-			case "rejected": // ✅ CASO AGREGADO
+			case "rejected":
 				return "bg-red-200 text-red-900";
 			default:
 				return "bg-gray-100 text-gray-800";
@@ -201,7 +199,7 @@ const OrderDetailPage: React.FC = () => {
 				return "Completado";
 			case "cancelled":
 				return "Cancelado";
-			case "rejected": // ✅ CASO AGREGADO
+			case "rejected":
 				return "Rechazado";
 			default:
 				return "Desconocido";
@@ -257,7 +255,7 @@ const OrderDetailPage: React.FC = () => {
 	const calculateSubtotal = () => {
 		if (!order || !order.items || order.items.length === 0) return 0;
 		return order.items.reduce(
-			(sum, item) => sum + item.price * item.quantity,
+			(sum: number, item: any) => sum + (item.subtotal || (item.price * item.quantity)),
 			0
 		);
 	};
@@ -269,7 +267,8 @@ const OrderDetailPage: React.FC = () => {
 
 	// Función para calcular total con IVA
 	const calculateTotal = () => {
-		return calculateSubtotal() + calculateTax();
+		// Usar el total que viene del backend si está disponible
+		return order?.total || (calculateSubtotal() + calculateTax());
 	};
 
 	if (loading) {
@@ -312,6 +311,7 @@ const OrderDetailPage: React.FC = () => {
 			{/* Modal de envío */}
 			<ShippingFormModal
 				orderId={id || ""}
+				orderNumber={order.orderNumber}
 				isOpen={isShippingModalOpen}
 				onClose={() => setIsShippingModalOpen(false)}
 				onSubmit={handleShippingSubmit}
@@ -329,7 +329,7 @@ const OrderDetailPage: React.FC = () => {
 						<span>Volver a pedidos</span>
 					</button>
 					<h1 className="text-2xl font-bold text-gray-900">
-						Pedido #{order.orderNumber}
+						Pedido #{order.orderNumber || order.order_number || order.id}
 					</h1>
 				</div>
 
@@ -457,9 +457,9 @@ const OrderDetailPage: React.FC = () => {
 							<div className="flex justify-between items-center">
 								<span className="text-gray-600">Pago:</span>
 								<span
-									className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${getPaymentStatusClass(order.paymentStatus)}`}
+									className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${getPaymentStatusClass(order.payment?.status || order.paymentStatus)}`}
 								>
-									{getPaymentStatusText(order.paymentStatus)}
+									{getPaymentStatusText(order.payment?.status || order.paymentStatus)}
 								</span>
 							</div>
 							<div className="flex justify-between items-center">
@@ -467,18 +467,15 @@ const OrderDetailPage: React.FC = () => {
 									Método de pago:
 								</span>
 								<span className="text-gray-900">
-									{order.paymentMethod === "credit_card" &&
-										"Tarjeta de crédito"}
-									{order.paymentMethod === "paypal" && "PayPal"}
-									{order.paymentMethod === "transfer" && "Transferencia"}
-									{order.paymentMethod === "other" && "Otro"}
-									{!order.paymentMethod && "No especificado"}
+									{order.payment?.method || order.paymentMethod || "No especificado"}
 								</span>
 							</div>
 							<div className="flex justify-between items-center">
 								<span className="text-gray-600">Fecha:</span>
 								<span className="text-gray-900">
-									{order.createdAt ? formatDate(order.createdAt) : "Sin fecha"}
+									{order.orderDate || order.createdAt ? 
+										formatDate(order.orderDate || order.createdAt) : 
+										"Sin fecha"}
 								</span>
 							</div>
 						</div>
@@ -497,7 +494,7 @@ const OrderDetailPage: React.FC = () => {
 									Nombre:
 								</label>
 								<div className="mt-1 text-gray-900">
-									{order.user_name || "No disponible"}
+									{order.customer?.name || "No disponible"}
 								</div>
 							</div>
 							<div>
@@ -505,7 +502,7 @@ const OrderDetailPage: React.FC = () => {
 									Email:
 								</label>
 								<div className="mt-1 text-gray-900">
-									{order.user_email || "No disponible"}
+									{order.customer?.email || "No disponible"}
 								</div>
 							</div>
 							<div>
@@ -513,24 +510,7 @@ const OrderDetailPage: React.FC = () => {
 									Dirección de envío:
 								</label>
 								<div className="mt-1 text-gray-900">
-									{order.shippingData ? (
-										<div>
-											<p>{order.shippingData.address}</p>
-											<p>
-												{order.shippingData.city}, {order.shippingData.state}
-											</p>
-											<p>
-												{order.shippingData.country},{" "}
-												{order.shippingData.postalCode}
-											</p>
-											{(order.shippingData.phone ||
-												order.shippingData.phone) && (
-												<p>Tel: {order.shippingData.phone}</p>
-											)}
-										</div>
-									) : (
-										<p>No disponible</p>
-									)}
+									{order.shippingAddress || "No disponible"}
 								</div>
 							</div>
 						</div>
@@ -581,33 +561,26 @@ const OrderDetailPage: React.FC = () => {
 									</tr>
 								</thead>
 								<tbody className="bg-white divide-y divide-gray-200">
-									{order.items.map((item) => (
+									{order.items && order.items.map((item: any) => (
 										<tr key={item.id}>
 											<td className="px-6 py-4 whitespace-nowrap">
 												<div className="flex items-center">
-													{(item.product?.image || item.product_image) && (
+													{item.product_image && (
 														<div className="flex-shrink-0 h-10 w-10 mr-3">
 															<img
 																className="h-10 w-10 rounded-md object-cover"
-																src={item.product?.image || item.product_image}
-																alt={
-																	item.product?.name ||
-																	item.product_name ||
-																	"Producto"
-																}
+																src={item.product_image}
+																alt={item.product_name || "Producto"}
 															/>
 														</div>
 													)}
 													<div>
 														<div className="text-sm font-medium text-gray-900">
-															{item.product?.name ||
-																item.product_name ||
-																"Producto"}
+															{item.product_name || "Producto"}
 														</div>
-														{/* Link al producto si es necesario */}
-														{item.product?.slug && (
+														{item.product_slug && (
 															<Link
-																to={`/products/${item.product.slug}`}
+																to={`/products/${item.product_slug}`}
 																className="text-xs text-primary-600 hover:underline"
 															>
 																Ver producto
@@ -617,7 +590,7 @@ const OrderDetailPage: React.FC = () => {
 												</div>
 											</td>
 											<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-												{item.product?.sku || item.product_sku || "N/A"}
+												{item.product_sku || "N/A"}
 											</td>
 											<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
 												{formatCurrency(item.price)}
@@ -626,7 +599,7 @@ const OrderDetailPage: React.FC = () => {
 												{item.quantity}
 											</td>
 											<td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-right">
-												{formatCurrency(item.price * item.quantity)}
+												{formatCurrency(item.subtotal || (item.price * item.quantity))}
 											</td>
 										</tr>
 									))}
@@ -649,7 +622,6 @@ const OrderDetailPage: React.FC = () => {
 									{formatCurrency(calculateSubtotal())}
 								</span>
 							</div>
-							{/* Añadir impuestos u otros cargos si es necesario */}
 							<div className="flex justify-between items-center pb-2">
 								<span className="text-gray-600">
 									IVA (15%):
@@ -667,8 +639,8 @@ const OrderDetailPage: React.FC = () => {
 						</div>
 					</div>
 
-					{/* Notas y seguimiento */}
-					{order.shippingData?.tracking_number && (
+					{/* Información de envío */}
+					{(order.shipping?.tracking_number || order.shippingData?.tracking_number) && (
 						<div className="bg-white rounded-lg shadow p-6">
 							<h2 className="text-lg font-medium text-gray-900 mb-4">
 								Información de envío
@@ -679,26 +651,26 @@ const OrderDetailPage: React.FC = () => {
 										Número de seguimiento:
 									</span>
 									<span className="text-primary-600 font-medium">
-										{order.shippingData.tracking_number}
+										{order.shipping?.tracking_number || order.shippingData?.tracking_number}
 									</span>
 								</div>
-								{order.shippingData.shipping_company && (
+								{(order.shipping?.carrier_name || order.shippingData?.shipping_company) && (
 									<div className="flex justify-between items-center">
 										<span className="text-gray-600">
 											Transportista:
 										</span>
 										<span className="text-gray-900">
-											{order.shippingData.shipping_company}
+											{order.shipping?.carrier_name || order.shippingData?.shipping_company}
 										</span>
 									</div>
 								)}
-								{order.shippingData.estimated_delivery && (
+								{(order.shipping?.estimated_delivery || order.shippingData?.estimated_delivery) && (
 									<div className="flex justify-between items-center">
 										<span className="text-gray-600">
 											Entrega estimada:
 										</span>
 										<span className="text-gray-900">
-											{formatDate(order.shippingData.estimated_delivery)}
+											{formatDate(order.shipping?.estimated_delivery || order.shippingData?.estimated_delivery)}
 										</span>
 									</div>
 								)}

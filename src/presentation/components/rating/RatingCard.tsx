@@ -1,7 +1,8 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import {formatDate} from "../../../utils/formatters/formatDate";
 import StarRating from "./StarRating";
-import {CheckCircle, Flag} from "lucide-react";
+import {CheckCircle, Flag, ExternalLink, Eye} from "lucide-react";
 
 interface RatingCardProps {
 	id: number;
@@ -22,6 +23,10 @@ interface RatingCardProps {
 	onReport?: (ratingId: number) => void;
 	showActions?: boolean;
 	className?: string;
+	// 🔥 NUEVOS: Props para navegación
+	showDetailsLink?: boolean;
+	detailsLinkText?: string;
+	context?: "user" | "seller" | "admin"; // Para determinar la ruta correcta
 }
 
 /**
@@ -42,13 +47,44 @@ const RatingCard: React.FC<RatingCardProps> = ({
 	onReport,
 	showActions = false,
 	className = "",
+	// 🔥 NUEVOS: Props de navegación
+	showDetailsLink = true,
+	detailsLinkText = "Ver detalles",
+	context = "user",
 }) => {
+	// 🔥 NUEVO: Función para determinar la ruta correcta según el contexto
+	const getDetailsRoute = (): string => {
+		switch (context) {
+			case "admin":
+				return `/admin/ratings/${id}`;
+			case "seller":
+				return `/seller/ratings/${id}`;
+			case "user":
+			default:
+				return `/ratings/${id}`;
+		}
+	};
+
 	return (
 		<div
-			className={`bg-white rounded-lg shadow-sm p-4 ${className}`}
+			className={`bg-white rounded-lg shadow-sm p-4 relative ${className}`}
 		>
+			{/* 🔥 NUEVO: Enlace a detalles en la esquina superior derecha */}
+			{showDetailsLink && (
+				<div className="absolute top-4 right-4">
+					<Link
+						to={getDetailsRoute()}
+						className="flex items-center text-sm text-primary-600 hover:text-primary-800 transition-colors"
+						title={detailsLinkText}
+					>
+						<Eye className="h-4 w-4 mr-1" />
+						<span className="hidden sm:inline">{detailsLinkText}</span>
+					</Link>
+				</div>
+			)}
+
 			{/* Encabezado con usuario y estrellas */}
-			<div className="flex justify-between items-start mb-3">
+			<div className="flex justify-between items-start mb-3 pr-16">
 				<div className="flex items-center">
 					{/* Avatar */}
 					{userAvatar ? (
@@ -99,7 +135,7 @@ const RatingCard: React.FC<RatingCardProps> = ({
 			)}
 
 			{comment && (
-				<p className="text-gray-700 mb-3">{comment}</p>
+				<p className="text-gray-700 mb-3 line-clamp-3">{comment}</p>
 			)}
 
 			{/* Respuesta del vendedor */}
@@ -108,7 +144,7 @@ const RatingCard: React.FC<RatingCardProps> = ({
 					<div className="text-sm font-medium text-gray-700 mb-1">
 						Respuesta del vendedor
 					</div>
-					<p className="text-gray-600 text-sm">
+					<p className="text-gray-600 text-sm line-clamp-2">
 						{sellerResponse.text}
 					</p>
 					<div className="text-xs text-gray-500 mt-1">
@@ -127,24 +163,37 @@ const RatingCard: React.FC<RatingCardProps> = ({
 
 			{/* Acciones (responder, reportar) */}
 			{showActions && (
-				<div className="flex justify-end mt-3 space-x-2">
-					{!sellerResponse && onReply && (
-						<button
-							onClick={() => onReply(id)}
-							className="text-sm text-blue-600 hover:text-blue-800"
-						>
-							Responder
-						</button>
-					)}
+				<div className="flex justify-between items-center mt-3">
+					<div className="flex space-x-2">
+						{!sellerResponse && onReply && (
+							<button
+								onClick={() => onReply(id)}
+								className="text-sm text-blue-600 hover:text-blue-800"
+							>
+								Responder
+							</button>
+						)}
 
-					{!reportReason && onReport && (
-						<button
-							onClick={() => onReport(id)}
-							className="text-sm text-orange-600 hover:text-orange-800 flex items-center"
+						{!reportReason && onReport && (
+							<button
+								onClick={() => onReport(id)}
+								className="text-sm text-orange-600 hover:text-orange-800 flex items-center"
+							>
+								<Flag size={14} className="mr-1" />
+								Reportar
+							</button>
+						)}
+					</div>
+
+					{/* 🔥 MEJORADO: Enlace de detalles más prominente en acciones */}
+					{showDetailsLink && (
+						<Link
+							to={getDetailsRoute()}
+							className="flex items-center text-sm text-primary-600 hover:text-primary-800 font-medium"
 						>
-							<Flag size={14} className="mr-1" />
-							Reportar
-						</button>
+							Ver completo
+							<ExternalLink className="h-4 w-4 ml-1" />
+						</Link>
 					)}
 				</div>
 			)}

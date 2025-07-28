@@ -117,6 +117,7 @@ export class SellerOrderService {
 
 	/**
 	 * Obtiene el detalle de una orden específica usando el endpoint de vendedor
+	 * CORREGIDO: Simplificado para usar directamente la respuesta del backend
 	 */
 	async getSellerOrderDetails(orderId: number): Promise<OrderDetail> {
 		try {
@@ -124,7 +125,6 @@ export class SellerOrderService {
 				`SellerOrderService: Obteniendo detalle de orden ${orderId} como vendedor`
 			);
 
-			// Usar el endpoint específico para vendedores
 			const response = await ApiClient.get<any>(
 				API_ENDPOINTS.ORDERS.SELLER_ORDER_DETAILS(orderId)
 			);
@@ -134,12 +134,12 @@ export class SellerOrderService {
 				response
 			);
 
-			// Verificar si hay datos en la respuesta
 			if (!response) {
 				throw new Error("Respuesta vacía al obtener detalle de orden");
 			}
 
-			// Manejar diferentes formatos de respuesta
+			// SIMPLIFICADO: Usar directamente la respuesta del backend
+			// El backend ya devuelve la estructura correcta
 			let orderData;
 			if (response.success && response.data) {
 				orderData = response.data;
@@ -153,8 +153,8 @@ export class SellerOrderService {
 				throw new Error("No se encontraron datos de la orden");
 			}
 
-			// SIMPLIFICADO: Usar los datos tal como vienen del backend
-			// No hacer cálculos adicionales de IVA
+			// Devolver directamente los datos del backend sin modificar
+			// La estructura ya está correcta según el controlador
 			return orderData;
 		} catch (error) {
 			console.error(
@@ -187,7 +187,6 @@ export class SellerOrderService {
 				response
 			);
 
-			// Verificar si hay datos en la respuesta
 			if (!response) {
 				throw new Error("Respuesta vacía al actualizar estado de orden");
 			}
@@ -224,7 +223,6 @@ export class SellerOrderService {
 
 			console.log("SellerOrderService: Respuesta de estadísticas:", response);
 
-			// Verificar si hay datos en la respuesta
 			if (!response) {
 				throw new Error("Respuesta vacía al obtener estadísticas");
 			}

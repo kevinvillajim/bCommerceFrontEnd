@@ -292,13 +292,22 @@ const SellerRatingsPage: React.FC = () => {
 			header: "Acciones",
 			render: (rating: ExtendedRating) => (
 				<div className="flex justify-end space-x-2">
-					{/* Ver detalles */}
+					{/* Ver detalles completos */}
 					<Link
-						to={`/seller/products/${rating.product_id}`}
+						to={`/seller/ratings/${rating.id}`}
 						className="p-1 text-blue-600 hover:bg-blue-100 rounded-md"
-						title="Ver producto"
+						title="Ver detalles completos"
 					>
 						<Eye size={18} />
+					</Link>
+
+					{/* Ver producto relacionado */}
+					<Link
+						to={`/seller/products/${rating.product_id}`}
+						className="p-1 text-gray-600 hover:bg-gray-100 rounded-md"
+						title="Ver producto"
+					>
+						<Package size={18} />
 					</Link>
 
 					{/* Responder a valoración */}

@@ -408,6 +408,60 @@ const AdminRatingsPage: React.FC = () => {
         </div>
       </div>
 
+      <div className="flex justify-end space-x-2">
+					<Link
+						to={`/admin/ratings/${rating.id}`}
+						className="p-1 text-blue-600 hover:bg-blue-100 rounded-md"
+						title="Ver detalles completos"
+					>
+						<Eye size={18} />
+					</Link>
+					{rating.status === "pending" && (
+						<>
+							<button
+								onClick={() => approveRating(rating.id || 0)}
+								className="p-1 text-green-600 hover:bg-green-100 rounded-md"
+								title="Aprobar valoración"
+							>
+								<CheckCircle size={18} />
+							</button>
+							<button
+								onClick={() => rejectRating(rating.id || 0)}
+								className="p-1 text-red-600 hover:bg-red-100 rounded-md"
+								title="Rechazar valoración"
+							>
+								<XCircle size={18} />
+							</button>
+						</>
+					)}
+					<button
+						onClick={() =>
+							flagRating(
+								rating.id || 0,
+								rating.status === "flagged"
+									? "Desmarcada por administrador"
+									: "Marcada para revisión por administrador"
+							)
+						}
+						className={`p-1 ${
+							rating.status === "flagged"
+								? "text-green-600 hover:bg-green-100"
+								: "text-orange-600 hover:bg-orange-100"
+						} rounded-md`}
+						title={
+							rating.status === "flagged"
+								? "Desmarcar valoración"
+								: "Reportar valoración"
+						}
+					>
+						{rating.status === "flagged" ? (
+							<CheckCircle size={18} /> // Icono para desmarcar
+						) : (
+							<Flag size={18} /> // Icono para marcar
+						)}
+					</button>
+				</div>
+
       {/* Panel de estadísticas */}
       <StatCardList items={statsItemsRating}/>
       {/* Filtros */}
