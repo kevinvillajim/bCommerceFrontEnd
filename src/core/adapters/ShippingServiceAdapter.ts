@@ -122,7 +122,7 @@ export default class ShippingServiceAdapter {
 		// Los datos ya vienen del backend con información combinada
 		return {
 			id: String(shippingData.id || 0),
-			orderId: String(shippingData.order_id || 0),
+			orderId: String(shippingData.orderId || 0),
 			orderNumber: shippingData.order_number || shippingData.order?.order_number || `#${shippingData.order_id || 0}`,
 			date: shippingData.created_at || new Date().toISOString(),
 			customer: {

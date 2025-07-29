@@ -25,6 +25,7 @@ export interface User {
 	postal_code?: string;
 	zip_code?: string;
 	phone?: string;
+  avatar?: string;
 }
 
 /**

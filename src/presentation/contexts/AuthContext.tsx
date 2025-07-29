@@ -136,6 +136,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 		return "/";
 	}, [roleInfo]);
 
+	const updateUser = useCallback((userData: Partial<User>) => {
+  if (user) {
+    const updatedUser = { ...user, ...userData };
+    setUser(updatedUser);
+    
+    // Opcionalmente, guardar en localStorage si usas persistencia
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+    }
+  }
+}, [user]);
+
 	// Función SOLO para redirección automática en inicialización
 	const handleInitialRedirection = useCallback(() => {
 		const currentPath = window.location.pathname;
@@ -483,6 +495,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 			getDefaultRouteForRole,
 			isAdmin,
 			isSeller,
+			updateUser,
 		}),
 		[
 			user,

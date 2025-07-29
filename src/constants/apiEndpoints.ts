@@ -23,6 +23,9 @@ export const API_ENDPOINTS = {
   PROFILE: {
     LIST: "/profile",
     UPDATE: "/profile",
+    GET: '/profile',
+    CHANGE_PASSWORD: '/profile/change-password',
+    UPLOAD_AVATAR: '/profile/upload-avatar',
   },
 
   USER: {
