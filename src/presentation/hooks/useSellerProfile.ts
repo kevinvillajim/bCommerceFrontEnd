@@ -104,56 +104,50 @@ export const useSellerProfile = () => {
 
 	// Subir avatar
 	const uploadAvatar = useCallback(async (file: File) => {
-		setLoading(true);
-		setError(null);
-		setSuccess(null);
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
 
-		try {
-			console.log('📤 Subiendo avatar:', file.name, 'Tamaño:', file.size, 'Tipo:', file.type);
+    try {
+        console.log('📤 Subiendo avatar:', file.name, 'Tamaño:', file.size, 'Tipo:', file.type);
 
-			const formData = new FormData();
-			formData.append('avatar', file);
+        const formData = new FormData();
+        formData.append('avatar', file);
 
-			// Debug: Verificar que FormData contiene el archivo
-			console.log('📤 FormData verificación:');
-			for (let pair of formData.entries()) {
-				console.log('🔍', pair[0], ':', pair[1]);
-			}
+        console.log('📤 Enviando a:', API_ENDPOINTS.PROFILE.UPLOAD_AVATAR);
 
-			console.log('📤 Enviando a:', API_ENDPOINTS.PROFILE.UPLOAD_AVATAR);
+        // ✅ ARREGLADO: Usar uploadFile específico en lugar de post
+        const response = await ApiClient.uploadFile(API_ENDPOINTS.PROFILE.UPLOAD_AVATAR, formData);
 
-			// ✅ ARREGLADO: NO establecer Content-Type manualmente para multipart/form-data
-			const response = await ApiClient.post(API_ENDPOINTS.PROFILE.UPLOAD_AVATAR, formData);
+        console.log('📥 Respuesta del avatar:', response);
 
-			console.log('📥 Respuesta del avatar:', response);
+        if (response) {
+            updateUser(response);
+            setSuccess("Avatar actualizado correctamente");
+            return true;
+        }
 
-			if (response) {
-				updateUser(response);
-				setSuccess("Avatar actualizado correctamente");
-				return true;
-			}
-
-			throw new Error("No se pudo subir el avatar");
-		} catch (err: any) {
-			console.error('❌ Error completo al subir avatar:', err);
-			
-			// Manejo específico de errores de validación
-			if (err.response?.status === 422) {
-				const errors = err.response?.data?.errors;
-				if (errors?.avatar) {
-					setError(`Error de validación: ${errors.avatar[0]}`);
-				} else {
-					setError('Error de validación en el archivo de imagen');
-				}
-			} else {
-				const errorMessage = err instanceof Error ? err.message : "Error al subir avatar";
-				setError(errorMessage);
-			}
-			return false;
-		} finally {
-			setLoading(false);
-		}
-	}, [updateUser]);
+        throw new Error("No se pudo subir el avatar");
+    } catch (err: any) {
+        console.error('❌ Error completo al subir avatar:', err);
+        
+        // Manejo específico de errores de validación
+        if (err.response?.status === 422) {
+            const errors = err.response?.data?.errors;
+            if (errors?.avatar) {
+                setError(`Error de validación: ${errors.avatar[0]}`);
+            } else {
+                setError('Error de validación en el archivo de imagen');
+            }
+        } else {
+            const errorMessage = err instanceof Error ? err.message : "Error al subir avatar";
+            setError(errorMessage);
+        }
+        return false;
+    } finally {
+        setLoading(false);
+    }
+}, [updateUser]);
 
 	// Cambiar contraseña
 	const changePassword = useCallback(async (passwordData: PasswordChangeData) => {

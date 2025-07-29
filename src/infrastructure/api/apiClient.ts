@@ -48,33 +48,37 @@ export class ApiClient {
 	 * @param config - Configuración adicional de axios
 	 */
 	public static async post<T>(
-		url: string,
-		data?: any,
-		config?: AxiosRequestConfig
-	): Promise<T> {
-		try {
-			console.log("ApiClient: Realizando petición POST a:", url);
+    url: string,
+    data?: any,
+    config?: AxiosRequestConfig
+): Promise<T> {
+    try {
+        console.log("ApiClient: Realizando petición POST a:", url);
 
-			// Transformar datos de camelCase a snake_case
-			const transformedData = data
-				? this.transformDataToSnakeCase(data)
-				: undefined;
+        // ✅ ARREGLADO: NO transformar FormData
+        const transformedData = data instanceof FormData 
+            ? data  // FormData se mantiene tal como está
+            : data ? this.transformDataToSnakeCase(data) : undefined;
 
-			const response: AxiosResponse = await axiosInstance.post(
-				url,
-				transformedData,
-				config
-			);
+        if (data instanceof FormData) {
+            console.log('📤 FormData detectado - enviando sin transformación');
+        }
 
-			console.log("ApiClient: Respuesta de POST a", url, ":", response.status);
+        const response: AxiosResponse = await axiosInstance.post(
+            url,
+            transformedData,
+            config
+        );
 
-			// Validar y transformar la respuesta
-			return this.handleApiResponse<T>(response);
-		} catch (error) {
-			this.handleApiError(error, url, "POST");
-			throw error;
-		}
-	}
+        console.log("ApiClient: Respuesta de POST a", url, ":", response.status);
+
+        // Validar y transformar la respuesta
+        return this.handleApiResponse<T>(response);
+    } catch (error) {
+        this.handleApiError(error, url, "POST");
+        throw error;
+    }
+}
 
 	/**
 	 * Realizar petición PUT

@@ -4,7 +4,6 @@ import {
 	Store,
 	Lock,
 	Mail,
-	Phone,
 	MapPin,
 	ChevronRight,
 	Save,
@@ -31,7 +30,6 @@ const SellerProfilePage: React.FC = () => {
 	// Estados para los formularios
 	const [personalData, setPersonalData] = useState({
 		name: "",
-		phone: "",
 		location: "",
 	});
 
@@ -67,7 +65,6 @@ const SellerProfilePage: React.FC = () => {
 			
 			setPersonalData({
 				name: profileData.name || "",
-				phone: profileData.phone || "",
 				location: profileData.location || "",
 			});
 			
@@ -78,7 +75,7 @@ const SellerProfilePage: React.FC = () => {
 			
 			setIsInitialized(true);
 		}
-	}, [profileData.name, profileData.phone, profileData.location, profileData.storeName, profileData.storeDescription, isInitialized]);
+	}, [profileData.name, profileData.location, profileData.storeName, profileData.storeDescription, isInitialized]);
 
 	// ✅ ARREGLADO: Usar useEffect separado para actualizar datos después de guardado exitoso
 	useEffect(() => {
@@ -87,7 +84,6 @@ const SellerProfilePage: React.FC = () => {
 			
 			setPersonalData({
 				name: profileData.name || "",
-				phone: profileData.phone || "",
 				location: profileData.location || "",
 			});
 			
@@ -98,7 +94,7 @@ const SellerProfilePage: React.FC = () => {
 			
 			setHasChanges(false);
 		}
-	}, [success, profileData.name, profileData.phone, profileData.location, profileData.storeName, profileData.storeDescription, isInitialized]);
+	}, [success, profileData.name, profileData.location, profileData.storeName, profileData.storeDescription, isInitialized]);
 
 	// Limpiar mensajes después de unos segundos
 	useEffect(() => {
@@ -119,7 +115,7 @@ const SellerProfilePage: React.FC = () => {
 				hasChanges
 			});
 		}
-	}, [personalData.name, personalData.phone, personalData.location, storeData.storeName, storeData.storeDescription, hasChanges, isInitialized]);
+	}, [personalData.name, personalData.location, storeData.storeName, storeData.storeDescription, hasChanges, isInitialized]);
 
 	const handlePersonalDataChange = (field: string, value: string) => {
 		console.log(`📝 Cambiando ${field}:`, value);
@@ -186,7 +182,6 @@ const SellerProfilePage: React.FC = () => {
 		// Actualizar perfil con todos los datos
 		const profileUpdates = {
 			name: personalData.name,
-			phone: personalData.phone,
 			location: personalData.location,
 			storeName: storeData.storeName,
 			storeDescription: storeData.storeDescription,
@@ -230,7 +225,6 @@ const SellerProfilePage: React.FC = () => {
 		console.log('❌ Cancelando cambios...');
 		setPersonalData({
 			name: profileData.name || "",
-			phone: profileData.phone || "",
 			location: profileData.location || "",
 		});
 		setStoreData({
@@ -285,7 +279,6 @@ const SellerProfilePage: React.FC = () => {
 							{JSON.stringify({ 
 								profileData: {
 									name: profileData.name,
-									phone: profileData.phone,
 									location: profileData.location,
 									storeName: profileData.storeName,
 									storeDescription: profileData.storeDescription,
@@ -413,16 +406,6 @@ const SellerProfilePage: React.FC = () => {
 								value={profileData.email}
 								disabled
 								className="w-full bg-gray-50 text-gray-500 cursor-not-allowed border-b border-gray-300 pb-1"
-							/>
-						</div>
-						<div className="flex items-center">
-							<Phone size={18} className="text-gray-500 mr-3 flex-shrink-0" />
-							<input
-								type="tel"
-								value={personalData.phone}
-								onChange={(e) => handlePersonalDataChange("phone", e.target.value)}
-								placeholder={profileData.phone || "Número de teléfono"}
-								className="w-full bg-transparent focus:outline-none text-gray-700 border-b border-gray-300 pb-1 focus:border-primary-500"
 							/>
 						</div>
 						<div className="flex items-center">
