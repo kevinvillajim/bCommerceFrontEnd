@@ -183,7 +183,7 @@ const OrderDetailClientPage: React.FC = () => {
                   <span className="text-gray-900">
                     {order.payment_method === "credit_card" &&
                       "Tarjeta de crédito"}
-                    {order.payment_method === "datafast" && "Dastafast"}{" "}
+                    {order.payment_method === "datafast" && "Dastafast"}
                     {order.payment_method === "transfer" && "Transferencia"}
                     {order.payment_method === "other" && "Otro"}
                     {!order.payment_method && "No especificado"}

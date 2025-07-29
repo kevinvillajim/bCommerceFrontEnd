@@ -1,35 +1,30 @@
-// src/presentation/pages/seller/OrderDetailPage.tsx - CORREGIDO (imports limpiados)
 import React, {useState, useEffect} from "react";
 import {useParams, useNavigate, Link} from "react-router-dom";
 import {ArrowLeft, Truck, Package, Check, X, FileText} from "lucide-react";
 import {formatCurrency} from "../../../utils/formatters/formatCurrency";
 import {formatDate} from "../../../utils/formatters/formatDate";
-// Importar el adaptador específico para vendedores
 import SellerOrderServiceAdapter from "../../../core/adapters/SellerOrderServiceAdapter";
-// Importar el modal de envío
 import ShippingFormModal from "../../components/shipping/ShippingFormModal";
+import {getProductMainImage} from "../../../utils/imageManager";
 import type {ShippingFormData} from "../../components/shipping/ShippingFormModal";
 import {
 	canTransitionTo,
 	isValidOrderStatus,
 	type OrderStatus,
 } from "../../../core/domain/entities/Order";
-// ✅ CORREGIDO: Eliminados imports no utilizados (OrderDetail, ShippingServiceAdapter)
+import type {OrderDetail} from "../../../core/domain/entities/Order";
 
 const OrderDetailPage: React.FC = () => {
 	const {id} = useParams<{id: string}>();
 	const navigate = useNavigate();
-	const [order, setOrder] = useState<any | null>(null); // Cambiado a any para flexibilidad
+	const [order, setOrder] = useState<OrderDetail | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 	const [isUpdating, setIsUpdating] = useState(false);
 	const [successMessage, setSuccessMessage] = useState<string | null>(null);
-	// Estado para controlar la visibilidad del modal de envío
 	const [isShippingModalOpen, setIsShippingModalOpen] = useState(false);
 
-	// Utilizar el adaptador
 	const sellerOrderAdapter = new SellerOrderServiceAdapter();
-	// ✅ CORREGIDO: Eliminada variable no utilizada shippingAdapter
 
 	useEffect(() => {
 		fetchOrderDetails();
@@ -40,9 +35,23 @@ const OrderDetailPage: React.FC = () => {
 
 		setLoading(true);
 		try {
-			// Utilizar el método getOrderDetails del adaptador de vendedores
 			const orderDetail = await sellerOrderAdapter.getOrderDetails(id);
-			console.log('OrderDetailPage: Datos recibidos:', orderDetail);
+			console.log("🛍️ Detalles de la orden recibidos (seller):", orderDetail);
+			console.log("📦 Items de la orden:", orderDetail?.items);
+			console.log("🔢 Cantidad de items:", orderDetail?.items?.length);
+			
+			orderDetail?.items?.forEach((item, index) => {
+				console.log(`📋 Item ${index + 1}:`, {
+					id: item.id,
+					product_name: item.product_name,
+					product_image: item.product_image,
+					price: item.price,
+					quantity: item.quantity,
+					productId: item.productId,
+					completeItem: item
+				});
+			});
+			
 			setOrder(orderDetail);
 			setError(null);
 		} catch (err) {
@@ -53,16 +62,49 @@ const OrderDetailPage: React.FC = () => {
 		}
 	};
 
+	// Función auxiliar para calcular subtotales (igual que en OrderDetailClientPage)
+	const calculateSubtotal = () => {
+		if (!order || !order.items || order.items.length === 0) {
+			console.log("💰 calculateSubtotal: No hay items o order");
+			return 0;
+		}
+		
+		console.log("💰 calculateSubtotal - Items para calcular:", order.items);
+		const subtotal = order.items.reduce((sum, item, index) => {
+			const itemTotal = item.price * item.quantity;
+			console.log(`💰 Item ${index + 1}: ${item.product_name} - ${item.price} × ${item.quantity} = ${itemTotal}`);
+			return sum + itemTotal;
+		}, 0);
+		
+		console.log("💰 Subtotal total calculado:", subtotal);
+		return subtotal;
+	};
+
+	// Función auxiliar para calcular el IVA (15%)
+	const calculateTax = () => {
+		const subtotal = calculateSubtotal();
+		const tax = subtotal * 0.15;
+		console.log("🧾 Impuesto calculado (15%):", tax, "sobre subtotal:", subtotal);
+		return tax;
+	};
+
+	// Función auxiliar para calcular el total (subtotal + IVA)
+	const calculateTotal = () => {
+		const subtotal = calculateSubtotal();
+		const tax = calculateTax();
+		const total = subtotal + tax;
+		console.log("🎯 Total final:", total, "(subtotal:", subtotal, "+ tax:", tax, ")");
+		return total;
+	};
+
 	const handleStatusChange = async (newStatus: OrderStatus) => {
 		if (!id || !order) return;
 
-		// ✅ VALIDACIÓN DE TRANSICIÓN AGREGADA
 		if (!canTransitionTo(order.status, newStatus)) {
 			setError(`No se puede cambiar de "${order.status}" a "${newStatus}"`);
 			return;
 		}
 
-		// Si el nuevo estado es "shipped", abrir el modal de envío en lugar de procesar directamente
 		if (newStatus === "shipped") {
 			setIsShippingModalOpen(true);
 			return;
@@ -73,22 +115,18 @@ const OrderDetailPage: React.FC = () => {
 		setError(null);
 
 		try {
-			// ✅ VERIFICACIÓN DE TIPO ANTES DE LLAMAR AL ADAPTADOR
 			if (!isValidOrderStatus(newStatus)) {
 				throw new Error(`Estado inválido: ${newStatus}`);
 			}
 
-			// Usar el método updateOrderStatus del adaptador de vendedores
 			const success = await sellerOrderAdapter.updateOrderStatus(id, newStatus);
 
 			if (success) {
-				// Actualizar el estado de la orden localmente
-				setOrder((prev: any) => (prev ? {...prev, status: newStatus} : null));
+				setOrder((prev) => (prev ? {...prev, status: newStatus} : null));
 				setSuccessMessage(
 					`El estado del pedido ha sido actualizado a ${getStatusText(newStatus)}`
 				);
 
-				// Si se completa o cancela, esperar 2 segundos y recargar para mostrar datos actualizados
 				if (newStatus === "completed" || newStatus === "cancelled") {
 					setTimeout(() => fetchOrderDetails(), 2000);
 				}
@@ -103,7 +141,6 @@ const OrderDetailPage: React.FC = () => {
 		}
 	};
 
-	// Nueva función para procesar el envío con datos adicionales
 	const handleShippingSubmit = async (shippingData: ShippingFormData) => {
 		if (!id || !order) return;
 
@@ -112,26 +149,17 @@ const OrderDetailPage: React.FC = () => {
 		setError(null);
 
 		try {
-			// Usar el adaptador para actualizar información de envío
 			const success = await sellerOrderAdapter.updateShippingInfo(Number(id), shippingData);
 
 			if (success) {
-				// Cerrar el modal
 				setIsShippingModalOpen(false);
 
-				// Actualizar el estado de la orden localmente
-				setOrder((prev: any) => {
+				setOrder((prev) => {
 					if (!prev) return null;
 
 					return {
 						...prev,
 						status: "shipped",
-						shipping: {
-							...prev.shipping,
-							tracking_number: shippingData.tracking_number,
-							carrier_name: shippingData.shipping_company,
-							estimated_delivery: shippingData.estimated_delivery,
-						},
 						shippingData: {
 							...prev.shippingData,
 							tracking_number: shippingData.tracking_number,
@@ -146,7 +174,6 @@ const OrderDetailPage: React.FC = () => {
 					`El pedido ha sido marcado como enviado y se ha registrado la información de envío`
 				);
 
-				// Recargar los detalles después de un breve delay
 				setTimeout(() => fetchOrderDetails(), 2000);
 			} else {
 				throw new Error("No se pudo procesar el envío");
@@ -239,7 +266,6 @@ const OrderDetailPage: React.FC = () => {
 		currentStatus: string,
 		newStatus: string
 	): boolean => {
-		// ✅ USAR LA FUNCIÓN HELPER IMPORTADA
 		if (!isValidOrderStatus(currentStatus) || !isValidOrderStatus(newStatus)) {
 			return false;
 		}
@@ -248,26 +274,6 @@ const OrderDetailPage: React.FC = () => {
 			currentStatus as OrderStatus,
 			newStatus as OrderStatus
 		);
-	};
-
-	// Función para calcular subtotal
-	const calculateSubtotal = () => {
-		if (!order || !order.items || order.items.length === 0) return 0;
-		return order.items.reduce(
-			(sum: number, item: any) => sum + (item.subtotal || (item.price * item.quantity)),
-			0
-		);
-	};
-
-	// Función para calcular IVA (15%)
-	const calculateTax = () => {
-		return calculateSubtotal() * 0.15;
-	};
-
-	// Función para calcular total con IVA
-	const calculateTotal = () => {
-		// Usar el total que viene del backend si está disponible
-		return order?.total || (calculateSubtotal() + calculateTax());
 	};
 
 	if (loading) {
@@ -285,13 +291,11 @@ const OrderDetailPage: React.FC = () => {
 		return (
 			<div className="bg-white rounded-lg shadow p-6 max-w-4xl mx-auto my-8">
 				<div className="text-center">
-					<div className="text-red-500 text-5xl mb-4">
-						<X className="h-16 w-16 mx-auto" />
-					</div>
+					<div className="text-red-500 text-5xl mb-4">❌</div>
 					<h2 className="text-2xl font-bold text-gray-900 mb-2">
 						Error al cargar el pedido
 					</h2>
-					<p className="text-gray-600 mb-6">
+					<p className="text-gray-700 mb-6">
 						{error || "No se pudo encontrar el pedido solicitado"}
 					</p>
 					<button
@@ -306,397 +310,378 @@ const OrderDetailPage: React.FC = () => {
 	}
 
 	return (
-		<div className="space-y-6">
-			{/* Modal de envío */}
-			<ShippingFormModal
-				orderId={id || ""}
-				orderNumber={order.orderNumber}
-				isOpen={isShippingModalOpen}
-				onClose={() => setIsShippingModalOpen(false)}
-				onSubmit={handleShippingSubmit}
-				isLoading={isUpdating}
-			/>
+		<div className="py-8 px-4 md:px-8 max-w-7xl mx-auto">
+			<div className="space-y-6">
+				{/* Modal de envío */}
+				<ShippingFormModal
+					orderId={id || ""}
+					orderNumber={order.orderNumber}
+					isOpen={isShippingModalOpen}
+					onClose={() => setIsShippingModalOpen(false)}
+					onSubmit={handleShippingSubmit}
+					isLoading={isUpdating}
+				/>
 
-			{/* Encabezado y acciones */}
-			<div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-				<div>
-					<button
-						onClick={() => navigate(-1)}
-						className="flex items-center text-gray-600 hover:text-primary-600 mb-2"
-					>
-						<ArrowLeft size={16} className="mr-1" />
-						<span>Volver a pedidos</span>
-					</button>
-					<h1 className="text-2xl font-bold text-gray-900">
-						Pedido #{order.orderNumber || order.order_number || order.id}
-					</h1>
-				</div>
-
-				<div className="flex flex-wrap gap-2">
-					{/* Botones de acción según el estado actual */}
-					{canUpdateToStatus(order.status, "processing") && (
+				{/* Encabezado */}
+				<div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+					<div>
 						<button
-							onClick={() => handleStatusChange("processing")}
-							disabled={isUpdating}
-							className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 disabled:opacity-50"
+							onClick={() => navigate(-1)}
+							className="cursor-pointer flex items-center text-gray-600 hover:text-primary-600 mb-2"
 						>
-							<Package size={18} />
-							<span>Preparar pedido</span>
+							<ArrowLeft size={16} className="mr-1" />
+							<span>Volver a pedidos</span>
 						</button>
-					)}
-
-					{canUpdateToStatus(order.status, "shipped") && (
-						<button
-							onClick={() => handleStatusChange("shipped")}
-							disabled={isUpdating}
-							className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 flex items-center gap-2 disabled:opacity-50"
-						>
-							<Truck size={18} />
-							<span>Marcar como enviado</span>
-						</button>
-					)}
-
-					{canUpdateToStatus(order.status, "delivered") && (
-						<button
-							onClick={() => handleStatusChange("delivered")}
-							disabled={isUpdating}
-							className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 flex items-center gap-2 disabled:opacity-50"
-						>
-							<Check size={18} />
-							<span>Marcar como entregado</span>
-						</button>
-					)}
-
-					{canUpdateToStatus(order.status, "completed") && (
-						<button
-							onClick={() => handleStatusChange("completed")}
-							disabled={isUpdating}
-							className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2 disabled:opacity-50"
-						>
-							<Check size={18} />
-							<span>Completar pedido</span>
-						</button>
-					)}
-
-					{canUpdateToStatus(order.status, "cancelled") && (
-						<button
-							onClick={() => handleStatusChange("cancelled")}
-							disabled={isUpdating}
-							className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 flex items-center gap-2 disabled:opacity-50"
-						>
-							<X size={18} />
-							<span>Cancelar pedido</span>
-						</button>
-					)}
-
-					{/* Generar factura */}
-					<Link
-						to={`/seller/invoices/generate/${order.id}`}
-						className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 flex items-center gap-2"
-					>
-						<FileText size={18} />
-						<span>Generar factura</span>
-					</Link>
-				</div>
-			</div>
-
-			{/* Mensajes de éxito/error */}
-			{successMessage && (
-				<div
-					className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative"
-					role="alert"
-				>
-					<span className="block sm:inline">{successMessage}</span>
-				</div>
-			)}
-
-			{error && (
-				<div
-					className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative"
-					role="alert"
-				>
-					<span className="block sm:inline">{error}</span>
-				</div>
-			)}
-
-			{isUpdating && (
-				<div
-					className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded relative"
-					role="alert"
-				>
-					<div className="flex items-center">
-						<div className="animate-spin mr-2 h-4 w-4 border-t-2 border-blue-500"></div>
-						<span className="block sm:inline">
-							Actualizando estado del pedido...
-						</span>
-					</div>
-				</div>
-			)}
-
-			{/* Contenido principal */}
-			<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-				{/* Información general y estado */}
-				<div className="col-span-3 md:col-span-1 space-y-6">
-					{/* Tarjeta de estado */}
-					<div className="bg-white rounded-lg shadow p-6">
-						<h2 className="text-lg font-medium text-gray-900 mb-4">
-							Estado del pedido
-						</h2>
-						<div className="space-y-3">
-							<div className="flex justify-between items-center">
-								<span className="text-gray-600">
-									Estado:
-								</span>
-								<span
-									className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusClass(order.status)}`}
-								>
-									{getStatusText(order.status)}
-								</span>
-							</div>
-							<div className="flex justify-between items-center">
-								<span className="text-gray-600">Pago:</span>
-								<span
-									className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${getPaymentStatusClass(order.payment?.status || order.paymentStatus)}`}
-								>
-									{getPaymentStatusText(order.payment?.status || order.paymentStatus)}
-								</span>
-							</div>
-							<div className="flex justify-between items-center">
-								<span className="text-gray-600">
-									Método de pago:
-								</span>
-								<span className="text-gray-900">
-									{order.payment?.method || order.paymentMethod || "No especificado"}
-								</span>
-							</div>
-							<div className="flex justify-between items-center">
-								<span className="text-gray-600">Fecha:</span>
-								<span className="text-gray-900">
-									{order.orderDate || order.createdAt ? 
-										formatDate(order.orderDate || order.createdAt) : 
-										"Sin fecha"}
-								</span>
-							</div>
-						</div>
+						<h1 className="text-2xl font-bold text-gray-800">
+							Pedido #{order.orderNumber || order.id}
+						</h1>
 					</div>
 
-					{/* Información del cliente */}
-					<div className="bg-white rounded-lg shadow p-6">
-						<div className="flex justify-between items-center mb-4">
-							<h2 className="text-lg font-medium text-gray-900">
-								Cliente
-							</h2>
-						</div>
-						<div className="space-y-3">
-							<div>
-								<label className="block text-sm font-medium text-gray-600">
-									Nombre:
-								</label>
-								<div className="mt-1 text-gray-900">
-									{order.customer?.name || "No disponible"}
-								</div>
-							</div>
-							<div>
-								<label className="block text-sm font-medium text-gray-600">
-									Email:
-								</label>
-								<div className="mt-1 text-gray-900">
-									{order.customer?.email || "No disponible"}
-								</div>
-							</div>
-							<div>
-								<label className="block text-sm font-medium text-gray-600">
-									Dirección de envío:
-								</label>
-								<div className="mt-1 text-gray-900">
-									{order.shippingAddress || "No disponible"}
-								</div>
-							</div>
-						</div>
+					<div className="flex flex-wrap gap-2">
+						{/* Botones de acción según el estado actual */}
+						{canUpdateToStatus(order.status, "processing") && (
+							<button
+								onClick={() => handleStatusChange("processing")}
+								disabled={isUpdating}
+								className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 disabled:opacity-50"
+							>
+								<Package size={18} />
+								<span>Preparar pedido</span>
+							</button>
+						)}
+
+						{canUpdateToStatus(order.status, "shipped") && (
+							<button
+								onClick={() => handleStatusChange("shipped")}
+								disabled={isUpdating}
+								className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 flex items-center gap-2 disabled:opacity-50"
+							>
+								<Truck size={18} />
+								<span>Marcar como enviado</span>
+							</button>
+						)}
+
+						{canUpdateToStatus(order.status, "delivered") && (
+							<button
+								onClick={() => handleStatusChange("delivered")}
+								disabled={isUpdating}
+								className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 flex items-center gap-2 disabled:opacity-50"
+							>
+								<Check size={18} />
+								<span>Marcar como entregado</span>
+							</button>
+						)}
+
+						{canUpdateToStatus(order.status, "completed") && (
+							<button
+								onClick={() => handleStatusChange("completed")}
+								disabled={isUpdating}
+								className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2 disabled:opacity-50"
+							>
+								<Check size={18} />
+								<span>Completar pedido</span>
+							</button>
+						)}
+
+						{canUpdateToStatus(order.status, "cancelled") && (
+							<button
+								onClick={() => handleStatusChange("cancelled")}
+								disabled={isUpdating}
+								className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 flex items-center gap-2 disabled:opacity-50"
+							>
+								<X size={18} />
+								<span>Cancelar pedido</span>
+							</button>
+						)}
+
+						<Link
+							to={`/seller/invoices/generate/${order.id}`}
+							className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 flex items-center gap-2"
+						>
+							<FileText size={18} />
+							<span>Generar factura</span>
+						</Link>
 					</div>
 				</div>
 
-				{/* Productos y resumen */}
-				<div className="col-span-3 md:col-span-2 space-y-6">
-					{/* Productos */}
-					<div className="bg-white rounded-lg shadow overflow-hidden">
-						<h2 className="text-lg font-medium text-gray-900 p-6 pb-3">
-							Productos
-						</h2>
-						<div className="overflow-x-auto">
-							<table className="min-w-full divide-y divide-gray-200">
-								<thead className="bg-gray-50">
-									<tr>
-										<th
-											scope="col"
-											className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-										>
-											Producto
-										</th>
-										<th
-											scope="col"
-											className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-										>
-											SKU
-										</th>
-										<th
-											scope="col"
-											className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
-										>
-											Precio
-										</th>
-										<th
-											scope="col"
-											className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
-										>
-											Cantidad
-										</th>
-										<th
-											scope="col"
-											className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
-										>
-											Subtotal
-										</th>
-									</tr>
-								</thead>
-								<tbody className="bg-white divide-y divide-gray-200">
-									{order.items && order.items.map((item: any) => (
-										<tr key={item.id}>
-											<td className="px-6 py-4 whitespace-nowrap">
-												<div className="flex items-center">
-													{item.product_image && (
-														<div className="flex-shrink-0 h-10 w-10 mr-3">
-															<img
-																className="h-10 w-10 rounded-md object-cover"
-																src={item.product_image}
-																alt={item.product_name || "Producto"}
-															/>
-														</div>
-													)}
-													<div>
-														<div className="text-sm font-medium text-gray-900">
-															{item.product_name || "Producto"}
-														</div>
-														{item.product_slug && (
-															<Link
-																to={`/products/${item.product_slug}`}
-																className="text-xs text-primary-600 hover:underline"
-															>
-																Ver producto
-															</Link>
-														)}
-													</div>
-												</div>
-											</td>
-											<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-												{item.product_sku || "N/A"}
-											</td>
-											<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-												{formatCurrency(item.price)}
-											</td>
-											<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right">
-												{item.quantity}
-											</td>
-											<td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-right">
-												{formatCurrency(item.subtotal || (item.price * item.quantity))}
-											</td>
-										</tr>
-									))}
-								</tbody>
-							</table>
+				{/* Mensajes de éxito/error */}
+				{successMessage && (
+					<div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative" role="alert">
+						<span className="block sm:inline">{successMessage}</span>
+					</div>
+				)}
+
+				{error && (
+					<div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+						<span className="block sm:inline">{error}</span>
+					</div>
+				)}
+
+				{isUpdating && (
+					<div className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded relative" role="alert">
+						<div className="flex items-center">
+							<div className="animate-spin mr-2 h-4 w-4 border-t-2 border-blue-500"></div>
+							<span className="block sm:inline">Actualizando estado del pedido...</span>
 						</div>
 					</div>
+				)}
 
-					{/* Resumen de precios */}
-					<div className="bg-white rounded-lg shadow p-6">
-						<h2 className="text-lg font-medium text-gray-900 mb-4">
-							Resumen
-						</h2>
-						<div className="space-y-3">
-							<div className="flex justify-between items-center pb-2">
-								<span className="text-gray-600">
-									Subtotal:
-								</span>
-								<span className="text-gray-900">
-									{formatCurrency(calculateSubtotal())}
-								</span>
-							</div>
-							<div className="flex justify-between items-center pb-2">
-								<span className="text-gray-600">
-									IVA (15%):
-								</span>
-								<span className="text-gray-900">
-									{formatCurrency(calculateTax())}
-								</span>
-							</div>
-							<div className="flex justify-between items-center pt-3 border-t border-gray-200 font-medium">
-								<span className="text-gray-900">Total:</span>
-								<span className="text-lg text-gray-900">
-									{formatCurrency(calculateTotal())}
-								</span>
-							</div>
-						</div>
-					</div>
-
-					{/* Información de envío */}
-					{(order.shipping?.tracking_number || order.shippingData?.tracking_number) && (
+				{/* Contenido principal */}
+				<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+					{/* Información general y estado */}
+					<div className="col-span-3 md:col-span-1 space-y-6">
+						{/* Tarjeta de estado */}
 						<div className="bg-white rounded-lg shadow p-6">
 							<h2 className="text-lg font-medium text-gray-900 mb-4">
-								Información de envío
+								Estado del pedido
 							</h2>
 							<div className="space-y-3">
 								<div className="flex justify-between items-center">
-									<span className="text-gray-600">
-										Número de seguimiento:
-									</span>
-									<span className="text-primary-600 font-medium">
-										{order.shipping?.tracking_number || order.shippingData?.tracking_number}
+									<span className="text-gray-600">Estado:</span>
+									<span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusClass(order.status)}`}>
+										{getStatusText(order.status)}
 									</span>
 								</div>
-								{(order.shipping?.carrier_name || order.shippingData?.shipping_company) && (
-									<div className="flex justify-between items-center">
-										<span className="text-gray-600">
-											Transportista:
-										</span>
-										<span className="text-gray-900">
-											{order.shipping?.carrier_name || order.shippingData?.shipping_company}
-										</span>
-									</div>
-								)}
-								{(order.shipping?.estimated_delivery || order.shippingData?.estimated_delivery) && (
-									<div className="flex justify-between items-center">
-										<span className="text-gray-600">
-											Entrega estimada:
-										</span>
-										<span className="text-gray-900">
-											{formatDate(order.shipping?.estimated_delivery || order.shippingData?.estimated_delivery)}
-										</span>
-									</div>
-								)}
-								<div className="mt-3">
-									<Link
-										to={`/seller/shipping`}
-										className="bg-indigo-100 text-indigo-700 px-4 py-2 rounded-lg hover:bg-indigo-200 inline-flex items-center mt-2"
-									>
-										<Truck size={16} className="mr-2" />
-										<span>Gestionar envío</span>
-									</Link>
+								<div className="flex justify-between items-center">
+									<span className="text-gray-600">Pago:</span>
+									<span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${getPaymentStatusClass(order.payment.status)}`}>
+										{getPaymentStatusText(order.payment.status)}
+									</span>
+								</div>
+								<div className="flex justify-between items-center">
+									<span className="text-gray-600">Método de pago:</span>
+									<span className="text-gray-900">
+										{order.payment.method === "credit_card" && "Tarjeta de crédito"}
+										{order.payment.method === "datafast" && "Datafast"}
+										{order.payment_method === "transfer" && "Transferencia"}
+										{order.payment_method === "other" && "Otro"}
+										{(order.payment_method === null) && "No especificado"}
+
+									</span>
+								</div>
+								<div className="flex justify-between items-center">
+									<span className="text-gray-600">Fecha:</span>
+									<span className="text-gray-900">
+										{order.orderDate ? formatDate(order.orderDate) : "Sin fecha"}
+									</span>
 								</div>
 							</div>
 						</div>
-					)}
 
-					{/* Mostrar notas si existen */}
-					{order.shippingData?.notes && (
+						{/* Información del cliente */}
 						<div className="bg-white rounded-lg shadow p-6">
-							<h2 className="text-lg font-medium text-gray-900 mb-2">
-								Notas
+							<h2 className="text-lg font-medium text-gray-900 mb-4">
+								Cliente
 							</h2>
-							<p className="text-gray-600">
-								{order.shippingData.notes}
-							</p>
+							<div className="space-y-3">
+								<div>
+									<span className="block text-sm font-medium text-gray-600 mb-1">
+										Nombre:
+									</span>
+									<p className="text-gray-900">
+										{order.customer?.name || "No disponible"}
+									</p>
+								</div>
+								<div>
+									<span className="block text-sm font-medium text-gray-600 mb-1">
+										Email:
+									</span>
+									<p className="text-gray-900">
+										{order.customer?.email || "No disponible"}
+									</p>
+								</div>
+								{order.shippingData && (
+									<div>
+										<span className="block text-sm font-medium text-gray-600 mb-1">
+											Dirección de envío:
+										</span>
+										<p className="text-gray-900">
+											{order.shippingData.address}
+										</p>
+										<p className="text-gray-900">
+											{order.shippingData.city}, {order.shippingData.state}
+										</p>
+										<p className="text-gray-900">
+											{order.shippingData.country}, {order.shippingData.postalCode}
+										</p>
+									</div>
+								)}
+							</div>
 						</div>
-					)}
+
+						{/* Información de envío */}
+						{order.shippingData?.tracking_number && (
+							<div className="bg-white rounded-lg shadow p-6">
+								<h2 className="text-lg font-medium text-gray-900 mb-4">
+									Información de envío
+								</h2>
+								<div className="space-y-3">
+									<div>
+										<span className="block text-sm font-medium text-gray-600">
+											Número de seguimiento:
+										</span>
+										<p className="text-primary-600 font-medium">
+											{order.shippingData.tracking_number}
+										</p>
+									</div>
+									{order.shippingData.shipping_company && (
+										<div>
+											<span className="block text-sm font-medium text-gray-600">
+												Empresa de transporte:
+											</span>
+											<p className="text-gray-900">
+												{order.shippingData.shipping_company}
+											</p>
+										</div>
+									)}
+									{order.shippingData.estimated_delivery && (
+										<div>
+											<span className="block text-sm font-medium text-gray-600">
+												Entrega estimada:
+											</span>
+											<p className="text-gray-900">
+												{formatDate(order.shippingData.estimated_delivery)}
+											</p>
+										</div>
+									)}
+								</div>
+							</div>
+						)}
+					</div>
+
+					{/* Productos y resumen */}
+					<div className="col-span-3 md:col-span-2 space-y-6">
+						{/* Productos */}
+						<div className="bg-white rounded-lg shadow overflow-hidden">
+							<h2 className="text-lg font-medium text-gray-900 p-6 pb-3">
+								Productos
+							</h2>
+							<div className="overflow-x-auto">
+								<table className="min-w-full divide-y divide-gray-200">
+									<thead className="bg-gray-50">
+										<tr>
+											<th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+												Producto
+											</th>
+											<th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+												Precio
+											</th>
+											<th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+												Cantidad
+											</th>
+											<th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+												Subtotal
+											</th>
+										</tr>
+									</thead>
+									<tbody className="bg-white divide-y divide-gray-200">
+										{(() => {
+											console.log("🎨 Renderizando productos (seller)...");
+											console.log("📦 order.items antes del map:", order.items);
+											return order.items.map((item, index) => {
+												console.log(`🏷️ Renderizando item ${index + 1}:`, item);
+
+												const productForImage = {
+													id: item.productId,
+													image: item.product_image,
+													main_image: item.product_image,
+													product_image: item.product_image,
+												};
+
+												console.log("🖼️ Objeto para imagen:", productForImage);
+												const imageUrl = getProductMainImage(productForImage);
+												console.log("🎯 URL final de imagen:", imageUrl);
+
+												return (
+													<tr key={`item-${item.id || index}-${item.productId || "unknown"}`}>
+														<td className="px-6 py-4 whitespace-nowrap">
+															<div className="flex items-center">
+																<div className="flex-shrink-0 h-12 w-12 mr-3">
+																	<img
+																		className="h-12 w-12 rounded-md object-cover"
+																		src={imageUrl}
+																		alt={item.product_name || "Producto"}
+																		onError={(_e) => {
+																			console.log("❌ Error cargando imagen:", imageUrl);
+																			console.log("📦 Item con error:", item);
+																		}}
+																		onLoad={() => {
+																			console.log("✅ Imagen cargada correctamente:", imageUrl);
+																		}}
+																	/>
+																</div>
+																<div>
+																	<div className="text-sm font-medium text-gray-900">
+																		{item.product_name || "Producto"}
+																	</div>
+																	{item.productId && (
+																		<Link
+																			to={`/products/${item.productId}`}
+																			className="text-xs text-primary-600 hover:underline"
+																		>
+																			Ver producto
+																		</Link>
+																	)}
+																</div>
+															</div>
+														</td>
+														<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">
+															{formatCurrency(item.price)}
+														</td>
+														<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">
+															{item.quantity}
+														</td>
+														<td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-right">
+															{formatCurrency(item.price * item.quantity)}
+														</td>
+													</tr>
+												);
+											});
+										})()}
+									</tbody>
+								</table>
+							</div>
+						</div>
+
+						{/* Resumen de precios */}
+						<div className="bg-white rounded-lg shadow p-6">
+							<h2 className="text-lg font-medium text-gray-900 mb-4">
+								Resumen
+							</h2>
+							<div className="space-y-3">
+								<div className="flex justify-between items-center pb-2">
+									<span className="text-gray-600">Subtotal:</span>
+									<span className="text-gray-900">
+										{formatCurrency(calculateSubtotal())}
+									</span>
+								</div>
+								<div className="flex justify-between items-center pb-2">
+									<span className="text-gray-600">IVA (15%):</span>
+									<span className="text-gray-900">
+										{formatCurrency(calculateTax())}
+									</span>
+								</div>
+								<div className="flex justify-between items-center pt-3 border-t border-gray-200 font-medium">
+									<span className="text-gray-900">Total:</span>
+									<span className="text-lg text-gray-900">
+										{formatCurrency(calculateTotal())}
+									</span>
+								</div>
+							</div>
+						</div>
+
+						{/* Mostrar notas si existen */}
+						{order.shippingData?.notes && (
+							<div className="bg-white rounded-lg shadow p-6">
+								<h2 className="text-lg font-medium text-gray-900 mb-2">
+									Notas
+								</h2>
+								<p className="text-gray-600">
+									{order.shippingData.notes}
+								</p>
+							</div>
+						)}
+					</div>
 				</div>
 			</div>
 		</div>

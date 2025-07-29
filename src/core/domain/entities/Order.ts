@@ -69,6 +69,9 @@ export interface OrderItem {
  * Order detail entity - Versión extendida con información adicional
  */
 export interface OrderDetail extends Order {
+	customer: any;
+	orderDate: any;
+	payment: any;
 	payment_status: string | null | undefined;
 	created_at: any;
 	items: (OrderItem & {
