@@ -188,7 +188,11 @@ export type OrderStatus =
 	| "delivered"
 	| "completed"
 	| "cancelled"
-	| "rejected";
+	| "rejected"
+	| "ready_to_ship"
+	| "in_transit"
+	| "failed"
+	| "returned";
 
 export const isValidOrderStatus = (status: string): status is OrderStatus => {
 	const validStatuses: OrderStatus[] = [
@@ -216,6 +220,10 @@ export const getValidTransitions = (
 		completed: [],
 		cancelled: [],
 		rejected: [],
+		ready_to_ship: [],
+		in_transit: [],
+		failed: [],
+		returned: []
 	};
 
 	return transitions[currentStatus] || [];

@@ -14,7 +14,7 @@ import {
 import useSellerProducts from "../../hooks/useSellerProducts";
 import useCategories from "../../hooks/useCategories";
 import {formatCurrency} from "../../../utils/formatters/formatCurrency";
-
+import {formatDate} from "../../../utils/formatters/formatDate";
 // Adaptador para productos en la tabla
 interface ProductTableItem {
 	id: number;
@@ -68,7 +68,7 @@ const SellerProductsPage: React.FC = () => {
 				// Obtener categoría del mapa o mostrar el ID si no se encuentra
 				const categoryId = product.categoryId || 0;
 				const categoryName =
-					categoryMap.get(categoryId) || `Categoría ${categoryId}`;
+					product.category_name || `Categoría ${categoryId}`;
 
 				return {
 					id: product.id || 0,
@@ -86,7 +86,7 @@ const SellerProductsPage: React.FC = () => {
 					status:
 						(product.status as "active" | "inactive" | "draft") || "inactive",
 					createdAt:
-						product.createdAt || new Date().toISOString().split("T")[0],
+						formatDate(product.created_at),
 				};
 			});
 			setAdaptedProducts(tableProducts);

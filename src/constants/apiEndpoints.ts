@@ -162,6 +162,12 @@ export const API_ENDPOINTS = {
 		ESTIMATE: "/shipping/estimate",
 		UPDATE_STATUS: `/shipping/update-status`,
     EXTERNAL_UPDATE: `/shipping/external-status-update`,
+
+	SELLER: {
+			LIST: "/seller/shipping",
+			DETAIL: (id: string | number) => `/seller/shipping/${id}`,
+			UPDATE_STATUS: (id: string | number) => `/seller/shipping/${id}/status`,
+		},
     
     // Simulación (solo desarrollo)
     SIMULATE_EVENTS: (trackingNumber: string) => `/shipping/${trackingNumber}/simulate`,
