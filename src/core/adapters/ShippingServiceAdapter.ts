@@ -1,4 +1,4 @@
-// src/core/adapters/ShippingServiceAdapter.ts - CORREGIDO
+// src/core/adapters/ShippingServiceAdapter.ts - CORREGIDO COMPLETO
 import ApiClient from "../../infrastructure/api/apiClient";
 import { API_ENDPOINTS } from "../../constants/apiEndpoints";
 
@@ -50,26 +50,112 @@ export interface ShippingListResponse {
 
 /**
  * Adaptador de servicio para gestión de envíos de vendedores
- * Simplificado para trabajar con endpoints de Laravel existentes
+ * Actualizado para usar datos combinados de Orders y Shippings
  */
 export default class ShippingServiceAdapter {
 	/**
-	 * Obtiene la lista de envíos para el vendedor (basado en sus órdenes)
-	 * Simplificado para que funcione directamente
+	 * Obtiene la lista de envíos para el vendedor (usando datos combinados de Orders y Shippings)
+	 * Actualizado para usar el endpoint específico de shipping
 	 */
 	async getShippingsList(filters: any = {}): Promise<ShippingListResponse> {
 		try {
-			console.log("ShippingServiceAdapter: Obteniendo órdenes del vendedor", filters);
+			console.log("ShippingServiceAdapter: Obteniendo envíos del vendedor", filters);
 
-			// Obtener órdenes del vendedor directamente
+			// ✅ USAR EL ENDPOINT DE SHIPPING CORRECTO según tus rutas
+			const response = await ApiClient.get<any>(
+				'/shipping', // Ruta real según tu archivo de rutas
+				filters
+			);
+
+			console.log("ShippingServiceAdapter: Respuesta de envíos:", response);
+
+			if (!response) {
+				throw new Error("Respuesta vacía del servidor");
+			}
+
+			// Manejar la respuesta del endpoint de shipping
+			let shippings = [];
+			let pagination = {
+				currentPage: 1,
+				totalPages: 1,
+				totalItems: 0,
+				itemsPerPage: 10,
+			};
+
+			if (response.success && response.data) {
+				shippings = Array.isArray(response.data) ? response.data : [];
+				pagination = response.pagination || pagination;
+			} else if (response.data && Array.isArray(response.data)) {
+				shippings = response.data;
+				pagination = response.meta || response.pagination || pagination;
+			} else if (Array.isArray(response)) {
+				shippings = response;
+			}
+
+			// ✅ MAPEAR DIRECTAMENTE LOS DATOS DE SHIPPING (ya vienen combinados del backend)
+			const items: ShippingItem[] = shippings.map((shipping: any) => this.mapShippingToItem(shipping));
+
+			return {
+				items,
+				pagination: {
+					currentPage: Number(pagination.currentPage) || Number((pagination as any).current_page) || 1,
+					totalPages: Number(pagination.totalPages) || Number((pagination as any).last_page) || 1,
+					totalItems: Number(pagination.totalItems) || Number((pagination as any).total) || items.length,
+					itemsPerPage: Number(pagination.itemsPerPage) || Number((pagination as any).per_page) || 10,
+				},
+			};
+		} catch (error) {
+			console.error("ShippingServiceAdapter: Error al obtener envíos:", error);
+			
+			// ✅ FALLBACK: Si falla el endpoint de shipping, usar el de orders como respaldo
+			console.log("Intentando con endpoint de orders como fallback...");
+			return this.getShippingsListFromOrders(filters);
+		}
+	}
+
+	/**
+	 * ✅ NUEVO: Mapear datos de shipping (que ya incluyen datos de order) a ShippingItem
+	 */
+	private mapShippingToItem(shippingData: any): ShippingItem {
+		console.log("Mapeando datos de shipping:", shippingData);
+
+		// Los datos ya vienen del backend con información combinada
+		return {
+			id: String(shippingData.id || 0),
+			orderId: String(shippingData.order_id || 0),
+			orderNumber: shippingData.order_number || shippingData.order?.order_number || `#${shippingData.order_id || 0}`,
+			date: shippingData.created_at || new Date().toISOString(),
+			customer: {
+				id: shippingData.user_id || shippingData.order?.user_id || 0,
+				name: shippingData.user_name || shippingData.order?.user?.name || "Cliente",
+				email: shippingData.order?.user?.email || "sin@email.com",
+				phone: shippingData.order?.user?.phone,
+			},
+			// ✅ USAR DATOS REALES DE SHIPPING
+			status: this.mapStatusFromAPI(shippingData.status || "pending"),
+			trackingNumber: shippingData.tracking_number || undefined,
+			carrier: shippingData.carrier_name || undefined,
+			estimatedDelivery: shippingData.estimated_delivery || undefined,
+			lastUpdate: shippingData.updated_at || shippingData.last_updated || new Date().toISOString(),
+			shippingAddress: shippingData.shipping_address || this.extractShippingAddress(shippingData),
+			shippingMethod: "Estándar",
+			weight: shippingData.weight || undefined,
+			shippingCost: undefined, // Puedes obtenerlo de order si está disponible
+		};
+	}
+
+	/**
+	 * ✅ FALLBACK: Método original como respaldo usando órdenes
+	 */
+	private async getShippingsListFromOrders(filters: any = {}): Promise<ShippingListResponse> {
+		try {
 			const response = await ApiClient.get<any>(
 				API_ENDPOINTS.ORDERS.SELLER_ORDERS,
 				filters
 			);
 
-			console.log("ShippingServiceAdapter: Respuesta de órdenes:", response);
+			console.log("ShippingServiceAdapter: Respuesta de órdenes (fallback):", response);
 
-			// Verificar respuesta
 			if (!response) {
 				throw new Error("Respuesta vacía del servidor");
 			}
@@ -93,13 +179,11 @@ export default class ShippingServiceAdapter {
 				orders = response;
 			}
 
-			// Convertir todas las órdenes a items de envío
 			const items: ShippingItem[] = orders.map((order: any) => this.mapOrderToShippingItem(order));
 
 			return {
 				items,
 				pagination: {
-					// ✅ CORREGIDO: Usar propiedades correctas con fallbacks completos
 					currentPage: Number(pagination.currentPage) || Number((pagination as any).current_page) || 1,
 					totalPages: Number(pagination.totalPages) || Number((pagination as any).last_page) || 1,
 					totalItems: Number(pagination.totalItems) || Number((pagination as any).total) || items.length,
@@ -107,7 +191,7 @@ export default class ShippingServiceAdapter {
 				},
 			};
 		} catch (error) {
-			console.error("ShippingServiceAdapter: Error al obtener órdenes:", error);
+			console.error("ShippingServiceAdapter: Error en fallback:", error);
 			return {
 				items: [],
 				pagination: {
@@ -121,55 +205,81 @@ export default class ShippingServiceAdapter {
 	}
 
 	/**
-	 * Obtiene los detalles de un envío específico - SIMPLIFICADO
+	 * ✅ HELPER: Extraer dirección de shipping de los datos
 	 */
-	async getShippingDetails(orderIdOrShippingId: string): Promise<ShippingItem | null> {
-		try {
-			console.log(`ShippingServiceAdapter: Obteniendo detalles de la orden ${orderIdOrShippingId}`);
+	private extractShippingAddress(shippingData: any): string {
+		// Si ya viene formateada desde el backend
+		if (shippingData.shipping_address) {
+			return shippingData.shipping_address;
+		}
 
-			// Obtener detalles de la orden directamente
+		// Si viene en order.shipping_data
+		if (shippingData.order?.shipping_data) {
+			const shippingInfo = typeof shippingData.order.shipping_data === 'string' 
+				? JSON.parse(shippingData.order.shipping_data) 
+				: shippingData.order.shipping_data;
+			
+			return [
+				shippingInfo.address,
+				shippingInfo.city,
+				shippingInfo.state,
+				shippingInfo.country
+			].filter(Boolean).join(', ');
+		}
+
+		return "Dirección no disponible";
+	}
+
+	/**
+	 * Obtiene los detalles de un envío específico - CORREGIDO
+	 */
+	async getShippingDetails(shippingId: string): Promise<ShippingItem | null> {
+		try {
+			console.log(`ShippingServiceAdapter: Obteniendo detalles del envío ${shippingId}`);
+
+			// ✅ USAR LA RUTA CORRECTA según tu archivo de rutas
 			const response = await ApiClient.get<any>(
-				API_ENDPOINTS.ORDERS.SELLER_ORDER_DETAILS(Number(orderIdOrShippingId))
+				`/shipping/${shippingId}`
 			);
 
 			console.log("ShippingServiceAdapter: Respuesta de detalles:", response);
 
 			if (!response) {
-				throw new Error("No se encontraron detalles de la orden");
+				throw new Error("No se encontraron detalles del envío");
 			}
 
 			// Manejar diferentes formatos de respuesta
-			let orderData;
+			let shippingData;
 			if (response.success && response.data) {
-				orderData = response.data;
+				shippingData = response.data;
 			} else if (response.data) {
-				orderData = response.data;
+				shippingData = response.data;
 			} else {
-				orderData = response;
+				shippingData = response;
 			}
 
-			if (!orderData) {
-				throw new Error("Datos de orden vacíos");
+			if (!shippingData) {
+				throw new Error("Datos de envío vacíos");
 			}
 
-			// Convertir a shipping item
-			return this.mapOrderToShippingItem(orderData);
+			// ✅ USAR EL MAPEO CORRECTO PARA DATOS DE SHIPPING
+			return this.mapShippingToItem(shippingData);
 		} catch (error) {
-			console.error(`ShippingServiceAdapter: Error al obtener detalles de la orden ${orderIdOrShippingId}:`, error);
+			console.error(`ShippingServiceAdapter: Error al obtener detalles del envío ${shippingId}:`, error);
 			return null;
 		}
 	}
 
 	/**
-	 * Actualiza el estado de un envío - SIMPLIFICADO
+	 * Actualiza el estado de un envío - CORREGIDO
 	 */
-	async updateShippingStatus(orderIdOrShippingId: string, newStatus: ShippingItem["status"]): Promise<boolean> {
+	async updateShippingStatus(shippingId: string, newStatus: ShippingItem["status"]): Promise<boolean> {
 		try {
-			console.log(`ShippingServiceAdapter: Actualizando estado de la orden ${orderIdOrShippingId} a ${newStatus}`);
+			console.log(`ShippingServiceAdapter: Actualizando estado del envío ${shippingId} a ${newStatus}`);
 
-			// ✅ CORREGIDO: Usar el endpoint correcto que existe en las rutas
+			// ✅ USAR LA RUTA CORRECTA según tu archivo de rutas
 			const response = await ApiClient.patch<any>(
-				API_ENDPOINTS.ORDERS.UPDATE_SHIPPING(Number(orderIdOrShippingId)),
+				`/shipping/${shippingId}/status`,
 				{
 					status: newStatus,
 				}
@@ -225,9 +335,9 @@ export default class ShippingServiceAdapter {
 		try {
 			console.log(`ShippingServiceAdapter: Obteniendo historial para ${trackingNumber}`);
 
-			// Usar el endpoint de historial de envío
+			// ✅ USAR LA RUTA CORRECTA según tu archivo de rutas
 			const response = await ApiClient.get<any>(
-				API_ENDPOINTS.SHIPPING.HISTORY(trackingNumber)
+				`/shipping/${trackingNumber}/history`
 			);
 
 			console.log("ShippingServiceAdapter: Respuesta de historial:", response);
@@ -258,9 +368,9 @@ export default class ShippingServiceAdapter {
 		try {
 			console.log(`ShippingServiceAdapter: Obteniendo ruta para ${trackingNumber}`);
 
-			// Usar el endpoint de ruta de envío
+			// ✅ USAR LA RUTA CORRECTA según tu archivo de rutas
 			const response = await ApiClient.get<any>(
-				API_ENDPOINTS.SHIPPING.ROUTE(trackingNumber)
+				`/shipping/${trackingNumber}/route`
 			);
 
 			console.log("ShippingServiceAdapter: Respuesta de ruta:", response);
@@ -298,25 +408,9 @@ export default class ShippingServiceAdapter {
 		// Extraer información del cliente de diferentes posibles ubicaciones
 		const customer = apiOrder.user || apiOrder.customer || {};
 		
-		// ✅ CORREGIDO: Extraer dirección de envío del campo correcto
+		// Extraer dirección de envío
 		let shippingAddress = "";
-		
-		// Primero revisar si viene en shippingAddress (como en tu JSON)
-		if (apiOrder.shippingAddress) {
-			if (typeof apiOrder.shippingAddress === 'object') {
-				const addr = apiOrder.shippingAddress;
-				shippingAddress = [
-					addr.address, 
-					addr.city, 
-					addr.state, 
-					addr.country
-				].filter(Boolean).join(', ');
-			} else if (typeof apiOrder.shippingAddress === 'string') {
-				shippingAddress = apiOrder.shippingAddress;
-			}
-		}
-		// Fallback: revisar shipping_data (formato anterior)
-		else if (apiOrder.shipping_data) {
+		if (apiOrder.shipping_data) {
 			if (typeof apiOrder.shipping_data === 'string') {
 				try {
 					const parsed = JSON.parse(apiOrder.shipping_data);
@@ -334,11 +428,6 @@ export default class ShippingServiceAdapter {
 					apiOrder.shipping_data.country
 				].filter(Boolean).join(', ');
 			}
-		}
-
-		// Si no hay dirección disponible, usar fallback
-		if (!shippingAddress) {
-			shippingAddress = "Dirección no disponible";
 		}
 
 		// Determinar estado del envío de forma simple
@@ -395,7 +484,7 @@ export default class ShippingServiceAdapter {
 			carrier: apiOrder.shipping_company || apiOrder.carrier || undefined,
 			estimatedDelivery: apiOrder.estimated_delivery || undefined,
 			lastUpdate: apiOrder.updated_at || new Date().toISOString(),
-			shippingAddress: shippingAddress, // Ya procesada arriba
+			shippingAddress: shippingAddress || "Dirección no disponible",
 			shippingMethod: "Estándar",
 			weight: undefined,
 			shippingCost: undefined,

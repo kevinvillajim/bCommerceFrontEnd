@@ -431,10 +431,19 @@ const SellerShippingPage: React.FC = () => {
 							{item.carrier && (
 								<button
 									onClick={() => {
-										alert(
-											`Redirigiendo al sitio de ${item.carrier} para rastrear ${item.trackingNumber}`
-										);
-									}}
+	if (item.trackingNumber) {
+		navigator.clipboard.writeText(item.trackingNumber)
+			.then(() => {
+				alert(`${item.trackingNumber} copiado al portapapeles`);
+			})
+			.catch((err) => {
+				console.error("Error al copiar al portapapeles:", err);
+				alert("Hubo un error al copiar");
+			});
+	} else {
+		alert("No hay número de seguimiento para copiar");
+	}
+}}
 									className="ml-2 text-blue-600 hover:text-blue-800"
 									title={`Rastrear con ${item.carrier}`}
 								>
