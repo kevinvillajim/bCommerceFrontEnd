@@ -188,6 +188,13 @@ export const useRealTimeNotifications = (): UseRealTimeNotificationsReturn => {
 		};
 	}, [clearAllToasts]);
 
+	// ✅ EFECTO PARA ACTUALIZAR CONTADOR DE NOTIFICACIONES NO LEÍDAS
+	useEffect(() => {
+		if (isAuthenticated) {
+			refreshUnreadCount();
+		}
+	}, [isAuthenticated, refreshUnreadCount]);
+
 	// ✅ CLEANUP AL DESMONTAR
 	useEffect(() => {
 		return () => {
