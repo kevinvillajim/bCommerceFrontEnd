@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
 	User,
 	Store,
@@ -12,6 +12,7 @@ import {
 	CheckCircle,
 	Eye,
 	EyeOff,
+	Camera,
 } from "lucide-react";
 import { useSellerProfile } from "../../hooks/useSellerProfile";
 
@@ -22,11 +23,12 @@ const SellerProfilePage: React.FC = () => {
 		error,
 		success,
 		updateProfile,
+		uploadAvatar,
 		changePassword,
 		clearMessages,
 	} = useSellerProfile();
 
-	// Estados para los formularios - inicializar solo una vez
+	// Estados para los formularios
 	const [personalData, setPersonalData] = useState({
 		name: "",
 		phone: "",
@@ -51,26 +53,55 @@ const SellerProfilePage: React.FC = () => {
 	});
 
 	const [hasChanges, setHasChanges] = useState(false);
+	const [avatarFile, setAvatarFile] = useState<File | null>(null);
+	const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 	const [isInitialized, setIsInitialized] = useState(false);
+	const [imageLoadError, setImageLoadError] = useState(false);
+	
+	const fileInputRef = useRef<HTMLInputElement>(null);
 
-	// Inicializar estados cuando cambie profileData - solo una vez
-	React.useEffect(() => {
+	// ✅ ARREGLADO: Usar useEffect específico para inicialización una sola vez
+	useEffect(() => {
 		if (profileData.name && !isInitialized) {
+			console.log('🔄 Inicializando datos del perfil por primera vez:', profileData);
+			
 			setPersonalData({
-				name: profileData.name,
+				name: profileData.name || "",
 				phone: profileData.phone || "",
 				location: profileData.location || "",
 			});
+			
 			setStoreData({
 				storeName: profileData.storeName || "",
 				storeDescription: profileData.storeDescription || "",
 			});
+			
 			setIsInitialized(true);
 		}
 	}, [profileData.name, profileData.phone, profileData.location, profileData.storeName, profileData.storeDescription, isInitialized]);
 
+	// ✅ ARREGLADO: Usar useEffect separado para actualizar datos después de guardado exitoso
+	useEffect(() => {
+		if (success && isInitialized) {
+			console.log('✅ Datos guardados exitosamente, actualizando formulario');
+			
+			setPersonalData({
+				name: profileData.name || "",
+				phone: profileData.phone || "",
+				location: profileData.location || "",
+			});
+			
+			setStoreData({
+				storeName: profileData.storeName || "",
+				storeDescription: profileData.storeDescription || "",
+			});
+			
+			setHasChanges(false);
+		}
+	}, [success, profileData.name, profileData.phone, profileData.location, profileData.storeName, profileData.storeDescription, isInitialized]);
+
 	// Limpiar mensajes después de unos segundos
-	React.useEffect(() => {
+	useEffect(() => {
 		if (error || success) {
 			const timer = setTimeout(() => {
 				clearMessages();
@@ -79,12 +110,25 @@ const SellerProfilePage: React.FC = () => {
 		}
 	}, [error, success, clearMessages]);
 
+	// ✅ Debug: mostrar datos en consola (solo cuando cambian realmente)
+	useEffect(() => {
+		if (isInitialized) {
+			console.log('🎯 Estados actualizados:', {
+				personalData,
+				storeData,
+				hasChanges
+			});
+		}
+	}, [personalData.name, personalData.phone, personalData.location, storeData.storeName, storeData.storeDescription, hasChanges, isInitialized]);
+
 	const handlePersonalDataChange = (field: string, value: string) => {
+		console.log(`📝 Cambiando ${field}:`, value);
 		setPersonalData(prev => ({ ...prev, [field]: value }));
 		setHasChanges(true);
 	};
 
 	const handleStoreDataChange = (field: string, value: string) => {
+		console.log(`🏪 Cambiando ${field}:`, value);
 		setStoreData(prev => ({ ...prev, [field]: value }));
 		setHasChanges(true);
 	};
@@ -93,18 +137,70 @@ const SellerProfilePage: React.FC = () => {
 		setPasswordData(prev => ({ ...prev, [field]: value }));
 	};
 
+	const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+		const file = event.target.files?.[0];
+		if (file) {
+			// Validar tipo de archivo
+			if (!file.type.startsWith('image/')) {
+				alert('Por favor selecciona una imagen válida.');
+				return;
+			}
+
+			// Validar tamaño (máximo 5MB)
+			if (file.size > 5 * 1024 * 1024) {
+				alert('La imagen debe ser menor a 5MB.');
+				return;
+			}
+
+			console.log('📷 Avatar seleccionado:', file.name, file.size);
+			setAvatarFile(file);
+			setHasChanges(true);
+			setImageLoadError(false); // Resetear error de imagen
+
+			// Mostrar preview
+			const reader = new FileReader();
+			reader.onload = (e) => {
+				setAvatarPreview(e.target?.result as string);
+			};
+			reader.readAsDataURL(file);
+		}
+	};
+
 	const handleSaveProfile = async () => {
+		console.log('💾 Iniciando guardado del perfil...');
+		
+		// Subir avatar si hay uno nuevo
+		if (avatarFile) {
+			console.log('📷 Subiendo avatar primero...');
+			const avatarSuccess = await uploadAvatar(avatarFile);
+			if (!avatarSuccess) {
+				console.error('❌ Falló la subida del avatar');
+				return; // Si falla el avatar, no continuar
+			}
+			setAvatarFile(null);
+			setAvatarPreview(null);
+			setImageLoadError(false); // Resetear error de imagen tras éxito
+			console.log('✅ Avatar subido exitosamente');
+		}
+
+		// Actualizar perfil con todos los datos
 		const profileUpdates = {
 			name: personalData.name,
 			phone: personalData.phone,
 			location: personalData.location,
-			store_name: storeData.storeName,
-			store_description: storeData.storeDescription,
+			storeName: storeData.storeName,
+			storeDescription: storeData.storeDescription,
 		};
 
+		console.log('📤 Actualizando perfil con datos:', profileUpdates);
 		const success = await updateProfile(profileUpdates);
+		
 		if (success) {
-			setHasChanges(false);
+			console.log('✅ Perfil actualizado exitosamente');
+			setImageLoadError(false); // Resetear error de imagen tras éxito
+			// No cambiar hasChanges aquí, lo hará el useEffect cuando reciba success
+		} else {
+			console.error('❌ Falló la actualización del perfil');
 		}
 	};
 
@@ -114,8 +210,10 @@ const SellerProfilePage: React.FC = () => {
 			return;
 		}
 
+		console.log('🔐 Cambiando contraseña...');
 		const success = await changePassword(passwordData);
 		if (success) {
+			console.log('✅ Contraseña cambiada exitosamente');
 			setPasswordData({
 				currentPassword: "",
 				newPassword: "",
@@ -128,8 +226,83 @@ const SellerProfilePage: React.FC = () => {
 		setShowPasswords(prev => ({ ...prev, [field]: !prev[field] }));
 	};
 
+	const handleCancelChanges = () => {
+		console.log('❌ Cancelando cambios...');
+		setPersonalData({
+			name: profileData.name || "",
+			phone: profileData.phone || "",
+			location: profileData.location || "",
+		});
+		setStoreData({
+			storeName: profileData.storeName || "",
+			storeDescription: profileData.storeDescription || "",
+		});
+		setAvatarFile(null);
+		setAvatarPreview(null);
+		setImageLoadError(false); // Resetear error de imagen
+		setHasChanges(false);
+	};
+
+	// Función para obtener la URL del avatar
+	const getAvatarUrl = () => {
+		if (avatarPreview) return avatarPreview;
+		if (profileData.avatar && !imageLoadError) {
+			// Si la URL ya incluye el dominio, usarla tal como está
+			if (profileData.avatar.startsWith('http')) {
+				return profileData.avatar;
+			}
+			// Si es una ruta relativa, construir la URL completa
+			return `${process.env.REACT_APP_API_BASE_URL || 'http://127.0.0.1:8000'}/storage/${profileData.avatar}`;
+		}
+		return null; // Sin imagen, mostrar inicial
+	};
+
+	// Función para obtener la inicial del usuario
+	const getUserInitial = () => {
+		if (profileData.name) {
+			return profileData.name.charAt(0).toUpperCase();
+		}
+		return 'U';
+	};
+
+	// ✅ ARREGLADO: No mostrar nada hasta que esté inicializado
+	if (!isInitialized) {
+		return (
+			<div className="flex justify-center items-center h-64">
+				<div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
+			</div>
+		);
+	}
+
 	return (
 		<div className="space-y-6">
+			{/* Debug Info - Solo mostrar en desarrollo */}
+			{process.env.NODE_ENV === 'development' && (
+				<div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-xs">
+					<details>
+						<summary className="cursor-pointer font-medium">🔍 Debug Info</summary>
+						<pre className="mt-2 text-xs bg-white p-2 rounded border overflow-x-auto">
+							{JSON.stringify({ 
+								profileData: {
+									name: profileData.name,
+									phone: profileData.phone,
+									location: profileData.location,
+									storeName: profileData.storeName,
+									storeDescription: profileData.storeDescription,
+									avatar: profileData.avatar
+								}, 
+								personalData, 
+								storeData, 
+								hasChanges,
+								isInitialized,
+								imageLoadError,
+								avatarPreview: avatarPreview ? 'preview-set' : null
+							}, null, 2)}
+						</pre>
+					</details>
+				</div>
+			)}
+
 			{/* Mensajes de estado */}
 			{error && (
 				<div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg">
@@ -157,10 +330,42 @@ const SellerProfilePage: React.FC = () => {
 			<div className="bg-white rounded-lg shadow-sm p-6">
 				<div className="flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-6">
 					<div className="relative">
-						<img
-							src={profileData.avatar || "https://i.pravatar.cc/150"}
-							alt="Seller profile"
-							className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-md"
+						{getAvatarUrl() ? (
+							<img
+								src={getAvatarUrl()}
+								alt="Seller profile"
+								className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-md"
+								onError={(e) => {
+									console.error('❌ Error cargando imagen:', getAvatarUrl());
+									// Marcar que hay error de carga para mostrar la inicial
+									setImageLoadError(true);
+								}}
+								onLoad={() => {
+									// Si la imagen se carga correctamente, resetear el error
+									setImageLoadError(false);
+								}}
+							/>
+						) : (
+							<div className="w-24 h-24 rounded-full bg-gradient-to-r from-primary-500 to-primary-600 flex items-center justify-center border-4 border-white shadow-md">
+								<span className="text-white text-2xl font-bold">
+									{getUserInitial()}
+								</span>
+							</div>
+						)}
+						<button
+							type="button"
+							onClick={() => fileInputRef.current?.click()}
+							className="absolute bottom-0 right-0 bg-primary-600 text-white rounded-full p-2 hover:bg-primary-700 transition-colors shadow-lg"
+							title="Cambiar imagen de perfil"
+						>
+							<Camera size={16} />
+						</button>
+						<input
+							ref={fileInputRef}
+							type="file"
+							accept="image/*"
+							onChange={handleAvatarChange}
+							className="hidden"
 						/>
 					</div>
 
@@ -197,7 +402,7 @@ const SellerProfilePage: React.FC = () => {
 								type="text"
 								value={personalData.name}
 								onChange={(e) => handlePersonalDataChange("name", e.target.value)}
-								placeholder="Nombre completo"
+								placeholder={profileData.name || "Nombre completo"}
 								className="w-full bg-transparent focus:outline-none text-gray-700 border-b border-gray-300 pb-1 focus:border-primary-500"
 							/>
 						</div>
@@ -216,7 +421,7 @@ const SellerProfilePage: React.FC = () => {
 								type="tel"
 								value={personalData.phone}
 								onChange={(e) => handlePersonalDataChange("phone", e.target.value)}
-								placeholder="Número de teléfono"
+								placeholder={profileData.phone || "Número de teléfono"}
 								className="w-full bg-transparent focus:outline-none text-gray-700 border-b border-gray-300 pb-1 focus:border-primary-500"
 							/>
 						</div>
@@ -226,7 +431,7 @@ const SellerProfilePage: React.FC = () => {
 								type="text"
 								value={personalData.location}
 								onChange={(e) => handlePersonalDataChange("location", e.target.value)}
-								placeholder="Ciudad, País"
+								placeholder={profileData.location || "Ciudad, País"}
 								className="w-full bg-transparent focus:outline-none text-gray-700 border-b border-gray-300 pb-1 focus:border-primary-500"
 							/>
 						</div>
@@ -248,9 +453,12 @@ const SellerProfilePage: React.FC = () => {
 								type="text"
 								value={storeData.storeName}
 								onChange={(e) => handleStoreDataChange("storeName", e.target.value)}
-								placeholder="Mi Tienda Online"
+								placeholder={profileData.storeName || "Mi Tienda Online"}
 								className="w-full bg-transparent focus:outline-none text-gray-700 border-b border-gray-300 pb-1 focus:border-primary-500"
 							/>
+							{profileData.storeName && (
+								<p className="text-xs text-gray-400 mt-1">Actual: {profileData.storeName}</p>
+							)}
 						</div>
 						<div>
 							<label className="block text-sm text-gray-500 mb-1">
@@ -259,10 +467,13 @@ const SellerProfilePage: React.FC = () => {
 							<textarea
 								value={storeData.storeDescription}
 								onChange={(e) => handleStoreDataChange("storeDescription", e.target.value)}
-								placeholder="Descripción de la tienda..."
+								placeholder={profileData.storeDescription || "Descripción de la tienda..."}
 								className="w-full bg-transparent focus:outline-none text-gray-700 border-b border-gray-300 pb-1 focus:border-primary-500 resize-none"
 								rows={3}
 							/>
+							{profileData.storeDescription && (
+								<p className="text-xs text-gray-400 mt-1">Actual: {profileData.storeDescription}</p>
+							)}
 						</div>
 					</div>
 				</div>
@@ -350,18 +561,7 @@ const SellerProfilePage: React.FC = () => {
 			{/* Action Buttons */}
 			<div className="flex justify-end space-x-4">
 				<button 
-					onClick={() => {
-						setPersonalData({
-							name: profileData.name,
-							phone: profileData.phone || "",
-							location: profileData.location || "",
-						});
-						setStoreData({
-							storeName: profileData.storeName || "",
-							storeDescription: profileData.storeDescription || "",
-						});
-						setHasChanges(false);
-					}}
+					onClick={handleCancelChanges}
 					disabled={loading || !hasChanges}
 					className="px-6 py-2 bg-gray-200 rounded-lg text-gray-700 hover:bg-gray-300 transition disabled:opacity-50 disabled:cursor-not-allowed"
 				>

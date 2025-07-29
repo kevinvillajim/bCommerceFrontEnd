@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import ApiClient from "../../infrastructure/api/apiClient";
 import { API_ENDPOINTS } from "../../constants/apiEndpoints";
@@ -25,9 +25,9 @@ export const useSellerProfile = () => {
 	const [error, setError] = useState<string | null>(null);
 	const [success, setSuccess] = useState<string | null>(null);
 
-	// Obtener datos del perfil (usar datos del contexto de auth)
-	const getProfileData = useCallback((): SellerProfileData => {
-		return {
+	// ✅ ARREGLADO: Usar useMemo para evitar recalculo constante de profileData
+	const profileData = useMemo((): SellerProfileData => {
+		const data = {
 			name: user?.name || "",
 			email: user?.email || "",
 			phone: user?.phone || "",
@@ -36,17 +36,54 @@ export const useSellerProfile = () => {
 			storeDescription: user?.store_description || "",
 			avatar: user?.avatar || "",
 		};
-	}, [user]);
+		
+		// Solo logear cuando realmente cambien los valores relevantes
+		if (user?.name) {
+			console.log('🔍 ProfileData calculado:', data);
+		}
+		
+		return data;
+	}, [
+		user?.name, 
+		user?.email, 
+		user?.phone, 
+		user?.location, 
+		user?.store_name, 
+		user?.store_description, 
+		user?.avatar
+	]);
 
 	// Actualizar perfil básico
-	const updateProfile = useCallback(async (profileData: Partial<SellerProfileData>) => {
+	const updateProfile = useCallback(async (profileDataUpdate: Partial<SellerProfileData>) => {
 		setLoading(true);
 		setError(null);
 		setSuccess(null);
 
 		try {
-			const response = await ApiClient.put(API_ENDPOINTS.PROFILE.UPDATE, profileData);
+			console.log('📤 Enviando datos del perfil:', profileDataUpdate);
+
+			// Preparar datos completos incluyendo campos de seller
+			const updateData = {
+				name: profileDataUpdate.name,
+				phone: profileDataUpdate.phone,
+				location: profileDataUpdate.location,
+				store_name: profileDataUpdate.storeName,
+				store_description: profileDataUpdate.storeDescription,
+			};
+
+			// Limpiar campos undefined/null innecesarios
+			Object.keys(updateData).forEach(key => {
+				if (updateData[key] === undefined || updateData[key] === null || updateData[key] === "") {
+					delete updateData[key];
+				}
+			});
+
+			console.log('📤 Datos limpiados para enviar:', updateData);
+
+			const response = await ApiClient.put(API_ENDPOINTS.PROFILE.UPDATE, updateData);
 			
+			console.log('📥 Respuesta del servidor:', response);
+
 			if (response) {
 				// Actualizar contexto de autenticación con nuevos datos
 				updateUser(response);
@@ -56,9 +93,62 @@ export const useSellerProfile = () => {
 			
 			throw new Error("No se pudo actualizar el perfil");
 		} catch (err) {
+			console.error('❌ Error completo al actualizar perfil:', err);
 			const errorMessage = err instanceof Error ? err.message : "Error al actualizar perfil";
 			setError(errorMessage);
-			console.error("Error al actualizar perfil:", err);
+			return false;
+		} finally {
+			setLoading(false);
+		}
+	}, [updateUser]);
+
+	// Subir avatar
+	const uploadAvatar = useCallback(async (file: File) => {
+		setLoading(true);
+		setError(null);
+		setSuccess(null);
+
+		try {
+			console.log('📤 Subiendo avatar:', file.name, 'Tamaño:', file.size, 'Tipo:', file.type);
+
+			const formData = new FormData();
+			formData.append('avatar', file);
+
+			// Debug: Verificar que FormData contiene el archivo
+			console.log('📤 FormData verificación:');
+			for (let pair of formData.entries()) {
+				console.log('🔍', pair[0], ':', pair[1]);
+			}
+
+			console.log('📤 Enviando a:', API_ENDPOINTS.PROFILE.UPLOAD_AVATAR);
+
+			// ✅ ARREGLADO: NO establecer Content-Type manualmente para multipart/form-data
+			const response = await ApiClient.post(API_ENDPOINTS.PROFILE.UPLOAD_AVATAR, formData);
+
+			console.log('📥 Respuesta del avatar:', response);
+
+			if (response) {
+				updateUser(response);
+				setSuccess("Avatar actualizado correctamente");
+				return true;
+			}
+
+			throw new Error("No se pudo subir el avatar");
+		} catch (err: any) {
+			console.error('❌ Error completo al subir avatar:', err);
+			
+			// Manejo específico de errores de validación
+			if (err.response?.status === 422) {
+				const errors = err.response?.data?.errors;
+				if (errors?.avatar) {
+					setError(`Error de validación: ${errors.avatar[0]}`);
+				} else {
+					setError('Error de validación en el archivo de imagen');
+				}
+			} else {
+				const errorMessage = err instanceof Error ? err.message : "Error al subir avatar";
+				setError(errorMessage);
+			}
 			return false;
 		} finally {
 			setLoading(false);
@@ -82,11 +172,15 @@ export const useSellerProfile = () => {
 				throw new Error("La contraseña debe tener al menos 6 caracteres");
 			}
 
-			const response = await ApiClient.put(API_ENDPOINTS.PROFILE.UPDATE, {
+			console.log('📤 Cambiando contraseña...');
+
+			const response = await ApiClient.put(API_ENDPOINTS.PROFILE.CHANGE_PASSWORD, {
 				current_password: passwordData.currentPassword,
 				password: passwordData.newPassword,
 				password_confirmation: passwordData.confirmPassword,
 			});
+
+			console.log('📥 Respuesta del cambio de contraseña:', response);
 
 			if (response) {
 				setSuccess("Contraseña actualizada correctamente");
@@ -95,9 +189,9 @@ export const useSellerProfile = () => {
 
 			throw new Error("No se pudo actualizar la contraseña");
 		} catch (err) {
+			console.error('❌ Error al cambiar contraseña:', err);
 			const errorMessage = err instanceof Error ? err.message : "Error al cambiar contraseña";
 			setError(errorMessage);
-			console.error("Error al cambiar contraseña:", err);
 			return false;
 		} finally {
 			setLoading(false);
@@ -111,11 +205,12 @@ export const useSellerProfile = () => {
 	}, []);
 
 	return {
-		profileData: getProfileData(),
+		profileData, // ✅ ARREGLADO: Ahora es un objeto memoizado estable
 		loading,
 		error,
 		success,
 		updateProfile,
+		uploadAvatar,
 		changePassword,
 		clearMessages,
 	};
