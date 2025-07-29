@@ -140,6 +140,7 @@ export const API_ENDPOINTS = {
   SELLER: {
     REGISTER: "/seller/register",
     INFO: "/seller/info",
+    UPDATE_STORE_INFO: "/seller/store-info",
     TOP_RATING: "/sellers/top/rating",
     TOP_SALES: "/sellers/top/sales",
     FEATURED: "/sellers/featured",

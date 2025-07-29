@@ -246,7 +246,7 @@ const SellerProfilePage: React.FC = () => {
 				return profileData.avatar;
 			}
 			// Si es una ruta relativa, construir la URL completa
-			return `${process.env.REACT_APP_API_BASE_URL || 'http://127.0.0.1:8000'}/storage/${profileData.avatar}`;
+			return `${import.meta.env.REACT_APP_API_BASE_URL || 'http://127.0.0.1:8000'}/storage/${profileData.avatar}`;
 		}
 		return null; // Sin imagen, mostrar inicial
 	};
@@ -271,7 +271,7 @@ const SellerProfilePage: React.FC = () => {
 	return (
 		<div className="space-y-6">
 			{/* Debug Info - Solo mostrar en desarrollo */}
-			{process.env.NODE_ENV === 'development' && (
+			{import.meta.env.NODE_ENV === 'development' && (
 				<div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-xs">
 					<details>
 						<summary className="cursor-pointer font-medium">🔍 Debug Info</summary>
