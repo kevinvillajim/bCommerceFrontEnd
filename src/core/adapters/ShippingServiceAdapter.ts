@@ -298,9 +298,25 @@ export default class ShippingServiceAdapter {
 		// Extraer información del cliente de diferentes posibles ubicaciones
 		const customer = apiOrder.user || apiOrder.customer || {};
 		
-		// Extraer dirección de envío
+		// ✅ CORREGIDO: Extraer dirección de envío del campo correcto
 		let shippingAddress = "";
-		if (apiOrder.shipping_data) {
+		
+		// Primero revisar si viene en shippingAddress (como en tu JSON)
+		if (apiOrder.shippingAddress) {
+			if (typeof apiOrder.shippingAddress === 'object') {
+				const addr = apiOrder.shippingAddress;
+				shippingAddress = [
+					addr.address, 
+					addr.city, 
+					addr.state, 
+					addr.country
+				].filter(Boolean).join(', ');
+			} else if (typeof apiOrder.shippingAddress === 'string') {
+				shippingAddress = apiOrder.shippingAddress;
+			}
+		}
+		// Fallback: revisar shipping_data (formato anterior)
+		else if (apiOrder.shipping_data) {
 			if (typeof apiOrder.shipping_data === 'string') {
 				try {
 					const parsed = JSON.parse(apiOrder.shipping_data);
@@ -318,6 +334,11 @@ export default class ShippingServiceAdapter {
 					apiOrder.shipping_data.country
 				].filter(Boolean).join(', ');
 			}
+		}
+
+		// Si no hay dirección disponible, usar fallback
+		if (!shippingAddress) {
+			shippingAddress = "Dirección no disponible";
 		}
 
 		// Determinar estado del envío de forma simple
@@ -374,7 +395,7 @@ export default class ShippingServiceAdapter {
 			carrier: apiOrder.shipping_company || apiOrder.carrier || undefined,
 			estimatedDelivery: apiOrder.estimated_delivery || undefined,
 			lastUpdate: apiOrder.updated_at || new Date().toISOString(),
-			shippingAddress: shippingAddress || "Dirección no disponible",
+			shippingAddress: shippingAddress, // Ya procesada arriba
 			shippingMethod: "Estándar",
 			weight: undefined,
 			shippingCost: undefined,
