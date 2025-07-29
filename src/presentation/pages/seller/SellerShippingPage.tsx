@@ -406,179 +406,183 @@ const SellerShippingPage: React.FC = () => {
 
 	// Definir las columnas de la tabla
 	const columns = [
-		{
-			key: "orderNumber",
-			header: "Nº Pedido",
-			sortable: true,
-			render: (item: ShippingItem) => (
-				<Link
-					to={`/seller/orders/${item.orderId}`}
-					className="font-medium text-primary-600 hover:underline"
-				>
-					{item.orderNumber}
-				</Link>
-			),
-		},
-		{
-			key: "trackingNumber",
-			header: "Nº Seguimiento",
-			sortable: true,
-			render: (item: ShippingItem) => (
-				<div>
-					{item.trackingNumber ? (
-						<div className="flex items-center">
-							<span className="font-mono text-sm">{item.trackingNumber}</span>
-							{item.carrier && (
-								<button
-									onClick={() => {
-	if (item.trackingNumber) {
-		navigator.clipboard.writeText(item.trackingNumber)
-			.then(() => {
-				alert(`${item.trackingNumber} copiado al portapapeles`);
-			})
-			.catch((err) => {
-				console.error("Error al copiar al portapapeles:", err);
-				alert("Hubo un error al copiar");
-			});
-	} else {
-		alert("No hay número de seguimiento para copiar");
-	}
-}}
-									className="ml-2 text-blue-600 hover:text-blue-800"
-									title={`Rastrear con ${item.carrier}`}
-								>
-									<ExternalLink size={14} />
-								</button>
-							)}
-						</div>
-					) : (
-						<span className="text-gray-500 text-sm">
-							No asignado
-						</span>
-					)}
-				</div>
-			),
-		},
-		{
-			key: "date",
-			header: "Fecha de Pedido",
-			sortable: true,
-			render: (item: ShippingItem) => {
-				const date = new Date(item.date);
-				return (
-					<span className="text-sm">{date.toLocaleDateString("es-ES")}</span>
-				);
-			},
-		},
-		{
-			key: "customer",
-			header: "Cliente",
-			sortable: true,
-			render: (item: ShippingItem) => (
-				<div>
-					<div className="font-medium text-sm">{item.customer.name}</div>
-					<div className="text-xs text-gray-500 truncate max-w-[150px]">
-						{item.shippingAddress}
-					</div>
-				</div>
-			),
-		},
-		{
-			key: "status",
-			header: "Estado",
-			sortable: true,
-			render: (item: ShippingItem) => {
-				// ✅ NUEVO: Usar el dropdown en lugar del badge estático
-				return (
-					<ShippingStatusDropdown
-						currentStatus={item.status}
-						shippingId={item.id}
-						onStatusChange={updateShippingStatus}
-						disabled={isUpdating}
-					/>
-				);
-			},
-		},
-		{
-			key: "carrier",
-			header: "Transportista",
-			sortable: true,
-			render: (item: ShippingItem) => (
-				<span>{item.carrier || "No asignado"}</span>
-			),
-		},
-		{
-			key: "estimatedDelivery",
-			header: "Entrega Estimada",
-			sortable: true,
-			render: (item: ShippingItem) => (
-				<span>
-					{item.estimatedDelivery
-						? new Date(item.estimatedDelivery).toLocaleDateString("es-ES")
-						: "No disponible"}
-				</span>
-			),
-		},
-		{
-			key: "actions",
-			header: "Acciones",
-			render: (item: ShippingItem) => (
-				<div className="flex justify-end space-x-2">
-					{/* Ver detalles del envío */}
-					<Link
-						to={`/seller/shipping/${item.id}`}
-						className="p-1 text-blue-600 hover:bg-blue-100 rounded-md"
-						title="Ver detalles"
-					>
-						<ClipboardList size={18} />
-					</Link>
+    {
+      key: "orderNumber",
+      header: "Nº Pedido",
+      sortable: true,
+      render: (item: ShippingItem) => (
+        <Link
+          to={`/seller/orders/${item.orderId}`}
+          className="font-medium text-primary-600 hover:underline"
+        >
+          {item.orderNumber}
+        </Link>
+      ),
+    },
+    {
+      key: "trackingNumber",
+      header: "Nº Seguimiento",
+      sortable: true,
+      render: (item: ShippingItem) => (
+        <div>
+          {item.trackingNumber ? (
+            <div className="flex items-center">
+              <span className="font-mono text-sm">{item.trackingNumber}</span>
+              {item.carrier && (
+                <button
+                  onClick={() => {
+                    if (item.trackingNumber) {
+                      navigator.clipboard
+                        .writeText(item.trackingNumber)
+                        .then(() => {
+                          alert(
+                            `${item.trackingNumber} copiado al portapapeles`
+                          );
+                        })
+                        .catch((err) => {
+                          console.error(
+                            "Error al copiar al portapapeles:",
+                            err
+                          );
+                          alert("Hubo un error al copiar");
+                        });
+                    } else {
+                      alert("No hay número de seguimiento para copiar");
+                    }
+                  }}
+                  className="ml-2 text-blue-600 hover:text-blue-800"
+                  title={`Rastrear con ${item.carrier}`}
+                >
+                  <ExternalLink size={14} />
+                </button>
+              )}
+            </div>
+          ) : (
+            <span className="text-gray-500 text-sm">No asignado</span>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: "date",
+      header: "Fecha de Pedido",
+      sortable: true,
+      render: (item: ShippingItem) => {
+        const date = new Date(item.date);
+        return (
+          <span className="text-sm">{date.toLocaleDateString("es-ES")}</span>
+        );
+      },
+    },
+    {
+      key: "customer",
+      header: "Cliente",
+      sortable: true,
+      render: (item: ShippingItem) => (
+        <div>
+          <div className="font-medium text-sm">{item.customer.name}</div>
+          <div className="text-xs text-gray-500 truncate max-w-[150px]">
+            {item.shippingAddress}
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: "status",
+      header: "Estado",
+      sortable: true,
+      render: (item: ShippingItem) => {
+        // ✅ NUEVO: Usar el dropdown en lugar del badge estático
+        return (
+          <ShippingStatusDropdown
+            currentStatus={item.status}
+            shippingId={item.id}
+            onStatusChange={updateShippingStatus}
+            disabled={isUpdating}
+          />
+        );
+      },
+    },
+    {
+      key: "carrier",
+      header: "Transportista",
+      sortable: true,
+      render: (item: ShippingItem) => (
+        <span>{item.carrier || "No asignado"}</span>
+      ),
+    },
+    {
+      key: "estimatedDelivery",
+      header: "Entrega Estimada",
+      sortable: true,
+      render: (item: ShippingItem) => (
+        <span>
+          {item.estimatedDelivery
+            ? new Date(item.estimatedDelivery).toLocaleDateString("es-ES")
+            : "No disponible"}
+        </span>
+      ),
+    },
+    {
+      key: "actions",
+      header: "Acciones",
+      render: (item: ShippingItem) => (
+        <div className="flex justify-end space-x-2">
+          {/* Ver detalles del envío */}
+          <Link
+            to={`/seller/shipping/${item.id}`}
+            className="p-1 text-blue-600 hover:bg-blue-100 rounded-md"
+            title="Ver detalles"
+          >
+            <ClipboardList size={18} />
+          </Link>
 
-					{/* Asignar número de seguimiento - solo para pendientes */}
-					{(item.status === "pending" || item.status === "ready_to_ship") &&
-						!item.trackingNumber && (
-							<button
-								onClick={() => assignTrackingNumber(item.orderId)}
-								className="p-1 text-green-600 hover:bg-green-100 rounded-md"
-								title="Asignar número de seguimiento"
-								disabled={isUpdating}
-							>
-								<Package size={18} />
-							</button>
-						)}
+          {/* Asignar número de seguimiento - solo para pendientes */}
+          {(item.status === "pending" || item.status === "ready_to_ship") &&
+            !item.trackingNumber && (
+              <button
+                onClick={() => assignTrackingNumber(item.orderId)}
+                className="p-1 text-green-600 hover:bg-green-100 rounded-md"
+                title="Asignar número de seguimiento"
+                disabled={isUpdating}
+              >
+                <Package size={18} />
+              </button>
+            )}
 
-					{/* Imprimir etiqueta - solo para pedidos con número de seguimiento */}
-					{item.trackingNumber &&
-						(item.status === "shipped" || item.status === "in_transit") && (
-							<button
-								onClick={() =>
-									alert(`Imprimiendo etiqueta para ${item.trackingNumber}`)
-								}
-								className="p-1 text-gray-600 hover:bg-gray-100 rounded-md"
-								title="Imprimir etiqueta"
-								disabled={isUpdating}
-							>
-								<Printer size={18} />
-							</button>
-						)}
+          {/* Imprimir etiqueta - solo para pedidos con número de seguimiento */}
+          {item.trackingNumber &&
+            (item.status === "shipped" || item.status === "in_transit") && (
+              <button
+                onClick={() =>
+                  alert(`Imprimiendo etiqueta para ${item.trackingNumber}`)
+                }
+                className="p-1 text-gray-600 hover:bg-gray-100 rounded-md"
+                title="Imprimir etiqueta"
+                disabled={isUpdating}
+              >
+                <Printer size={18} />
+              </button>
+            )}
 
-					{/* ✅ MANTENER: Marcar como fallido - para envíos pendientes, listos o en tránsito */}
-					{(item.status === "ready_to_ship" ||
-						item.status === "in_transit" ||
-						item.status === "shipped" ||
-						item.status === "pending") && (
-						<button
-							onClick={() => updateShippingStatus(item.id, "failed")}
-							className="p-1 text-red-600 hover:bg-red-100 rounded-md"
-							title="Marcar como fallido"
-							disabled={isUpdating}
-						>
-							<AlertTriangle size={18} />
-						</button>
-					)}
-				</div>
-			),
-		},
-	];
+          {/* ✅ MANTENER: Marcar como fallido - para envíos pendientes, listos o en tránsito */}
+          {(item.status === "ready_to_ship" ||
+            item.status === "in_transit" ||
+            item.status === "shipped" ||
+            item.status === "pending") && (
+            <button
+              onClick={() => updateShippingStatus(item.id, "failed")}
+              className="p-1 text-red-600 hover:bg-red-100 rounded-md"
+              title="Marcar como fallido"
+              disabled={isUpdating}
+            >
+              <AlertTriangle size={18} />
+            </button>
+          )}
+        </div>
+      ),
+    },
+  ];
 
 	// Calcular estadísticas de envíos
 	const calculateShippingStats = () => {

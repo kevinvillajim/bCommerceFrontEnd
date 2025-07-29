@@ -675,7 +675,7 @@ const OrderDetailPage: React.FC = () => {
 								)}
 								<div className="mt-3">
 									<Link
-										to={`/seller/shipping/${order.id}`}
+										to={`/seller/shipping`}
 										className="bg-indigo-100 text-indigo-700 px-4 py-2 rounded-lg hover:bg-indigo-200 inline-flex items-center mt-2"
 									>
 										<Truck size={16} className="mr-2" />

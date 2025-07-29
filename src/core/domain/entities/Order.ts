@@ -12,7 +12,7 @@ export interface Order {
 	total: number;
 	status: OrderStatus;
 	paymentId?: string;
-	paymentMethod?: PaymentMethod;
+	payment_method?: PaymentMethod;
 	paymentStatus?: PaymentStatus;
 	paymentDetails?: Record<string, any>;
 	shippingData?: ShippingData;
@@ -69,6 +69,8 @@ export interface OrderItem {
  * Order detail entity - Versión extendida con información adicional
  */
 export interface OrderDetail extends Order {
+	payment_status: string | null | undefined;
+	created_at: any;
 	items: (OrderItem & {
 		product_name?: string;
 		product_sku?: string;
