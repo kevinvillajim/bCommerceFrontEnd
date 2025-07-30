@@ -40,7 +40,7 @@ const OrderDetailPage: React.FC = () => {
 			console.log("📦 Items de la orden:", orderDetail?.items);
 			console.log("🔢 Cantidad de items:", orderDetail?.items?.length);
 			
-			orderDetail?.items?.forEach((item, index) => {
+			orderDetail?.items?.forEach((item: any, index: any) => {
 				console.log(`📋 Item ${index + 1}:`, {
 					id: item.id,
 					product_name: item.product_name,
@@ -161,7 +161,13 @@ const OrderDetailPage: React.FC = () => {
 						...prev,
 						status: "shipped",
 						shippingData: {
-							...prev.shippingData,
+							address: prev.shippingData?.address || "",
+							city: prev.shippingData?.city || "",
+							state: prev.shippingData?.state || "",
+							country: prev.shippingData?.country || "",
+							postalCode: prev.shippingData?.postalCode || "",
+							phone: prev.shippingData?.phone,
+							name: prev.shippingData?.name,
 							tracking_number: shippingData.tracking_number,
 							shipping_company: shippingData.shipping_company,
 							estimated_delivery: shippingData.estimated_delivery,

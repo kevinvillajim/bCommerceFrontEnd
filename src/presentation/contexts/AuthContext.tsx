@@ -64,6 +64,7 @@ interface AuthContextProps {
 	refreshRoleInfo: () => Promise<void>;
 	isInitialized: boolean;
 	getDefaultRouteForRole: () => string;
+	updateUser?: (userData: Partial<User>) => void;
 	// Funciones optimizadas de roles
 	isAdmin: (critical?: boolean) => Promise<boolean>;
 	isSeller: (critical?: boolean) => Promise<boolean>;

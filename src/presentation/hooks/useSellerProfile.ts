@@ -26,7 +26,9 @@ interface SellerInfo {
 		description: string;
 		status: string;
 		verification_level: string;
+		avatar?: string;
 	};
+	data?: any;
 }
 
 export const useSellerProfile = () => {
@@ -84,11 +86,19 @@ export const useSellerProfile = () => {
 					});
 				}
 				// Caso 4: response directamente es el seller data
-				else if (response.store_name) {
+				// ✅ CORREGIDO: Cast de tipo para acceder a propiedades
+				else if ((response as any).store_name) {
 					console.log('✅ Case 4: response is seller data directly:', response);
+					const responseData = response as any;
 					setSellerInfo({
-						seller: response
-					});
+						seller: {
+							id: responseData.id || 0,
+							store_name: responseData.store_name || "",
+							description: responseData.description || "",
+							status: responseData.status || "active",
+							verification_level: responseData.verification_level || "none"
+						}
+					} as SellerInfo);
 				}
 				else {
 					console.log('⚠️ Unknown response structure:', response);
@@ -98,10 +108,12 @@ export const useSellerProfile = () => {
 			}
 		} catch (err) {
 			console.error('❌ Error obteniendo información del seller:', err);
+			// ✅ CORREGIDO: Manejo seguro de errores usando 'err' en lugar de 'error'
+			const errorObj = err as any;
 			console.error('❌ Error details:', {
-				message: err?.message,
-				status: err?.response?.status,
-				data: err?.response?.data
+				message: errorObj?.message,
+				status: errorObj?.response?.status,
+				data: errorObj?.response?.data
 			});
 		} finally {
 			console.log('🏁 fetchSellerInfo finished, setting sellerInfoLoaded = true');
@@ -175,7 +187,10 @@ export const useSellerProfile = () => {
 			console.log('📥 Respuesta actualización usuario:', response);
 			
 			if (response) {
-				updateUser(response);
+				// ✅ CORREGIDO: Verificar que updateUser existe antes de usarlo
+				if (updateUser) {
+					updateUser(response);
+				}
 				return true;
 			}
 			
@@ -222,16 +237,25 @@ export const useSellerProfile = () => {
 			
 			console.log('📥 Respuesta actualización tienda:', response);
 			
-			if (response && response.data) {
-				// ✅ CORREGIDO: Actualizar la información del seller localmente
-				setSellerInfo(prev => ({
-					...prev,
-					seller: {
-						...prev?.seller,
-						store_name: response.data.store_name || prev?.seller?.store_name || "",
-						description: response.data.description || prev?.seller?.description || "",
-					}
-				}));
+			// ✅ CORREGIDO: Cast de tipo para acceder a response.data
+			const responseData = response as any;
+			if (responseData && responseData.data) {
+				// ✅ CORREGIDO: Actualizar la información del seller localmente con tipos seguros
+				setSellerInfo(prev => {
+					if (!prev) return null;
+					return {
+						...prev,
+						seller: {
+							...prev.seller,
+							id: prev.seller.id, // ✅ CORREGIDO: Mantener id requerido
+							store_name: responseData.data.store_name || prev.seller.store_name || "",
+							description: responseData.data.description || prev.seller.description || "",
+							status: prev.seller.status,
+							verification_level: prev.seller.verification_level,
+							avatar: prev.seller.avatar,
+						}
+					};
+				});
 				return true;
 			}
 			
@@ -331,7 +355,10 @@ export const useSellerProfile = () => {
 			console.log('📥 Respuesta del avatar:', response);
 
 			if (response) {
-				updateUser(response);
+				// ✅ CORREGIDO: Verificar que updateUser existe antes de usarlo
+				if (updateUser) {
+					updateUser(response);
+				}
 				setSuccess("Avatar actualizado correctamente");
 				return true;
 			}

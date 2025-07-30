@@ -238,7 +238,7 @@ const SellerProfilePage: React.FC = () => {
 	};
 
 	// Función para obtener la URL del avatar
-	const getAvatarUrl = () => {
+	const getAvatarUrl = (): string | undefined => {
 		if (avatarPreview) return avatarPreview;
 		if (profileData.avatar && !imageLoadError) {
 			// Si la URL ya incluye el dominio, usarla tal como está
@@ -248,7 +248,7 @@ const SellerProfilePage: React.FC = () => {
 			// Si es una ruta relativa, construir la URL completa
 			return `${import.meta.env.REACT_APP_API_BASE_URL || 'http://127.0.0.1:8000'}/storage/${profileData.avatar}`;
 		}
-		return null; // Sin imagen, mostrar inicial
+		return undefined; // Sin imagen, mostrar inicial
 	};
 
 	// Función para obtener la inicial del usuario
@@ -328,7 +328,7 @@ const SellerProfilePage: React.FC = () => {
 								src={getAvatarUrl()}
 								alt="Seller profile"
 								className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-md"
-								onError={(e) => {
+								onError={() => {
 									console.error('❌ Error cargando imagen:', getAvatarUrl());
 									// Marcar que hay error de carga para mostrar la inicial
 									setImageLoadError(true);

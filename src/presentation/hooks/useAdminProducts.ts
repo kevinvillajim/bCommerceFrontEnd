@@ -177,6 +177,8 @@ export const useAdminProducts = () => {
 			ratingCount: Number(apiProduct.rating_count || 0),
 			createdAt: apiProduct.created_at,
 			updatedAt: apiProduct.updated_at,
+			created_at: apiProduct.created_at || apiProduct.createdAt || new Date().toISOString(),
+			category_name: apiProduct.category?.name || apiProduct.category_name || "Sin categoría",
 
 			// Campos específicos de admin
 			category: apiProduct.category_name
