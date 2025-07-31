@@ -1,8 +1,6 @@
 import React from 'react';
-import { User, Lock, ShoppingBag, Heart, LogOut } from 'lucide-react';
+import { User, Lock, LogOut } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
-import { useFavorites } from '../../hooks/useFavorites';
-import { useCart } from '../../hooks/useCart';
 
 interface ProfileSidebarProps {
   activeTab: 'personal' | 'security' | 'orders';
@@ -23,8 +21,6 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
   userEmail
 }) => {
   const { logout, user } = useAuth();
-  const { favoriteCount } = useFavorites();
-  const { itemCount: cartItemCount } = useCart();
   
   // Obtener la inicial del usuario para el avatar
   const getUserInitial = () => {
@@ -108,47 +104,6 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
                 <Lock size={18} className="mr-3" />
                 Seguridad
               </button>
-            </li>
-            <li>
-              <button 
-                onClick={() => setActiveTab('orders')}
-                className={`w-full flex items-center p-3 rounded-lg transition-colors ${
-                  activeTab === 'orders' 
-                    ? 'bg-primary-50 text-primary-600 font-medium' 
-                    : 'text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                <ShoppingBag size={18} className="mr-3" />
-                Mis Pedidos
-              </button>
-            </li>
-            <li>
-              <a 
-                href="/favorites" 
-                className="w-full flex items-center p-3 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
-              >
-                <Heart size={18} className="mr-3" />
-                Mis Favoritos
-                {favoriteCount > 0 && (
-                  <span className="ml-auto bg-primary-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                    {favoriteCount}
-                  </span>
-                )}
-              </a>
-            </li>
-            <li>
-              <a 
-                href="/cart" 
-                className="w-full flex items-center p-3 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
-              >
-                <ShoppingBag size={18} className="mr-3" />
-                Mi Carrito
-                {cartItemCount > 0 && (
-                  <span className="ml-auto bg-primary-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                    {cartItemCount}
-                  </span>
-                )}
-              </a>
             </li>
             <li className="pt-4 border-t border-gray-200 mt-4">
               <button 

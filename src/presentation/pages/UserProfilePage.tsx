@@ -7,7 +7,6 @@ import { useAuth } from '../hooks/useAuth';
 import ProfileSidebar from '../components/profile/ProfileSidebar';
 import PersonalInfoTab from '../components/profile/PersonalInfoTab';
 import SecurityTab from '../components/profile/SecurityTab';
-import OrdersTab from '../components/profile/OrdersTab';
 
 // Definición de la interfaz para el perfil en la página principal
 // Esta debe coincidir con la interfaz en los componentes hijos
@@ -103,8 +102,6 @@ const UserProfilePage: React.FC = () => {
         return <PersonalInfoTab userProfile={userProfile} onProfileUpdate={handleProfileUpdate} />;
       case 'security':
         return <SecurityTab />;
-      case 'orders':
-        return <OrdersTab />;
       default:
         return <PersonalInfoTab userProfile={userProfile} onProfileUpdate={handleProfileUpdate} />;
     }

@@ -203,34 +203,6 @@ const SecurityTab: React.FC = () => {
           </div>
         </form>
       </div>
-      
-      <div className="border-t border-gray-200 pt-6">
-        <h4 className="font-medium text-gray-800 mb-4">Sesiones Activas</h4>
-        <div className="bg-gray-50 rounded-lg p-4 mb-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="font-medium">Sesión actual</div>
-              <div className="text-sm text-gray-500">
-                {navigator.userAgent.includes('Windows') ? 'Windows' : 
-                 navigator.userAgent.includes('Mac') ? 'Mac OS' :
-                 navigator.userAgent.includes('Linux') ? 'Linux' : 'Desconocido'} 
-                - 
-                {navigator.userAgent.includes('Chrome') ? 'Chrome' :
-                 navigator.userAgent.includes('Firefox') ? 'Firefox' :
-                 navigator.userAgent.includes('Safari') ? 'Safari' :
-                 navigator.userAgent.includes('Edge') ? 'Edge' : 'Navegador desconocido'}
-              </div>
-            </div>
-            <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
-              Activa ahora
-            </span>
-          </div>
-        </div>
-        
-        <button className="text-primary-600 hover:text-primary-700 text-sm font-medium">
-          Cerrar todas las otras sesiones
-        </button>
-      </div>
     </div>
   );
 };
