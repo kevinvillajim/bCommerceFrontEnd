@@ -380,7 +380,7 @@ const ProductPage: React.FC = () => {
 			</section>
 
 			{/* Filter and Sort Section */}
-			<div className="flex md:justify-end justify-between mb-6">
+			<div className="flex md:justify-end justify-between mb-6 space-x-4">
 				{/* Active Filters Component */}
 				<ActiveFilters
 					selectedCategories={filters.categories}
@@ -400,11 +400,13 @@ const ProductPage: React.FC = () => {
 				/>
 
 				{/* Sort Dropdown Component */}
-				<SortDropdown
-					options={sortOptions}
-					selectedOption={filters.sortBy}
-					onSortChange={setSortBy}
-				/>
+				<div className="">
+					<SortDropdown
+						options={sortOptions}
+						selectedOption={filters.sortBy}
+						onSortChange={setSortBy}
+					/>
+				</div>
 			</div>
 
 			{/* Main Content */}

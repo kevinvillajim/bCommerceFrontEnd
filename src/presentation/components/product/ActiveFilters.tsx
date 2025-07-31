@@ -54,7 +54,7 @@ const ActiveFilters: React.FC<ActiveFiltersProps> = ({
 	return (
 		<div className="w-full md:w-auto">
 			<div className="flex items-center justify-between mb-2">
-				<h3 className="text-sm font-medium text-gray-700">Filtros Activos</h3>
+				<h3 className="text-sm font-medium text-gray-700 mr-3">Filtros Activos</h3>
 				{hasActiveFilters && (
 					<button
 						onClick={onClearAllFilters}

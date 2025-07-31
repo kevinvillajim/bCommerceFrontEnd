@@ -4,7 +4,6 @@ import {
 	User,
 	Menu,
 	X,
-	Search,
 	Heart,
 	Bell,
 	LogOut,
@@ -13,6 +12,7 @@ import {
 import {useAuth} from "../../hooks/useAuth";
 import {useHeaderCounters} from "../../hooks/useHeaderCounters";
 import ThemeToggle from "./ThemeToggle";
+import SearchAutocomplete from "./SearchAutocomplete";
 
 // Interfaz para el logo
 interface Logo {
@@ -165,15 +165,11 @@ const Header: React.FC<HeaderProps> = ({
 					</div>
 
 					{/* Search Bar - Only on desktop */}
-					<div className="hidden md:flex flex-1 mx-16 relative">
-						<input
-							type="text"
+					<div className="hidden md:flex flex-1 mx-16">
+						<SearchAutocomplete 
 							placeholder="Buscar productos..."
-							className="w-full py-2 px-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent"
+							className="w-full"
 						/>
-						<button className="absolute right-3 top-2 text-gray-400 hover:text-primary-600">
-							<Search size={20} />
-						</button>
 					</div>
 
 					{/* Icons - Desktop */}
@@ -379,16 +375,14 @@ const Header: React.FC<HeaderProps> = ({
 			{mobileMenuOpen && (
 				<div className="md:hidden bg-white border-t border-gray-200 py-4 px-4 shadow-lg">
 					{/* Mobile Search */}
-					<div className="mb-4 relative">
-						<input
-							type="text"
-							placeholder="Buscar productos..."
-							className="w-full py-2 px-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-300 focus:border-transparent"
-						/>
-						<button className="absolute right-3 top-2 text-gray-400">
-							<Search size={20} />
-						</button>
-					</div>
+					{/* Mobile Search Bar */}
+						<div className="px-4 py-3 border-b border-gray-100">
+							<SearchAutocomplete 
+								placeholder="Buscar productos..."
+								className="w-full"
+								onNavigate={() => setMobileMenuOpen(false)} // Cerrar menú móvil al navegar
+							/>
+						</div>
 
 					{/* Mobile User Info (if authenticated) */}
 					{isAuthenticated && (
