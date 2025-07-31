@@ -483,13 +483,13 @@ const ProductPage: React.FC = () => {
 					/>
 
 					{/* Paginación */}
-					{productsMeta && productsMeta.total > productsMeta.limit && (
+					{productsMeta && (
 						<>
 							{/* Paginación para móviles */}
 							{isMobile && (
 								<MobilePagination
 									currentPage={filters.page}
-									totalPages={totalPages}
+									totalPages={totalPages || 1}
 									onPageChange={setPage}
 								/>
 							)}
@@ -498,7 +498,7 @@ const ProductPage: React.FC = () => {
 							{!isMobile && (
 								<Pagination
 									currentPage={filters.page}
-									totalPages={totalPages}
+									totalPages={totalPages || 1}
 									onPageChange={setPage}
 								/>
 							)}

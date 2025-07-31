@@ -1,6 +1,6 @@
 // src/presentation/components/chat/ChatHeader.tsx - ESTADO DE CONEXIÓN REAL
 
-import React, {useState, useRef, useEffect} from "react";
+import React, {useState, useRef, useEffect, useMemo, useCallback} from "react";
 import {Link} from "react-router-dom";
 import {
 	User,
@@ -12,6 +12,10 @@ import {
 	Wifi,
 	WifiOff,
 	Clock,
+	RotateCcw,
+	Archive,
+	Eye,
+	Box,
 } from "lucide-react";
 import type {Chat} from "../../../core/domain/entities/Chat";
 import { useRealTimeChat } from "../../hooks/useRealTimeChat";
@@ -36,37 +40,41 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
 	const [isUpdating, setIsUpdating] = useState(false);
 	const menuRef = useRef<HTMLDivElement>(null);
 
-	// Determinar el participante según el rol
-	const participant = isSeller
-		? {
-				name: chat.user?.name || `Cliente #${chat.userId}`,
-				avatar: chat.user?.avatar,
-				id: chat.userId,
-				icon: <User className="h-6 w-6 text-gray-500" />,
-				route: `/admin/users/${chat.userId}`,
-			}
-		: {
-				name: chat.seller?.storeName || `Vendedor #${chat.sellerId}`,
-				avatar: chat.seller?.avatar,
-				id: chat.sellerId,
-				icon: <Store className="h-6 w-6 text-gray-500" />,
-				route: `/sellers/${chat.sellerId}`,
-			};
+	// Determinar el participante según el rol - OPTIMIZADO
+	const participant = useMemo(() => {
+		return isSeller
+			? {
+					name: chat.user?.name || `Cliente #${chat.userId}`,
+					avatar: chat.user?.avatar,
+					id: chat.userId,
+					icon: <User className="h-6 w-6 text-gray-500" />,
+					route: `/admin/users/${chat.userId}`,
+				}
+			: {
+					name: chat.seller?.storeName || `Vendedor #${chat.sellerId}`,
+					avatar: chat.seller?.avatar,
+					id: chat.sellerId,
+					icon: <Store className="h-6 w-6 text-gray-500" />,
+					route: `/sellers/${chat.sellerId}`,
+				};
+	}, [isSeller, chat.user, chat.userId, chat.seller, chat.sellerId]);
 
-	// Estados de conexión y escritura usando el hook real
+	// Estados de conexión y escritura usando el hook real - OPTIMIZADO
 	const { onlineStatus } = useRealTimeChat({
 		chatId: chat.id,
 		participantId: participant.id,
-		pollInterval: 30000,
+		pollInterval: 60000, // Reducido a 60 segundos
 		enableTypingIndicator: true
 	});
 
 	const { isOnline, lastSeen, isTyping } = onlineStatus;
 
-	// Ruta al producto
-	const productRoute = isSeller
-		? `/seller/products/edit/${chat.productId}`
-		: `/products/${chat.productId}`;
+	// Ruta al producto - OPTIMIZADA
+	const productRoute = useMemo(() => {
+		return isSeller
+			? `/seller/products/edit/${chat.productId}`
+			: `/products/${chat.productId}`;
+	}, [isSeller, chat.productId]);
 
 	// Cerrar menú al hacer clic fuera
 	useEffect(() => {
@@ -110,8 +118,8 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
 		}
 	};
 
-	// Formatear última vez visto
-	const formatLastSeen = (date: Date): string => {
+	// Formatear última vez visto - OPTIMIZADO
+	const formatLastSeen = useCallback((date: Date): string => {
 		const now = new Date();
 		const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
 		
@@ -128,7 +136,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
 			if (days < 7) return `hace ${days} días`;
 			return date.toLocaleDateString('es-EC', { day: 'numeric', month: 'short' });
 		}
-	};
+	}, []);
 
 	return (
 		<div className="p-4 border-b border-gray-200 bg-white shadow-sm">
@@ -271,69 +279,75 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({
 						{isMenuOpen && (
 							<div className="absolute right-0 z-20 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1">
 								{/* Información adicional */}
-								<div className="px-4 py-2 border-b border-gray-100">
-									<p className="text-xs text-gray-500">Chat ID: {chat.id}</p>
-									<p className="text-xs text-gray-500">
-										Creado: {chat.createdAt ? new Date(chat.createdAt).toLocaleDateString('es-EC') : 'N/A'}
-									</p>
+								<div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
+									<div className="flex items-center text-xs text-gray-500 space-x-4">
+										<span>ID: {chat.id}</span>
+										<span>Creado: {chat.createdAt ? new Date(chat.createdAt).toLocaleDateString('es-EC') : 'N/A'}</span>
+									</div>
 								</div>
 
 								{/* Acciones de estado */}
-								{chat.status === "active" && (
-									<button
-										onClick={() => handleStatusChange("closed")}
-										className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-										disabled={loading || isUpdating}
-									>
-										<Clock className="inline h-4 w-4 mr-2" />
-										Cerrar conversación
-									</button>
-								)}
+								<div className="py-1">
+									{chat.status === "active" && (
+										<button
+											onClick={() => handleStatusChange("closed")}
+											className="flex items-center w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+											disabled={loading || isUpdating}
+										>
+											<Clock className="h-4 w-4 mr-3 text-gray-500" />
+											Cerrar conversación
+										</button>
+									)}
 
-								{chat.status === "closed" && (
-									<button
-										onClick={() => handleStatusChange("active")}
-										className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-										disabled={loading || isUpdating}
-									>
-										<Circle className="inline h-4 w-4 mr-2" />
-										Reabrir conversación
-									</button>
-								)}
+									{chat.status === "closed" && (
+										<button
+											onClick={() => handleStatusChange("active")}
+											className="flex items-center w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+											disabled={loading || isUpdating}
+										>
+											<RotateCcw className="h-4 w-4 mr-3 text-gray-500" />
+											Reabrir conversación
+										</button>
+									)}
 
-								{chat.status !== "archived" && (
-									<button
-										onClick={() => handleStatusChange("archived")}
-										className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-										disabled={loading || isUpdating}
-									>
-										📦 Archivar conversación
-									</button>
-								)}
+									{chat.status !== "archived" && (
+										<button
+											onClick={() => handleStatusChange("archived")}
+											className="flex items-center w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+											disabled={loading || isUpdating}
+										>
+											<Archive className="h-4 w-4 mr-3 text-gray-500" />
+											Archivar conversación
+										</button>
+									)}
 
-								{chat.status === "archived" && (
-									<button
-										onClick={() => handleStatusChange("active")}
-										className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-										disabled={loading || isUpdating}
-									>
-										📤 Desarchivar conversación
-									</button>
-								)}
+									{chat.status === "archived" && (
+										<button
+											onClick={() => handleStatusChange("active")}
+											className="flex items-center w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+											disabled={loading || isUpdating}
+										>
+											<RotateCcw className="h-4 w-4 mr-3 text-gray-500" />
+											Desarchivar conversación
+										</button>
+									)}
+								</div>
 
 								{/* Enlaces adicionales */}
-								<div className="border-t border-gray-100 mt-1">
+								<div className="border-t border-gray-100 py-1">
 									<Link
 										to={participant.route}
-										className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+										className="flex items-center w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
 									>
-										👤 Ver perfil
+										<Eye className="h-4 w-4 mr-3 text-gray-500" />
+										Ver perfil
 									</Link>
 									<Link
 										to={productRoute}
-										className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+										className="flex items-center w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
 									>
-										📦 Ver producto
+										<Box className="h-4 w-4 mr-3 text-gray-500" />
+										Ver producto
 									</Link>
 								</div>
 							</div>

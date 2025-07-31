@@ -1,4 +1,4 @@
-import React, {useState, useRef, useEffect} from "react";
+import React, {useState, useRef, useEffect, useCallback, useMemo} from "react";
 import type {FormEvent, KeyboardEvent} from "react";
 import {Send, Loader2, Smile, Search, Clock} from "lucide-react";
 import { useTypingIndicator } from "../../hooks/useRealTimeChat";
@@ -278,7 +278,7 @@ const MessageForm: React.FC<MessageFormProps> = ({
 		}
 	};
 
-	// Ajustar altura automáticamente y activar indicador de escritura
+	// Ajustar altura automáticamente y activar indicador de escritura - OPTIMIZADO
 	const autoAdjustHeight = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
 		const textarea = e.target;
 		const newValue = textarea.value;
@@ -290,16 +290,19 @@ const MessageForm: React.FC<MessageFormProps> = ({
 
 		setMessage(newValue);
 
-		// Manejar indicador de escritura
+		// Manejar indicador de escritura - THROTTLED para evitar demasiadas peticiones
 		if (newValue.trim() && !isDisabled && !isLoading) {
-			startTyping();
+			// Solo si está escribiendo algo y cambió el contenido
+			if (newValue !== message) {
+				startTyping();
+			}
 		} else if (!newValue.trim()) {
 			stopTyping();
 		}
 	};
 
-	// Insertar emoji en el mensaje
-	const insertEmoji = (emoji: string) => {
+	// Insertar emoji en el mensaje - OPTIMIZADO
+	const insertEmoji = useCallback((emoji: string) => {
 		const textarea = textareaRef.current;
 		if (!textarea) return;
 
@@ -323,10 +326,10 @@ const MessageForm: React.FC<MessageFormProps> = ({
 				textarea.style.height = `${newHeight}px`;
 			}
 		}, 0);
-	};
+	}, [message]);
 
-	// Filtrar emojis por búsqueda
-	const getFilteredEmojis = (categoryEmojis: string[]) => {
+	// Filtrar emojis por búsqueda - OPTIMIZADO
+	const getFilteredEmojis = useCallback((categoryEmojis: string[]) => {
 		if (!emojiSearch.trim()) return categoryEmojis;
 		
 		// Buscar por el texto del emoji (muy básico)
@@ -334,15 +337,15 @@ const MessageForm: React.FC<MessageFormProps> = ({
 			// Aquí podrías implementar una búsqueda más sofisticada con nombres de emojis
 			return emoji.includes(emojiSearch.trim());
 		});
-	};
+	}, [emojiSearch]);
 
-	// Obtener emojis de la categoría actual
-	const getCurrentEmojis = () => {
+	// Obtener emojis de la categoría actual - OPTIMIZADO
+	const getCurrentEmojis = useMemo(() => {
 		if (selectedCategory === "Frecuentes") {
 			return getFilteredEmojis(recentEmojis);
 		}
 		return getFilteredEmojis(EMOJI_CATEGORIES[selectedCategory as keyof typeof EMOJI_CATEGORIES].emojis);
-	};
+	}, [selectedCategory, recentEmojis, getFilteredEmojis]);
 
 	// Si el chat está deshabilitado, mostrar mensaje informativo
 	if (isDisabled) {
@@ -423,7 +426,7 @@ const MessageForm: React.FC<MessageFormProps> = ({
 					{/* Grid de emojis con scroll personalizado */}
 					<div className="p-2 max-h-48 overflow-y-auto emoji-scroll">
 						<div className="grid grid-cols-8 gap-1">
-							{getCurrentEmojis().map((emoji, index) => (
+							{getCurrentEmojis.map((emoji, index) => (
 								<button
 									key={`${emoji}-${index}`}
 									onClick={() => {
@@ -438,7 +441,7 @@ const MessageForm: React.FC<MessageFormProps> = ({
 							))}
 						</div>
 						
-						{getCurrentEmojis().length === 0 && (
+						{getCurrentEmojis.length === 0 && (
 							<div className="text-center py-8 text-gray-500">
 								<div className="text-2xl mb-2">🔍</div>
 								<p className="text-sm">No se encontraron emojis</p>

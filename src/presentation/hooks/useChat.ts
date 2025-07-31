@@ -431,7 +431,7 @@ export const useChat = (isSeller = false) => {
 	 * Iniciar actualización periódica de mensajes
 	 */
 	const startMessagesPolling = useCallback(
-		(chatId: number, intervalMs = 15000) => {
+		(chatId: number, intervalMs = 30000) => {
 			if (refreshIntervalRef.current) {
 				clearInterval(refreshIntervalRef.current);
 				refreshIntervalRef.current = null;
@@ -468,25 +468,27 @@ export const useChat = (isSeller = false) => {
 		}
 	}, []);
 
-	// Cargar chats al montar el componente
+	// Cargar chats al montar el componente - OPTIMIZADO
 	useEffect(() => {
-		const controller = new AbortController();
+	const controller = new AbortController();
+		let mounted = true;
 
-		if (user?.id) {
-			console.log(`Valor de isSellerRef.current fijado en: ${isSellerRef.current}`);
-			getChatService();
-			fetchChats();
+	if (user?.id && mounted) {
+	console.log(`Valor de isSellerRef.current fijado en: ${isSellerRef.current}`);
+	getChatService();
+	 fetchChats();
 		}
 
-		return () => {
-			controller.abort();
-			isLoadingRef.current = false;
-			stopMessagesPolling();
-			setChats([]);
-			setSelectedChat(null);
-			setMessages([]);
+	return () => {
+	mounted = false;
+	controller.abort();
+	isLoadingRef.current = false;
+	stopMessagesPolling();
+	setChats([]);
+	 setSelectedChat(null);
+	  setMessages([]);
 		};
-	}, [user?.id, fetchChats, stopMessagesPolling, getChatService]);
+	}, [user?.id]);
 
 	/**
 	 * Selecciona un chat evitando cambios innecesarios

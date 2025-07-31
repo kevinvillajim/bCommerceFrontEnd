@@ -6,7 +6,7 @@ interface RatingStarsProps {
 	maxRating?: number;
 	size?: number;
 	showValue?: boolean;
-	reviews?: number;
+	reviews?: number | null;
 }
 
 const RatingStars: React.FC<RatingStarsProps> = ({
@@ -17,9 +17,9 @@ const RatingStars: React.FC<RatingStarsProps> = ({
 	reviews,
 }) => {
 	const normalizedRating =
-		rating !== undefined && rating !== null
+		rating !== undefined && rating !== null && rating > 0
 			? Math.max(0, Math.min(rating, maxRating))
-			: 4.5;
+			: 0; // ✅ CORREGIDO: 0 en lugar de 4.5 cuando no hay rating
 
 	return (
 		<div className="flex items-center">
@@ -55,10 +55,10 @@ const RatingStars: React.FC<RatingStarsProps> = ({
 				})}
 			</div>
 
-			{showValue && (
+			{showValue && normalizedRating > 0 && (
 				<span className="ml-1 text-xs text-gray-500">
 					{normalizedRating.toFixed(1)}
-					{reviews !== undefined && reviews > 0 && ` (${reviews})`}
+					{reviews !== undefined && reviews !== null && reviews > 0 && ` (${reviews})`}
 				</span>
 			)}
 		</div>

@@ -13,8 +13,8 @@ interface ProductCardProps {
 	name: string;
 	price: number;
 	discount?: number;
-	rating?: number;
-	reviews?: number;
+	rating?: number | null;
+	reviews?: number | null;
 	image: string;
 	category?: string;
 	isNew?: boolean;
@@ -31,8 +31,8 @@ const ProductCardCompact: React.FC<ProductCardProps> = ({
 	name,
 	price,
 	discount,
-	rating = 0,
-	reviews = 0,
+	rating = null,
+	reviews = null,
 	image,
 	category,
 	isNew = false,
@@ -413,8 +413,8 @@ const ProductCardCompact: React.FC<ProductCardProps> = ({
 					</h3>
 				</Link>
 
-				{/* Rating - Solo si hay rating válido */}
-				{(rating && typeof rating === 'number' && rating > 0) && (
+				{/* Rating - ✅ CORREGIDO: Mostrar solo si hay rating válido */}
+				{(rating !== null && rating !== undefined && rating > 0) && (
 					<div className="mb-2">
 						<RatingStars
 							rating={rating}

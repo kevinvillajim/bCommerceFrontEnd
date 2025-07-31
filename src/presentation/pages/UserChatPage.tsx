@@ -240,27 +240,29 @@ const UserChatPage: React.FC = () => {
 		user?.id,
 	]);
 
-	// Filtrar chats según los criterios
-	const filteredChats = chats.filter((chat) => {
-		// Filtro por estado
-		const matchesStatus =
-			statusFilter === "all" || chat.status === statusFilter;
+	// Filtrar chats según los criterios - OPTIMIZADO con useMemo
+	const filteredChats = React.useMemo(() => {
+		return chats.filter((chat) => {
+			// Filtro por estado
+			const matchesStatus =
+				statusFilter === "all" || chat.status === statusFilter;
 
-		// Filtro por mensajes no leídos
-		const matchesUnread = unreadFilter
-			? chat.unreadCount && chat.unreadCount > 0
-			: true;
+			// Filtro por mensajes no leídos
+			const matchesUnread = unreadFilter
+				? chat.unreadCount > 0
+				: true;
 
-		// Búsqueda por nombre de vendedor o producto - CORREGIDO
-		const matchesSearch =
-			searchTerm === "" ||
-			(chat.product?.name &&
-				chat.product.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
-			(chat.seller?.storeName &&
-				chat.seller.storeName.toLowerCase().includes(searchTerm.toLowerCase()));
+			// Búsqueda por nombre de vendedor o producto
+			const matchesSearch =
+				searchTerm === "" ||
+				(chat.product?.name &&
+					chat.product.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+				(chat.seller?.storeName &&
+					chat.seller.storeName.toLowerCase().includes(searchTerm.toLowerCase()));
 
-		return matchesStatus && matchesUnread && matchesSearch;
-	});
+			return matchesStatus && matchesUnread && matchesSearch;
+		});
+	}, [chats, statusFilter, unreadFilter, searchTerm]);
 
 	// Seleccionar un chat
 	const handleSelectChat = (chat: Chat) => {
@@ -293,13 +295,18 @@ const UserChatPage: React.FC = () => {
 		}
 	};
 
-	// CORREGIDO: Enviar un mensaje sin recargas adicionales
+	// Enviar un mensaje - MEJORADO COMO SellerMessagesPage
 	const handleSendMessage = async (content: string): Promise<boolean> => {
-		console.log("Enviando mensaje...");
+		console.log("Enviando mensaje como usuario...");
 		
 		try {
 			const result = await sendMessage(content);
-			// El hook useChat ya maneja la recarga de mensajes internamente
+			
+			if (result && selectedChat?.id) {
+				// Recargar mensajes inmediatamente después de enviar exitosamente
+				await fetchChatMessages(selectedChat.id);
+			}
+			
 			return result;
 		} catch (error: any) {
 			console.error("Error al enviar mensaje:", error);
@@ -418,30 +425,35 @@ const UserChatPage: React.FC = () => {
 	};
 
 	return (
-		<div className="container mx-auto p-4">
-			<div className="mb-4 flex justify-between items-center">
-				<h1 className="text-2xl font-bold text-gray-900 flex items-center">
-					<MessageSquare className="w-6 h-6 mr-2" />
-					Mis Conversaciones
-				</h1>
-				<div className="flex space-x-2">
+		<div className="container mx-auto p-6 max-w-7xl">
+			<div className="mb-6 flex justify-between items-center">
+				<div className="flex items-center space-x-3">
+					<div className="h-10 w-10 bg-primary-100 rounded-lg flex items-center justify-center">
+						<MessageSquare className="w-5 h-5 text-primary-600" />
+					</div>
+					<div>
+						<h1 className="text-2xl font-bold text-gray-900">Mis Conversaciones</h1>
+						<p className="text-sm text-gray-500">Gestiona tus chats con vendedores</p>
+					</div>
+				</div>
+				<div className="flex items-center space-x-3">
 					{isMobileView && selectedChat && !showChatList && (
 						<button
 							onClick={handleBackToList}
-							className="px-3 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 flex items-center"
+							className="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
 						>
-							<ArrowLeft size={16} className="mr-1" />
+							<ArrowLeft size={16} className="mr-2" />
 							Volver
 						</button>
 					)}
 					<button
 						onClick={refreshChats}
-						className="px-3 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center"
+						className="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors shadow-sm"
 						disabled={loading || isLoadingChat}
 					>
 						<RefreshCw
 							size={16}
-							className={`mr-1 ${loading || isLoadingChat ? "animate-spin" : ""}`}
+							className={`mr-2 ${loading || isLoadingChat ? "animate-spin" : ""}`}
 						/>
 						Actualizar
 					</button>
@@ -449,39 +461,47 @@ const UserChatPage: React.FC = () => {
 			</div>
 
 			{error && (
-				<div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
-					<strong className="font-bold">Error: </strong>
-					<span className="block sm:inline">{error}</span>
-					<button
-						onClick={refreshChats}
-						className="underline ml-2 text-red-700 hover:text-red-900"
-					>
-						Reintentar
-					</button>
+				<div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg relative mb-6 flex items-start space-x-3">
+					<div className="flex-shrink-0">
+						<svg className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
+							<path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+						</svg>
+					</div>
+					<div className="flex-1">
+						<h3 className="text-sm font-medium text-red-800">Error al cargar conversaciones</h3>
+						<p className="text-sm text-red-700 mt-1">{error}</p>
+						<button
+							onClick={refreshChats}
+							className="text-sm text-red-700 hover:text-red-900 underline mt-2 inline-block"
+						>
+							Reintentar
+						</button>
+					</div>
 				</div>
 			)}
 
 			<div
-				className="bg-white rounded-lg shadow-sm flex flex-col md:flex-row overflow-hidden"
-				style={{minHeight: "70vh"}}
+				className="bg-white rounded-xl shadow-sm border border-gray-200 flex flex-col md:flex-row overflow-hidden"
+				style={{minHeight: "75vh"}}
 			>
 				{/* Lista de chats (visible en escritorio o cuando está activa en móvil) */}
 				{(!isMobileView || showChatList) && (
-					<div className="w-full md:w-1/3 border-r border-gray-200 flex flex-col scrollable-container">
-						<ChatList
-							chats={filteredChats}
-							selectedChatId={selectedChat?.id}
-							onSelectChat={handleSelectChat}
-							loading={loading || isLoadingChat}
-							searchTerm={searchTerm}
-							onSearchChange={setSearchTerm}
-							statusFilter={statusFilter}
-							onStatusFilterChange={setStatusFilter}
-							unreadFilter={unreadFilter}
-							onUnreadFilterChange={setUnreadFilter}
-							isSeller={false}
-						/>
-					</div>
+					<div className="w-full md:w-1/3 border-r border-gray-200 flex flex-col bg-white">
+					<ChatList
+					chats={filteredChats}
+					selectedChatId={selectedChat?.id}
+					onSelectChat={handleSelectChat}
+					loading={loading || isLoadingChat}
+					searchTerm={searchTerm}
+					onSearchChange={setSearchTerm}
+					statusFilter={statusFilter}
+					onStatusFilterChange={setStatusFilter}
+					unreadFilter={unreadFilter}
+					onUnreadFilterChange={setUnreadFilter}
+					isSeller={false}
+					 showTabs={true}
+					 />
+				</div>
 				)}
 
 				{/* Área de chat (visible en escritorio o cuando está activa en móvil) */}

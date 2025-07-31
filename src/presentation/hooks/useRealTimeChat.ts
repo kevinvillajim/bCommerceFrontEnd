@@ -40,7 +40,7 @@ interface UseRealTimeChatReturn {
 export const useRealTimeChat = ({
   chatId,
   participantId,
-  pollInterval = 30000, // 30 segundos
+  pollInterval = 60000, // 60 segundos - OPTIMIZADO
   enableTypingIndicator = true
 }: UseRealTimeChatOptions): UseRealTimeChatReturn => {
   
@@ -211,9 +211,9 @@ export const useRealTimeChat = ({
     // Primera carga
     refreshOnlineStatus();
 
-    // Configurar polling
+    // Configurar polling - REDUCIDO para evitar destellos
     pollIntervalRef.current = setInterval(() => {
-      refreshOnlineStatus();
+    refreshOnlineStatus();
     }, pollInterval);
 
     return () => {

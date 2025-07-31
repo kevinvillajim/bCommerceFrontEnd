@@ -217,20 +217,23 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({
 		}
 	};
 
-	// Scroll automático mejorado
+	// Scroll automático optimizado - EVITA RENDERS INNECESARIOS
 	useEffect(() => {
-		if (messages.length > 0) {
-			console.log(`📱 Mostrando ${messages.length} mensajes en estilo WhatsApp`);
-		}
-
-		// Scroll automático solo si hay nuevos mensajes y el usuario está al final
-		if (messages.length > prevMessagesLength && autoScroll) {
-			if (messagesEndRef.current) {
-				messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+		// Solo actualizar si realmente hay cambios significativos
+		if (messages.length !== prevMessagesLength) {
+			if (messages.length > 0) {
+				console.log(`📱 Mostrando ${messages.length} mensajes`);
 			}
-		}
 
-		setPrevMessagesLength(messages.length);
+			// Scroll automático solo si hay nuevos mensajes y el usuario está al final
+			if (messages.length > prevMessagesLength && autoScroll) {
+				if (messagesEndRef.current) {
+					messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+				}
+			}
+
+			setPrevMessagesLength(messages.length);
+		}
 	}, [messages.length, prevMessagesLength, autoScroll]);
 
 	// Scroll inicial
