@@ -5,7 +5,6 @@ import {
 	ShoppingCart,
 	Heart,
 	Share2,
-	Star,
 	Truck,
 	Shield,
 	RotateCcw,
@@ -31,7 +30,9 @@ import {useErrorHandler} from "../hooks/useErrorHandler";
 import {NotificationType} from "../contexts/CartContext";
 import CacheService from "../../infrastructure/services/CacheService";
 import ApiClient from "../../infrastructure/api/apiClient";
-import { useProductVolumeDiscount } from "../hooks/useVolumeDiscount";
+import {useProductVolumeDiscount} from "../hooks/useVolumeDiscount";
+import ProductReviews from "../components/product/ProductReviews";
+import RatingStars from "../components/common/RatingStars";
 
 interface SellerApiResponse {
 	status?: string;
@@ -109,16 +110,6 @@ const ProductItemPage: React.FC = () => {
 	// ✅ HELPER PARA VALIDAR VALORES
 	const hasValidValue = (value: any): boolean => {
 		return value !== null && value !== undefined && value !== 0 && value !== "0" && value !== "";
-	};
-
-	// ✅ HELPER PARA MOSTRAR RATING
-	const displayRating = (rating?: number) => {
-		if (!rating || rating === 0 || isNaN(rating)) return null;
-		return (
-			<span className="text-yellow-500 ml-1 font-medium">
-				{rating.toFixed(1)}
-			</span>
-		);
 	};
 
 	// ✅ HELPER PARA MOSTRAR RATING COUNT
@@ -404,40 +395,7 @@ const ProductItemPage: React.FC = () => {
 		}
 	};
 
-	// Renderizar estrellas de valoración
-	const renderRatingStars = (rating: number) => {
-		if (!rating || rating === 0 || isNaN(rating)) {
-			return (
-				<div className="flex items-center">
-					{[1, 2, 3, 4, 5].map((star) => (
-						<Star
-							key={star}
-							size={18}
-							className="text-gray-300"
-						/>
-					))}
-				</div>
-			);
-		}
 
-		return (
-			<div className="flex items-center">
-				{[1, 2, 3, 4, 5].map((star) => (
-					<Star
-						key={star}
-						size={18}
-						className={`${
-							star <= Math.floor(rating)
-								? "text-yellow-400 fill-current"
-								: star <= rating
-									? "text-yellow-400 fill-current opacity-60"
-									: "text-gray-300"
-						}`}
-					/>
-				))}
-			</div>
-		);
-	};
 
 	// Show loading state
 	if (loading) {
@@ -630,8 +588,7 @@ const ProductItemPage: React.FC = () => {
 							  product.rating > 0) ? (
 								<div className="flex items-center gap-3">
 									<div className="flex items-center">
-										{renderRatingStars(product.rating)}
-										{displayRating(product.rating)}
+										<RatingStars rating={product.rating} size={18} showValue={true} />
 									</div>
 									<div className="text-gray-500 text-sm">
 										<span className="font-medium">
@@ -1005,37 +962,11 @@ const ProductItemPage: React.FC = () => {
 							)}
 
 							{activeTab === "reviews" && (
-								<div className="max-w-3xl">
-									{(product.rating && 
-									  typeof product.rating === 'number' && 
-									  product.rating > 0) ? (
-										<div className="flex items-center mb-6">
-											<div className="mr-4">
-												<div className="text-5xl font-bold text-gray-900">
-													{product.rating.toFixed(1)}
-												</div>
-												<div className="flex mt-2">
-													{renderRatingStars(product.rating)}
-												</div>
-												<div className="text-sm text-gray-500 mt-1">
-													{displayRatingCount(product.rating_count)}
-												</div>
-											</div>
-
-											<div className="flex-grow">
-												<p className="text-center text-gray-500">
-													No hay valoraciones disponibles
-												</p>
-											</div>
-										</div>
-									) : (
-										<div className="text-center py-12">
-											<p className="text-gray-500 mb-4">
-												Este producto aún no tiene valoraciones
-											</p>
-										</div>
-									)}
-								</div>
+							<ProductReviews 
+							productId={product.id || 0} 
+							rating={product.rating || 0} 
+							ratingCount={product.rating_count || product.ratingCount || 0} 
+							/>
 							)}
 						</div>
 					</div>
@@ -1069,15 +1000,16 @@ const ProductItemPage: React.FC = () => {
 									</div>
 									<div className="p-5">
 										{(relatedProduct.rating && 
-										  typeof relatedProduct.rating === 'number' && 
-										  relatedProduct.rating > 0) ? (
-											<div className="flex items-center mb-2">
-												{renderRatingStars(relatedProduct.rating)}
-												<span className="text-xs text-gray-500 ml-1">
-													({relatedProduct.rating.toFixed(1)})
-												</span>
-											</div>
-										) : null}
+										typeof relatedProduct.rating === 'number' && 
+										relatedProduct.rating > 0) ? (
+										<div className="flex items-center mb-2">
+										<RatingStars 
+										 rating={relatedProduct.rating} 
+										size={14} 
+										 showValue={true} 
+										 />
+										 </div>
+									) : null}
 										<Link to={`/product/${relatedProduct.id}`}>
 											<h3 className="font-medium text-gray-800 mb-2 hover:text-primary-600 transition-colors line-clamp-2 h-12">
 												{relatedProduct.name}

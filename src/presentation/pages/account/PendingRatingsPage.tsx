@@ -63,6 +63,14 @@ const PendingRatingsPage: React.FC = () => {
 		type: "product" | "seller",
 		entity: PendingRatingItem
 	) => {
+		console.log(`💱 Abriendo modal de ${type}:`, {
+			id: entity.id,
+			productId: entity.productId,
+			seller_id: entity.seller_id,
+			name: entity.name,
+			order_id: entity.order_id
+		});
+		
 		setModalType(type);
 		setSelectedEntity(entity);
 		setIsModalOpen(true);
@@ -82,8 +90,18 @@ const PendingRatingsPage: React.FC = () => {
 		entityId: number;
 		orderId: number;
 	}) => {
+		console.log(`📨 Enviando valoración de ${modalType}:`, {
+			modalType,
+			entityId: data.entityId,
+			orderId: data.orderId,
+			rating: data.rating,
+			title: data.title,
+			comment: data.comment
+		});
+		
 		try {
 			if (modalType === "product") {
+				console.log(`📦 Llamando rateProduct con product_id: ${data.entityId}`);
 				await rateProduct({
 					product_id: data.entityId,
 					order_id: data.orderId,
@@ -92,13 +110,33 @@ const PendingRatingsPage: React.FC = () => {
 					comment: data.comment,
 				});
 			} else {
-				await rateSeller({
+				// Para vendedor: buscar un producto de esa orden
+				const orderGroup = orderGroups.find(group => group.orderId === data.orderId);
+				
+				// Si no encontramos productos en el grupo, llamar sin product_id (el backend debería manejar esto)
+				let productIdForVendor = null;
+				
+				if (orderGroup?.products && orderGroup.products.length > 0) {
+					const firstProduct = orderGroup.products[0];
+					productIdForVendor = firstProduct?.productId || firstProduct?.id || firstProduct?.product_id;
+				}
+				
+				console.log(`🏦 Llamando rateSeller con seller_id: ${data.entityId}${productIdForVendor ? `, product_id: ${productIdForVendor}` : ' (sin product_id)'}`);
+				
+				// Solo incluir product_id si tenemos un valor válido
+				const ratingData: any = {
 					seller_id: data.entityId,
 					order_id: data.orderId,
 					rating: data.rating,
 					title: data.title,
 					comment: data.comment,
-				});
+				};
+				
+				if (productIdForVendor) {
+					ratingData.product_id = productIdForVendor;
+				}
+				
+				await rateSeller(ratingData);
 			}
 
 			// Actualizar datos
@@ -263,21 +301,40 @@ const PendingRatingsPage: React.FC = () => {
 
 			{/* Modal de valoración */}
 			{selectedEntity && (
-				<RatingModal
-					type={modalType}
-					entityId={(selectedEntity.id ?? selectedEntity.seller_id) ?? 0}
-					entityName={
-						selectedEntity.name ||
-						`Vendedor #${selectedEntity.seller_id || selectedEntity.id}`
-					}
-					entityImage={selectedEntity.image}
-					orderId={selectedEntity.order_id}
-					isOpen={isModalOpen}
-					onClose={closeModal}
-					onSubmit={handleSubmitRating}
-					onReport={handleReportProblem}
-				/>
-			)}
+			<RatingModal
+			type={modalType}
+			entityId={
+			(() => {
+			const calculatedId = modalType === "product"
+			 ? (selectedEntity.productId || selectedEntity.id || 0)
+			   : (selectedEntity.seller_id || selectedEntity.id || 0);
+							
+						console.log(`🎭 Modal recibirá entityId para ${modalType}:`, {
+							calculatedId,
+							selectedEntity_id: selectedEntity.id,
+							selectedEntity_productId: selectedEntity.productId,
+							selectedEntity_seller_id: selectedEntity.seller_id
+						});
+						
+						return calculatedId;
+					})()
+				}
+			entityName={
+			 selectedEntity.name ||
+			 `${modalType === "product" ? "Producto" : "Vendedor"} #${
+			  modalType === "product"
+			   ? (selectedEntity.productId || selectedEntity.id)
+			   : (selectedEntity.seller_id || selectedEntity.id)
+			  }`
+			  }
+				entityImage={selectedEntity.image}
+				orderId={selectedEntity.order_id}
+				isOpen={isModalOpen}
+				onClose={closeModal}
+				onSubmit={handleSubmitRating}
+				onReport={handleReportProblem}
+			/>
+		)}
 		</div>
 	);
 };

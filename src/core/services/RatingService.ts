@@ -130,6 +130,7 @@ export interface SellerRatingRequest {
 	rating: number;
 	title?: string;
 	comment?: string;
+	product_id?: number; // ✅ AGREGAR product_id para valoraciones de vendedor
 }
 
 export interface ProblemReportRequest {

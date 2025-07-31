@@ -53,8 +53,14 @@ export class PendingRatingsAdapter {
 				});
 			}
 
-			// Añadir el producto al grupo
-			orderGroupsMap.get(orderId)?.products.push(product);
+			const adaptedProduct: PendingRatingItem = {
+				...product,
+				productId: product.id,
+				seller_id: product.seller_id || product.sellerId,
+			};
+
+			// Añadir el producto adaptado al grupo
+			orderGroupsMap.get(orderId)?.products.push(adaptedProduct);
 		});
 
 		// Procesar vendedores
@@ -72,7 +78,6 @@ export class PendingRatingsAdapter {
 				});
 			}
 
-			// Adaptamos el objeto seller al formato PendingRatingItem
 			const adaptedSeller: PendingRatingItem = {
 				id: seller.id || seller.seller_id,
 				name: seller.name || `Vendedor #${seller.seller_id}`,
@@ -80,6 +85,7 @@ export class PendingRatingsAdapter {
 				order_number: seller.order_number,
 				order_date: seller.date,
 				image: seller.image,
+				seller_id: seller.seller_id,
 			};
 
 			// Añadir el vendedor al grupo
