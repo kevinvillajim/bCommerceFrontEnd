@@ -125,12 +125,12 @@ export interface ProductRatingRequest {
 }
 
 export interface SellerRatingRequest {
-	seller_id: number;
-	order_id: number;
-	rating: number;
-	title?: string;
-	comment?: string;
-	product_id?: number; // ✅ AGREGAR product_id para valoraciones de vendedor
+seller_id: number;
+order_id: number;
+rating: number;
+title?: string;
+comment?: string;
+product_id: number; // ✅ product_id es requerido para valoraciones de vendedor
 }
 
 export interface ProblemReportRequest {

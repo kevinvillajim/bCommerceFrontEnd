@@ -1,5 +1,5 @@
 // src/presentation/hooks/useRatings.ts
-import {useState, useCallback} from "react";
+import {useState, useCallback, useMemo} from "react";
 import RatingService from "../../core/services/RatingService";
 import type {
 	ProductRatingRequest,
@@ -13,17 +13,20 @@ import {extractErrorMessage} from "../../utils/errorHandler";
 export const useRatings = () => {
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
-	const ratingService = new RatingService();
+	
+	// ✅ CREAR INSTANCIA UNA SOLA VEZ
+	const ratingService = useMemo(() => new RatingService(), []);
 
 	// Función para obtener valoraciones pendientes
 	const getPendingRatings = useCallback(async () => {
 		setLoading(true);
 		setError(null);
 		try {
-			console.log("Solicitando valoraciones pendientes...");
-			const response = await ratingService.getPendingRatings();
-			console.log("Respuesta de valoraciones pendientes:", response);
-			return response;
+		console.log("Solicitando valoraciones pendientes...");
+		const response = await ratingService.getPendingRatings();
+		console.log("Respuesta de valoraciones pendientes:", response);
+		console.log("🔍 DATOS COMPLETOS DEL BACKEND:", JSON.stringify(response.data, null, 2));
+				return response;
 		} catch (err) {
 			console.error("Error al obtener valoraciones pendientes:", err);
 			const errorMessage = extractErrorMessage(
@@ -39,7 +42,7 @@ export const useRatings = () => {
 		} finally {
 			setLoading(false);
 		}
-	}, [ratingService]);
+	}, []); // ✅ SIN DEPENDENCIAS DE ratingService
 
 	// Función para valorar un producto
 	const rateProduct = useCallback(
@@ -63,7 +66,7 @@ export const useRatings = () => {
 				setLoading(false);
 			}
 		},
-		[ratingService]
+		[] // ✅ SIN DEPENDENCIAS DE ratingService
 	);
 
 	// Función para valorar un vendedor
@@ -88,7 +91,7 @@ export const useRatings = () => {
 				setLoading(false);
 			}
 		},
-		[ratingService]
+		[] // ✅ SIN DEPENDENCIAS DE ratingService
 	);
 
 	// Función para reportar un problema
@@ -113,7 +116,7 @@ export const useRatings = () => {
 				setLoading(false);
 			}
 		},
-		[ratingService]
+		[] // ✅ SIN DEPENDENCIAS DE ratingService
 	);
 
 	// Función para responder a una valoración
@@ -142,7 +145,7 @@ export const useRatings = () => {
 				setLoading(false);
 			}
 		},
-		[ratingService]
+		[] // ✅ SIN DEPENDENCIAS DE ratingService
 	);
 
 	// Función para reportar una valoración inapropiada
@@ -171,7 +174,7 @@ export const useRatings = () => {
 				setLoading(false);
 			}
 		},
-		[ratingService]
+		[] // ✅ SIN DEPENDENCIAS DE ratingService
 	);
 
 	// Función para obtener valoraciones de un producto
@@ -203,7 +206,7 @@ export const useRatings = () => {
 				setLoading(false);
 			}
 		},
-		[ratingService]
+		[] // ✅ SIN DEPENDENCIAS DE ratingService
 	);
 
 	// Función para obtener valoraciones de un vendedor
@@ -235,7 +238,7 @@ export const useRatings = () => {
 				setLoading(false);
 			}
 		},
-		[ratingService]
+		[] // ✅ SIN DEPENDENCIAS DE ratingService
 	);
 
 	// Función para obtener mis valoraciones recibidas
@@ -264,7 +267,7 @@ export const useRatings = () => {
 				setLoading(false);
 			}
 		},
-		[ratingService]
+		[] // ✅ SIN DEPENDENCIAS DE ratingService
 	);
 
 	return {

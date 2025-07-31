@@ -1,5 +1,5 @@
 // src/presentation/pages/account/PendingRatingsPage.tsx
-import React, {useEffect, useState} from "react";
+import React, {useEffect, useState, useCallback, useRef} from "react";
 import {Link} from "react-router-dom";
 import {ShoppingBag, Search} from "lucide-react";
 
@@ -35,28 +35,51 @@ const PendingRatingsPage: React.FC = () => {
 	// Estado para almacenar los grupos de órdenes
 	const [orderGroups, setOrderGroups] = useState<OrderGroup[]>([]);
 
-	// Cargar datos al montar el componente
-	useEffect(() => {
-		fetchPendingRatings();
-	}, []);
+	// ✅ REF PARA CONTROLAR QUE SOLO SE EJECUTE UNA VEZ
+	const hasLoadedRef = useRef(false);
 
-	// Función para obtener valoraciones pendientes
-	const fetchPendingRatings = async () => {
+	// Cargar datos al montar el componente - SOLO UNA VEZ
+	useEffect(() => {
+		if (!hasLoadedRef.current) {
+			hasLoadedRef.current = true;
+			
+			// Función interna para obtener valoraciones pendientes
+			const loadPendingRatings = async () => {
+				try {
+					// Usar el hook para obtener los datos
+					const response = await getPendingRatings();
+
+					if (response.status !== "success") {
+						throw new Error("Error al obtener las valoraciones pendientes");
+					}
+
+					// Usar el adaptador para transformar los datos al formato esperado
+					const groups = PendingRatingsAdapter.adaptPendingRatings(response);
+					setOrderGroups(groups);
+				} catch (err) {
+					console.error("Error al cargar valoraciones pendientes:", err);
+				}
+			};
+			
+			loadPendingRatings();
+		}
+	}, []); // ✅ DEPENDENCIAS VACÍAS
+
+	// ✅ FUNCIÓN SEPARADA PARA RECARGAR DATOS (usado después de enviar ratings)
+	const fetchPendingRatings = useCallback(async () => {
 		try {
-			// Usar el hook para obtener los datos
 			const response = await getPendingRatings();
 
 			if (response.status !== "success") {
 				throw new Error("Error al obtener las valoraciones pendientes");
 			}
 
-			// Usar el adaptador para transformar los datos al formato esperado
 			const groups = PendingRatingsAdapter.adaptPendingRatings(response);
 			setOrderGroups(groups);
 		} catch (err) {
 			console.error("Error al cargar valoraciones pendientes:", err);
 		}
-	};
+	}, [getPendingRatings]); // ✅ SOLO PARA RECARGAR DATOS
 
 	// Función para abrir el modal de valoración
 	const openRatingModal = (
@@ -84,73 +107,68 @@ const PendingRatingsPage: React.FC = () => {
 
 	// Función para enviar una valoración
 	const handleSubmitRating = async (data: {
-		rating: number;
-		title?: string;
-		comment?: string;
-		entityId: number;
-		orderId: number;
+	rating: number;
+	title?: string;
+	comment?: string;
+	entityId: number;
+	orderId: number;
 	}) => {
-		console.log(`📨 Enviando valoración de ${modalType}:`, {
-			modalType,
-			entityId: data.entityId,
-			orderId: data.orderId,
-			rating: data.rating,
-			title: data.title,
-			comment: data.comment
-		});
-		
-		try {
-			if (modalType === "product") {
-				console.log(`📦 Llamando rateProduct con product_id: ${data.entityId}`);
-				await rateProduct({
-					product_id: data.entityId,
-					order_id: data.orderId,
-					rating: data.rating,
-					title: data.title,
-					comment: data.comment,
-				});
-			} else {
-				// Para vendedor: buscar un producto de esa orden
-				const orderGroup = orderGroups.find(group => group.orderId === data.orderId);
-				
-				// Si no encontramos productos en el grupo, llamar sin product_id (el backend debería manejar esto)
-				let productIdForVendor = null;
-				
-				if (orderGroup?.products && orderGroup.products.length > 0) {
-					const firstProduct = orderGroup.products[0];
-					productIdForVendor = firstProduct?.productId || firstProduct?.id || firstProduct?.product_id;
-				}
-				
-				console.log(`🏦 Llamando rateSeller con seller_id: ${data.entityId}${productIdForVendor ? `, product_id: ${productIdForVendor}` : ' (sin product_id)'}`);
-				
-				// Solo incluir product_id si tenemos un valor válido
-				const ratingData: any = {
-					seller_id: data.entityId,
-					order_id: data.orderId,
-					rating: data.rating,
-					title: data.title,
-					comment: data.comment,
-				};
-				
-				if (productIdForVendor) {
-					ratingData.product_id = productIdForVendor;
-				}
-				
-				await rateSeller(ratingData);
-			}
+	console.log(`📨 Enviando valoración de ${modalType}:`, {
+	modalType,
+	entityId: data.entityId,
+	orderId: data.orderId,
+	rating: data.rating,
+	title: data.title,
+	comment: data.comment
+	});
+	
+	try {
+	if (modalType === "product") {
+	console.log(`📦 Llamando rateProduct con product_id: ${data.entityId}`);
+	await rateProduct({
+	product_id: data.entityId,
+	order_id: data.orderId,
+	rating: data.rating,
+	title: data.title,
+	comment: data.comment,
+	});
+	} else {
+	// Para vendedor: usar el productId asociado desde selectedEntity
+	const productIdForVendor = selectedEntity?.productId;
+	
+	if (!productIdForVendor) {
+	 throw new Error('No se puede calificar al vendedor: falta el ID del producto asociado');
+	}
+	
+	console.log(`🏦 Llamando rateSeller con seller_id: ${data.entityId}, product_id: ${productIdForVendor}`);
+	
+	// Construir datos de rating con product_id válido
+	const ratingData = {
+	 seller_id: data.entityId,
+	 order_id: data.orderId,
+	 rating: data.rating,
+	 title: data.title,
+	 comment: data.comment,
+	product_id: productIdForVendor
+	};
+	
+	console.log(`📨 Datos finales para rateSeller:`, ratingData);
+	
+	await rateSeller(ratingData);
+	}
 
-			// Actualizar datos
-			await fetchPendingRatings();
+	// Actualizar datos
+	await fetchPendingRatings();
 
-			// Mostrar mensaje de éxito
-			alert("Valoración enviada con éxito");
+	// Mostrar mensaje de éxito
+	alert("Valoración enviada con éxito");
 
-			// Cerrar el modal
-			closeModal();
-		} catch (error) {
-			console.error("Error al enviar valoración:", error);
-			alert(extractErrorMessage(error, "Error al enviar la valoración"));
-		}
+	// Cerrar el modal
+	closeModal();
+	} catch (error) {
+	console.error("Error al enviar valoración:", error);
+	alert(extractErrorMessage(error, "Error al enviar la valoración"));
+	}
 	};
 
 	// Función para reportar un problema
@@ -222,7 +240,7 @@ const PendingRatingsPage: React.FC = () => {
 	);
 
 	return (
-		<div className="container mx-auto p-4">
+		<div className="container mx-auto p-4 px-10">
 			<h1 className="text-2xl font-bold text-gray-900">
 				Valoraciones pendientes
 			</h1>
@@ -305,34 +323,36 @@ const PendingRatingsPage: React.FC = () => {
 			type={modalType}
 			entityId={
 			(() => {
+			// Para productos: usar productId o id
+			// Para vendedores: usar seller_id o id
 			const calculatedId = modalType === "product"
-			 ? (selectedEntity.productId || selectedEntity.id || 0)
-			   : (selectedEntity.seller_id || selectedEntity.id || 0);
-							
-						console.log(`🎭 Modal recibirá entityId para ${modalType}:`, {
-							calculatedId,
-							selectedEntity_id: selectedEntity.id,
-							selectedEntity_productId: selectedEntity.productId,
-							selectedEntity_seller_id: selectedEntity.seller_id
-						});
-						
-						return calculatedId;
-					})()
-				}
+			? (selectedEntity.productId || selectedEntity.id || 0)
+			 : (selectedEntity.seller_id || selectedEntity.id || 0);
+			    
+			console.log(`🎭 Modal recibirá entityId para ${modalType}:`, {
+			calculatedId,
+			selectedEntity_id: selectedEntity.id,
+			 selectedEntity_productId: selectedEntity.productId,
+			 selectedEntity_seller_id: selectedEntity.seller_id
+			});
+			 
+			  return calculatedId;
+			 })()
+			}
 			entityName={
-			 selectedEntity.name ||
-			 `${modalType === "product" ? "Producto" : "Vendedor"} #${
-			  modalType === "product"
-			   ? (selectedEntity.productId || selectedEntity.id)
+			selectedEntity.name ||
+			`${modalType === "product" ? "Producto" : "Vendedor"} #${
+			modalType === "product"
+			  ? (selectedEntity.productId || selectedEntity.id)
 			   : (selectedEntity.seller_id || selectedEntity.id)
-			  }`
-			  }
-				entityImage={selectedEntity.image}
-				orderId={selectedEntity.order_id}
-				isOpen={isModalOpen}
-				onClose={closeModal}
-				onSubmit={handleSubmitRating}
-				onReport={handleReportProblem}
+			 }`
+			}
+			entityImage={selectedEntity.image}
+			orderId={selectedEntity.order_id}
+			isOpen={isModalOpen}
+			onClose={closeModal}
+			onSubmit={handleSubmitRating}
+			 onReport={handleReportProblem}
 			/>
 		)}
 		</div>

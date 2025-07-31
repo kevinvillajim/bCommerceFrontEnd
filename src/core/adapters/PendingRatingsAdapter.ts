@@ -64,7 +64,9 @@ export class PendingRatingsAdapter {
 		});
 
 		// Procesar vendedores
-		(sellers || []).forEach((seller: PendingSellerItem) => {
+		console.log('🔍 DEBUG: Sellers raw data:', sellers);
+		(sellers || []).forEach((seller: PendingSellerItem, index) => {
+			console.log(`🔍 DEBUG: Seller ${index}:`, seller);
 			const orderId = seller.order_id;
 
 			// Si no existe el grupo para esta orden, crearlo
@@ -79,14 +81,18 @@ export class PendingRatingsAdapter {
 			}
 
 			const adaptedSeller: PendingRatingItem = {
-				id: seller.id || seller.seller_id,
-				name: seller.name || `Vendedor #${seller.seller_id}`,
-				order_id: seller.order_id,
-				order_number: seller.order_number,
-				order_date: seller.date,
-				image: seller.image,
-				seller_id: seller.seller_id,
+			id: seller.id || seller.seller_id,
+			name: seller.name || `Vendedor #${seller.seller_id}`,
+			order_id: seller.order_id,
+			order_number: seller.order_number,
+			order_date: seller.date,
+			image: seller.image,
+			seller_id: seller.seller_id,
+			// Mapear product_id con múltiples posibles nombres
+			 productId: (seller as any).product_id || (seller as any).productId || (seller as any).pivot?.product_id,
 			};
+			
+			console.log(`🔍 DEBUG: Adapted seller:`, adaptedSeller);
 
 			// Añadir el vendedor al grupo
 			orderGroupsMap.get(orderId)?.sellers.push(adaptedSeller);

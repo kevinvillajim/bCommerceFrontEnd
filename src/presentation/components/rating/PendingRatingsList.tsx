@@ -22,6 +22,17 @@ const PendingRatingsList: React.FC<PendingRatingsListProps> = ({
 	onRateProduct,
 	onRateSeller,
 }) => {
+	// ✅ FUNCIÓN PARA MANEJAR ERRORES DE IMAGEN SIN PLACEHOLDER EXTERNO
+	const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
+		const target = e.currentTarget;
+		// Ocultar la imagen rota y mostrar el ícono de respaldo
+		target.style.display = 'none';
+		const parentDiv = target.parentElement;
+		if (parentDiv) {
+			parentDiv.querySelector('.fallback-icon')?.classList.remove('hidden');
+		}
+	};
+
 	return (
 		<div className="space-y-6">
 			{orderGroups.map((group) => (
@@ -58,36 +69,37 @@ const PendingRatingsList: React.FC<PendingRatingsListProps> = ({
 								Productos
 							</h4>
 							<div className="space-y-4">
-								{group.products.map((product) => (
+								{group.products.map((product, index) => (
 									<div
-										key={`product-${product.id}-order-${group.orderId}`}
+										key={`product-${product.id || product.productId}-order-${group.orderId}-${index}-${product.order_id || ''}`}
 										className="flex flex-col sm:flex-row sm:items-center p-3 border border-gray-200 rounded-lg"
 									>
 										{/* Imagen y detalles del producto */}
 										<div className="flex items-center flex-grow mb-3 sm:mb-0">
-											{product.image ? (
-												<img
-													src={product.image}
-													alt={product.name}
-													className="w-16 h-16 object-cover rounded-md mr-4"
-													onError={(e) => {
-														const target = e.target as HTMLImageElement;
-														target.onerror = null;
-														target.src =
-															"https://via.placeholder.com/64?text=Producto";
-													}}
-												/>
-											) : (
-												<div className="w-16 h-16 bg-gray-200 rounded-md flex items-center justify-center mr-4">
-													<Package className="h-8 w-8 text-gray-400" />
-												</div>
-											)}
+											{/* CONTENEDOR DE IMAGEN CON FALLBACK LOCAL */}
+											<div className="w-16 h-16 rounded-md mr-4 relative bg-gray-100 flex items-center justify-center">
+												{product.image ? (
+													<>
+														<img
+															src={product.image}
+															alt={product.name || 'Producto'}
+															className="w-16 h-16 object-cover rounded-md"
+															onError={handleImageError}
+														/>
+														{/* ÍCONO DE RESPALDO LOCAL OCULTO POR DEFECTO */}
+														<Package className="h-8 w-8 text-gray-400 fallback-icon hidden absolute" />
+													</>
+												) : (
+												<Package className="h-8 w-8 text-gray-400" />
+												)}
+											</div>
+											
 											<div>
 												<h5 className="font-medium text-gray-900">
-													{product.name}
+													{product.name || `Producto #${product.id || product.productId}`}
 												</h5>
 												<Link
-													to={`/products/${product.id}`}
+													to={`/products/${product.id || product.productId}`}
 													className="text-sm text-primary-600 hover:text-primary-800"
 												>
 													Ver producto
@@ -99,7 +111,7 @@ const PendingRatingsList: React.FC<PendingRatingsListProps> = ({
 										<div>
 											<button
 												onClick={() => onRateProduct(product)}
-												className="w-full sm:w-auto px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center justify-center"
+												className="w-full sm:w-auto px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 flex items-center justify-center transition-colors"
 											>
 												<Star className="h-4 w-4 mr-2" />
 												Valorar producto
@@ -119,37 +131,42 @@ const PendingRatingsList: React.FC<PendingRatingsListProps> = ({
 								Vendedores
 							</h4>
 							<div className="space-y-4">
-								{group.sellers.map((seller) => (
+								{group.sellers.map((seller, index) => (
 									<div
-										key={`seller-${seller.id || seller.seller_id}-order-${group.orderId}`}
+										key={`seller-${seller.id || seller.seller_id}-order-${group.orderId}-${index}-${seller.productId || ''}`}
 										className="flex flex-col sm:flex-row sm:items-center p-3 border border-gray-200 rounded-lg"
 									>
 										{/* Imagen y detalles del vendedor */}
 										<div className="flex items-center flex-grow mb-3 sm:mb-0">
-											{seller.image ? (
-												<img
-													src={seller.image}
-													alt={seller.name}
-													className="w-16 h-16 object-cover rounded-md mr-4"
-													onError={(e) => {
-														const target = e.target as HTMLImageElement;
-														target.onerror = null;
-														target.src =
-															"https://via.placeholder.com/64?text=Tienda";
-													}}
-												/>
-											) : (
-												<div className="w-16 h-16 bg-gray-200 rounded-md flex items-center justify-center mr-4">
-													<Store className="h-8 w-8 text-gray-400" />
-												</div>
-											)}
+											{/* CONTENEDOR DE IMAGEN CON FALLBACK LOCAL */}
+											<div className="w-16 h-16 rounded-md mr-4 relative bg-gray-100 flex items-center justify-center">
+												{seller.image ? (
+													<>
+														<img
+															src={seller.image}
+															alt={seller.name || 'Tienda'}
+															className="w-16 h-16 object-cover rounded-md"
+															onError={handleImageError}
+														/>
+														{/* ÍCONO DE RESPALDO LOCAL OCULTO POR DEFECTO */}
+														<Store className="h-8 w-8 text-gray-400 fallback-icon hidden absolute" />
+													</>
+												) : (
+												<Store className="h-8 w-8 text-gray-400" />
+												)}
+											</div>
+											
 											<div>
 												<h5 className="font-medium text-gray-900">
-													{seller.name ||
-														`Vendedor #${seller.seller_id || seller.id}`}
+													{seller.name || `Vendedor #${seller.seller_id || seller.id}`}
 												</h5>
 												<span className="text-sm text-gray-500">
 													Tienda
+													{seller.productId && (
+														<span className="ml-2 text-xs bg-gray-100 px-2 py-1 rounded">
+															Producto #{seller.productId}
+														</span>
+													)}
 												</span>
 											</div>
 										</div>
@@ -158,7 +175,7 @@ const PendingRatingsList: React.FC<PendingRatingsListProps> = ({
 										<div>
 											<button
 												onClick={() => onRateSeller(seller)}
-												className="w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center justify-center"
+												className="w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center justify-center transition-colors"
 											>
 												<Star className="h-4 w-4 mr-2" />
 												Valorar vendedor

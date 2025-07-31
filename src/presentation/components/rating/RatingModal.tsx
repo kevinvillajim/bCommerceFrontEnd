@@ -196,35 +196,44 @@ const RatingModal: React.FC<RatingModalProps> = ({
 					<div className="px-6 py-4">
 						{/* Información del producto/vendedor */}
 						<div className="flex items-center mb-4">
-							{entityImage ? (
-								<img
-									src={entityImage}
-									alt={entityName}
-									className="w-16 h-16 object-cover rounded-md mr-4"
-									onError={(e) => {
-										const target = e.target as HTMLImageElement;
-										target.onerror = null;
-										target.src = "https://via.placeholder.com/64?text=Imagen";
-									}}
-								/>
-							) : (
-								<div className="w-16 h-16 bg-gray-200 rounded-md flex items-center justify-center mr-4">
-									{type === "product" ? (
-										<Package size={24} className="text-gray-400" />
-									) : (
-										<Store size={24} className="text-gray-400" />
-									)}
-								</div>
-							)}
-							<div>
-								<h4 className="font-medium text-gray-900">
-									{entityName}
-								</h4>
-								<p className="text-sm text-gray-500">
-									Pedido: #{orderId}
-								</p>
-							</div>
-						</div>
+  <div className="w-16 h-16 bg-gray-200 rounded-md flex items-center justify-center mr-4 relative">
+    {entityImage ? (
+      <>
+        <img
+          src={entityImage}
+          alt={entityName}
+          className="w-16 h-16 object-cover rounded-md"
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            target.style.display = 'none';
+            const parent = target.parentElement;
+            if (parent) {
+              parent.querySelector('.fallback-icon')?.classList.remove('hidden');
+            }
+          }}
+        />
+        {type === "product" ? (
+          <Package size={24} className="text-gray-400 fallback-icon hidden absolute" />
+        ) : (
+          <Store size={24} className="text-gray-400 fallback-icon hidden absolute" />
+        )}
+      </>
+    ) : (
+      <>
+        {type === "product" ? (
+          <Package size={24} className="text-gray-400" />
+        ) : (
+          <Store size={24} className="text-gray-400" />
+        )}
+      </>
+    )}
+  </div>
+  <div>
+    <h4 className="font-medium text-gray-900">{entityName}</h4>
+    <p className="text-sm text-gray-500">Pedido: #{orderId}</p>
+  </div>
+</div>
+
 
 						{/* Formulario de Valoración */}
 						{!isReportMode && !showConfirmation && (
