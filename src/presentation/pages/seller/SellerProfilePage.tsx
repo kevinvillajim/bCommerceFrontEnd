@@ -246,7 +246,7 @@ const SellerProfilePage: React.FC = () => {
 				return profileData.avatar;
 			}
 			// Si es una ruta relativa, construir la URL completa
-			return `${import.meta.env.REACT_APP_API_BASE_URL || 'http://127.0.0.1:8000'}/storage/${profileData.avatar}`;
+			return `${import.meta.env.VITE_URL_BASE || 'http://127.0.0.1:8000'}/storage/${profileData.avatar}`;
 		}
 		return undefined; // Sin imagen, mostrar inicial
 	};
