@@ -333,14 +333,14 @@ const ProductReviews: React.FC<ProductReviewsProps> = ({
                   <div className="flex items-center justify-between mb-2">
                     <div>
                       <p className="font-medium text-gray-900">
-                        {review.user?.name || 'Usuario anónimo'}
+                      {review.user?.name || 'Usuario anónimo'}
                       </p>
                       <div className="flex items-center mt-1">
-                        {renderStars(review.rating)}
-                        <span className="ml-2 text-sm text-gray-500">
-                          {formatDate(review.created_at)}
-                        </span>
-                      </div>
+                      {renderStars(review.rating)}
+                       <span className="ml-2 text-sm text-gray-500">
+												{formatDate(review.created_at)}
+											</span>
+										</div>
                     </div>
                   </div>
 
