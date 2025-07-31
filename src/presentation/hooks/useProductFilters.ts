@@ -322,6 +322,10 @@ export const useProductFilters = (
 				params.sortDir = "desc";
 				break;
 		}
+		
+		// ✅ NUEVA FUNCIONALIDAD: Habilitar cálculo de ratings desde tabla ratings
+		// Esto es opcional y solo se activa para mejorar la experiencia de productos sin rating calculado
+		params.calculateRatingsFromTable = true;
 
 		console.log("useProductFilters: Parámetros finales para API:", params);
 		return params;

@@ -173,6 +173,10 @@ export interface Product {
 	rating?: number; // ✅ CAMPO REQUERIDO POR CARRITO
 	ratingCount?: number;
 	rating_count?: number; // ✅ CAMPO REQUERIDO POR CARRITO
+	
+	// ✅ NUEVOS: Campos calculados desde tabla ratings (JOIN opcional)
+	calculated_rating?: number; // Rating calculado desde ratings.rating
+	calculated_rating_count?: number; // Count calculado desde ratings
 	isInStock?: boolean;
 	is_in_stock?: boolean; // Compatibilidad con API
 	stockAvailable?: number; // ✅ CAMPO PARA STOCK DISPONIBLE

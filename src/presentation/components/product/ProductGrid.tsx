@@ -101,24 +101,78 @@ const ProductGrid: React.FC<ProductGridProps> = ({
 			{/* Grid de productos */}
 			<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
 				{products.map((product) => {
-					// Adaptar producto para asegurar compatibilidad
-					const adaptedProduct = adaptProduct(product);
+				// Adaptar producto para asegurar compatibilidad
+				const adaptedProduct = adaptProduct(product);
 
-					// 🔍 DEBUG: Analizar estructura del producto
-					console.group(`🎨 ProductGrid - Producto ${product.id}`);
-					console.log("📦 Producto RAW desde API:", {
-						id: product.id,
-						name: product.name,
-						images: product.images,
-						main_image: product.main_image,
-						image: product.image,
-					});
+				// ✅ RENDERIZADO CONDICIONAL DE RATINGS
+				// Usar rating de products si existe, sino usar calculado desde ratings
+				const finalRating = (() => {
+				// Prioridad 1: Rating calculado desde tabla ratings (si existe y es válido)
+				if (product.calculated_rating && product.calculated_rating > 0) {
+				 return Number(product.calculated_rating);
+				}
+				// Prioridad 2: Rating de la tabla products
+				 if (product.rating && product.rating > 0) {
+						return Number(product.rating);
+				 }
+				 // Prioridad 3: Rating del producto adaptado
+					if (adaptedProduct.rating && adaptedProduct.rating > 0) {
+				  return Number(adaptedProduct.rating);
+				 }
+					// Por defecto: 0
+					return 0;
+				})();
 
-					// ✅ USAR EL NUEVO GESTOR DE IMÁGENES
-					const imageUrl = getProductMainImage(product);
+				const finalRatingCount = (() => {
+					// Prioridad 1: Count calculado desde tabla ratings
+					if (product.calculated_rating_count !== undefined && product.calculated_rating_count >= 0) {
+						return Number(product.calculated_rating_count);
+					}
+					// Prioridad 2: Count de la tabla products
+					if (product.rating_count !== undefined && product.rating_count >= 0) {
+						return Number(product.rating_count);
+					}
+					// Prioridad 3: Count del producto adaptado
+					if (product.ratingCount !== undefined && product.ratingCount >= 0) {
+						return Number(product.ratingCount);
+					}
+					// Por defecto: 0
+					return 0;
+				})();
 
-					console.log(`🔗 URL final de imagen:`, imageUrl);
-					console.groupEnd();
+				// 🔍 DEBUG: Mostrar qué rating se está usando (solo en desarrollo)
+				console.group(`⭐ ProductGrid - Rating para producto ${product.id}`);
+				console.log('📄 Datos disponibles:', {
+					product_rating: product.rating,
+					product_rating_count: product.rating_count,
+					calculated_rating: product.calculated_rating,
+					calculated_rating_count: product.calculated_rating_count,
+					adapted_rating: adaptedProduct.rating,
+					ratingCount: product.ratingCount
+				});
+				console.log('✅ Rating final seleccionado:', {
+					finalRating,
+					finalRatingCount,
+					source: product.calculated_rating > 0 ? 'tabla_ratings' : 
+					        product.rating > 0 ? 'tabla_products' : 'adaptado'
+				});
+				console.groupEnd();
+
+				// 🔍 DEBUG: Analizar estructura del producto
+				console.group(`🎨 ProductGrid - Producto ${product.id}`);
+				console.log("📦 Producto RAW desde API:", {
+					id: product.id,
+					name: product.name,
+					images: product.images,
+					main_image: product.main_image,
+					image: product.image,
+				});
+
+				// ✅ USAR EL NUEVO GESTOR DE IMÁGENES
+				const imageUrl = getProductMainImage(product);
+
+				console.log(`🔗 URL final de imagen:`, imageUrl);
+				console.groupEnd();
 
 					return (
 						<ProductCardCompact
@@ -127,8 +181,8 @@ const ProductGrid: React.FC<ProductGridProps> = ({
 							name={adaptedProduct.name}
 							price={adaptedProduct.price}
 							discount={product.discountPercentage}
-							rating={adaptedProduct.rating || 0}
-							reviews={product.ratingCount || 0}
+							rating={finalRating}
+							reviews={finalRatingCount}
 							image={imageUrl}
 							category={
 								categories.find((cat) => cat.id === adaptedProduct.categoryId)

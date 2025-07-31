@@ -54,4 +54,8 @@ export interface ExtendedProductFilterParams {
 	// Para conteos y estadísticas
 	with_counts?: boolean;
 	admin_view?: boolean;
+	
+	// ✅ NUEVA FUNCIONALIDAD: Cálculo de ratings desde tabla ratings
+	calculateRatingsFromTable?: boolean;
+	calculate_ratings_from_table?: boolean; // Para compatibilidad con backend
 }

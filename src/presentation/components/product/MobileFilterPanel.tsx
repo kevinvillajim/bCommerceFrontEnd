@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {X} from "lucide-react";
 import type {Category} from "../../../core/domain/entities/Category";
 import RatingStars from "../common/RatingStars";
@@ -6,6 +6,11 @@ import RatingStars from "../common/RatingStars";
 interface PriceRange {
 	id: string;
 	label: string;
+}
+
+interface CustomPriceRangeMobileProps {
+	onApply: (min: number, max: number) => void;
+	selectedRangeId: string | null;
 }
 
 interface MobileFilterPanelProps {
@@ -24,6 +29,93 @@ interface MobileFilterPanelProps {
 	onClearFilters: () => void;
 	productCountByCategory: Record<string, number>;
 }
+
+// Componente para rango de precio personalizado en móvil
+const CustomPriceRangeMobile: React.FC<CustomPriceRangeMobileProps> = ({ onApply, selectedRangeId }) => {
+	const [showCustom, setShowCustom] = useState(false);
+	const [minText, setMinText] = useState("");
+	const [maxText, setMaxText] = useState("");
+	const [error, setError] = useState("");
+
+	const handleApply = () => {
+		const min = parseInt(minText);
+		const max = parseInt(maxText);
+		
+		if (isNaN(min) || isNaN(max) || min < 0 || max < 0) {
+			setError("Ingrese números válidos");
+			return;
+		}
+		
+		if (min > max) {
+			setError("El precio mínimo debe ser menor al máximo");
+			return;
+		}
+		
+		setError("");
+		onApply(min, max);
+		setShowCustom(false);
+		setMinText("");
+		setMaxText("");
+	};
+
+	return (
+		<div className="border-t border-gray-200 pt-2 mt-2">
+			{!showCustom ? (
+				<button
+					onClick={() => setShowCustom(true)}
+					className="w-full text-left px-3 py-2 rounded-md text-sm text-primary-600 hover:bg-primary-50 font-medium"
+				>
+					+ Rango personalizado
+				</button>
+			) : (
+				<div className="space-y-3 px-3 py-2 bg-gray-50 rounded-md">
+					<div className="flex justify-between items-center">
+						<span className="text-sm font-medium text-gray-700">Rango personalizado</span>
+						<button
+							onClick={() => {
+								setShowCustom(false);
+								setError("");
+								setMinText("");
+								setMaxText("");
+							}}
+							className="text-gray-400 hover:text-gray-600"
+						>
+							<X size={16} />
+						</button>
+					</div>
+					
+					<div className="grid grid-cols-2 gap-2">
+						<input
+							type="text"
+							placeholder="Mín"
+							value={minText}
+							onChange={(e) => setMinText(e.target.value)}
+							className="px-2 py-1 border border-gray-300 rounded text-sm"
+						/>
+						<input
+							type="text"
+							placeholder="Máx"
+							value={maxText}
+							onChange={(e) => setMaxText(e.target.value)}
+							className="px-2 py-1 border border-gray-300 rounded text-sm"
+						/>
+					</div>
+					
+					{error && (
+						<p className="text-xs text-red-500">{error}</p>
+					)}
+					
+					<button
+						onClick={handleApply}
+						className="w-full bg-primary-600 text-white py-1 px-3 rounded text-sm hover:bg-primary-700"
+					>
+						Aplicar
+					</button>
+				</div>
+			)}
+		</div>
+	);
+};
 
 const MobileFilterPanel: React.FC<MobileFilterPanelProps> = ({
 	isOpen,
@@ -122,6 +214,12 @@ const MobileFilterPanel: React.FC<MobileFilterPanelProps> = ({
 									{range.label}
 								</button>
 							))}
+							
+							{/* Rango personalizado */}
+							<CustomPriceRangeMobile 
+								onApply={(min, max) => onPriceRangeChange(min, max)}
+								selectedRangeId={selectedRangeId}
+							/>
 						</div>
 					</div>
 

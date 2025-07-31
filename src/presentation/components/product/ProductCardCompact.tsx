@@ -74,10 +74,33 @@ const ProductCardCompact: React.FC<ProductCardProps> = ({
 		console.log("🔄 Cache invalidado desde ProductCardCompact");
 	};
 
-	// ✅ INICIALIZAR ESTADOS AL MONTAR
+	// ✅ INICIALIZAR ESTADOS AL MONTAR + MEJORAR INDICADORES VISUALES
 	React.useEffect(() => {
-		setIsFavorite(checkIsFavorite(id));
-		// TODO: Aquí podrías verificar si está en carrito si tienes una función para eso
+		const isFav = checkIsFavorite(id);
+		setIsFavorite(isFav);
+		
+		// Verificar si el producto ya está en carrito y mostrar indicador visual
+		// Esta es una mejora opcional que no requiere demasiada capacidad
+		const checkIfInCart = () => {
+			// Verificar localStorage o estado global del carrito
+			try {
+				const cartData = localStorage.getItem('cart_items') || localStorage.getItem('cart_data');
+				if (cartData) {
+					const cart = JSON.parse(cartData);
+					const isInCart = cart.items?.some((item: any) => 
+						item.product_id === id || item.productId === id || item.id === id
+					);
+					if (isInCart) {
+						setIsInCart(true);
+					}
+				}
+			} catch (error) {
+				// No hacer nada si hay error, es mejora opcional
+				console.log('📝 Verificación opcional de carrito:', error);
+			}
+		};
+		
+		checkIfInCart();
 	}, [id, checkIsFavorite]);
 
 	// Calculate discounted price

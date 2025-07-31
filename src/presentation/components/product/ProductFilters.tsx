@@ -95,10 +95,17 @@ const CategoryFilterSection: React.FC<CategoryFilterSectionProps> = ({
 }) => {
 	// Función para manejar cambios de categoría
 	const handleCategoryToggle = (category: string) => {
-		if (selectedCategories.includes(category)) {
-			onCategoryChange(selectedCategories.filter((c) => c !== category));
+		// Normalizar categoría para evitar problemas de espacios/case sensitivity
+		const normalizedCategory = category.trim();
+		const normalizedSelectedCategories = selectedCategories.map(c => c.trim());
+		
+		if (normalizedSelectedCategories.includes(normalizedCategory)) {
+			// Remover la categoría - usar la categoría original, no normalizada
+			const newCategories = selectedCategories.filter((c) => c.trim() !== normalizedCategory);
+			onCategoryChange(newCategories);
 		} else {
-			onCategoryChange([...selectedCategories, category]);
+			// Agregar la categoría
+			onCategoryChange([...selectedCategories, normalizedCategory]);
 		}
 	};
 
@@ -119,7 +126,7 @@ const CategoryFilterSection: React.FC<CategoryFilterSectionProps> = ({
 							<input
 								type="checkbox"
 								id={uniqueId}
-								checked={selectedCategories.includes(category)}
+								checked={selectedCategories.map(c => c.trim()).includes(category.trim())}
 								onChange={() => handleCategoryToggle(category)}
 								className="cursor-pointer h-4 w-4 text-primary-600 focus:ring-primary-500 rounded border-gray-300"
 							/>
@@ -156,23 +163,104 @@ const PriceFilterSection: React.FC<PriceFilterSectionProps> = ({
 	const [maxPrice, setMaxPrice] = useState<number>(
 		selectedRange?.max || initialMax
 	);
+	
+	// Estados para inputs de texto que permiten edición libre
+	const [minPriceText, setMinPriceText] = useState<string>(
+		(selectedRange?.min || initialMin).toString()
+	);
+	const [maxPriceText, setMaxPriceText] = useState<string>(
+		(selectedRange?.max || initialMax).toString()
+	);
+	const [minError, setMinError] = useState<string>("");
+	const [maxError, setMaxError] = useState<string>("");
+
+	// Función para validar y convertir texto a número
+	const validateAndSetPrice = (value: string, type: 'min' | 'max') => {
+		if (value === "") {
+			// Permitir campo vacío temporalmente
+			if (type === 'min') {
+				setMinError("");
+				setMinPriceText(value);
+			} else {
+				setMaxError("");
+				setMaxPriceText(value);
+			}
+			return;
+		}
+		
+		const numValue = parseInt(value);
+		
+		if (isNaN(numValue) || numValue < 0) {
+			const error = "Solo se permiten números válidos";
+			if (type === 'min') {
+				setMinError(error);
+			} else {
+				setMaxError(error);
+			}
+			return;
+		}
+		
+		// Validación exitosa
+		if (type === 'min') {
+			setMinError("");
+			setMinPrice(numValue);
+			setMinPriceText(value);
+		} else {
+			setMaxError("");
+			setMaxPrice(numValue);
+			setMaxPriceText(value);
+		}
+	};
 
 	const handleMinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const value = parseInt(e.target.value);
-		setMinPrice(isNaN(value) ? initialMin : value);
+		validateAndSetPrice(e.target.value, 'min');
 	};
 
 	const handleMaxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const value = parseInt(e.target.value);
-		setMaxPrice(isNaN(value) ? initialMax : value);
+		validateAndSetPrice(e.target.value, 'max');
+	};
+	
+	// Manejar cuando se enfoca en el campo (focus)
+	const handleMinFocus = () => {
+		if (minPriceText === "0" || minPriceText === initialMin.toString()) {
+			setMinPriceText("");
+		}
+	};
+	
+	const handleMaxFocus = () => {
+		if (maxPriceText === "0" || maxPriceText === initialMax.toString()) {
+			setMaxPriceText("");
+		}
+	};
+	
+	// Manejar cuando pierde el foco (blur)
+	const handleMinBlur = () => {
+		if (minPriceText === "") {
+			setMinPriceText(initialMin.toString());
+			setMinPrice(initialMin);
+			setMinError("");
+		}
+	};
+	
+	const handleMaxBlur = () => {
+		if (maxPriceText === "") {
+			setMaxPriceText(initialMax.toString());
+			setMaxPrice(initialMax);
+			setMaxError("");
+		}
 	};
 
 	const handleApply = () => {
-		// Asegurarse de que min no es mayor que max
-		const validMin = Math.min(minPrice, maxPrice);
-		const validMax = Math.max(minPrice, maxPrice);
-		onApply(validMin, validMax);
-	};
+	// Verificar si hay errores antes de aplicar
+	if (minError || maxError) {
+	 return;
+	}
+	 
+			// Asegurarse de que min no es mayor que max
+			const validMin = Math.min(minPrice, maxPrice);
+			const validMax = Math.max(minPrice, maxPrice);
+			onApply(validMin, validMax);
+		};
 
 	return (
 		<FilterSection title="Precio" isExpanded={isExpanded} onToggle={onToggle}>
@@ -186,14 +274,20 @@ const PriceFilterSection: React.FC<PriceFilterSectionProps> = ({
 							Mínimo
 						</label>
 						<input
-							type="number"
+							type="text"
 							id="min-price"
-							min={initialMin}
-							max={initialMax}
-							value={minPrice}
+							value={minPriceText}
 							onChange={handleMinChange}
-							className="w-full p-2 border border-gray-300 rounded"
+							onFocus={handleMinFocus}
+							onBlur={handleMinBlur}
+							placeholder="Precio mínimo"
+							className={`w-full p-2 border rounded ${
+								minError ? 'border-red-300 bg-red-50' : 'border-gray-300'
+							}`}
 						/>
+						{minError && (
+							<p className="text-xs text-red-500 mt-1">{minError}</p>
+						)}
 					</div>
 					<div>
 						<label
@@ -203,21 +297,32 @@ const PriceFilterSection: React.FC<PriceFilterSectionProps> = ({
 							Máximo
 						</label>
 						<input
-							type="number"
+							type="text"
 							id="max-price"
-							min={initialMin}
-							max={initialMax}
-							value={maxPrice}
+							value={maxPriceText}
 							onChange={handleMaxChange}
-							className="w-full p-2 border border-gray-300 rounded"
+							onFocus={handleMaxFocus}
+							onBlur={handleMaxBlur}
+							placeholder="Precio máximo"
+							className={`w-full p-2 border rounded ${
+								maxError ? 'border-red-300 bg-red-50' : 'border-gray-300'
+							}`}
 						/>
+						{maxError && (
+							<p className="text-xs text-red-500 mt-1">{maxError}</p>
+						)}
 					</div>
 				</div>
 
 				<div className="flex space-x-2">
 					<button
 						onClick={handleApply}
-						className="flex-1 bg-primary-600 text-white py-2 px-4 rounded hover:bg-primary-700 text-sm"
+						disabled={minError || maxError}
+						className={`flex-1 py-2 px-4 rounded text-sm ${
+							minError || maxError
+								? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+								: 'bg-primary-600 text-white hover:bg-primary-700'
+						}`}
 					>
 						Aplicar
 					</button>
@@ -253,18 +358,24 @@ const RatingFilterSection: React.FC<RatingFilterSectionProps> = ({
 			onToggle={onToggle}
 		>
 			<div className="space-y-2">
-				{ratings.map((rating) => (
-					<button
-						key={`rating-${rating}`}
-						onClick={() =>
-							onRatingChange(selectedRating === rating ? null : rating)
-						}
-						className={`cursor-pointer flex items-center w-full p-2 rounded-md transition ${
-							selectedRating === rating
-								? "bg-primary-50 text-primary-700"
-								: "hover:bg-gray-100 text-gray-700"
-						}`}
-					>
+				{ratings.map((rating) => {
+					// Convertir a números para comparación correcta
+					const isSelected = selectedRating !== null && Number(selectedRating) === Number(rating);
+					
+					return (
+						<button
+							key={`rating-${rating}`}
+							onClick={() => {
+								// Si ya está seleccionado, deseleccionar, sino seleccionar
+								const newRating = isSelected ? null : rating;
+								onRatingChange(newRating);
+							}}
+							className={`cursor-pointer flex items-center w-full p-2 rounded-md transition ${
+								isSelected
+									? "bg-primary-50 text-primary-700 border border-primary-200"
+									: "hover:bg-gray-100 text-gray-700 border border-transparent"
+							}`}
+						>
 						<div className="flex">
 							{[...Array(5)].map((_, i) => (
 								<Star
@@ -275,9 +386,10 @@ const RatingFilterSection: React.FC<RatingFilterSectionProps> = ({
 								/>
 							))}
 						</div>
-						<span className="ml-2 text-sm">{rating}+ estrellas</span>
-					</button>
-				))}
+							<span className="ml-2 text-sm">{rating}+ estrellas</span>
+						</button>
+					);
+				})}
 			</div>
 		</FilterSection>
 	);
