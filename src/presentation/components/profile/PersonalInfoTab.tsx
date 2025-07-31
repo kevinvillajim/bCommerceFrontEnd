@@ -1,11 +1,12 @@
-// src/presentation/components/profile/PersonalInfoTab.tsx
+// PersonalInfoTab.tsx - ACTUALIZADO SIMPLE
 import React, { useState, useEffect } from 'react';
 import { User, Mail, MapPin, Calendar, Settings } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
+import UbicacionInput from './UbicacionInput';
 import type { UserProfileUpdateData } from '../../../core/domain/entities/User';
 import ApiClient from '../../../infrastructure/api/apiClient';
 
-// Esta interfaz debe coincidir con la definida en UserProfilePage
+// Mantener la interfaz existente - NO CAMBIAR
 interface UserProfile {
   id: number;
   name: string;
@@ -13,7 +14,7 @@ interface UserProfile {
   emailVerifiedAt: string | null;
   age: number | null;
   gender: string | null;
-  location: string | null;
+  location: string | null;  // Seguir usando string
   created_at: string;
 }
 
@@ -23,7 +24,8 @@ interface PersonalInfoTabProps {
 }
 
 /**
- * Componente de pestaña de información personal
+ * Componente actualizado con mejor UX para ubicación
+ * MANTIENE total compatibilidad con backend actual
  */
 const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({
   userProfile,
@@ -35,13 +37,13 @@ const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({
   const [profileError, setProfileError] = useState<string | null>(null);
   const [profileSuccess, setProfileSuccess] = useState<string | null>(null);
   
-  // Estado para formulario de edición
+  // Estado para formulario - IGUAL que antes
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     age: '',
     gender: '',
-    location: ''
+    location: ''  // Seguir usando string
   });
   
   // Inicializar formulario con datos del usuario
@@ -57,7 +59,7 @@ const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({
     }
   }, [userProfile]);
 
-  // Manejar cambios en el formulario
+  // Manejar cambios en campos simples
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -66,7 +68,15 @@ const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({
     }));
   };
 
-  // Manejar envío del formulario de información personal
+  // Manejar cambio de ubicación (desde el componente)
+  const handleLocationChange = (newLocation: string) => {
+    setFormData(prev => ({
+      ...prev,
+      location: newLocation
+    }));
+  };
+
+  // Envío del formulario - EXACTAMENTE igual que antes
   const handlePersonalInfoSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setProfileError(null);
@@ -74,20 +84,19 @@ const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({
     setIsUpdating(true);
     
     try {
-      // Preparar datos para actualizar
+      // Mismos datos que antes - NO CAMBIOS en API
       const profileData: UserProfileUpdateData = {
         name: formData.name,
         age: formData.age ? parseInt(formData.age) : null,
         gender: formData.gender || null,
-        location: formData.location || null
+        location: formData.location || null  // String simple como siempre
       };
       
       try {
-        // Directamente usando ApiClient para actualizar el perfil
+        // Usar ApiClient exactamente igual
         const updatedUser = await ApiClient.put<any>('/profile', profileData);
         
         if (updatedUser && onProfileUpdate && userProfile) {
-          // Asegurarse de que el objeto actualizado mantiene los campos obligatorios
           const updatedProfile: UserProfile = {
             ...userProfile,
             name: updatedUser.name || userProfile.name,
@@ -96,20 +105,17 @@ const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({
             location: updatedUser.location ?? userProfile.location
           };
           
-          // Notificar al componente padre sobre la actualización
           onProfileUpdate(updatedProfile);
-          
           setProfileSuccess('Perfil actualizado correctamente');
           setIsEditing(false);
         }
       } catch (error) {
-        console.error("Error al actualizar con ApiClient:", error);
+        console.error("Error con ApiClient:", error);
         
-        // Intento alternativo con updateProfile del hook de auth
+        // Fallback con hook de auth
         const updatedUser = await updateProfile(profileData);
         
         if (updatedUser && onProfileUpdate && userProfile) {
-          // Asegurarse de que el objeto actualizado mantiene los campos obligatorios
           const updatedProfile: UserProfile = {
             ...userProfile,
             name: updatedUser.name || userProfile.name,
@@ -118,9 +124,7 @@ const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({
             location: updatedUser.location ?? userProfile.location
           };
           
-          // Notificar al componente padre sobre la actualización
           onProfileUpdate(updatedProfile);
-          
           setProfileSuccess('Perfil actualizado correctamente');
           setIsEditing(false);
         }
@@ -137,10 +141,9 @@ const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({
     }
   };
 
-  // Cancelar edición y revertir cambios
+  // Cancelar edición
   const handleCancelEdit = () => {
     setIsEditing(false);
-    // Revertir cambios
     if (userProfile) {
       setFormData({
         name: userProfile.name || '',
@@ -170,116 +173,106 @@ const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({
       
       {/* Mensajes de éxito/error */}
       {profileSuccess && (
-        <div className="bg-green-50 border-l-4 border-green-400 p-4 mb-4 text-sm text-green-700 animate-fadeIn">
+        <div className="bg-green-50 border-l-4 border-green-400 p-4 mb-4 text-sm text-green-700">
           {profileSuccess}
         </div>
       )}
       
       {profileError && (
-        <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-4 text-sm text-red-700 animate-fadeIn">
+        <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-4 text-sm text-red-700">
           {profileError}
         </div>
       )}
       
       {isEditing ? (
-        <form onSubmit={handlePersonalInfoSubmit}>
+        <form onSubmit={handlePersonalInfoSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Nombre */}
             <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
-                Nombre completo
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Nombre completo *
               </label>
               <input
                 type="text"
-                id="name"
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500"
                 required
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               />
             </div>
             
+            {/* Email (solo lectura) */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Correo electrónico
               </label>
               <input
                 type="email"
-                id="email"
-                name="email"
                 value={formData.email}
-                onChange={handleChange}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500"
-                required
-                disabled  // El email no se puede cambiar normalmente
+                disabled
+                className="w-full p-3 border border-gray-300 rounded-lg bg-gray-100 text-gray-500"
               />
-              <p className="text-xs text-gray-500 mt-1">El correo electrónico no se puede cambiar directamente.</p>
+              <p className="text-xs text-gray-500 mt-1">
+                El correo no se puede cambiar por seguridad
+              </p>
             </div>
             
+            {/* Edad */}
             <div>
-              <label htmlFor="age" className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Edad
               </label>
               <input
                 type="number"
-                id="age"
                 name="age"
                 value={formData.age}
                 onChange={handleChange}
-                min="0"
-                max="120"
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500"
+                min="1"
+                max="150"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               />
             </div>
             
+            {/* Género */}
             <div>
-              <label htmlFor="gender" className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
                 Género
               </label>
               <select
-                id="gender"
                 name="gender"
-                value={formData.gender || ''}
+                value={formData.gender}
                 onChange={handleChange}
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               >
-                <option value="">Seleccionar</option>
+                <option value="">Seleccionar...</option>
                 <option value="Masculino">Masculino</option>
                 <option value="Femenino">Femenino</option>
                 <option value="No binario">No binario</option>
-                <option value="Prefiero no decirlo">Prefiero no decirlo</option>
+                <option value="Prefiero no decirlo">Prefiero no decir</option>
               </select>
-            </div>
-            
-            <div className="md:col-span-2">
-              <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">
-                Ubicación
-              </label>
-              <input
-                type="text"
-                id="location"
-                name="location"
-                value={formData.location || ''}
-                onChange={handleChange}
-                placeholder="Ciudad, País"
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-primary-500 focus:border-primary-500"
-              />
             </div>
           </div>
           
-          <div className="mt-6 flex justify-end space-x-3">
+          {/* NUEVO componente de ubicación - SIMPLE pero útil */}
+          <UbicacionInput
+            value={formData.location}
+            onChange={handleLocationChange}
+          />
+          
+          {/* Botones */}
+          <div className="flex gap-4 pt-4">
             <button
               type="button"
               onClick={handleCancelEdit}
-              className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
-              disabled={isUpdating}
+              className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
               disabled={isUpdating}
+              className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
             >
               {isUpdating ? 'Guardando...' : 'Guardar Cambios'}
             </button>
@@ -334,9 +327,9 @@ const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({
             </div>
           </div>
           
-          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 text-sm text-yellow-700">
+          <div className="bg-blue-50 border-l-4 border-primary-400 p-4 text-sm text-primary-700">
             <p>
-              <strong>Nota:</strong> Tu información personal se mantiene privada y solo se utiliza para mejorar tu experiencia de compra.
+              <strong>Nota:</strong> Tu información de ubicación se utiliza para calcular costos de envío y mejorar tu experiencia de compra.
             </p>
           </div>
         </div>
