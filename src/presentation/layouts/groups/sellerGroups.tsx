@@ -61,12 +61,14 @@ const sellerGroups = [
 				label: "Pedidos",
 				icon: <ShoppingBag className="w-5 h-5 mr-3" />,
 				isNotificated: true,
-				notificationCount: 1,
+				notificationCount: 0, // Se actualizará dinámicamente
 			},
 			{
 				path: "/seller/shipping",
 				label: "Envíos",
 				icon: <Truck className="w-5 h-5 mr-3" />,
+				isNotificated: true,
+				notificationCount: 0, // Se actualizará dinámicamente
 			},
 		],
 	},
@@ -77,22 +79,21 @@ const sellerGroups = [
 				path: "/seller/ratings",
 				label: "Valoraciones y Reseñas",
 				icon: <Star className="w-5 h-5 mr-3" />,
+				isNotificated: true,
+				notificationCount: 0, // Se actualizará dinámicamente
 			},
 			{
 				path: "/seller/messages",
 				label: "Mensajes",
 				icon: <MessageSquare className="w-5 h-5 mr-3" />,
+				isNotificated: true,
+				notificationCount: 0, // Se actualizará dinámicamente
 			},
 		],
 	},
 	{
 		title: "Finanzas",
 		links: [
-			{
-				path: "/seller/invoices",
-				label: "Facturas",
-				icon: <FileText className="w-5 h-5 mr-3" />,
-			},
 			{
 				path: "/seller/earnings",
 				label: "Ganancias",

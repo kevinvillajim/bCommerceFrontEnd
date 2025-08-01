@@ -62,6 +62,9 @@ export const DashboardProvider: React.FC<DashboardProviderProps> = ({
 	// Estado del sidebar
 	const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
+	// Tipo de dashboard
+	const [dashboardType] = useState<DashboardType>(initialType);
+
 	// Estado de notificaciones
 	const [notifications, setNotifications] = useState<Notification[]>([]);
 	const [unreadNotificationsCount, setUnreadNotificationsCount] = useState(0);
@@ -72,9 +75,6 @@ export const DashboardProvider: React.FC<DashboardProviderProps> = ({
 	// Títulos de página
 	const [pageTitles, setPageTitles] =
 		useState<Record<string, string>>(initialPageTitles);
-
-	// Tipo de dashboard
-	const [dashboardType] = useState<DashboardType>(initialType);
 
 	// Current pathname para determinar el título actual
 	const location = useLocation();

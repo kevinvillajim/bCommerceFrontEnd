@@ -67,8 +67,8 @@ const PendingRatingsPage = lazy(
 const SellerProfilePage = lazy(
 	() => import("../presentation/pages/seller/SellerProfilePage")
 );
-const SellerInvoicesPage = lazy(
-	() => import("../presentation/pages/seller/SellerInvoicesPage")
+const SellerNotificationsPage = lazy(
+	() => import("../presentation/pages/seller/SellerNotificationsPage")
 );
 // const SellerInvoiceDetailsPage = lazy(() => import('../presentation/pages/seller/SellerInvoiceDetailsPage'));
 const SellerMessagesPage = lazy(
@@ -128,6 +128,9 @@ const AdminDiscountsPage = lazy(
 );
 const AdminLogViewerPage = lazy(
 	() => import("../presentation/pages/admin/AdminLogViewerPage")
+);
+const AdminNotificationsPage = lazy(
+	() => import("../presentation/pages/admin/AdminNotificationsPage")
 );
 const AdminShippingPage = lazy(
 	() => import("../presentation/pages/admin/AdminShippingPage")
@@ -428,10 +431,6 @@ const appRoutes: RouteObject[] = [
 				element: <OrderDetailPage />,
 			},
 			{
-				path: "invoices/generate/:orderId",
-				element: <SellerInvoicesPage />,
-			},
-			{
 				path: "shipping/:orderId",
 				element: <SellerShippingDetailsPage />,
 			},
@@ -458,15 +457,12 @@ const appRoutes: RouteObject[] = [
 				path: "messages/:chatId",
 				element: <SellerMessagesPage />,
 			},
-			// Finances
+			// Notifications
 			{
-				path: "invoices",
-				element: <SellerInvoicesPage />,
+				path: "notifications",
+				element: <SellerNotificationsPage />,
 			},
-			// {
-			// 	path: "invoices/:id",
-			// 	element: <SellerInvoiceDetailsPage />,
-			// },
+			// Finances
 			{
 				path: "earnings",
 				element: <SellerEarningsPage />,
@@ -555,6 +551,10 @@ const appRoutes: RouteObject[] = [
 			{
 				path: "feedback",
 				element: <AdminFeedbackPage />,
+			},
+			{
+				path: "notifications",
+				element: <AdminNotificationsPage />,
 			},
 			{
 				path: "discounts",

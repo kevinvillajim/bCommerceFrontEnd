@@ -13,6 +13,7 @@ import {AuthContext} from "../../contexts/AuthContext";
 import {useHeaderCounters} from "../../hooks/useHeaderCounters";
 import ThemeToggle from "../common/ThemeToggle";
 import {useDashboard} from "./DashboardContext";
+import NotificationModal from "./NotificationModal";
 
 /**
  * Tipos de notificaciones para mostrar en el panel
@@ -56,7 +57,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
 	visibleInMobile = true,
 }) => {
 	const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
-	const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+	const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
 	const {user, logout} = useContext(AuthContext);
 	const {currentPageTitle} = useDashboard();
 
@@ -64,15 +65,11 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
 	const {counters, loading: countersLoading} = useHeaderCounters();
 
 	// ✅ USAR EL CONTADOR DE NOTIFICACIONES DEL HOOK OPTIMIZADO
-	// Si se pasa unreadNotifications como prop, usar eso, sino usar del hook
-	const finalUnreadNotifications =
-		unreadNotifications !== undefined
-			? unreadNotifications
-			: counters.notificationCount;
+	// Ya no usar props, solo del hook que se conecta al backend
+	const finalUnreadNotifications = counters.notificationCount;
 
 	console.log("DashboardHeader: Contadores optimizados", {
 		finalUnreadNotifications,
-		propsUnread: unreadNotifications,
 		hookUnread: counters.notificationCount,
 		isAdmin,
 		loading: countersLoading,
@@ -86,12 +83,10 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
 
 	const toggleProfileMenu = () => {
 		setIsProfileMenuOpen(!isProfileMenuOpen);
-		if (isNotificationsOpen) setIsNotificationsOpen(false);
 	};
 
-	const toggleNotifications = () => {
-		setIsNotificationsOpen(!isNotificationsOpen);
-		if (isProfileMenuOpen) setIsProfileMenuOpen(false);
+	const toggleNotificationModal = () => {
+		setIsNotificationModalOpen(!isNotificationModalOpen);
 	};
 
 	// Obtener la inicial del nombre del usuario para el avatar
@@ -109,13 +104,6 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
 				!target.closest(".profile-button")
 			) {
 				setIsProfileMenuOpen(false);
-			}
-
-			if (
-				!target.closest(".notifications-menu") &&
-				!target.closest(".notifications-button")
-			) {
-				setIsNotificationsOpen(false);
 			}
 		};
 
@@ -178,100 +166,27 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
 						</a>
 					)}
 
-					{/* ✅ NOTIFICACIONES OPTIMIZADAS - CORRECCIÓN PRINCIPAL */}
+					{/* ✅ NOTIFICACIONES CON MODAL - CORRECCIÓN PRINCIPAL */}
 					<div className="relative">
-						<button
-							className="notifications-button text-gray-600 hover:text-gray-900 p-1 rounded-full relative"
-							onClick={toggleNotifications}
-						>
-							<Bell size={20} />
-							{finalUnreadNotifications > 0 && (
-								<span className="absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-									{finalUnreadNotifications > 9
-										? "9+"
-										: finalUnreadNotifications}
-								</span>
-							)}
-							{/* ✅ INDICADOR DE LOADING PARA CONTADORES */}
-							{countersLoading && (
-								<span className="absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2 bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-									<div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-								</span>
-							)}
-						</button>
-
-						{/* Dropdown de notificaciones */}
-						{isNotificationsOpen && (
-							<div className="notifications-menu absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg py-2 z-30 border border-gray-200">
-								<div className="px-4 py-2 border-b border-gray-200 flex justify-between items-center">
-									<h3 className="text-sm font-semibold text-gray-800">
-										Notificaciones
-									</h3>
-									{finalUnreadNotifications > 0 && (
-										<button
-											className="text-xs text-primary-600 hover:underline"
-											onClick={onReadAllNotifications}
-										>
-											Marcar todas como leídas
-										</button>
-									)}
-								</div>
-								<div className="max-h-96 overflow-y-auto">
-									{notifications.length > 0 ? (
-										notifications.map((notification) => (
-											<div
-												key={notification.id}
-												className={`px-4 py-3 hover:bg-gray-50 ${
-													!notification.read && notification.type === "warning"
-														? "border-l-4 border-red-500"
-														: !notification.read
-															? "border-l-4 border-primary-500"
-															: ""
-												}`}
-											>
-												<p className="text-sm text-gray-800 font-medium">
-													{notification.title}
-												</p>
-												<p className="text-xs text-gray-500">
-													{notification.description}
-												</p>
-												<p className="text-xs text-gray-400 mt-1">
-													{notification.time}
-												</p>
-											</div>
-										))
-									) : (
-										<div className="px-4 py-8 text-center">
-											{countersLoading ? (
-												<div className="flex items-center justify-center">
-													<div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-primary-600 mr-2"></div>
-													<span className="text-gray-500 text-sm">
-														Cargando notificaciones...
-													</span>
-												</div>
-											) : (
-												<div className="text-gray-500">
-													<Bell size={24} className="mx-auto mb-2 opacity-50" />
-													<p className="text-sm">
-														No hay notificaciones para mostrar
-													</p>
-												</div>
-											)}
-										</div>
-									)}
-								</div>
-								<div className="px-4 py-2 border-t border-gray-200">
-									<Link
-										to={
-											isAdmin ? "/admin/notifications" : "/seller/notifications"
-										}
-										className="text-sm text-primary-600 hover:underline block text-center"
-									>
-										Ver todas las notificaciones
-									</Link>
-								</div>
-							</div>
-						)}
+					<button
+					className="text-gray-600 hover:text-gray-900 p-1 rounded-full relative transition-colors"
+					onClick={toggleNotificationModal}
+					>
+					<Bell size={20} />
+					{finalUnreadNotifications > 0 && (
+					<span className="absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+					{finalUnreadNotifications > 9
+					? "9+"
+					: finalUnreadNotifications}
+					</span>
+					)}
+					{/* ✅ INDICADOR DE LOADING PARA CONTADORES */}
+					{countersLoading && (
+					<span className="absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2 bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+					<div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+					</span>
+					)}
+					</button>
 					</div>
 
 					{/* User Profile */}
@@ -340,6 +255,13 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
 					</div>
 				</div>
 			</div>
+
+			{/* ✅ MODAL DE NOTIFICACIONES */}
+			<NotificationModal
+				isOpen={isNotificationModalOpen}
+				onClose={() => setIsNotificationModalOpen(false)}
+				isAdmin={isAdmin}
+			/>
 		</header>
 	);
 };

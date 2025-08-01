@@ -428,22 +428,35 @@ export const useChat = (isSeller = false) => {
 	);
 
 	/**
-	 * Iniciar actualización periódica de mensajes
+	 * Iniciar actualización periódica de mensajes - OPTIMIZADO
 	 */
 	const startMessagesPolling = useCallback(
-		(chatId: number, intervalMs = 30000) => {
+		(chatId: number, intervalMs = 60000) => { // Aumentado de 30s a 60s
 			if (refreshIntervalRef.current) {
 				clearInterval(refreshIntervalRef.current);
 				refreshIntervalRef.current = null;
 			}
 
+			// Solo iniciar polling si no hay operaciones en curso
+			if (isLoadingRef.current) {
+				console.log(`No se inicia polling para chat ${chatId} - operación en curso`);
+				return;
+			}
+
 			chatFetchAttempts.current[chatId] = 0;
-			console.log(`Iniciando polling para chat ${chatId}...`);
+			console.log(`Iniciando polling para chat ${chatId} cada ${intervalMs/1000}s...`);
 
 			refreshIntervalRef.current = setInterval(() => {
-				if (!isLoadingRef.current && chatId) {
+				// Verificaciones adicionales antes de hacer polling
+				if (!isLoadingRef.current && 
+					chatId && 
+					selectedChat?.id === chatId && 
+					document.visibilityState === 'visible') {
+					
 					console.log(`Actualizando mensajes del chat ${chatId} (polling)...`);
 					fetchChatMessages(chatId);
+				} else {
+					console.log(`Polling omitido para chat ${chatId} - condiciones no cumplidas`);
 				}
 			}, intervalMs);
 
@@ -454,7 +467,7 @@ export const useChat = (isSeller = false) => {
 				}
 			};
 		},
-		[fetchChatMessages]
+		[fetchChatMessages, selectedChat?.id]
 	);
 
 	/**
@@ -468,27 +481,35 @@ export const useChat = (isSeller = false) => {
 		}
 	}, []);
 
-	// Cargar chats al montar el componente - OPTIMIZADO
+	// Cargar chats al montar el componente - CORREGIDO PARA EVITAR BUCLES
 	useEffect(() => {
-	const controller = new AbortController();
+		const controller = new AbortController();
 		let mounted = true;
+		let hasInitialized = false;
 
-	if (user?.id && mounted) {
-	console.log(`Valor de isSellerRef.current fijado en: ${isSellerRef.current}`);
-	getChatService();
-	 fetchChats();
+		// Solo ejecutar si tenemos usuario y no hemos inicializado
+		if (user?.id && mounted && !hasInitialized) {
+			hasInitialized = true;
+			console.log(`Inicializando chats - Valor de isSellerRef.current: ${isSellerRef.current}`);
+			getChatService();
+			fetchChats();
 		}
 
-	return () => {
-	mounted = false;
-	controller.abort();
-	isLoadingRef.current = false;
-	stopMessagesPolling();
-	setChats([]);
-	 setSelectedChat(null);
-	  setMessages([]);
+		return () => {
+			mounted = false;
+			controller.abort();
+			isLoadingRef.current = false;
+			stopMessagesPolling();
+			
+			// Limpiar estado solo si realmente se está desmontando
+			if (!mounted) {
+				setChats([]);
+				setSelectedChat(null);
+				setMessages([]);
+				setError(null);
+			}
 		};
-	}, [user?.id]);
+	}, [user?.id]); // Mantener solo user?.id como dependencia
 
 	/**
 	 * Selecciona un chat evitando cambios innecesarios

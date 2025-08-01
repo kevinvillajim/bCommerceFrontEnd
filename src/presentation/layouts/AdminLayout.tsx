@@ -42,45 +42,16 @@ const AdminLayout: React.FC = () => {
 		icon: <Shield className="w-7 h-7 text-primary-400" />,
 	};
 
-	// Obtener acciones pendientes y notificaciones
+	// Obtener acciones pendientes
 	useEffect(() => {
 		const fetchPendingActions = async () => {
 			try {
 				// Simulación de llamadas a API
-				// En una aplicación real, estas serían llamadas reales a la API
 				setPendingActions({
 					ratings: Math.floor(Math.random() * 6),
 					feedback: Math.floor(Math.random() * 4),
 					sellerRequests: Math.floor(Math.random() * 3),
 				});
-
-				// ✅ CORREGIDO - Si se necesita usar notificaciones más adelante,
-				// descomentar esta línea:
-				// setNotifications([
-				// 	{
-				// 		id: "1",
-				// 		title: "Nueva solicitud de verificación de vendedor",
-				// 		description: 'El vendedor "TechGadgets" necesita aprobación',
-				// 		time: "Hace 5 minutos",
-				// 		read: false,
-				// 		type: "warning",
-				// 	},
-				// 	{
-				// 		id: "2",
-				// 		title: "Reseña necesita moderación",
-				// 		description:
-				// 			'Nueva valoración de 1 estrella para "Auriculares Inalámbricos"',
-				// 		time: "Hace 30 minutos",
-				// 		read: true,
-				// 	},
-				// 	{
-				// 		id: "3",
-				// 		title: "Alerta del sistema",
-				// 		description: "Problemas de conectividad con la pasarela de pago",
-				// 		time: "Hace 1 hora",
-				// 		read: true,
-				// 	},
-				// ]);
 			} catch (error) {
 				console.error("Error al obtener datos:", error);
 			}

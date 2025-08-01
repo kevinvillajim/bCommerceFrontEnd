@@ -40,7 +40,7 @@ interface UseRealTimeChatReturn {
 export const useRealTimeChat = ({
   chatId,
   participantId,
-  pollInterval = 60000, // 60 segundos - OPTIMIZADO
+  pollInterval = 120000, // Aumentado a 120 segundos (2 minutos)
   enableTypingIndicator = true
 }: UseRealTimeChatOptions): UseRealTimeChatReturn => {
   
@@ -197,7 +197,7 @@ export const useRealTimeChat = ({
     lastActivityRef.current = new Date();
   }, []);
 
-  // Configurar polling del estado online
+  // Configurar polling del estado online - OPTIMIZADO PARA EVITAR BUCLES
   useEffect(() => {
     if (!participantId || !isConnected) {
       setOnlineStatus({
@@ -208,20 +208,66 @@ export const useRealTimeChat = ({
       return;
     }
 
-    // Primera carga
-    refreshOnlineStatus();
+    // Limpiar polling anterior
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+    }
 
-    // Configurar polling - REDUCIDO para evitar destellos
-    pollIntervalRef.current = setInterval(() => {
-    refreshOnlineStatus();
-    }, pollInterval);
+    // Primera carga solo si no hay polling activo
+    if (!isPollingRef.current) {
+      refreshOnlineStatus();
+    }
+
+    // Configurar polling menos agresivo - SOLO si la pestaña está visible
+    if (document.visibilityState === 'visible') {
+      pollIntervalRef.current = setInterval(() => {
+        // Solo hacer polling si la pestaña está visible y no hay operaciones en curso
+        if (document.visibilityState === 'visible' && !isPollingRef.current) {
+          refreshOnlineStatus();
+        }
+      }, pollInterval);
+    }
 
     return () => {
       if (pollIntervalRef.current) {
         clearInterval(pollIntervalRef.current);
+        pollIntervalRef.current = null;
       }
     };
-  }, [participantId, isConnected, pollInterval, refreshOnlineStatus]);
+  }, [participantId, isConnected]); // Removido pollInterval y refreshOnlineStatus de dependencias
+
+  // NUEVO: Controlar polling basado en visibilidad de la página
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        // Pausar polling cuando la página no está visible
+        if (pollIntervalRef.current) {
+          clearInterval(pollIntervalRef.current);
+          pollIntervalRef.current = null;
+          console.log('Polling pausado - página oculta');
+        }
+      } else if (document.visibilityState === 'visible' && participantId && isConnected) {
+        // Reanudar polling cuando la página vuelve a estar visible
+        if (!pollIntervalRef.current && !isPollingRef.current) {
+          console.log('Reanudando polling - página visible');
+          refreshOnlineStatus(); // Actualizar inmediatamente
+          
+          pollIntervalRef.current = setInterval(() => {
+            if (document.visibilityState === 'visible' && !isPollingRef.current) {
+              refreshOnlineStatus();
+            }
+          }, pollInterval);
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [participantId, isConnected, pollInterval]);
 
   // Detectar actividad del usuario
   useEffect(() => {
@@ -257,8 +303,9 @@ export const useRealTimeChat = ({
     if (!user?.id || !isConnected) return;
 
     const handleBeforeUnload = () => {
-      // ✅ CORREGIDO: Sin /api duplicado
-      navigator.sendBeacon(`/users/${user.id}/activity`, 
+      // 🔧 CORREGIDO: Usar URL base completa para sendBeacon
+      const apiBaseUrl = `${import.meta.env.VITE_API_URL}/api` || 'https://api.comersia.app/api';
+      navigator.sendBeacon(`${apiBaseUrl}/users/${user.id}/activity`, 
         JSON.stringify({ last_seen: new Date().toISOString() })
       );
     };

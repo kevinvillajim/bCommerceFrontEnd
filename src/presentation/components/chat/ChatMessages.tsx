@@ -3,6 +3,19 @@ import {User, Clock, Check, CheckCheck, AlertCircle} from "lucide-react";
 import type {Message} from "../../../core/domain/entities/Chat";
 import {parseBackendDate, isToday, isYesterday} from "../../../utils/dateUtils";
 
+// Placeholder SVG para avatares de usuario - EVITA BUCLE INFINITO
+const getUserAvatarPlaceholder = (name?: string): string => {
+	const initial = name?.charAt(0).toUpperCase() || 'U';
+	return `data:image/svg+xml,${encodeURIComponent(`
+<svg width="24" height="24" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="12" cy="12" r="12" fill="#e5e7eb"/>
+  <text x="12" y="16" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#6b7280" text-anchor="middle">
+    ${initial}
+  </text>
+</svg>
+`)}`;
+};
+
 interface ChatMessagesProps {
 	messages: Message[];
 	loading: boolean;
@@ -336,14 +349,16 @@ const ChatMessages: React.FC<ChatMessagesProps> = ({
 														className="h-6 w-6 rounded-full"
 														onError={(e) => {
 															const target = e.target as HTMLImageElement;
-															target.onerror = null;
-															target.src = "https://via.placeholder.com/24?text=U";
+															target.onerror = null; // Prevenir bucle infinito
+															target.src = getUserAvatarPlaceholder(message.sender?.name);
 														}}
 													/>
 												) : (
-													<div className="h-6 w-6 rounded-full bg-gray-300 flex items-center justify-center">
-														<User className="h-3 w-3 text-gray-600" />
-													</div>
+													<img
+														src={getUserAvatarPlaceholder(message.sender?.name)}
+														alt={message.sender?.name || 'Usuario'}
+														className="h-6 w-6 rounded-full"
+													/>
 												)}
 											</div>
 										)}

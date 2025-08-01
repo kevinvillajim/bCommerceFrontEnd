@@ -55,8 +55,6 @@ const BaseDashboardLayout: React.FC<BaseDashboardLayoutProps> = ({
 	const {
 		isSidebarOpen,
 		toggleSidebar,
-		notifications,
-		unreadNotificationsCount,
 		markAllNotificationsAsRead,
 		pendingActions,
 		dashboardType,
@@ -79,8 +77,6 @@ const BaseDashboardLayout: React.FC<BaseDashboardLayoutProps> = ({
 				<DashboardHeader
 					toggleSidebar={toggleSidebar}
 					isAdmin={dashboardType === "admin"}
-					unreadNotifications={unreadNotificationsCount}
-					notifications={notifications}
 					pendingActions={pendingActions}
 					onReadAllNotifications={markAllNotificationsAsRead}
 				/>

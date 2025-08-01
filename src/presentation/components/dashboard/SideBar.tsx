@@ -53,6 +53,7 @@ const SidebarLink: React.FC<SidebarLinkProps> = ({
 	isNotificated,
 	notificationCount,
 }) => {
+	console.log("SidebarLink →", { label, notificationCount });
 	return (
 		<NavLink
 			to={path}
@@ -68,8 +69,12 @@ const SidebarLink: React.FC<SidebarLinkProps> = ({
 			<span className="mx-1">{label}</span>
 			{isNotificated && notificationCount && notificationCount > 0 && (
 				<span className="ml-auto inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 bg-red-500 rounded-full">
-					{notificationCount}
-				</span>
+{(() => {
+  const count = Number(notificationCount);
+  if (count > 99) return "99+";
+  if (count > 0) return count;
+  return "";
+})()}				</span>
 			)}
 		</NavLink>
 	);
