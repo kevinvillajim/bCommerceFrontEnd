@@ -43,7 +43,9 @@ const Header: React.FC<HeaderProps> = ({
 }) => {
 	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 	const [userMenuOpen, setUserMenuOpen] = useState(false);
+	const [sellerMenuOpen, setSellerMenuOpen] = useState(false); // 🎆 NUEVO: Menu dropdown para seller/admin
 	const userMenuRef = useRef<HTMLDivElement>(null);
+	const sellerMenuRef = useRef<HTMLDivElement>(null); // 🎆 NUEVO: Ref para seller menu
 
 	// Obtener información del usuario y estado de autenticación
 	const {user, isAuthenticated, logout} = useAuth();
@@ -63,7 +65,7 @@ const Header: React.FC<HeaderProps> = ({
 		loading: countersLoading,
 	});
 
-	// Cerrar el menú de usuario al hacer clic fuera de él
+	// Cerrar los menús al hacer clic fuera de ellos
 	useEffect(() => {
 		const handleClickOutside = (event: MouseEvent) => {
 			if (
@@ -71,6 +73,13 @@ const Header: React.FC<HeaderProps> = ({
 				!userMenuRef.current.contains(event.target as Node)
 			) {
 				setUserMenuOpen(false);
+			}
+			// 🎆 NUEVO: Cerrar menu seller
+			if (
+				sellerMenuRef.current &&
+				!sellerMenuRef.current.contains(event.target as Node)
+			) {
+				setSellerMenuOpen(false);
 			}
 		};
 
@@ -176,32 +185,117 @@ const Header: React.FC<HeaderProps> = ({
 					<div className="hidden md:flex items-center space-x-6">
 						<ThemeToggle />
 
-						{/* ✅ CONTADORES OPTIMIZADOS - Se cargan juntos */}
-						{/* Favorites Icon */}
-						<Link
-							to="/favorites"
-							className="text-gray-700 hover:text-primary-600 transition-colors relative"
-						>
-							<Heart size={22} />
-							{favoriteCount > 0 && (
-								<span className="absolute -top-2 -right-2 bg-primary-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-									{favoriteCount}
-								</span>
-							)}
+						{/* 🎆 BOTÓN CONDICIONAL SELLER/ADMIN */}
+						{isAuthenticated && (user?.role === 'seller' || user?.role === 'admin') && (
+						 <div className="flex items-center space-x-4">
+						 {/* Botón ir a Dashboard */}
+						 <Link
+						   to={user?.role === 'admin' ? '/admin/dashboard' : '/seller/dashboard'}
+						  className="px-3 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium shadow-sm"
+						 >
+						 Ir a Dashboard
 						</Link>
+						
+						 {/* Dropdown con accesos adicionales */}
+						 <div className="relative" ref={sellerMenuRef}>
+						 <button
+						 onClick={() => setSellerMenuOpen(!sellerMenuOpen)}
+						 className="p-2 text-gray-600 hover:text-primary-600 rounded-lg hover:bg-gray-50 transition-colors"
+						 title="Más opciones"
+						 >
+						 <Menu size={20} />
+						 </button>
+						 
+						 {sellerMenuOpen && (
+						 <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-2 z-10 border border-gray-100">
+						 <div className="px-4 py-2 border-b border-gray-100">
+						 <p className="text-sm font-medium text-gray-600">
+						 {user?.role === 'admin' ? 'Panel Admin' : 'Panel Vendedor'}
+						 </p>
+						 </div>
+						 
+						 {/* Accesos rápidos como comprador */}
+						 <div className="px-3 py-1">
+						 <p className="text-xs text-gray-400 uppercase tracking-wider mb-1">Como Comprador</p>
+						 </div>
+						 
+						 <Link
+						 to="/favorites"
+						 className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+						 onClick={() => setSellerMenuOpen(false)}
+						 >
+						 <Heart size={16} className="mr-2" />
+						 Favoritos
+						 {favoriteCount > 0 && (
+						 <span className="ml-auto bg-gray-200 text-gray-600 text-xs rounded-full px-2 py-0.5">
+						 {favoriteCount}
+						 </span>
+						 )}
+						 </Link>
+						 
+						 <Link
+						 to="/cart"
+						 className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+						 onClick={() => setSellerMenuOpen(false)}
+						 >
+						 <ShoppingCart size={16} className="mr-2" />
+						 Carrito
+						 {cartItemCount > 0 && (
+						 <span className="ml-auto bg-gray-200 text-gray-600 text-xs rounded-full px-2 py-0.5">
+						 {cartItemCount}
+						 </span>
+						 )}
+						 </Link>
+						 
+						 <Link
+						 to="/notifications"
+						 className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+						 onClick={() => setSellerMenuOpen(false)}
+						 >
+						 <Bell size={16} className="mr-2" />
+						 Notificaciones
+						 {notificationCount > 0 && (
+						 <span className="ml-auto bg-red-100 text-red-600 text-xs rounded-full px-2 py-0.5">
+						 {notificationCountSanitized}
+						 </span>
+						 )}
+						 </Link>
+						 </div>
+						 )}
+						 </div>
+						</div>
+					)}
+					
+					{/* 📱 CONTADORES NORMALES - Solo si NO es seller/admin */}
+					{!(user?.role === 'seller' || user?.role === 'admin') && (
+						<>
+							{/* Favorites Icon */}
+							<Link
+								to="/favorites"
+								className="text-gray-700 hover:text-primary-600 transition-colors relative"
+							>
+								<Heart size={22} />
+								{favoriteCount > 0 && (
+									<span className="absolute -top-2 -right-2 bg-primary-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+										{favoriteCount}
+									</span>
+								)}
+							</Link>
 
-						{/* Cart Icon */}
-						<Link
-							to="/cart"
-							className="text-gray-700 hover:text-primary-600 transition-colors relative"
-						>
-							<ShoppingCart size={22} />
-							{cartItemCount > 0 && (
-								<span className="absolute -top-2 -right-2 bg-primary-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-									{cartItemCount}
-								</span>
-							)}
-						</Link>
+							{/* Cart Icon */}
+							<Link
+								to="/cart"
+								className="text-gray-700 hover:text-primary-600 transition-colors relative"
+							>
+								<ShoppingCart size={22} />
+								{cartItemCount > 0 && (
+									<span className="absolute -top-2 -right-2 bg-primary-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+										{cartItemCount}
+									</span>
+								)}
+							</Link>
+						</>
+					)}
 
 						{isAuthenticated ? (
 							<>
@@ -295,59 +389,71 @@ const Header: React.FC<HeaderProps> = ({
 
 					{/* Mobile Menu Button */}
 					<div className="md:hidden flex items-center space-x-4">
-						<ThemeToggle />
-						
-						{/* ✅ NOTIFICACIONES MÓVIL - Solo si está autenticado */}
-						{isAuthenticated && (
-							<Link 
-								to="/notifications" 
-								data-notification-button="true"
-								className="text-gray-700 relative"
-							>
-								<Bell size={22} />
-								{notificationCount > 0 && (
-									<span className="absolute -top-2 -right-2 bg-primary-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-										{notificationCountSanitized}
-									</span>
-								)}
-							</Link>
-						)}
+					<ThemeToggle />
+					
+					{/* 🎆 BOTÓN DASHBOARD MÓVIL - Solo para seller/admin */}
+					{isAuthenticated && (user?.role === 'seller' || user?.role === 'admin') && (
+					<Link
+					to={user?.role === 'admin' ? '/admin/dashboard' : '/seller/dashboard'}
+					className="px-2 py-1 bg-primary-600 text-white rounded text-xs font-medium"
+					>
+					 Dashboard
+					</Link>
+					)}
+					
+					{/* 📱 NOTIFICACIONES MÓVIL - Solo si NO es seller/admin */}
+					{isAuthenticated && !(user?.role === 'seller' || user?.role === 'admin') && (
+					<Link 
+					 to="/notifications" 
+					  data-notification-button="true"
+							className="text-gray-700 relative"
+					 >
+					  <Bell size={22} />
+					 {notificationCount > 0 && (
+					  <span className="absolute -top-2 -right-2 bg-primary-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+					  {notificationCountSanitized}
+					</span>
+					)}
+					</Link>
+					)}
 
-						{/* Cart Icon for Mobile */}
-						<Link to="/cart" className="text-gray-700 relative">
-							<ShoppingCart size={22} />
-							{cartItemCount > 0 && (
-								<span className="absolute -top-2 -right-2 bg-primary-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-									{cartItemCount}
-								</span>
-							)}
-						</Link>
-						
-						{/* Favorites Icon for Mobile */}
-						<Link
-							to="/favorites"
-							className="text-gray-700 hover:text-primary-600 transition-colors relative"
-						>
-							<Heart size={22} />
-							{favoriteCount > 0 && (
-								<span className="absolute -top-2 -right-2 bg-primary-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+					{/* Cart Icon for Mobile */}
+					<Link to="/cart" className="text-gray-700 relative">
+					<ShoppingCart size={22} />
+					{cartItemCount > 0 && (
+					  <span className="absolute -top-2 -right-2 bg-primary-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+					  {cartItemCount}
+					 </span>
+					)}
+					</Link>
+					
+					{/* 📱 FAVORITOS MÓVIL - Solo si NO es seller/admin */}
+					{!(user?.role === 'seller' || user?.role === 'admin') && (
+					 <Link
+					  to="/favorites"
+					  className="text-gray-700 hover:text-primary-600 transition-colors relative"
+					>
+					<Heart size={22} />
+					 {favoriteCount > 0 && (
+					   <span className="absolute -top-2 -right-2 bg-primary-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
 									{favoriteCount}
-								</span>
-							)}
-						</Link>
-						
-						{/* User Icon for Mobile (only when authenticated) */}
-						{isAuthenticated && (
-							<div className="h-8 w-8 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center font-medium">
-								{getUserInitial()}
-							</div>
-						)}
+					   </span>
+					  )}
+					</Link>
+					)}
+					 
+					{/* User Icon for Mobile (only when authenticated) */}
+					{isAuthenticated && (
+						<div className="h-8 w-8 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center font-medium">
+							{getUserInitial()}
+						</div>
+					)}
 
-						{/* Menu Toggle Button */}
-						<button onClick={toggleMobileMenu} className="text-gray-700">
-							{mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-						</button>
-					</div>
+					{/* Menu Toggle Button */}
+					<button onClick={toggleMobileMenu} className="text-gray-700">
+						{mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+					</button>
+				</div>
 				</div>
 			</div>
 
@@ -396,10 +502,18 @@ const Header: React.FC<HeaderProps> = ({
 									<p className="text-xs text-gray-500 truncate">
 										{user?.email}
 									</p>
+									{/* 🎆 INDICADOR DE ROL */}
+									{(user?.role === 'seller' || user?.role === 'admin') && (
+										<span className="inline-block px-2 py-1 bg-primary-100 text-primary-700 text-xs rounded-full mt-1">
+											{user?.role === 'admin' ? 'Administrador' : 'Vendedor'}
+										</span>
+									)}
 								</div>
 							</div>
+							
+							{/* 🎆 ACCESOS RÁPIDOS MEJORADOS */}
 							<div className="grid grid-cols-4 gap-2 mb-2">
-								{/* ✅ NOTIFICACIONES EN MENÚ MÓVIL */}
+								{/* Notificaciones */}
 								<Link
 									to="/notifications"
 									data-notification-button="true"
@@ -414,6 +528,7 @@ const Header: React.FC<HeaderProps> = ({
 										</span>
 									)}
 								</Link>
+								
 								<Link
 									to="/profile"
 									className="flex flex-col items-center p-2 rounded-lg hover:bg-gray-50"
@@ -422,6 +537,7 @@ const Header: React.FC<HeaderProps> = ({
 									<User size={20} className="mb-1 text-gray-700" />
 									<span className="text-xs">Perfil</span>
 								</Link>
+								
 								<Link
 									to="/orders"
 									className="flex flex-col items-center p-2 rounded-lg hover:bg-gray-50"
@@ -430,6 +546,7 @@ const Header: React.FC<HeaderProps> = ({
 									<ShoppingBag size={20} className="mb-1 text-gray-700" />
 									<span className="text-xs">Pedidos</span>
 								</Link>
+								
 								<Link
 									to="/favorites"
 									className="flex flex-col items-center p-2 rounded-lg hover:bg-gray-50"

@@ -145,7 +145,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
 						</div>
 					)}
 
-					<h1 className="text-lg font-medium text-gray-800">
+					<h1 className="text-lg font-medium text-gray-800 items-center">
 						{currentPageTitle}
 					</h1>
 				</div>
@@ -154,39 +154,51 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
 					{/* Theme toggle */}
 					<ThemeToggle />
 
-					{/* Visit store - Solo para administradores */}
-					{isAdmin && (
+					{/* Visit store / Ir a Tienda - Para administradores y sellers */}
+					{(isAdmin || user?.role === 'seller') && (
 						<a
 							href="/"
-							target="_blank"
+							target=""
 							rel="noopener noreferrer"
-							className="text-gray-600 hover:text-gray-900 hidden md:block"
+							className="text-gray-600 hover:text-gray-900"
 						>
-							<span className="text-sm">Visitar Tienda</span>
+							<span className="text-sm">{isAdmin ? 'Visitar Tienda' : 'Ir a Tienda'}</span>
 						</a>
 					)}
 
-					{/* ✅ NOTIFICACIONES CON MODAL - CORRECCIÓN PRINCIPAL */}
-					<div className="relative">
-					<button
-					className="text-gray-600 hover:text-gray-900 p-1 rounded-full relative transition-colors"
-					onClick={toggleNotificationModal}
-					>
-					<Bell size={20} />
-					{finalUnreadNotifications > 0 && (
-					<span className="absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-					{finalUnreadNotifications > 9
-					? "9+"
-					: finalUnreadNotifications}
-					</span>
-					)}
-					{/* ✅ INDICADOR DE LOADING PARA CONTADORES */}
-					{countersLoading && (
-					<span className="absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2 bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-					<div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
-					</span>
-					)}
-					</button>
+					{/* 🎆 NOTIFICACIONES CON MODAL Y BOTÓN DIRECTO */}
+					<div className="flex items-center space-x-2">
+						{/* Botón directo marcar todas como leídas */}
+						{finalUnreadNotifications > 0 && (
+							<button
+								onClick={onReadAllNotifications}
+								className="text-xs text-primary-600 hover:text-primary-700 px-2 py-1 rounded-md hover:bg-primary-50 transition-colors"
+								title="Marcar todas como leídas"
+							>
+								Marcar todas
+							</button>
+						)}
+						
+						{/* Botón de notificaciones */}
+						<button
+							className="text-gray-600 hover:text-gray-900 p-1 rounded-full relative transition-colors"
+							onClick={toggleNotificationModal}
+						>
+							<Bell size={20} />
+							{finalUnreadNotifications > 0 && (
+								<span className="absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+									{finalUnreadNotifications > 9
+										? "9+"
+										: finalUnreadNotifications}
+								</span>
+							)}
+							{/* Indicador de loading para contadores */}
+							{countersLoading && (
+								<span className="absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/2 bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+									<div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+								</span>
+							)}
+						</button>
 					</div>
 
 					{/* User Profile */}
