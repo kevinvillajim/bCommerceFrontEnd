@@ -304,7 +304,7 @@ export const useRealTimeChat = ({
 
     const handleBeforeUnload = () => {
       // 🔧 CORREGIDO: Usar URL base completa para sendBeacon
-      const apiBaseUrl = `${import.meta.env.VITE_API_URL}/api` || 'https://api.comersia.app/api';
+      const apiBaseUrl = `${import.meta.env.VITE_API_URL || 'https://api.comersia.app'}/api`;
       navigator.sendBeacon(`${apiBaseUrl}/users/${user.id}/activity`, 
         JSON.stringify({ last_seen: new Date().toISOString() })
       );
