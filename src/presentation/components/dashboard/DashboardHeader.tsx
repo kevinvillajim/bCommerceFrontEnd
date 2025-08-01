@@ -50,8 +50,8 @@ interface DashboardHeaderProps {
 const DashboardHeader: React.FC<DashboardHeaderProps> = ({
 	toggleSidebar,
 	isAdmin = false,
-	unreadNotifications,
-	notifications = [],
+	unreadNotifications: _unreadNotifications,
+	notifications: _notifications = [],
 	pendingActions = {},
 	onReadAllNotifications = () => {},
 	visibleInMobile = true,

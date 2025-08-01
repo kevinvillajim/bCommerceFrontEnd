@@ -31,7 +31,7 @@ interface MobileFilterPanelProps {
 }
 
 // Componente para rango de precio personalizado en móvil
-const CustomPriceRangeMobile: React.FC<CustomPriceRangeMobileProps> = ({ onApply, selectedRangeId }) => {
+const CustomPriceRangeMobile: React.FC<CustomPriceRangeMobileProps> = ({ onApply, selectedRangeId: _selectedRangeId }) => {
 	const [showCustom, setShowCustom] = useState(false);
 	const [minText, setMinText] = useState("");
 	const [maxText, setMaxText] = useState("");

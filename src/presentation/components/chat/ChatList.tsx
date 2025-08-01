@@ -74,7 +74,7 @@ const ChatList: React.FC<ChatListProps> = ({
 		const matchesStatus = showTabs || statusFilter === "all" || chat.status === statusFilter;
 
 		// Filtro por mensajes no leídos
-		const matchesUnread = unreadFilter ? chat.unreadCount > 0 : true;
+		const matchesUnread = unreadFilter ? (chat.unreadCount ?? 0) > 0 : true;
 
 		// Búsqueda por nombre de vendedor o producto
 		const matchesSearch =
@@ -285,10 +285,10 @@ const ChatList: React.FC<ChatListProps> = ({
 														{formatDate(chat.updatedAt)}
 													</span>
 													{/* Indicador de no leídos - CORREGIDO: solo mostrar si > 0 */}
-													{chat.unreadCount > 0 && (
-														<span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-primary-600 text-white text-xs font-medium animate-pulse">
-															{chat.unreadCount > 99 ? '99+' : chat.unreadCount}
-														</span>
+													{(chat.unreadCount ?? 0) > 0 && (
+													<span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-primary-600 text-white text-xs font-medium animate-pulse">
+													{(chat.unreadCount ?? 0) > 99 ? '99+' : (chat.unreadCount ?? 0)}
+													</span>
 													)}
 												</div>
 											</div>

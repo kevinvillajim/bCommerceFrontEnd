@@ -268,7 +268,7 @@ const SellerMessagesPage: React.FC = () => {
 		return chats.filter((chat) => {
 			const matchesStatus = statusFilter === "all" || chat.status === statusFilter;
 			// Filtro por mensajes no leídos - CORREGIDO como UserChatPage
-			const matchesUnread = unreadFilter ? chat.unreadCount > 0 : true;
+			const matchesUnread = unreadFilter ? (chat.unreadCount ?? 0) > 0 : true;
 
 			// Búsqueda por nombre de usuario y producto
 			const matchesSearch =

@@ -5,7 +5,6 @@ import {
 	Truck,
 	Star,
 	MessageSquare,
-	FileText,
 	DollarSign,
 	User,
 } from "lucide-react";

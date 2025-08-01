@@ -55,7 +55,7 @@ const SellerLayout: React.FC = () => {
 						notificationCount = counts.messages;
 						break;
 					default:
-						notificationCount = link.notificationCount || 0;
+					notificationCount = (link as any).notificationCount || 0;
 				}
 				
 				return {

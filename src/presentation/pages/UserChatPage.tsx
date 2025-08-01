@@ -249,7 +249,7 @@ const UserChatPage: React.FC = () => {
 
 			// Filtro por mensajes no leídos
 			const matchesUnread = unreadFilter
-				? chat.unreadCount > 0
+				? (chat.unreadCount ?? 0) > 0
 				: true;
 
 			// Búsqueda por nombre de vendedor o producto

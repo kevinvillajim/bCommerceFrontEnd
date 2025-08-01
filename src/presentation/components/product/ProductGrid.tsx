@@ -109,7 +109,7 @@ const ProductGrid: React.FC<ProductGridProps> = ({
 				
 				// Solo mostrar rating si es mayor a 0
 				const displayRating = (finalRating && finalRating > 0) ? finalRating : null;
-				const displayRatingCount = (displayRating && finalRatingCount >= 0) ? finalRatingCount : null;
+				const displayRatingCount = (displayRating && finalRatingCount !== null && finalRatingCount >= 0) ? finalRatingCount : null;
 				
 				const imageUrl = getProductMainImage(product);
 

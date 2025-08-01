@@ -1,0 +1,1 @@
+# Este directorio se creó por error, usar la estructura existente

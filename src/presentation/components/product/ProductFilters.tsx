@@ -317,7 +317,7 @@ const PriceFilterSection: React.FC<PriceFilterSectionProps> = ({
 				<div className="flex space-x-2">
 					<button
 						onClick={handleApply}
-						disabled={minError || maxError}
+						disabled={Boolean(minError || maxError)}
 						className={`flex-1 py-2 px-4 rounded text-sm ${
 							minError || maxError
 								? 'bg-gray-300 text-gray-500 cursor-not-allowed'
