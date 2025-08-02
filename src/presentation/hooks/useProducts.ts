@@ -652,6 +652,15 @@ export const useProducts = () => {
 	);
 
 	/**
+	 * Limpia el estado del producto actual
+	 */
+	const clearCurrentProduct = useCallback((): void => {
+		console.log("🧩 useProducts: Limpiando producto actual");
+		setProduct(null);
+		setError(null);
+	}, []);
+
+	/**
 	 * Limpia la caché de productos usando cache reactivo
 	 */
 	const clearProductCache = useCallback(
@@ -683,6 +692,7 @@ export const useProducts = () => {
 		fetchFeaturedProducts,
 		fetchRelatedProducts,
 		trackProductView,
+		clearCurrentProduct, // ✅ NUEVA FUNCIÓN
 		clearProductCache,
 		// ✅ NUEVAS FUNCIONALIDADES DE CACHE DE IMÁGENES
 		preloadProductImages,

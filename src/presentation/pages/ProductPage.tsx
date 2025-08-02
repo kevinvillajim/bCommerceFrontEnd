@@ -154,19 +154,62 @@ const ProductPage: React.FC = () => {
 		fetchCategories(true, false); // withCounts = true, forceRefresh = false
 	}, [fetchCategories]);
 
-	// Cargar productos cuando cambian los filtros
+	// NUEVO: Cargar productos iniciales como respaldo
 	useEffect(() => {
+		// Solo ejecutar una vez al montar el componente
+		console.log("🎆 ProductPage: Cargando productos iniciales como respaldo...");
+		
+		// Parámetros mínimos para obtener productos
+		const initialParams = {
+			limit: appConfig.pagination.defaultPageSize,
+			offset: 0,
+			published: true,
+			status: 'active' as const,
+			sortBy: 'featured' as const,
+			sortDir: 'desc' as const
+		};
+		
+		console.log("🚀 ProductPage: Cargando productos con parámetros iniciales:", initialParams);
+		
+		fetchProducts(initialParams).then((result) => {
+			console.log("🎆 ProductPage: Productos iniciales cargados:", result);
+		}).catch((error) => {
+			console.error("❌ ProductPage: Error cargando productos iniciales:", error);
+		});
+	}, []); // Array vacío para ejecutar solo una vez
+
+	// Cargar productos cuando cambian los filtros - CORREGIDO
+	useEffect(() => {
+		console.log("🔄 ProductPage: useEffect triggered", {
+			categoriesCount: categoriesData.length,
+			filters: filters,
+			component: "ProductPage"
+		});
+		
 		if (categoriesData.length > 0) {
-			console.log("Categorías cargadas, construyendo parámetros de filtro...");
+			console.log("✅ ProductPage: Categorías disponibles, construyendo parámetros...");
 			const params = buildFilterParams();
-			console.log("Cargando productos con parámetros:", params);
-			fetchProducts(params);
+			console.log("📤 ProductPage: Parámetros construidos:", params);
+			console.log("🚀 ProductPage: Llamando fetchProducts...");
+			fetchProducts(params).then((result) => {
+				console.log("📥 ProductPage: Resultado de fetchProducts:", result);
+			}).catch((error) => {
+				console.error("❌ ProductPage: Error en fetchProducts:", error);
+			});
+		} else {
+			console.log("⏳ ProductPage: Esperando categorías...", categoriesData.length);
 		}
 	}, [
-		fetchProducts,
-		buildFilterParams,
+		// Solo dependencias primitivas para evitar loops infinitos
 		categoriesData.length,
-		filters, // Dependencia de todo el objeto filters
+		filters.categories.join(','), // Convertir array a string
+		filters.priceRange ? `${filters.priceRange.min}-${filters.priceRange.max}` : '',
+		filters.rating,
+		filters.discount,
+		filters.sortBy,
+		filters.page,
+		filters.searchTerm
+		// NO incluir buildFilterParams y fetchProducts para evitar loops infinitos
 	]);
 
 	// Manejadores para interacciones de usuario
@@ -340,7 +383,6 @@ const ProductPage: React.FC = () => {
 	return (
 		<div className="container mx-auto px-9 py-8">
 			<h1 className="text-3xl font-bold mb-6">Productos</h1>
-
 			{/* Search Bar Component */}
 			<SearchBar
 				searchTerm={searchTerm}

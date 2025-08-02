@@ -1,4 +1,3 @@
-// src/presentation/pages/ProductItemPage.tsx - CON VALIDACIÓN DE STOCK
 import React, {useState, useEffect} from "react";
 import {useParams, Link, useNavigate} from "react-router-dom";
 import {
@@ -16,7 +15,8 @@ import {
 	TrendingDown,
 	AlertTriangle
 } from "lucide-react";
-import {ProductService} from "../../core/services/ProductService";
+// ❌ NO necesitamos ProductService anymore
+// import {ProductService} from "../../core/services/ProductService";
 import type {
 	ProductDetail,
 	ProductImage,
@@ -25,6 +25,7 @@ import {getImageUrl} from "../../utils/imageManager";
 import {useCart} from "../hooks/useCart";
 import {useFavorites} from "../hooks/useFavorites";
 import {useChat} from "../hooks/useChat";
+import {useProducts} from "../hooks/useProducts"; // ✅ USAR HOOK OPTIMIZADO
 import {useInvalidateCounters} from "../hooks/useHeaderCounters";
 import {useErrorHandler} from "../hooks/useErrorHandler";
 import {NotificationType} from "../contexts/CartContext";
@@ -49,9 +50,17 @@ interface SellerApiResponse {
 const ProductItemPage: React.FC = () => {
 	const {id} = useParams<{id: string}>();
 	const navigate = useNavigate();
-	const [product, setProduct] = useState<ProductDetail | null>(null);
-	const [loading, setLoading] = useState<boolean>(true);
-	const [error, setError] = useState<string | null>(null);
+	
+	// ✅ USAR HOOKS OPTIMIZADOS
+	const {
+		product,
+		loading,
+		error,
+		fetchProductById,
+		trackProductView,
+		clearCurrentProduct // ✅ NUEVA FUNCIÓN PARA LIMPIAR ESTADO
+	} = useProducts();
+	
 	const [activeImage, setActiveImage] = useState(0);
 	const [activeTab, setActiveTab] = useState<
 		"description" | "specifications" | "reviews"
@@ -86,8 +95,8 @@ const ProductItemPage: React.FC = () => {
 		totalSavings
 	} = useProductVolumeDiscount(product, 1);
 
-	// Initialize service
-	const productService = new ProductService();
+	// ❌ YA NO necesitamos ProductService directo
+	// Initialize services - mantener solo para compatibilidad con chat si es necesario
 
 	// ✅ HELPER PARA OBTENER STOCK DISPONIBLE
 	const getAvailableStock = (product: ProductDetail): number => {
@@ -131,36 +140,49 @@ const ProductItemPage: React.FC = () => {
 		console.log("🔄 Cache de páginas relacionadas invalidado");
 	};
 
+	// ✅ EFECTO OPTIMIZADO PARA CARGAR PRODUCTO POR ID
 	useEffect(() => {
-		const fetchProductData = async () => {
-			if (!id) return;
+		const loadProduct = async () => {
+			if (!id) {
+				console.error("❌ ProductItemPage: ID no disponible");
+				return;
+			}
 
 			try {
-				setLoading(true);
-				setError(null);
-
 				const productId = parseInt(id);
-				const productData = await productService.getProductById(productId);
+				if (isNaN(productId)) {
+					console.error("❌ ProductItemPage: ID inválido:", id);
+					return;
+				}
 
-				console.log("Product data from API:", productData);
+				console.log("🚀 ProductItemPage: Cargando producto ID:", productId);
+				
+				// Usar el hook optimizado en lugar del servicio directo
+				const productData = await fetchProductById(productId);
 
-				setProduct(productData);
+				console.log("📥 ProductItemPage: Producto cargado:", productData);
 
-				productService
-					.trackProductView(productId)
-					.catch((e) => console.error("Error tracking product view:", e));
+				// Registrar visualización de producto de manera asíncrona
+				trackProductView(productId).catch((error) => {
+					console.error("⚠️ Error registrando visualización de producto:", error);
+				});
 			} catch (err) {
-				console.error("Error fetching product:", err);
-				setError(
-					"No se pudo cargar el producto. Por favor, intente nuevamente."
-				);
-			} finally {
-				setLoading(false);
+				console.error("❌ ProductItemPage: Error cargando producto:", err);
 			}
 		};
 
-		fetchProductData();
-	}, [id]);
+		loadProduct();
+	}, [id, fetchProductById, trackProductView]);
+	
+	// ✅ EFECTO PARA LIMPIAR PRODUCTO CUANDO CAMBIA EL ID
+	useEffect(() => {
+		// Si cambia el ID y tenemos un producto cargado que no coincide, 
+		// limpiar para evitar mostrar producto incorrecto
+		if (product && id && product.id !== parseInt(id)) {
+			console.log("🧩 ProductItemPage: Limpiando producto anterior, ID cambio de", product.id, "a", id);
+			clearCurrentProduct(); // ✅ USAR FUNCIÓN DEL HOOK
+		}
+	}, [id, product, clearCurrentProduct]);
 
 	// ✅ FUNCIÓN PARA CAMBIAR CANTIDAD CON VALIDACIÓN DE STOCK
 	const handleQuantityChange = (newQuantity: number) => {
@@ -412,8 +434,9 @@ const ProductItemPage: React.FC = () => {
 		);
 	}
 
-	// Show error state
-	if (error || !product) {
+	// Show error state - SOLO si no está cargando
+	if (!loading && (error || !product)) {
+		console.log("❌ ProductItemPage: Mostrando error:", { loading, error, hasProduct: !!product });
 		return (
 			<div className="container mx-auto py-20">
 				<div className="max-w-lg mx-auto bg-white p-8 rounded-xl shadow-md">
@@ -421,12 +444,28 @@ const ProductItemPage: React.FC = () => {
 					<p className="text-gray-700 mb-6">
 						{error || "No se encontró el producto solicitado."}
 					</p>
-					<button
-						onClick={() => navigate(-1)}
-						className="bg-primary-600 text-white px-6 py-2 rounded-lg hover:bg-primary-700 transition-colors"
-					>
-						Volver
-					</button>
+					<div className="flex gap-3">
+						<button
+							onClick={() => navigate(-1)}
+							className="bg-primary-600 text-white px-6 py-2 rounded-lg hover:bg-primary-700 transition-colors"
+						>
+							Volver
+						</button>
+						{id && (
+							<button
+								onClick={() => {
+									const productId = parseInt(id);
+									if (!isNaN(productId)) {
+										console.log("🔄 ProductItemPage: Reintentando cargar producto:", productId);
+										fetchProductById(productId);
+									}
+								}}
+								className="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700 transition-colors"
+							>
+								Reintentar
+							</button>
+						)}
+					</div>
 				</div>
 			</div>
 		);
@@ -435,6 +474,17 @@ const ProductItemPage: React.FC = () => {
 	// Process product data for display
 	const categories = product.category ? [product.category.name] : [];
 	const availableStock = getAvailableStock(product);
+	
+	// 🔍 LOGS DE DEBUG PARA MONITOREO
+	console.log("🔍 ProductItemPage: Estado actual:", {
+		id,
+		loading,
+		error,
+		hasProduct: !!product,
+		productId: product?.id,
+		productName: product?.name,
+		availableStock
+	});
 
 	// Función helper para obtener URL de imagen
 	const getImageUrlFromProduct = (image: string | ProductImage): string => {

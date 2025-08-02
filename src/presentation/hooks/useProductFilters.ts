@@ -233,16 +233,22 @@ export const useProductFilters = (
 		});
 	}, []);
 
-	// Construir los parámetros para la API - FUNCIÓN CORREGIDA
+	// Construir los parámetros para la API - FUNCIÓN CORREGIDA Y MEJORADA
 	const buildFilterParams = useCallback((): ExtendedProductFilterParams => {
-		console.log("useProductFilters: Construyendo parámetros desde estado:", filtersState);
+		console.log("🔧 useProductFilters: Construyendo parámetros desde estado:", filtersState);
 
+		// Parámetros base SIEMPRE requeridos
 		const params: ExtendedProductFilterParams = {
 			limit: defaultPageSize,
 			offset: (filtersState.page - 1) * defaultPageSize,
 			published: true,
 			status: 'active',
+			// Ordenamiento por defecto cuando no hay filtros
+			sortBy: 'featured',
+			sortDir: 'desc'
 		};
+		
+		console.log("⚙️ useProductFilters: Parámetros base:", params);
 
 		// Manejar término de búsqueda
 		if (filtersState.searchTerm) {
@@ -290,44 +296,60 @@ export const useProductFilters = (
 			params.minDiscount = 5; // Productos con al menos 5% de descuento
 		}
 
-		// Añadir ordenamiento - CORREGIDO
-		switch (filtersState.sortBy) {
-			case "price-asc":
-				params.sortBy = "price";
-				params.sortDir = "asc";
-				break;
-			case "price-desc":
-				params.sortBy = "price";
-				params.sortDir = "desc";
-				break;
-			case "name-asc":
-				params.sortBy = "name";
-				params.sortDir = "asc";
-				break;
-			case "name-desc":
-				params.sortBy = "name";
-				params.sortDir = "desc";
-				break;
-			case "newest":
-				params.sortBy = "created_at";
-				params.sortDir = "desc";
-				break;
-			case "rating":
-				params.sortBy = "rating";
-				params.sortDir = "desc";
-				break;
-			case "featured":
-			default:
-				params.sortBy = "featured";
-				params.sortDir = "desc";
-				break;
+		// Añadir ordenamiento - SOLO sobrescribir si es diferente al por defecto
+		if (filtersState.sortBy && filtersState.sortBy !== 'featured') {
+			console.log("🔄 useProductFilters: Aplicando ordenamiento personalizado:", filtersState.sortBy);
+			
+			switch (filtersState.sortBy) {
+				case "price-asc":
+					params.sortBy = "price";
+					params.sortDir = "asc";
+					break;
+				case "price-desc":
+					params.sortBy = "price";
+					params.sortDir = "desc";
+					break;
+				case "name-asc":
+					params.sortBy = "name";
+					params.sortDir = "asc";
+					break;
+				case "name-desc":
+					params.sortBy = "name";
+					params.sortDir = "desc";
+					break;
+				case "newest":
+					params.sortBy = "created_at";
+					params.sortDir = "desc";
+					break;
+				case "rating":
+					params.sortBy = "rating";
+					params.sortDir = "desc";
+					break;
+				// No incluir el caso "featured" aquí ya que está por defecto
+			}
+		} else {
+			console.log("⭐ useProductFilters: Usando ordenamiento por defecto (featured)");
 		}
 		
 		// ✅ NUEVA FUNCIONALIDAD: Habilitar cálculo de ratings desde tabla ratings
 		// Esto es opcional y solo se activa para mejorar la experiencia de productos sin rating calculado
 		params.calculateRatingsFromTable = true;
 
-		console.log("useProductFilters: Parámetros finales para API:", params);
+		console.log("✅ useProductFilters: Parámetros finales para API:", params);
+		
+		// Validación final - asegurar que siempre tengamos parámetros mínimos válidos
+		if (!params.limit || params.limit <= 0) {
+			params.limit = defaultPageSize;
+			console.warn("⚠️ useProductFilters: Corrigiendo limit inválido");
+		}
+		
+		if (!params.sortBy) {
+			params.sortBy = 'featured';
+			params.sortDir = 'desc';
+			console.warn("⚠️ useProductFilters: Corrigiendo sortBy faltante");
+		}
+		
+		console.log("🚀 useProductFilters: Parámetros VALIDADOS:", params);
 		return params;
 	}, [filtersState, allCategories, defaultPageSize]);
 
