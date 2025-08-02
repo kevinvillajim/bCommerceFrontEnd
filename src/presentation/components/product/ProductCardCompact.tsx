@@ -11,15 +11,15 @@ import CacheService from "../../../infrastructure/services/CacheService";
 interface ProductCardProps {
 	id: number;
 	name: string;
-	price: number;
-	discount?: number;
-	rating?: number | null;
-	reviews?: number | null;
+	price: number | string; // ✅ Aceptar tanto número como string
+	discount?: number | string; // ✅ Aceptar tanto número como string
+	rating?: number | string | null;
+	reviews?: number | string | null;
 	image: string;
 	category?: string;
 	isNew?: boolean;
 	color?: boolean;
-	stock?: number;
+	stock?: number | string;
 	slug?: string;
 	// Props opcionales para funciones externas - pueden ser async
 	onAddToCart?: (id: number) => void | Promise<void>;
@@ -43,6 +43,32 @@ const ProductCardCompact: React.FC<ProductCardProps> = ({
 	onAddToCart,
 	onAddToWishlist,
 }) => {
+	// ✅ FUNCIONES HELPER PARA CONVERSIÓN SEGURA DE TIPOS
+	const safeNumber = (value: number | string | null | undefined, defaultValue: number = 0): number => {
+		if (typeof value === 'number') return value;
+		if (typeof value === 'string') {
+			const parsed = parseFloat(value);
+			return isNaN(parsed) ? defaultValue : parsed;
+		}
+		return defaultValue;
+	};
+
+	const safeInteger = (value: number | string | null | undefined, defaultValue: number = 0): number => {
+		if (typeof value === 'number') return Math.floor(value);
+		if (typeof value === 'string') {
+			const parsed = parseInt(value, 10);
+			return isNaN(parsed) ? defaultValue : parsed;
+		}
+		return defaultValue;
+	};
+
+	// Convertir props a números seguros
+	const safePrice = safeNumber(price);
+	const safeDiscount = safeNumber(discount);
+	const safeStock = safeInteger(stock, 10);
+	const safeRating = safeNumber(rating);
+	const safeReviews = safeInteger(reviews);
+
 	// Estados para controlar las animaciones y feedback visual
 	const [isAddingToCart, setIsAddingToCart] = useState(false);
 	const [isAddingToWishlist, setIsAddingToWishlist] = useState(false);
@@ -103,11 +129,11 @@ const ProductCardCompact: React.FC<ProductCardProps> = ({
 		checkIfInCart();
 	}, [id, checkIsFavorite]);
 
-	// Calculate discounted price
-	const discountedPrice = discount ? price - price * (discount / 100) : price;
+	// Calculate discounted price using safe values
+	const discountedPrice = safeDiscount ? safePrice - safePrice * (safeDiscount / 100) : safePrice;
 
-	// Verificar si hay stock
-	const hasStock = stock > 0;
+	// Verificar si hay stock usando valor seguro
+	const hasStock = safeStock > 0;
 
 	// ✅ FUNCIÓN PRINCIPAL PARA CARRITO - Reutilizada en todos los botones
 	const executeAddToCart = async () => {
@@ -309,11 +335,11 @@ const ProductCardCompact: React.FC<ProductCardProps> = ({
 				</Link>
 
 				{/* Discount Tag - Solo si hay descuento válido */}
-				{(discount && typeof discount === 'number' && discount > 0) && (
+				{(safeDiscount > 0) && (
 					<div
 						className={`absolute top-2 left-2 ${color ? "bg-red-500" : "bg-primary-600"} text-white text-xs font-bold py-1 px-2 rounded-md badge`}
 					>
-						-{discount}%
+						-{safeDiscount}%
 					</div>
 				)}
 
@@ -414,13 +440,13 @@ const ProductCardCompact: React.FC<ProductCardProps> = ({
 				</Link>
 
 				{/* Rating - ✅ CORREGIDO: Mostrar solo si hay rating válido */}
-				{(rating !== null && rating !== undefined && rating > 0) && (
+				{(safeRating > 0) && (
 					<div className="mb-2">
 						<RatingStars
-							rating={rating}
+							rating={safeRating}
 							size={14}
 							showValue={true}
-							reviews={reviews}
+							reviews={safeReviews}
 						/>
 					</div>
 				)}
@@ -428,18 +454,18 @@ const ProductCardCompact: React.FC<ProductCardProps> = ({
 				{/* Price */}
 				<div className="flex items-center justify-between">
 					<div className="flex items-center flex-wrap">
-						{(discount && typeof discount === 'number' && discount > 0) ? (
+						{(safeDiscount > 0) ? (
 							<>
 								<span className="font-bold text-primary-600 text-lg">
 									${discountedPrice.toFixed(2)}
 								</span>
 								<span className="text-sm text-gray-500 line-through ml-2">
-									${price.toFixed(2)}
+									${safePrice.toFixed(2)}
 								</span>
 							</>
 						) : (
 							<span className="font-bold text-primary-600 product-price text-lg">
-								${price.toFixed(2)}
+								${safePrice.toFixed(2)}
 							</span>
 						)}
 					</div>
@@ -484,9 +510,9 @@ const ProductCardCompact: React.FC<ProductCardProps> = ({
 					{!hasStock && (
 						<p className="text-xs text-red-500 font-medium">Agotado</p>
 					)}
-					{hasStock && stock <= 5 && (
+					{hasStock && safeStock <= 5 && (
 						<p className="text-xs text-amber-600 font-medium">
-							Solo quedan {stock}
+							Solo quedan {safeStock}
 						</p>
 					)}
 				</div>

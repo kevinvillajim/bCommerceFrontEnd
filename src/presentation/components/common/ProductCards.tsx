@@ -1,14 +1,25 @@
 import React from 'react';
 import { ShoppingCart, Tag } from 'lucide-react';
 
-// Definir la interfaz para un producto
+// Definir la interfaz para un producto (compatible con la API)
 interface Product {
   id: number;
   name: string;
-  description: string;
-  price: number;
-  discount?: number;
-  image: string;
+  slug?: string;
+  description?: string;
+  price: number | string; // ✅ Aceptar tanto número como string
+  final_price: number | string; // ✅ Aceptar tanto número como string
+  discount_percentage?: number | string; // ✅ Aceptar tanto número como string
+  main_image: string;
+  category_name?: string;
+  stock?: number | string;
+  is_in_stock?: boolean;
+  featured?: boolean;
+  status?: string;
+  recommendation_type?: string;
+  // Compatibilidad con interfaz antigua
+  discount?: number | string;
+  image?: string;
 }
 
 // Definir las props del componente
@@ -22,10 +33,48 @@ const ProductGrid: React.FC<ProductGridProps> = ({
   products=[], title,
   onClick = (id: number) => console.log(`Added product ${id} to cart`)
 }) => {
-  // Función para calcular el precio con descuento
-  const calculateDiscountedPrice = (price: number, discount?: number): number => {
-    if (!discount) return price;
-    return price - (price * (discount / 100));
+  // ✅ FUNCIONES HELPER PARA CONVERSIÓN SEGURA DE TIPOS
+  const safeNumber = (value: number | string | null | undefined, defaultValue: number = 0): number => {
+    if (typeof value === 'number') return value;
+    if (typeof value === 'string') {
+      const parsed = parseFloat(value);
+      return isNaN(parsed) ? defaultValue : parsed;
+    }
+    return defaultValue;
+  };
+
+  const safeInteger = (value: number | string | null | undefined, defaultValue: number = 0): number => {
+    if (typeof value === 'number') return Math.floor(value);
+    if (typeof value === 'string') {
+      const parsed = parseInt(value, 10);
+      return isNaN(parsed) ? defaultValue : parsed;
+    }
+    return defaultValue;
+  };
+
+  // Función para obtener el precio final (ya calculado por la API)
+  const getFinalPrice = (product: Product): number => {
+    // Si viene final_price de la API, usarlo
+    if (product.final_price !== undefined) {
+      return safeNumber(product.final_price);
+    }
+    // Fallback: calcular con price y discount
+    const safePrice = safeNumber(product.price);
+    const discount = safeNumber(product.discount_percentage) || safeNumber(product.discount) || 0;
+    if (discount > 0) {
+      return safePrice - (safePrice * (discount / 100));
+    }
+    return safePrice;
+  };
+
+  // Función para obtener el descuento
+  const getDiscount = (product: Product): number => {
+    return safeNumber(product.discount_percentage) || safeNumber(product.discount) || 0;
+  };
+
+  // Función para obtener la imagen principal
+  const getMainImage = (product: Product): string => {
+    return product.main_image || product.image || 'https://via.placeholder.com/400x300/f3f4f6/9ca3af?text=Sin+Imagen';
   };
 
   // Formato de precio
@@ -38,8 +87,10 @@ const ProductGrid: React.FC<ProductGridProps> = ({
       <h2 className="text-2xl font-bold mb-6">{title}</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {products.map((product) => {
-          const discountedPrice = calculateDiscountedPrice(product.price, product.discount);
-          const hasDiscount = product.discount && product.discount > 0;
+          const finalPrice = getFinalPrice(product);
+          const discount = getDiscount(product);
+          const hasDiscount = discount > 0;
+          const mainImage = getMainImage(product);
           
           return (
             <div 
@@ -50,16 +101,22 @@ const ProductGrid: React.FC<ProductGridProps> = ({
               <div 
                 className="h-48 bg-gray-100 relative overflow-hidden"
                 style={{
-                  backgroundImage: `url(${product.image})`,
+                  backgroundImage: `url("${mainImage}")`,
                   backgroundSize: 'cover',
-                  backgroundPosition: 'center'
+                  backgroundPosition: 'center',
+                  backgroundRepeat: 'no-repeat'
+                }}
+                onError={(e) => {
+                  // Fallback si la imagen falla al cargar
+                  const target = e.target as HTMLDivElement;
+                  target.style.backgroundImage = 'url("https://via.placeholder.com/400x300/f3f4f6/9ca3af?text=Error+Imagen")';
                 }}
               >
                 {/* Badge de descuento */}
                 {hasDiscount && (
                   <div className="absolute top-3 right-3 bg-primary-600 text-white text-sm font-medium px-2 py-1 rounded-md flex items-center">
                     <Tag size={14} className="mr-1" />
-                    {product.discount}% OFF
+                    {discount}% OFF
                   </div>
                 )}
               </div>
@@ -67,7 +124,12 @@ const ProductGrid: React.FC<ProductGridProps> = ({
               {/* Información del producto */}
               <div className="p-4">
                 <h3 className="font-medium text-lg mb-2 text-gray-800">{product.name}</h3>
-                <p className="text-gray-600 text-sm mb-4">{product.description}</p>
+                {product.description && (
+                  <p className="text-gray-600 text-sm mb-4">{product.description}</p>
+                )}
+                {product.category_name && (
+                  <p className="text-gray-500 text-xs mb-2">{product.category_name}</p>
+                )}
                 
                 <div className="flex justify-between items-center">
                   {/* Precio con o sin descuento */}
@@ -75,15 +137,15 @@ const ProductGrid: React.FC<ProductGridProps> = ({
                     {hasDiscount ? (
                       <div className="flex flex-col">
                         <span className="line-through text-gray-500 text-sm">
-                          {formatPrice(product.price)}
+                          {formatPrice(safeNumber(product.price))}
                         </span>
                         <span className="font-bold text-primary-600">
-                          {formatPrice(discountedPrice)}
+                          {formatPrice(finalPrice)}
                         </span>
                       </div>
                     ) : (
                       <span className="font-bold text-primary-600">
-                        {formatPrice(product.price)}
+                        {formatPrice(finalPrice)}
                       </span>
                     )}
                   </div>

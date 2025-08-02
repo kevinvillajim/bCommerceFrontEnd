@@ -257,4 +257,84 @@ export class ProductService {
 			return null;
 		}
 	}
+
+	/**
+	 * Obtiene productos destacados aleatorios
+	 */
+	static async getFeaturedRandom(limit: number = 6): Promise<ProductListResponse> {
+		try {
+			const response = await ApiClient.get<ProductListResponse>(
+				API_ENDPOINTS.PRODUCTS.FEATURED_RANDOM,
+				{limit}
+			);
+			return response || { data: [], meta: { total: 0, count: 0 } };
+		} catch (error) {
+			console.error("❌ Error en ProductService.getFeaturedRandom:", error);
+			return { data: [], meta: { total: 0, count: 0 } };
+		}
+	}
+
+	/**
+	 * Obtiene productos trending y ofertas
+	 */
+	static async getTrendingAndOffers(limit: number = 12): Promise<ProductListResponse> {
+		try {
+			const response = await ApiClient.get<ProductListResponse>(
+				API_ENDPOINTS.PRODUCTS.TRENDING_OFFERS,
+				{limit}
+			);
+			return response || { data: [], meta: { total: 0, count: 0 } };
+		} catch (error) {
+			console.error("❌ Error en ProductService.getTrendingAndOffers:", error);
+			return { data: [], meta: { total: 0, count: 0 } };
+		}
+	}
+
+	/**
+	 * Obtiene productos personalizados para el usuario
+	 */
+	static async getPersonalizedProducts(limit: number = 10): Promise<ProductListResponse> {
+		try {
+			const response = await ApiClient.get<ProductListResponse>(
+				API_ENDPOINTS.PRODUCTS.PERSONALIZED,
+				{limit}
+			);
+			return response || { data: [], meta: { total: 0, count: 0 } };
+		} catch (error) {
+			console.error("❌ Error en ProductService.getPersonalizedProducts:", error);
+			return { data: [], meta: { total: 0, count: 0 } };
+		}
+	}
+
+	/**
+	 * Obtiene productos con descuento
+	 */
+	static async getDiscountedProducts(limit: number = 12): Promise<ProductListResponse> {
+		try {
+			const response = await ApiClient.get<ProductListResponse>(
+				API_ENDPOINTS.PRODUCTS.DISCOUNTED,
+				{limit}
+			);
+			return response || { data: [], meta: { total: 0, count: 0 } };
+		} catch (error) {
+			console.error("❌ Error en ProductService.getDiscountedProducts:", error);
+			return { data: [], meta: { total: 0, count: 0 } };
+		}
+	}
+
+	/**
+	 * Obtiene productos populares
+	 */
+	static async getPopularProducts(limit: number = 12): Promise<ProductListResponse> {
+		try {
+			const response = await ApiClient.get<ProductListResponse>(
+				API_ENDPOINTS.PRODUCTS.POPULAR,
+				{limit}
+			);
+			return response || { data: [], meta: { total: 0, count: 0 } };
+		} catch (error) {
+			console.error("❌ Error en ProductService.getPopularProducts:", error);
+			return { data: [], meta: { total: 0, count: 0 } };
+		}
+	}
 }

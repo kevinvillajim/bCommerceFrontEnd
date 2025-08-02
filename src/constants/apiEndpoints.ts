@@ -44,6 +44,12 @@ export const API_ENDPOINTS = {
     DETAILS: (id: string | number) => `/products/${id}`,
     DETAILS_BY_SLUG: (slug: string) => `/products/slug/${slug}`,
     FEATURED: "/products/featured",
+    FEATURED_RANDOM: "/products/featured-random",
+    TRENDING_OFFERS: "/products/trending-offers",
+    PERSONALIZED: "/products/personalized",
+    DISCOUNTED: "/products/discounted",
+    NEWEST: "/products/newest",
+    POPULAR: "/products/popular",
     BY_CATEGORY: (categoryId: string | number) =>
       `/products/category/${categoryId}`,
     BY_TAGS: "/products/tags",

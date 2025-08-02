@@ -1,4 +1,4 @@
-import { RecommendationService } from "./RecommendationService";
+import { RecommendationService } from "../../core/services/RecommendationService";
 /** * Tipos de interacciones disponibles */ export enum InteractionType {
   VIEW = "view",
   CLICK = "click",
