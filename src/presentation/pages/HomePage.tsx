@@ -11,13 +11,14 @@ import useHomeProducts from '../hooks/useHomeProducts';
 import useUserInteractions from '../hooks/useUserInteractions';
 import { useCart } from '../hooks/useCart';
 import { useFavorites } from '../hooks/useFavorites';
+import { useInvalidateCounters } from '../hooks/useHeaderCounters';
 import { NotificationType } from '../contexts/CartContext';
 import { Smartphone, Tv, Laptop, Monitor } from 'lucide-react';
 import { Truck, ShieldCheck, Headphones, Zap, Award, CreditCard } from 'lucide-react';
 
 const HomePage: React.FC = () => {
   // 🆕 Hook para obtener productos dinámicos
-  const { personalizedProducts, trendingProducts, featuredProducts, loading, error, isAuthenticated } = useHomeProducts(12);
+  const { personalizedProducts, trendingProducts, featuredProducts, loading, error, isAuthenticated, hasInitialLoad } = useHomeProducts(12);
 
   // 📊 Hook para registrar interacciones de usuario
   const { trackAddToCart, trackAddToWishlist } = useUserInteractions('home_page');
@@ -25,6 +26,14 @@ const HomePage: React.FC = () => {
   // 🛒 Hooks para carrito y favoritos
   const { addToCart, showNotification } = useCart();
   const { toggleFavorite } = useFavorites();
+  
+  // 🔄 Hook para actualizaciones optimistas del header
+  const {
+    optimisticCartAdd,
+    optimisticFavoriteAdd,
+    optimisticFavoriteRemove,
+    invalidateCounters
+  } = useInvalidateCounters();
 
   const images = [
     'https://images.unsplash.com/photo-1605648916361-9bc12ad6a569?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80',
@@ -112,6 +121,9 @@ const HomePage: React.FC = () => {
     try {
       console.log(`Producto ${id} añadido al carrito`);
       
+      // 🚀 Actualización optimista INMEDIATA del header
+      optimisticCartAdd();
+      
       // Registrar interacción de usuario
       trackAddToCart(id, 1, 'home_carousel');
       
@@ -126,11 +138,15 @@ const HomePage: React.FC = () => {
           NotificationType.SUCCESS,
           "Producto agregado al carrito exitosamente"
         );
+        // Invalidar cache para sincronizar con el servidor
+        invalidateCounters();
       } else {
         showNotification(
           NotificationType.ERROR,
           "Error al agregar producto al carrito"
         );
+        // Revertir el contador optimista si falla
+        invalidateCounters();
       }
     } catch (error) {
       console.error('Error adding to cart:', error);
@@ -138,6 +154,8 @@ const HomePage: React.FC = () => {
         NotificationType.ERROR,
         "Error al agregar producto al carrito"
       );
+      // Revertir el contador optimista si falla
+      invalidateCounters();
     }
   };
 
@@ -152,17 +170,22 @@ const HomePage: React.FC = () => {
       const result = await toggleFavorite(id);
       
       if (result !== undefined) {
+        // 🚀 Actualización optimista INMEDIATA del header basada en el resultado
         if (result) {
+          optimisticFavoriteAdd();
           showNotification(
             NotificationType.SUCCESS,
             "Producto añadido a favoritos"
           );
         } else {
+          optimisticFavoriteRemove();
           showNotification(
             NotificationType.INFO,
             "Producto eliminado de favoritos"
           );
         }
+        // Invalidar cache para sincronizar con el servidor
+        invalidateCounters();
       } else {
         showNotification(
           NotificationType.ERROR,
@@ -182,6 +205,9 @@ const HomePage: React.FC = () => {
     try {
       console.log(`Producto destacado ${id} añadido al carrito`);
       
+      // 🚀 Actualización optimista INMEDIATA del header
+      optimisticCartAdd();
+      
       // Registrar interacción de usuario
       trackAddToCart(id, 1, 'featured_products');
       
@@ -196,11 +222,15 @@ const HomePage: React.FC = () => {
           NotificationType.SUCCESS,
           "Producto destacado agregado al carrito exitosamente"
         );
+        // Invalidar cache para sincronizar con el servidor
+        invalidateCounters();
       } else {
         showNotification(
           NotificationType.ERROR,
           "Error al agregar producto destacado al carrito"
         );
+        // Revertir el contador optimista si falla
+        invalidateCounters();
       }
     } catch (error) {
       console.error('Error adding featured product to cart:', error);
@@ -208,6 +238,8 @@ const HomePage: React.FC = () => {
         NotificationType.ERROR,
         "Error al agregar producto destacado al carrito"
       );
+      // Revertir el contador optimista si falla
+      invalidateCounters();
     }
   };
   
@@ -244,13 +276,13 @@ const HomePage: React.FC = () => {
             </div>
           )}
           
-          {/* 🆕 CARRUSEL DE PRODUCTOS CON SKELETON */}
-          {loading ? (
+          {/* 🆕 CARRUSEL DE PRODUCTOS CON SKELETON - OPTIMIZADO */}
+          {loading && !hasInitialLoad ? (
             <ProductCarouselSkeleton 
               showPersonalized={true}
               isAuthenticated={isAuthenticated}
             />
-          ) : (
+          ) : (personalizedProducts.length > 0 || trendingProducts.length > 0) ? (
             <ProductCarousel
               personalizedProducts={personalizedProducts}
               trendingProducts={trendingProducts}
@@ -259,12 +291,16 @@ const HomePage: React.FC = () => {
               color={false}
               isAuthenticated={isAuthenticated}
             />
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-gray-600">Cargando productos...</p>
+            </div>
           )}
         </div>
         
-        {/* 🆕 PRODUCTOS DESTACADOS CON SKELETON */}
+        {/* 🆕 PRODUCTOS DESTACADOS CON SKELETON - OPTIMIZADO */}
         <section className="mb-12">
-          {loading ? (
+          {loading && !hasInitialLoad ? (
             <ProductCardSkeleton 
               count={6}
               title="Cargando productos destacados..."
@@ -275,9 +311,13 @@ const HomePage: React.FC = () => {
               title="Productos destacados" 
               onClick={handleFeaturedAddToCart}
             />
-          ) : (
+          ) : hasInitialLoad ? (
             <div className="text-center py-12">
               <p className="text-gray-600">No hay productos destacados disponibles en este momento.</p>
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <p className="text-gray-600">Cargando productos destacados...</p>
             </div>
           )}
         </section>

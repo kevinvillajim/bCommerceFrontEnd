@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { ProductService } from '../../core/services/ProductService';
 import { transformProductsForCarousel, type ProductCarouselType } from '../../utils/productTransformer';
 import type { Product } from '../../core/domain/entities/Product';
@@ -11,6 +11,7 @@ interface UseHomeProductsReturn {
   error: string | null;
   refetch: () => Promise<void>;
   isAuthenticated: boolean;
+  hasInitialLoad: boolean; // 🚀 Para evitar flickers
 }
 
 /**
@@ -24,6 +25,14 @@ export const useHomeProducts = (limit = 12): UseHomeProductsReturn => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  
+  // 🚀 Flag para evitar el flash de contenido inicial
+  const [hasInitialLoad, setHasInitialLoad] = useState(false);
+  
+  // 🚀 Prevenir solicitudes duplicadas y optimizar rendimiento
+  const fetchingRef = useRef(false);
+  const lastLimitRef = useRef<number>(limit);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Verificar autenticación
   const checkAuthentication = (): boolean => {
@@ -34,6 +43,13 @@ export const useHomeProducts = (limit = 12): UseHomeProductsReturn => {
   };
 
   const fetchProducts = async () => {
+    // 🚀 Prevenir solicitudes duplicadas
+    if (fetchingRef.current) {
+      console.log('🚫 useHomeProducts: Fetch en curso, ignorando solicitud duplicada');
+      return;
+    }
+
+    fetchingRef.current = true;
     setLoading(true);
     setError(null);
 
@@ -92,33 +108,33 @@ export const useHomeProducts = (limit = 12): UseHomeProductsReturn => {
         }
 
       } else {
-        // 🌍 USUARIO NO AUTENTICADO
-        console.log('🌍 Usuario no autenticado - 2 consultas trending + featured');
+        // 🌍 USUARIO NO AUTENTICADO - OPTIMIZADO
+        console.log('🌍 Usuario no autenticado - trending + discounted + featured');
         
-        const [firstTrendingResult, secondTrendingResult, featuredResult] = await Promise.allSettled([
+        const [trendingResult, discountedResult, featuredResult] = await Promise.allSettled([
           ProductService.getTrendingAndOffers(limit), // Para primer carrusel
-          ProductService.getTrendingAndOffers(limit), // Para segundo carrusel (diferente consulta = diferentes productos)
+          ProductService.getDiscountedProducts(limit), // Para segundo carrusel - DIFERENTES productos
           featuredPromise                             // Featured products
         ]);
 
-        // Primer carrusel
-        if (firstTrendingResult.status === 'fulfilled' && firstTrendingResult.value.data) {
-          const transformedFirst = transformProductsForCarousel(firstTrendingResult.value.data);
-          setPersonalizedProducts(transformedFirst);
-          console.log('✅ Primer trending:', transformedFirst.length);
+        // Primer carrusel - Trending
+        if (trendingResult.status === 'fulfilled' && trendingResult.value.data) {
+          const transformedTrending = transformProductsForCarousel(trendingResult.value.data);
+          setPersonalizedProducts(transformedTrending);
+          console.log('✅ Trending products:', transformedTrending.length);
         } else {
           const fallback = await ProductService.getPopularProducts(limit);
           const transformedFallback = transformProductsForCarousel(fallback.data || []);
           setPersonalizedProducts(transformedFallback);
         }
 
-        // Segundo carrusel
-        if (secondTrendingResult.status === 'fulfilled' && secondTrendingResult.value.data) {
-          const transformedSecond = transformProductsForCarousel(secondTrendingResult.value.data);
-          setTrendingProducts(transformedSecond);
-          console.log('✅ Segundo trending:', transformedSecond.length);
+        // Segundo carrusel - Discounted
+        if (discountedResult.status === 'fulfilled' && discountedResult.value.data) {
+          const transformedDiscounted = transformProductsForCarousel(discountedResult.value.data);
+          setTrendingProducts(transformedDiscounted);
+          console.log('✅ Discounted products:', transformedDiscounted.length);
         } else {
-          const fallback = await ProductService.getDiscountedProducts(limit);
+          const fallback = await ProductService.getPopularProducts(limit);
           const transformedFallback = transformProductsForCarousel(fallback.data || []);
           setTrendingProducts(transformedFallback);
         }
@@ -143,12 +159,39 @@ export const useHomeProducts = (limit = 12): UseHomeProductsReturn => {
       setFeaturedProducts([]);
     } finally {
       setLoading(false);
+      setHasInitialLoad(true); // 🚀 Marcar que ya cargamos una vez
+      fetchingRef.current = false; // 🚀 Permitir nuevas solicitudes
+      lastLimitRef.current = limit;
     }
   };
 
+  // 🚀 Función debounceda para evitar llamadas múltiples
+  const debouncedFetchProducts = useMemo(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      timeoutRef.current = setTimeout(() => {
+        fetchProducts();
+      }, 100); // 100ms debounce
+    };
+  }, []);
+
   useEffect(() => {
-    fetchProducts();
-  }, [limit]);
+    // 🚀 Solo fetch si es la primera carga O si el límite cambió realmente
+    const shouldFetch = !hasInitialLoad || (lastLimitRef.current !== limit);
+    
+    if (shouldFetch && !fetchingRef.current) {
+      debouncedFetchProducts();
+    }
+    
+    // Cleanup function
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, [limit, debouncedFetchProducts, hasInitialLoad]); // Incluir hasInitialLoad
 
   return {
     personalizedProducts,
@@ -157,7 +200,8 @@ export const useHomeProducts = (limit = 12): UseHomeProductsReturn => {
     loading,
     error,
     refetch: fetchProducts,
-    isAuthenticated
+    isAuthenticated,
+    hasInitialLoad
   };
 };
 
