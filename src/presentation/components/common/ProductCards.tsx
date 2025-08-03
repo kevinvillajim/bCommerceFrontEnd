@@ -1,5 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ShoppingCart, Tag } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { useCart } from '../../hooks/useCart';
+import { NotificationType } from '../../contexts/CartContext';
 
 // Definir la interfaz para un producto (compatible con la API)
 interface Product {
@@ -31,8 +34,10 @@ interface ProductGridProps {
 
 const ProductGrid: React.FC<ProductGridProps> = ({ 
   products=[], title,
-  onClick = (id: number) => console.log(`Added product ${id} to cart`)
+  onClick
 }) => {
+  const { addToCart, showNotification } = useCart();
+  const [loadingStates, setLoadingStates] = useState<Record<number, boolean>>({});
   // ✅ FUNCIONES HELPER PARA CONVERSIÓN SEGURA DE TIPOS
   const safeNumber = (value: number | string | null | undefined, defaultValue: number = 0): number => {
     if (typeof value === 'number') return value;
@@ -82,6 +87,48 @@ const ProductGrid: React.FC<ProductGridProps> = ({
     return `$${price.toFixed(2)}`;
   };
 
+  // Función para manejar añadir al carrito
+  const handleAddToCart = async (product: Product) => {
+    if (loadingStates[product.id]) return;
+
+    setLoadingStates(prev => ({ ...prev, [product.id]: true }));
+
+    try {
+      if (onClick) {
+        // Si hay función externa, usarla
+        onClick(product.id);
+      } else {
+        // Usar el hook del carrito
+        const success = await addToCart({
+          productId: product.id,
+          quantity: 1,
+        });
+
+        if (success) {
+          showNotification(
+            NotificationType.SUCCESS,
+            `${product.name} ha sido agregado al carrito`
+          );
+        } else {
+          showNotification(
+            NotificationType.ERROR,
+            "Error al agregar producto al carrito"
+          );
+        }
+      }
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+      showNotification(
+        NotificationType.ERROR,
+        "Error al agregar producto al carrito"
+      );
+    } finally {
+      setTimeout(() => {
+        setLoadingStates(prev => ({ ...prev, [product.id]: false }));
+      }, 500);
+    }
+  };
+
   return (
     <section className="mb-12">
       <h2 className="text-2xl font-bold mb-6">{title}</h2>
@@ -123,7 +170,9 @@ const ProductGrid: React.FC<ProductGridProps> = ({
               
               {/* Información del producto */}
               <div className="p-4">
-                <h3 className="font-medium text-lg mb-2 text-gray-800">{product.name}</h3>
+                <Link to={`/products/${product.id}`}>
+                  <h3 className="font-medium text-lg mb-2 text-gray-800 hover:text-primary-600 transition-colors cursor-pointer">{product.name}</h3>
+                </Link>
                 {product.description && (
                   <p className="text-gray-600 text-sm mb-4">{product.description}</p>
                 )}
@@ -152,11 +201,22 @@ const ProductGrid: React.FC<ProductGridProps> = ({
                   
                   {/* Botón de añadir al carrito */}
                   <button 
-                    onClick={() => onClick(product.id)}
-                    className="cursor-pointer bg-primary-600 text-white px-3 py-2 rounded-lg text-sm flex items-center hover:bg-primary-700 transition-colors"
+                    onClick={() => handleAddToCart(product)}
+                    disabled={loadingStates[product.id] || !product.is_in_stock}
+                    className={`cursor-pointer px-3 py-2 rounded-lg text-sm flex items-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+                      product.is_in_stock !== false 
+                        ? 'bg-primary-600 text-white hover:bg-primary-700' 
+                        : 'bg-gray-400 text-white'
+                    }`}
                   >
-                    <ShoppingCart size={16} className="mr-1" />
-                    <span className='hidden md:block'>Añadir al Carrito</span>
+                    {loadingStates[product.id] ? (
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-1"></div>
+                    ) : (
+                      <ShoppingCart size={16} className="mr-1" />
+                    )}
+                    <span className='hidden md:block'>
+                      {product.is_in_stock === false ? 'Sin Stock' : 'Añadir al Carrito'}
+                    </span>
                   </button>
                 </div>
               </div>

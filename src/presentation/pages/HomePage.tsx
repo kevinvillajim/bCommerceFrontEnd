@@ -9,6 +9,9 @@ import ProductCardSkeleton from '../components/skeletons/ProductCardSkeleton.tsx
 import ProductCarouselSkeleton from '../components/skeletons/ProductCarouselSkeleton.tsx';
 import useHomeProducts from '../hooks/useHomeProducts';
 import useUserInteractions from '../hooks/useUserInteractions';
+import { useCart } from '../hooks/useCart';
+import { useFavorites } from '../hooks/useFavorites';
+import { NotificationType } from '../contexts/CartContext';
 import { Smartphone, Tv, Laptop, Monitor } from 'lucide-react';
 import { Truck, ShieldCheck, Headphones, Zap, Award, CreditCard } from 'lucide-react';
 
@@ -18,6 +21,10 @@ const HomePage: React.FC = () => {
 
   // 📊 Hook para registrar interacciones de usuario
   const { trackAddToCart, trackAddToWishlist } = useUserInteractions('home_page');
+
+  // 🛒 Hooks para carrito y favoritos
+  const { addToCart, showNotification } = useCart();
+  const { toggleFavorite } = useFavorites();
 
   const images = [
     'https://images.unsplash.com/photo-1605648916361-9bc12ad6a569?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80',
@@ -101,22 +108,107 @@ const HomePage: React.FC = () => {
     }]
   
   // Manejadores de eventos con registro de interacciones
-  const handleAddToCart = (id: number) => {
-    console.log(`Producto ${id} añadido al carrito`);
-    trackAddToCart(id, 1, 'home_carousel');
-    // TODO: Implementar lógica real para añadir al carrito
+  const handleAddToCart = async (id: number) => {
+    try {
+      console.log(`Producto ${id} añadido al carrito`);
+      
+      // Registrar interacción de usuario
+      trackAddToCart(id, 1, 'home_carousel');
+      
+      // Agregar al carrito
+      const success = await addToCart({
+        productId: id,
+        quantity: 1,
+      });
+
+      if (success) {
+        showNotification(
+          NotificationType.SUCCESS,
+          "Producto agregado al carrito exitosamente"
+        );
+      } else {
+        showNotification(
+          NotificationType.ERROR,
+          "Error al agregar producto al carrito"
+        );
+      }
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+      showNotification(
+        NotificationType.ERROR,
+        "Error al agregar producto al carrito"
+      );
+    }
   };
 
-  const handleAddToWishlist = (id: number) => {
-    console.log(`Producto ${id} añadido a la lista de deseos`);
-    trackAddToWishlist(id, 'home_carousel');
-    // TODO: Implementar lógica real para añadir a la lista de deseos
+  const handleAddToWishlist = async (id: number) => {
+    try {
+      console.log(`Producto ${id} añadido a la lista de deseos`);
+      
+      // Registrar interacción de usuario
+      trackAddToWishlist(id, 'home_carousel');
+      
+      // Alternar favorito
+      const result = await toggleFavorite(id);
+      
+      if (result !== undefined) {
+        if (result) {
+          showNotification(
+            NotificationType.SUCCESS,
+            "Producto añadido a favoritos"
+          );
+        } else {
+          showNotification(
+            NotificationType.INFO,
+            "Producto eliminado de favoritos"
+          );
+        }
+      } else {
+        showNotification(
+          NotificationType.ERROR,
+          "Error al gestionar favoritos"
+        );
+      }
+    } catch (error) {
+      console.error('Error managing wishlist:', error);
+      showNotification(
+        NotificationType.ERROR,
+        "Error al gestionar favoritos"
+      );
+    }
   };
 
-  const handleFeaturedAddToCart = (id: number) => {
-    console.log(`Producto destacado ${id} añadido al carrito`);
-    trackAddToCart(id, 1, 'featured_products');
-    // TODO: Implementar lógica real para añadir al carrito
+  const handleFeaturedAddToCart = async (id: number) => {
+    try {
+      console.log(`Producto destacado ${id} añadido al carrito`);
+      
+      // Registrar interacción de usuario
+      trackAddToCart(id, 1, 'featured_products');
+      
+      // Agregar al carrito
+      const success = await addToCart({
+        productId: id,
+        quantity: 1,
+      });
+
+      if (success) {
+        showNotification(
+          NotificationType.SUCCESS,
+          "Producto destacado agregado al carrito exitosamente"
+        );
+      } else {
+        showNotification(
+          NotificationType.ERROR,
+          "Error al agregar producto destacado al carrito"
+        );
+      }
+    } catch (error) {
+      console.error('Error adding featured product to cart:', error);
+      showNotification(
+        NotificationType.ERROR,
+        "Error al agregar producto destacado al carrito"
+      );
+    }
   };
   
 

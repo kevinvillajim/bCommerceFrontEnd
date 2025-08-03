@@ -326,7 +326,7 @@ const ProductCardCompact: React.FC<ProductCardProps> = ({
 		<div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden group product-card">
 			{/* Product Image with Overlay */}
 			<div className="relative h-48 overflow-hidden">
-				<Link to={`/products/${slug || id}`}>
+				<Link to={`/products/${id}`}>
 					<img
 						src={image}
 						alt={name}
@@ -433,7 +433,7 @@ const ProductCardCompact: React.FC<ProductCardProps> = ({
 				)}
 
 				{/* Product Name */}
-				<Link to={`/products/${slug || id}`}>
+				<Link to={`/products/${id}`}>
 					<h3 className="font-medium text-gray-800 mb-1 line-clamp-1 hover:text-primary-600 transition-colors">
 						{name}
 					</h3>

@@ -979,7 +979,7 @@ const ProductItemPage: React.FC = () => {
 							</button>
 						</div>
 
-						<div className="p-6 lg:p-10">
+						<div className="flex justify-center p-6 lg:p-10">
 							{activeTab === "description" && (
 								<div className="max-w-3xl space-y-6">
 									{product.short_description ? (

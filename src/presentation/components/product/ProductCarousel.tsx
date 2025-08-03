@@ -23,6 +23,7 @@ interface CarouselProps {
 	onAddToCart: (id: number) => void;
 	onAddToWishlist: (id: number) => void;
 	color: boolean;
+	isAuthenticated?: boolean;
 }
 
 // Componente de carrusel
@@ -32,6 +33,7 @@ const ProductCarousel: React.FC<CarouselProps> = ({
 	onAddToCart,
 	onAddToWishlist,
 	color,
+	isAuthenticated = false,
 }) => {
 	// Refs para los contenedores de carrusel
 	const personalizedCarouselRef = useRef<HTMLDivElement>(null);
