@@ -69,7 +69,21 @@ export class AuthService {
 
 				// Errores específicos según el código HTTP
 				if (axiosError.response?.status === 401) {
-					throw new Error("Credenciales incorrectas");
+					// Usar mensaje específico del servidor si existe
+					const serverMessage = axiosError.response.data?.message || axiosError.response.data?.error;
+					throw new Error(serverMessage || "Credenciales incorrectas");
+				} else if (axiosError.response?.status === 404) {
+					// Email no encontrado
+					const serverMessage = axiosError.response.data?.message || axiosError.response.data?.error;
+					throw new Error(serverMessage || "Email no encontrado");
+				} else if (axiosError.response?.status === 403) {
+					// Cuenta bloqueada
+					const serverMessage = axiosError.response.data?.message || axiosError.response.data?.error;
+					throw new Error(serverMessage || "Cuenta bloqueada");
+				} else if (axiosError.response?.status === 423) {
+					// Cuenta temporalmente bloqueada
+					const serverMessage = axiosError.response.data?.message || axiosError.response.data?.error;
+					throw new Error(serverMessage || "Cuenta temporalmente bloqueada");
 				} else if (axiosError.response?.status === 422) {
 					// Error de validación
 					const validationErrors = axiosError.response.data?.errors;
@@ -78,16 +92,63 @@ export class AuthService {
 						const messages = Object.values(validationErrors).flat();
 						throw new Error(messages.join(". "));
 					}
-					throw new Error("Datos de formulario inválidos");
+					const serverMessage = axiosError.response.data?.message;
+					throw new Error(serverMessage || "Datos de formulario inválidos");
 				} else if (axiosError.response?.data?.message) {
 					// Usar mensaje del servidor si existe
 					throw new Error(axiosError.response.data.message);
+				} else if (axiosError.response?.data?.error) {
+					// Usar mensaje de error del servidor si existe
+					throw new Error(axiosError.response.data.error);
 				} else if (axiosError.message) {
 					throw new Error(axiosError.message);
 				}
 			}
 
 			throw new Error("Error desconocido al iniciar sesión");
+		}
+	}
+
+	/**
+	 * Obtiene las reglas de validación de contraseñas dinámicas
+	 */
+	async getPasswordValidationRules(): Promise<{
+		minLength: number;
+		requireSpecial: boolean;
+		requireUppercase: boolean;
+		requireNumbers: boolean;
+		validationMessage: string;
+		requirements: string[];
+	}> {
+		try {
+			const response = await axiosInstance.get(
+				API_ENDPOINTS.AUTH.PASSWORD_VALIDATION_RULES
+			);
+
+			if (response?.data?.status === 'success') {
+				return response.data.data;
+			}
+
+			// Valores por defecto si hay error
+			return {
+				minLength: 8,
+				requireSpecial: true,
+				requireUppercase: true,
+				requireNumbers: true,
+				validationMessage: "La contraseña debe tener al menos 8 caracteres y debe incluir al menos una letra mayúscula, al menos un número, al menos un carácter especial (!@#$%^&*).",
+				requirements: ['al menos una letra mayúscula', 'al menos un número', 'al menos un carácter especial (!@#$%^&*)']
+			};
+		} catch (error) {
+			console.error("Error al obtener reglas de validación:", error);
+			// Valores por defecto si hay error
+			return {
+				minLength: 8,
+				requireSpecial: true,
+				requireUppercase: true,
+				requireNumbers: true,
+				validationMessage: "La contraseña debe tener al menos 8 caracteres y debe incluir al menos una letra mayúscula, al menos un número, al menos un carácter especial (!@#$%^&*).",
+				requirements: ['al menos una letra mayúscula', 'al menos un número', 'al menos un carácter especial (!@#$%^&*)']
+			};
 		}
 	}
 
@@ -146,10 +207,18 @@ export class AuthService {
 						const messages = Object.values(validationErrors).flat();
 						throw new Error(messages.join(". "));
 					}
-					throw new Error("Datos de registro inválidos");
+					const serverMessage = axiosError.response.data?.message;
+					throw new Error(serverMessage || "Datos de registro inválidos");
+				} else if (axiosError.response?.status === 409) {
+					// Conflicto (email ya existe)
+					const serverMessage = axiosError.response.data?.message || axiosError.response.data?.error;
+					throw new Error(serverMessage || "Este email ya está registrado");
 				} else if (axiosError.response?.data?.message) {
 					// Usar mensaje del servidor si existe
 					throw new Error(axiosError.response.data.message);
+				} else if (axiosError.response?.data?.error) {
+					// Usar mensaje de error del servidor si existe
+					throw new Error(axiosError.response.data.error);
 				} else if (axiosError.message) {
 					throw new Error(axiosError.message);
 				}

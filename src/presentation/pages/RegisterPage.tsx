@@ -3,6 +3,7 @@
 import React, {useState} from "react";
 import {Link, useNavigate} from "react-router-dom";
 import {useAuth} from "../hooks/useAuth";
+import {usePasswordValidation} from "../hooks/usePasswordValidation";
 import GoogleAuthButton from "../components/auth/GoogleAuthButton";
 import type {UserRegistrationData} from "../../core/domain/entities/User";
 import GoogleAuthCallbackHandler from "../components/auth/GoogleAuthCallbackHandler";
@@ -20,6 +21,7 @@ const RegisterPage: React.FC = () => {
 
 	const navigate = useNavigate();
 	const {register, loading, error} = useAuth();
+	const {rules: passwordRules, loading: rulesLoading, validatePassword} = usePasswordValidation();
 
 	const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const {name, value} = e.target;
@@ -61,8 +63,11 @@ const RegisterPage: React.FC = () => {
 		// Validate password
 		if (!formData.password) {
 			newErrors.password = "La contraseña es obligatoria";
-		} else if (formData.password.length < 8) {
-			newErrors.password = "La contraseña debe tener al menos 8 caracteres";
+		} else {
+			const passwordValidation = validatePassword(formData.password);
+			if (!passwordValidation.isValid) {
+				newErrors.password = passwordValidation.errors[0]; // Mostrar el primer error
+			}
 		}
 
 		// Validate password confirmation
@@ -224,12 +229,27 @@ const RegisterPage: React.FC = () => {
 								type="password"
 								autoComplete="new-password"
 								required
+								minLength={passwordRules.minLength}
 								className={`mt-1 block w-full border ${errors.password ? "border-red-500" : "border-gray-300"} rounded-md shadow-sm p-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500`}
 								value={formData.password}
 								onChange={handleChange}
 							/>
 							{errors.password && (
 								<p className="mt-1 text-sm text-red-600">{errors.password}</p>
+							)}
+							{!rulesLoading && !errors.password && (
+								<div className="mt-2">
+									<p className="text-xs text-gray-600 mb-1">
+										La contraseña debe tener al menos {passwordRules.minLength} caracteres{passwordRules.requirements.length > 0 && ' e incluir:'}
+									</p>
+									{passwordRules.requirements.length > 0 && (
+										<ul className="text-xs text-gray-500 list-disc list-inside space-y-1">
+											{passwordRules.requirements.map((req, index) => (
+												<li key={index}>{req}</li>
+											))}
+										</ul>
+									)}
+								</div>
 							)}
 						</div>
 

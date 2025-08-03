@@ -18,6 +18,7 @@ export const API_ENDPOINTS = {
     VERIFY_EMAIL: (id: string | number, hash: string) =>
       `/email/verify/${id}/${hash}`,
     CHECK_ROLE: "/user/check-role",
+    PASSWORD_VALIDATION_RULES: "/auth/password-validation-rules",
   },
 
   PROFILE: {
@@ -325,10 +326,12 @@ export const API_ENDPOINTS = {
       DELETE: (id: string | number) => `/admin/ratings/${id}`,
     },
     CONFIGURATIONS: {
+      BASE: "/admin/configurations",
       INDEX: "/admin/configurations",
       SHOW: (key: string) => `/admin/configurations/${key}`,
       UPDATE: "/admin/configurations/update",
       RATINGS: "/admin/configurations/ratings",
+      PASSWORD_VALIDATION_RULES: "/admin/configurations/password-validation-rules",
     },
     CATEGORIES: {
       LIST: "/categories", // Admin usa la misma lista pública

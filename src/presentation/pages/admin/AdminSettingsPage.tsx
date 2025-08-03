@@ -1,4 +1,4 @@
-// src/presentation/pages/admin/AdminSettingsPage.tsx - SIMPLIFICADO
+// src/presentation/pages/admin/AdminSettingsPage.tsx - COMPLETO
 import React, { useState } from "react";
 import {
   Save,
@@ -8,9 +8,17 @@ import {
   RefreshCw,
   AlertTriangle,
   CheckCircle,
+  Shield,
+  Lock,
+  Bell,
+  Sliders,
 } from "lucide-react";
 import RatingConfiguration from "../../components/admin/RatingConfiguration";
 import VolumeDiscountManager from "../../components/admin/VolumeDiscountManager";
+import ModerationConfiguration from "../../components/admin/ModerationConfiguration";
+import SecurityConfiguration from "../../components/admin/SecurityConfiguration";
+import NotificationConfiguration from "../../components/admin/NotificationConfiguration";
+import SystemLimitsConfiguration from "../../components/admin/SystemLimitsConfiguration";
 
 /**
  * Página de configuración del sistema para el panel de administración
@@ -90,7 +98,7 @@ const AdminSettingsPage: React.FC = () => {
 			{/* Tabs de navegación */}
 			<div className="mb-6">
 				<div className="border-b border-gray-200">
-					<nav className="-mb-px flex space-x-8">
+					<nav className="-mb-px flex space-x-8 overflow-x-auto">
 						<button
 							onClick={() => setActiveTab("general")}
 							className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
@@ -100,7 +108,29 @@ const AdminSettingsPage: React.FC = () => {
 							}`}
 						>
 							<Settings className="w-5 h-5 inline-block mr-1" />
-							Configuración General
+							General
+						</button>
+						<button
+							onClick={() => setActiveTab("security")}
+							className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
+								activeTab === "security"
+									? "border-primary-500 text-primary-600"
+									: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+							}`}
+						>
+							<Lock className="w-5 h-5 inline-block mr-1" />
+							Seguridad
+						</button>
+						<button
+							onClick={() => setActiveTab("moderation")}
+							className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
+								activeTab === "moderation"
+									? "border-primary-500 text-primary-600"
+									: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+							}`}
+						>
+							<Shield className="w-5 h-5 inline-block mr-1" />
+							Moderación
 						</button>
 						<button
 							onClick={() => setActiveTab("ratings")}
@@ -122,7 +152,29 @@ const AdminSettingsPage: React.FC = () => {
 							}`}
 						>
 							<TrendingDown className="w-5 h-5 inline-block mr-1" />
-							Descuentos por Volumen
+							Descuentos
+						</button>
+						<button
+							onClick={() => setActiveTab("notifications")}
+							className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
+								activeTab === "notifications"
+									? "border-primary-500 text-primary-600"
+									: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+							}`}
+						>
+							<Bell className="w-5 h-5 inline-block mr-1" />
+							Notificaciones
+						</button>
+						<button
+							onClick={() => setActiveTab("limits")}
+							className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
+								activeTab === "limits"
+									? "border-primary-500 text-primary-600"
+									: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+							}`}
+						>
+							<Sliders className="w-5 h-5 inline-block mr-1" />
+							Límites
 						</button>
 					</nav>
 				</div>
@@ -257,6 +309,20 @@ const AdminSettingsPage: React.FC = () => {
 					</form>
 				)}
 
+				{/* Configuración de Seguridad */}
+				{activeTab === "security" && (
+					<div className="p-6">
+						<SecurityConfiguration />
+					</div>
+				)}
+
+				{/* Configuración de Moderación */}
+				{activeTab === "moderation" && (
+					<div className="p-6">
+						<ModerationConfiguration />
+					</div>
+				)}
+
 				{/* Configuración de Valoraciones */}
 				{activeTab === "ratings" && (
 					<div className="p-6">
@@ -268,6 +334,20 @@ const AdminSettingsPage: React.FC = () => {
 				{activeTab === "volume-discounts" && (
 					<div className="p-6">
 						<VolumeDiscountManager />
+					</div>
+				)}
+
+				{/* Configuración de Notificaciones */}
+				{activeTab === "notifications" && (
+					<div className="p-6">
+						<NotificationConfiguration />
+					</div>
+				)}
+
+				{/* Límites del Sistema */}
+				{activeTab === "limits" && (
+					<div className="p-6">
+						<SystemLimitsConfiguration />
 					</div>
 				)}
 
