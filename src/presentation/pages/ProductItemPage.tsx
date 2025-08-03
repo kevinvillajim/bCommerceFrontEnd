@@ -220,7 +220,7 @@ const ProductItemPage: React.FC = () => {
 		}
 
 		// Validar disponibilidad general
-		if (!product.is_in_stock) {
+		if (!product!.is_in_stock) {
 			showNotification(
 				NotificationType.ERROR,
 				"Lo sentimos, este producto está agotado"
@@ -229,13 +229,13 @@ const ProductItemPage: React.FC = () => {
 		}
 
 		// Validar stock específico
-		const availableStock = getAvailableStock(product);
-		if (!isStockAvailable(product, quantity)) {
+		const availableStock = getAvailableStock(product!);
+		if (!isStockAvailable(product!, quantity)) {
 			handleStockError(availableStock, quantity);
 			return;
 		}
 
-		console.log(`Añadiendo al carrito: ${quantity} unidades de ${product.name} con precio final: $${finalPrice}`);
+		console.log(`Añadiendo al carrito: ${quantity} unidades de ${product!.name} con precio final: $${finalPrice}`);
 
 		try {
 			setIsUpdating(true);
@@ -252,7 +252,7 @@ const ProductItemPage: React.FC = () => {
 				// ✅ INVALIDAR CACHE DE PÁGINAS RELACIONADAS
 				invalidateRelatedPages();
 
-				let message = `${product.name} ha sido agregado al carrito`;
+				let message = `${product!.name} ha sido agregado al carrito`;
 				if (hasDiscount && totalSavings > 0) {
 					message += ` con ${discountResult?.discountPercentage}% de descuento (ahorro: $${totalSavings.toFixed(2)})`;
 				}
@@ -268,7 +268,7 @@ const ProductItemPage: React.FC = () => {
 			if (error?.response?.data?.message?.includes('stock') || 
 				error?.message?.includes('stock') ||
 				error?.response?.data?.message?.includes('insuficiente')) {
-				const availableStock = getAvailableStock(product);
+				const availableStock = getAvailableStock(product!);
 				handleStockError(availableStock, quantity);
 			} else {
 				handleError(error, "Error al agregar producto al carrito. Inténtalo de nuevo.");
@@ -289,7 +289,7 @@ const ProductItemPage: React.FC = () => {
 			return;
 		}
 
-		console.log(`Gestionando favoritos: ${product.name}`);
+		console.log(`Gestionando favoritos: ${product!.name}`);
 
 		try {
 			setIsUpdating(true);
@@ -332,50 +332,50 @@ const ProductItemPage: React.FC = () => {
 		try {
 			let sellerId;
 
-			if (product.seller_id) {
-				sellerId = product.seller_id;
+			if (product!.seller_id) {
+				sellerId = product!.seller_id;
 				console.log(`Usando seller_id directo del producto: ${sellerId}`);
 			}
-			else if (product.seller?.id) {
-				sellerId = product.seller.id;
+			else if (product!.seller?.id) {
+				sellerId = product!.seller.id;
 				console.log(`Usando seller.id del producto: ${sellerId}`);
 			}
-			else if (product.user_id) {
+			else if (product!.user_id) {
 				console.log(
-					`Intentando obtener seller_id a partir de user_id: ${product.user_id}`
+					`Intentando obtener seller_id a partir de user_id: ${product!.user_id}`
 				);
 
 				try {
 					const response = await ApiClient.get<SellerApiResponse>(
-						`/sellers/by-user/${product.user_id}`
+						`/sellers/by-user/${product!.user_id}`
 					);
 
 					if (response && response.data) {
 						if (response.data.id) {
 							sellerId = response.data.id;
 							console.log(
-								`Convertido user_id ${product.user_id} a seller_id ${sellerId}`
+								`Convertido user_id ${product!.user_id} a seller_id ${sellerId}`
 							);
 						} else if (response.data.seller_id) {
 							sellerId = response.data.seller_id;
 							console.log(
-								`Convertido user_id ${product.user_id} a seller_id ${sellerId}`
+								`Convertido user_id ${product!.user_id} a seller_id ${sellerId}`
 							);
 						} else {
 							console.warn(
 								`No se pudo obtener seller_id, usando user_id como fallback`
 							);
-							sellerId = product.user_id;
+							sellerId = product!.user_id;
 						}
 					} else {
 						console.warn(
 							`Respuesta de API vacía o sin data, usando user_id como fallback`
 						);
-						sellerId = product.user_id;
+						sellerId = product!.user_id;
 					}
 				} catch (error) {
 					console.error("Error al obtener seller_id:", error);
-					sellerId = product.user_id;
+					sellerId = product!.user_id;
 					console.warn(
 						`Fallback: usando user_id ${sellerId} como seller_id debido a error`
 					);
@@ -389,7 +389,7 @@ const ProductItemPage: React.FC = () => {
 			}
 
 			console.log(
-				`Iniciando chat con vendedor ID ${sellerId} para producto ${product.id}`
+				`Iniciando chat con vendedor ID ${sellerId} para producto ${product!.id}`
 			);
 
 			const chatId = await createChat(sellerId, Number(id));
@@ -471,9 +471,9 @@ const ProductItemPage: React.FC = () => {
 		);
 	}
 
-	// Process product data for display
-	const categories = product.category ? [product.category.name] : [];
-	const availableStock = getAvailableStock(product);
+	// Process product data for display - product is guaranteed to be non-null here
+	const categories = product!.category ? [product!.category.name] : [];
+	const availableStock = getAvailableStock(product!);
 	
 	// 🔍 LOGS DE DEBUG PARA MONITOREO
 	console.log("🔍 ProductItemPage: Estado actual:", {
@@ -513,30 +513,30 @@ const ProductItemPage: React.FC = () => {
 		return [];
 	};
 
-	const colors = parseStringArrays(product.colors);
-	const sizes = parseStringArrays(product.sizes);
-	const tags = parseStringArrays(product.tags);
+	const colors = parseStringArrays(product!.colors);
+	const sizes = parseStringArrays(product!.sizes);
+	const tags = parseStringArrays(product!.tags);
 
 	// Create specification items from product data
 	const specifications = [
 		{
 			name: "Peso", 
-			value: hasValidValue(product.weight) ? `${product.weight} kg` : "N/A"
+			value: hasValidValue(product!.weight) ? `${product!.weight} kg` : "N/A"
 		},
 		{
 			name: "Dimensiones",
-			value: product.dimensions || 
-				(hasValidValue(product.width) && hasValidValue(product.height) && hasValidValue(product.depth))
-					? `${product.width} × ${product.height} × ${product.depth} cm`
+			value: product!.dimensions || 
+				(hasValidValue(product!.width) && hasValidValue(product!.height) && hasValidValue(product!.depth))
+					? `${product!.width} × ${product!.height} × ${product!.depth} cm`
 					: "N/A",
 		},
 		{
 			name: "Disponibilidad",
-			value: product.is_in_stock ? `En stock (${availableStock} unidades)` : "Agotado",
+			value: product!.is_in_stock ? `En stock (${availableStock} unidades)` : "Agotado",
 		},
 		{
 			name: "Categoría", 
-			value: product.category?.name || "N/A"
+			value: product!.category?.name || "N/A"
 		},
 	];
 
@@ -549,18 +549,18 @@ const ProductItemPage: React.FC = () => {
 						Inicio
 					</Link>
 					<span className="mx-2">/</span>
-					{product.category ? (
+					{product!.category ? (
 						<>
 							<Link
-								to={`/category/${product.category.slug}`}
+								to={`/category/${product!.category.slug}`}
 								className="hover:text-primary-600"
 							>
-								{product.category.name}
+								{product!.category.name}
 							</Link>
 							<span className="mx-2">/</span>
 						</>
 					) : null}
-					<span className="text-gray-700 font-medium">{product.name}</span>
+					<span className="text-gray-700 font-medium">{product!.name}</span>
 				</nav>
 
 				<div className="bg-white rounded-xl shadow-lg overflow-hidden">
@@ -568,17 +568,17 @@ const ProductItemPage: React.FC = () => {
 						{/* Product Images */}
 						<div className="space-y-6">
 							<div className="bg-gray-50 rounded-xl overflow-hidden h-96 lg:h-[500px]">
-								{(product.images && product.images.length > 0) ? (
+								{(product!.images && product!.images.length > 0) ? (
 									<img
-										src={getImageUrlFromProduct(product.images[activeImage])}
-										alt={product.name}
+										src={getImageUrlFromProduct(product!.images[activeImage])}
+										alt={product!.name}
 										className="w-full h-full object-cover transition-all duration-300"
 									/>
 								) : null}
 							</div>
-							{(product.images && product.images.length > 1) ? (
+							{(product!.images && product!.images.length > 1) ? (
 								<div className="grid grid-cols-4 gap-3">
-									{product.images.map((image, index) => (
+									{product!.images.map((image, index) => (
 										<div
 											key={index}
 											className={`bg-gray-50 rounded-lg h-24 cursor-pointer border-2 transition-all overflow-hidden ${
@@ -590,7 +590,7 @@ const ProductItemPage: React.FC = () => {
 										>
 											<img
 												src={getImageUrlFromProduct(image)}
-												alt={`${product.name} thumbnail ${index + 1}`}
+												alt={`${product!.name} thumbnail ${index + 1}`}
 												className="w-full h-full object-cover"
 											/>
 										</div>
@@ -602,22 +602,22 @@ const ProductItemPage: React.FC = () => {
 						{/* Product Info */}
 						<div className="space-y-6">
 							{/* Seller Info */}
-							{(product.seller && product.seller.name) ? (
+							{(product!.seller && product!.seller.name) ? (
 								<div className="flex items-center mb-2">
 									<span className="text-sm bg-primary-50 text-primary-700 px-2 py-0.5 rounded font-medium">
-										{product.seller.name}
+										{product!.seller.name}
 									</span>
 								</div>
 							) : null}
 
 							{/* Title */}
 							<h1 className="text-3xl font-bold text-gray-900">
-								{product.name}
+								{product!.name}
 							</h1>
 
 							{/* ✅ INFORMACIÓN DE STOCK PROMINENTE */}
 							<div className="flex items-center space-x-3">
-								{product.is_in_stock ? (
+								{product!.is_in_stock ? (
 									<div className="flex items-center">
 										<div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
 										<span className="text-green-700 font-medium">
@@ -633,16 +633,16 @@ const ProductItemPage: React.FC = () => {
 							</div>
 
 							{/* Rating */}
-							{(product.rating && 
-							  typeof product.rating === 'number' && 
-							  product.rating > 0) ? (
+							{(product!.rating && 
+							  typeof product!.rating === 'number' && 
+							  product!.rating > 0) ? (
 								<div className="flex items-center gap-3">
 									<div className="flex items-center">
-										<RatingStars rating={product.rating} size={18} showValue={true} />
+										<RatingStars rating={product!.rating} size={18} showValue={true} />
 									</div>
 									<div className="text-gray-500 text-sm">
 										<span className="font-medium">
-											{displayRatingCount(product.rating_count)}
+											{displayRatingCount(product!.rating_count)}
 										</span>
 									</div>
 								</div>
@@ -657,7 +657,7 @@ const ProductItemPage: React.FC = () => {
 									</span>
 									{hasDiscount && (
 										<span className="ml-3 text-lg text-gray-500 line-through">
-											${(product.final_price || product.price).toFixed(2)}
+											${(product!.final_price || product!.price).toFixed(2)}
 										</span>
 									)}
 									{hasDiscount && (
@@ -815,10 +815,10 @@ const ProductItemPage: React.FC = () => {
 									<button
 										className="flex-grow h-12 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors duration-200 flex items-center justify-center disabled:opacity-50"
 										onClick={handleAddToCart}
-										disabled={!product.is_in_stock || isUpdating || availableStock === 0}
+										disabled={!product!.is_in_stock || isUpdating || availableStock === 0}
 									>
 										<ShoppingCart size={20} className="mr-2" />
-										{isUpdating ? "Agregando..." : product.is_in_stock && availableStock > 0
+										{isUpdating ? "Agregando..." : product!.is_in_stock && availableStock > 0
 											? `Añadir al Carrito - $${(finalPrice * quantity).toFixed(2)}`
 											: "Producto Agotado"}
 									</button>
@@ -853,7 +853,7 @@ const ProductItemPage: React.FC = () => {
 											Entrega rápida
 										</h4>
 										<p className="text-sm text-gray-600">
-											{product.is_in_stock ? (
+											{product!.is_in_stock ? (
 												<>
 													Disponible para entrega en{" "}
 													<span className="font-medium">1-3 días hábiles</span>
@@ -904,7 +904,7 @@ const ProductItemPage: React.FC = () => {
 												{categories.map((category, index) => (
 													<Link
 														key={index}
-														to={`/category/${product.category?.slug || ""}`}
+														to={`/category/${product!.category?.slug || ""}`}
 														className="bg-gray-100 hover:bg-gray-200 px-3 py-1 text-sm rounded-full text-gray-700 transition-colors"
 													>
 														{category}
@@ -982,13 +982,13 @@ const ProductItemPage: React.FC = () => {
 						<div className="flex justify-center p-6 lg:p-10">
 							{activeTab === "description" && (
 								<div className="max-w-3xl space-y-6">
-									{product.short_description ? (
+									{product!.short_description ? (
 										<p className="font-medium text-lg text-gray-800">
-											{product.short_description}
+											{product!.short_description}
 										</p>
 									) : null}
 									<p className="text-gray-700 leading-relaxed">
-										{product.description}
+										{product!.description}
 									</p>
 								</div>
 							)}
@@ -1013,9 +1013,9 @@ const ProductItemPage: React.FC = () => {
 
 							{activeTab === "reviews" && (
 							<ProductReviews 
-							productId={product.id || 0} 
-							rating={product.rating || 0} 
-							ratingCount={product.rating_count || product.ratingCount || 0} 
+							productId={product!.id || 0} 
+							rating={product!.rating || 0} 
+							ratingCount={product!.rating_count || product!.ratingCount || 0} 
 							/>
 							)}
 						</div>
@@ -1023,11 +1023,11 @@ const ProductItemPage: React.FC = () => {
 				</div>
 
 				{/* Related Products */}
-				{(product.related_products && product.related_products.length > 0) ? (
+				{(product!.related_products && product!.related_products.length > 0) ? (
 					<div className="mt-16">
 						<h2 className="text-2xl font-bold mb-8">Productos relacionados</h2>
 						<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-							{product.related_products.map((relatedProduct) => (
+							{product!.related_products.map((relatedProduct) => (
 								<div
 									key={relatedProduct.id}
 									className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow"

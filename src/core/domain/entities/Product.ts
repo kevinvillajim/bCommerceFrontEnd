@@ -132,6 +132,7 @@ export interface ProductImage {
  * Interfaz base para productos - ACTUALIZADA con descuentos por volumen
  */
 export interface Product {
+  isNew: undefined;
 	created_at: string;
 	category_name: string;
 	id?: number;

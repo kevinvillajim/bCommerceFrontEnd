@@ -40,12 +40,6 @@ import { RecommendationService } from "../../core/services/RecommendationService
     batchDelay: 2000,
     minTimeSpent: 10,
   };
-  private static interactionQueue: Array<{
-    type: InteractionType;
-    itemId: number;
-    metadata: InteractionMetadata;
-  }> = [];
-  private static batchTimeout: NodeJS.Timeout | null = null;
   /**   * Verifica si el usuario está autenticado   */ private static isAuthenticated(): boolean {
     const token = localStorage.getItem("auth_token");
     return !!(token && token.trim() !== "");

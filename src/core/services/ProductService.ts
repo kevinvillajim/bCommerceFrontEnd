@@ -270,7 +270,11 @@ export class ProductService {
 			return response || { data: [], meta: { total: 0, count: 0 } };
 		} catch (error) {
 			console.error("❌ Error en ProductService.getFeaturedRandom:", error);
-			return { data: [], meta: { total: 0, count: 0 } };
+			return { data: [], meta: {
+				total: 0, count: 0,
+				limit: 0,
+				offset: 0
+			} };
 		}
 	}
 
@@ -286,7 +290,11 @@ export class ProductService {
 			return response || { data: [], meta: { total: 0, count: 0 } };
 		} catch (error) {
 			console.error("❌ Error en ProductService.getTrendingAndOffers:", error);
-			return { data: [], meta: { total: 0, count: 0 } };
+			return { data: [], meta: {
+				total: 0, count: 0,
+				limit: 0,
+				offset: 0
+			} };
 		}
 	}
 
@@ -302,7 +310,11 @@ export class ProductService {
 			return response || { data: [], meta: { total: 0, count: 0 } };
 		} catch (error) {
 			console.error("❌ Error en ProductService.getPersonalizedProducts:", error);
-			return { data: [], meta: { total: 0, count: 0 } };
+			return { data: [], meta: {
+				total: 0, count: 0,
+				limit: 0,
+				offset: 0
+			} };
 		}
 	}
 
@@ -318,7 +330,11 @@ export class ProductService {
 			return response || { data: [], meta: { total: 0, count: 0 } };
 		} catch (error) {
 			console.error("❌ Error en ProductService.getDiscountedProducts:", error);
-			return { data: [], meta: { total: 0, count: 0 } };
+			return { data: [], meta: {
+				total: 0, count: 0,
+				limit: 0,
+				offset: 0
+			} };
 		}
 	}
 
@@ -334,7 +350,11 @@ export class ProductService {
 			return response || { data: [], meta: { total: 0, count: 0 } };
 		} catch (error) {
 			console.error("❌ Error en ProductService.getPopularProducts:", error);
-			return { data: [], meta: { total: 0, count: 0 } };
+			return { data: [], meta: {
+				total: 0, count: 0,
+				limit: 0,
+				offset: 0
+			} };
 		}
 	}
 }

@@ -38,7 +38,6 @@ const ProductCardCompact: React.FC<ProductCardProps> = ({
 	isNew = false,
 	color = true,
 	stock = 10,
-	slug,
 	// Funciones externas opcionales
 	onAddToCart,
 	onAddToWishlist,

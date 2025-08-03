@@ -6,14 +6,14 @@ import { NotificationType } from '../../contexts/CartContext';
 
 // Definir la interfaz para un producto (compatible con la API)
 interface Product {
-  id: number;
+  id?: number;
   name: string;
   slug?: string;
   description?: string;
   price: number | string; // ✅ Aceptar tanto número como string
-  final_price: number | string; // ✅ Aceptar tanto número como string
+  final_price?: number | string; // ✅ Aceptar tanto número como string
   discount_percentage?: number | string; // ✅ Aceptar tanto número como string
-  main_image: string;
+  main_image?: string;
   category_name?: string;
   stock?: number | string;
   is_in_stock?: boolean;
@@ -48,14 +48,6 @@ const ProductGrid: React.FC<ProductGridProps> = ({
     return defaultValue;
   };
 
-  const safeInteger = (value: number | string | null | undefined, defaultValue: number = 0): number => {
-    if (typeof value === 'number') return Math.floor(value);
-    if (typeof value === 'string') {
-      const parsed = parseInt(value, 10);
-      return isNaN(parsed) ? defaultValue : parsed;
-    }
-    return defaultValue;
-  };
 
   // Función para obtener el precio final (ya calculado por la API)
   const getFinalPrice = (product: Product): number => {
@@ -89,9 +81,9 @@ const ProductGrid: React.FC<ProductGridProps> = ({
 
   // Función para manejar añadir al carrito
   const handleAddToCart = async (product: Product) => {
-    if (loadingStates[product.id]) return;
+    if (!product.id || loadingStates[product.id]) return;
 
-    setLoadingStates(prev => ({ ...prev, [product.id]: true }));
+    setLoadingStates(prev => ({ ...prev, [product.id!]: true }));
 
     try {
       if (onClick) {
@@ -124,7 +116,9 @@ const ProductGrid: React.FC<ProductGridProps> = ({
       );
     } finally {
       setTimeout(() => {
-        setLoadingStates(prev => ({ ...prev, [product.id]: false }));
+        if (product.id) {
+          setLoadingStates(prev => ({ ...prev, [product.id!]: false }));
+        }
       }, 500);
     }
   };
@@ -141,7 +135,7 @@ const ProductGrid: React.FC<ProductGridProps> = ({
           
           return (
             <div 
-              key={product.id} 
+              key={product.id || `product-${Math.random()}`} 
               className="bg-white shadow rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 group"
             >
               {/* Imagen del producto */}
@@ -170,7 +164,7 @@ const ProductGrid: React.FC<ProductGridProps> = ({
               
               {/* Información del producto */}
               <div className="p-4">
-                <Link to={`/products/${product.id}`}>
+                <Link to={`/products/${product.id || 0}`}>
                   <h3 className="font-medium text-lg mb-2 text-gray-800 hover:text-primary-600 transition-colors cursor-pointer">{product.name}</h3>
                 </Link>
                 {product.description && (
@@ -202,14 +196,14 @@ const ProductGrid: React.FC<ProductGridProps> = ({
                   {/* Botón de añadir al carrito */}
                   <button 
                     onClick={() => handleAddToCart(product)}
-                    disabled={loadingStates[product.id] || !product.is_in_stock}
+                    disabled={!product.id || loadingStates[product.id] || !product.is_in_stock}
                     className={`cursor-pointer px-3 py-2 rounded-lg text-sm flex items-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                       product.is_in_stock !== false 
                         ? 'bg-primary-600 text-white hover:bg-primary-700' 
                         : 'bg-gray-400 text-white'
                     }`}
                   >
-                    {loadingStates[product.id] ? (
+                    {product.id && loadingStates[product.id] ? (
                       <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-1"></div>
                     ) : (
                       <ShoppingCart size={16} className="mr-1" />

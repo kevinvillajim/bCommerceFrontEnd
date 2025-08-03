@@ -74,17 +74,17 @@ export const transformProductForCarousel = (product: Product): ProductCarouselTy
 
   // Determinar si es nuevo (productos creados en los últimos 30 días)
   const getIsNew = (): boolean => {
-    if (product.isNew !== undefined) return product.isNew;
-    
-    if (product.created_at || product.createdAt) {
-      const createdDate = new Date(product.created_at || product.createdAt!);
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      return createdDate > thirtyDaysAgo;
-    }
-    
-    return false;
-  };
+		if (typeof product.isNew === "boolean") return product.isNew;
+
+		if (product.created_at || product.createdAt) {
+			const createdDate = new Date(product.created_at || product.createdAt!);
+			const thirtyDaysAgo = new Date();
+			thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+			return createdDate > thirtyDaysAgo;
+		}
+
+		return false;
+	};
 
   return {
     id: product.id!,
@@ -173,7 +173,7 @@ export const calculateProductFinalPrice = (product: Product): number => {
  */
 export const isProductAvailable = (product: Product): boolean => {
   // Verificar stock
-  const hasStock = product.stock > 0 || product.is_in_stock || product.isInStock;
+  const hasStock = (product.stock || 0) > 0 || !!product.is_in_stock || !!product.isInStock;
   
   // Verificar si está publicado
   const isPublished = product.published !== false && product.status !== 'inactive';

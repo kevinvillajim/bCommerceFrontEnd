@@ -138,8 +138,7 @@ export const useProducts = () => {
 			status: apiProduct.status || "active",
 			viewCount: apiProduct.viewCount || apiProduct.view_count || 0,
 			salesCount: apiProduct.salesCount || apiProduct.sales_count || 0,
-			discountPercentage:
-				apiProduct.discountPercentage || apiProduct.discount_percentage || 0,
+			discountPercentage: apiProduct.discountPercentage || apiProduct.discount_percentage || 0,
 			finalPrice: apiProduct.finalPrice || apiProduct.final_price,
 			isInStock: apiProduct.isInStock || apiProduct.is_in_stock,
 			rating: apiProduct.rating || apiProduct.rating_avg,
@@ -148,6 +147,7 @@ export const useProducts = () => {
 			updatedAt: apiProduct.updatedAt || apiProduct.updated_at,
 			created_at: apiProduct.created_at || apiProduct.createdAt || new Date().toISOString(),
 			category_name: apiProduct.category?.name || apiProduct.category_name || "Sin categoría",
+			isNew: undefined
 		};
 
 		return adaptedProduct;

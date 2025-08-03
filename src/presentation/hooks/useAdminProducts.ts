@@ -183,12 +183,13 @@ export const useAdminProducts = () => {
 			// Campos específicos de admin
 			category: apiProduct.category_name
 				? {
-						id: apiProduct.category_id,
-						name: apiProduct.category_name,
-					}
+					id: apiProduct.category_id,
+					name: apiProduct.category_name,
+				}
 				: apiProduct.category,
 			seller: apiProduct.seller,
 			user: apiProduct.user,
+			isNew: undefined
 		};
 
 		return adaptedProduct;

@@ -7,9 +7,7 @@ interface ProductCarouselSkeletonProps {
 }
 
 const ProductCarouselSkeleton: React.FC<ProductCarouselSkeletonProps> = ({ 
-  showPersonalized = true,
-  isAuthenticated = false 
-}) => {
+  showPersonalized = true}) => {
   return (
     <div className="space-y-8">
       {/* Skeleton para primer carrusel (personalizado/trending) */}
