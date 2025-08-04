@@ -1,4 +1,4 @@
-// src/presentation/components/admin/VolumeDiscountManager.tsx - SIMPLIFICADO
+// src/presentation/components/admin/VolumeDiscountManager.tsx - CORREGIDO PARA USAR BACKEND
 import React, { useState, useEffect } from "react";
 import {
 	Settings,
@@ -8,15 +8,29 @@ import {
 	AlertTriangle,
 	RefreshCw
 } from "lucide-react";
-import { useVolumeDiscountsAdmin } from "../../hooks/useVolumeDiscount";
+import ConfigurationService from "../../../core/services/ConfigurationService";
+
+// Tipos para configuración de Volume Discounts
+interface VolumeDiscountTier {
+	quantity: number;
+	discount: number;
+	label: string;
+}
+
+interface VolumeDiscountConfig {
+	enabled: boolean;
+	stackable: boolean;
+	show_savings_message: boolean;
+	default_tiers: VolumeDiscountTier[];
+}
 
 const VolumeDiscountManager: React.FC = () => {
 	const [loading, setLoading] = useState(false);
 	const [success, setSuccess] = useState<string | null>(null);
 	const [error, setError] = useState<string | null>(null);
 
-	// Configuración simple
-	const [config, setConfig] = useState({
+	// Configuración con tipos apropiados
+	const [config, setConfig] = useState<VolumeDiscountConfig>({
 		enabled: true,
 		stackable: false,
 		show_savings_message: true,
@@ -27,11 +41,7 @@ const VolumeDiscountManager: React.FC = () => {
 		]
 	});
 
-	const {
-		loading: apiLoading,
-		getAdminConfiguration,
-		updateAdminConfiguration
-	} = useVolumeDiscountsAdmin();
+	const configService = new ConfigurationService();
 
 	// Cargar configuración inicial
 	useEffect(() => {
@@ -42,9 +52,12 @@ const VolumeDiscountManager: React.FC = () => {
 		try {
 			setLoading(true);
 			setError(null);
-			const adminConfig = await getAdminConfiguration();
-			if (adminConfig) {
-				setConfig(adminConfig);
+			
+			const response = await configService.getVolumeDiscountConfigs();
+			if (response.status === 'success' && response.data) {
+				setConfig(response.data as VolumeDiscountConfig);
+			} else {
+				console.warn("No se pudo cargar configuración, usando valores por defecto");
 			}
 		} catch (error) {
 			console.error("Error cargando configuración:", error);
@@ -55,7 +68,7 @@ const VolumeDiscountManager: React.FC = () => {
 	};
 
 	// Manejar cambios en la configuración básica
-	const handleConfigChange = (field: string, value: any) => {
+	const handleConfigChange = (field: keyof VolumeDiscountConfig, value: boolean) => {
 		setConfig(prev => ({
 			...prev,
 			[field]: value
@@ -63,7 +76,7 @@ const VolumeDiscountManager: React.FC = () => {
 	};
 
 	// Manejar cambios en los tiers por defecto
-	const handleDefaultTierChange = (index: number, field: string, value: any) => {
+	const handleDefaultTierChange = (index: number, field: keyof VolumeDiscountTier, value: string | number) => {
 		const newTiers = [...config.default_tiers];
 		newTiers[index] = { ...newTiers[index], [field]: value };
 		setConfig(prev => ({
@@ -98,12 +111,12 @@ const VolumeDiscountManager: React.FC = () => {
 			setError(null);
 			setSuccess(null);
 
-			const success = await updateAdminConfiguration(config);
-			if (success) {
+			const response = await configService.updateVolumeDiscountConfigs(config);
+			if (response.status === 'success') {
 				setSuccess("Configuración guardada exitosamente");
 				setTimeout(() => setSuccess(null), 3000);
 			} else {
-				throw new Error("No se pudo guardar la configuración");
+				throw new Error(response.message || "No se pudo guardar la configuración");
 			}
 		} catch (error) {
 			console.error("Error guardando configuración:", error);
@@ -113,7 +126,7 @@ const VolumeDiscountManager: React.FC = () => {
 		}
 	};
 
-	if (apiLoading && !config) {
+	if (loading && config.default_tiers.length === 3 && config.default_tiers[0].quantity === 3) {
 		return (
 			<div className="flex justify-center items-center h-64">
 				<div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>

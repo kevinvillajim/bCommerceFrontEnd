@@ -76,7 +76,7 @@ const SecurityConfiguration: React.FC = () => {
 
   const getPasswordStrengthLevel = () => {
     let score = 0;
-    if (config.passwordMinLength >= 8) score++;
+    if (Number(config.passwordMinLength) >= 8) score++;
     if (config.passwordRequireSpecial) score++;
     if (config.passwordRequireUppercase) score++;
     if (config.passwordRequireNumbers) score++;
@@ -168,12 +168,32 @@ const SecurityConfiguration: React.FC = () => {
                 Longitud mínima de contraseña
               </label>
               <input
-                type="number"
+                type="text"
                 value={config.passwordMinLength}
-                onChange={(e) => handleConfigChange('passwordMinLength', parseInt(e.target.value))}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  // Permitir vacío o solo números
+                  if (value === '' || /^\d+$/.test(value)) {
+                    // Si está vacío, mantener vacío, si no convertir a número
+                    handleConfigChange('passwordMinLength', value === '' ? '' : parseInt(value));
+                  }
+                }}
+                onBlur={(e) => {
+                  const value = e.target.value;
+                  // Al perder el foco, validar rangos y asignar valor por defecto si está vacío
+                  if (value === '') {
+                    handleConfigChange('passwordMinLength', 6);
+                  } else {
+                    const numValue = parseInt(value);
+                    if (numValue < 6) {
+                      handleConfigChange('passwordMinLength', 6);
+                    } else if (numValue > 50) {
+                      handleConfigChange('passwordMinLength', 50);
+                    }
+                  }
+                }}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-primary-500 focus:border-primary-500"
-                min="6"
-                max="20"
+                placeholder="6-50"
               />
               <p className="text-xs text-gray-500 mt-1">
                 Número mínimo de caracteres requeridos (recomendado: 8+)
@@ -243,12 +263,31 @@ const SecurityConfiguration: React.FC = () => {
                 Intentos fallidos antes de bloqueo
               </label>
               <input
-                type="number"
+                type="text"
                 value={config.accountLockAttempts}
-                onChange={(e) => handleConfigChange('accountLockAttempts', parseInt(e.target.value))}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  // Permitir vacío o solo números
+                  if (value === '' || /^\d+$/.test(value)) {
+                    handleConfigChange('accountLockAttempts', value === '' ? '' : parseInt(value));
+                  }
+                }}
+                onBlur={(e) => {
+                  const value = e.target.value;
+                  // Al perder el foco, validar rangos y asignar valor por defecto si está vacío
+                  if (value === '') {
+                    handleConfigChange('accountLockAttempts', 3);
+                  } else {
+                    const numValue = parseInt(value);
+                    if (numValue < 3) {
+                      handleConfigChange('accountLockAttempts', 3);
+                    } else if (numValue > 10) {
+                      handleConfigChange('accountLockAttempts', 10);
+                    }
+                  }
+                }}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-primary-500 focus:border-primary-500"
-                min="3"
-                max="10"
+                placeholder="3-10"
               />
               <p className="text-xs text-gray-500 mt-1">
                 Número de intentos de login fallidos antes de bloquear temporalmente la cuenta
@@ -260,13 +299,31 @@ const SecurityConfiguration: React.FC = () => {
                 Tiempo de sesión (minutos)
               </label>
               <input
-                type="number"
+                type="text"
                 value={config.sessionTimeout}
-                onChange={(e) => handleConfigChange('sessionTimeout', parseInt(e.target.value))}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  // Permitir vacío o solo números
+                  if (value === '' || /^\d+$/.test(value)) {
+                    handleConfigChange('sessionTimeout', value === '' ? '' : parseInt(value));
+                  }
+                }}
+                onBlur={(e) => {
+                  const value = e.target.value;
+                  // Al perder el foco, validar rangos y asignar valor por defecto si está vacío
+                  if (value === '') {
+                    handleConfigChange('sessionTimeout', 30);
+                  } else {
+                    const numValue = parseInt(value);
+                    if (numValue < 30) {
+                      handleConfigChange('sessionTimeout', 30);
+                    } else if (numValue > 480) {
+                      handleConfigChange('sessionTimeout', 480);
+                    }
+                  }
+                }}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-primary-500 focus:border-primary-500"
-                min="30"
-                max="480"
-                step="30"
+                placeholder="30-480"
               />
               <p className="text-xs text-gray-500 mt-1">
                 Tiempo de inactividad antes de cerrar sesión automáticamente

@@ -21,12 +21,12 @@ export interface GeneralConfig {
 }
 
 export interface SecurityConfig {
-	passwordMinLength: number;
+	passwordMinLength: number | string;
 	passwordRequireSpecial: boolean;
 	passwordRequireUppercase: boolean;
 	passwordRequireNumbers: boolean;
-	accountLockAttempts: number;
-	sessionTimeout: number;
+	accountLockAttempts: number | string;
+	sessionTimeout: number | string;
 	enableTwoFactor: boolean;
 	requireEmailVerification: boolean;
 	adminIpRestriction: string;
@@ -127,6 +127,7 @@ export interface BackupConfig {
 	cloudBucket: string;
 	lastBackupDate: string;
 }
+
 
 /**
  * Servicio para gestionar configuraciones del sistema
@@ -399,6 +400,53 @@ class ConfigurationService {
 	 */
 	async updateBackupConfigs(configs: Partial<BackupConfig>): Promise<ApiResponse> {
 		return this.updateConfigurationsByCategory('backup', configs);
+	}
+
+	/**
+	 * Obtiene configuraciones de descuentos por volumen
+	 */
+	async getVolumeDiscountConfigs(): Promise<ApiResponse<Record<string, any>>> {
+		try {
+			const response = await ApiClient.get<ApiResponse<Record<string, any>>>(
+				API_ENDPOINTS.ADMIN.VOLUME_DISCOUNTS.CONFIGURATION
+			);
+			return response;
+		} catch (error) {
+			console.error("Error al obtener configuraciones de descuentos por volumen:", error);
+			return {
+				status: "error",
+				message: error instanceof Error ? error.message : "Error desconocido",
+				data: {},
+			};
+		}
+	}
+
+	/**
+	 * Actualiza configuraciones de descuentos por volumen
+	 */
+	async updateVolumeDiscountConfigs(configs: {
+		enabled: boolean;
+		stackable: boolean;
+		show_savings_message: boolean;
+		default_tiers: Array<{
+			quantity: number;
+			discount: number;
+			label: string;
+		}>;
+	}): Promise<ApiResponse> {
+		try {
+			const response = await ApiClient.post<ApiResponse>(
+				API_ENDPOINTS.ADMIN.VOLUME_DISCOUNTS.CONFIGURATION,
+				configs
+			);
+			return response;
+		} catch (error) {
+			console.error("Error al actualizar configuraciones de descuentos por volumen:", error);
+			return {
+				status: "error",
+				message: error instanceof Error ? error.message : "Error desconocido",
+			};
+		}
 	}
 }
 
