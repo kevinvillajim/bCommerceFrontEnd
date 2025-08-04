@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Lock, Save, AlertTriangle, Info, RefreshCw, Shield, Key, Clock, UserCheck } from "lucide-react";
+import { Lock, Save, AlertTriangle, Info, RefreshCw, Shield, Key, Clock } from "lucide-react";
 import ConfigurationService, { type SecurityConfig } from "../../../core/services/ConfigurationService";
 
 const SecurityConfiguration: React.FC = () => {
@@ -140,12 +140,12 @@ const SecurityConfiguration: React.FC = () => {
       )}
 
       {/* Panel de información */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+      <div className="bg-primary-50 border border-primary-200 rounded-lg p-4">
         <div className="flex items-start">
-          <Info className="w-5 h-5 text-blue-500 mr-3 mt-1 flex-shrink-0" />
+          <Info className="w-5 h-5 text-primary-500 mr-3 mt-1 flex-shrink-0" />
           <div>
-            <h3 className="font-medium text-blue-900">Configuración de Seguridad</h3>
-            <p className="mt-1 text-blue-800">
+            <h3 className="font-medium text-primary-900">Configuración de Seguridad</h3>
+            <p className="mt-1 text-primary-800">
               Estas configuraciones afectan la seguridad de toda la plataforma. Cambios muy restrictivos
               pueden impactar la experiencia del usuario, mientras que configuraciones muy permisivas 
               pueden comprometer la seguridad.
@@ -354,46 +354,7 @@ const SecurityConfiguration: React.FC = () => {
                   Requerir verificación de email
                 </span>
               </label>
-              
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  checked={config.enableCaptcha}
-                  onChange={(e) => handleConfigChange('enableCaptcha', e.target.checked)}
-                  className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-                />
-                <span className="ml-2 text-sm text-gray-700">
-                  Habilitar CAPTCHA en formularios
-                </span>
-              </label>
             </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Restricciones de Acceso */}
-      <div className="bg-white rounded-lg shadow-sm border p-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
-          <UserCheck className="w-5 h-5 mr-2" />
-          Restricciones de Acceso Administrativo
-        </h3>
-        
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              IPs permitidas para administradores
-            </label>
-            <textarea
-              value={config.adminIpRestriction}
-              onChange={(e) => handleConfigChange('adminIpRestriction', e.target.value)}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-primary-500 focus:border-primary-500"
-              rows={3}
-              placeholder="192.168.1.100&#10;10.0.0.0/24&#10;203.0.113.0/24&#10;&#10;Deje vacío para permitir todas las IPs"
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              Lista de direcciones IP o rangos CIDR permitidos para acceso administrativo. 
-              Una IP por línea. Deje vacío para no restringir.
-            </p>
           </div>
         </div>
       </div>

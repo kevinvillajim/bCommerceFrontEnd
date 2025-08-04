@@ -125,12 +125,12 @@ const ModerationConfiguration: React.FC = () => {
       )}
 
       {/* Panel de información */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+      <div className="bg-primary-50 border border-primary-200 rounded-lg p-4">
         <div className="flex items-start">
-          <Info className="w-5 h-5 text-blue-500 mr-3 mt-1 flex-shrink-0" />
+          <Info className="w-5 h-5 text-primary-500 mr-3 mt-1 flex-shrink-0" />
           <div>
-            <h3 className="font-medium text-blue-900">Acerca de la Moderación Automática</h3>
-            <p className="mt-1 text-blue-800">
+            <h3 className="font-medium text-primary-900">Acerca de la Moderación Automática</h3>
+            <p className="mt-1 text-primary-800">
               El sistema analiza automáticamente los mensajes entre usuarios para detectar patrones sospechosos
               como intercambio de información de contacto fuera de la plataforma. Los valores aquí configurados 
               determinan la sensibilidad de la detección.
