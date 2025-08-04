@@ -80,6 +80,14 @@ export interface ShippingConfig {
 	defaultCost: number;
 }
 
+export interface DevelopmentConfig {
+	mode: boolean;
+	allowAdminOnlyAccess: boolean;
+	bypassEmailVerification: boolean;
+	requireEmailVerification: boolean;
+	emailVerificationTimeout: number;
+}
+
 export interface NotificationConfig {
 	adminNewOrder: boolean;
 	adminNewUser: boolean;
@@ -367,6 +375,50 @@ class ConfigurationService {
 	}
 
 	/**
+	 * Obtiene configuraciones de desarrollo
+	 */
+	async getDevelopmentConfigs(): Promise<ApiResponse<DevelopmentConfig>> {
+		try {
+			const response = await ApiClient.get<ApiResponse<DevelopmentConfig>>(
+				API_ENDPOINTS.ADMIN.CONFIGURATIONS.DEVELOPMENT
+			);
+			return response;
+		} catch (error) {
+			console.error("Error al obtener configuraciones de desarrollo:", error);
+			return {
+				status: "error",
+				message: error instanceof Error ? error.message : "Error desconocido",
+				data: {
+					mode: false,
+					allowAdminOnlyAccess: false,
+					bypassEmailVerification: true,
+					requireEmailVerification: false,
+					emailVerificationTimeout: 24,
+				},
+			};
+		}
+	}
+
+	/**
+	 * Actualiza configuraciones de desarrollo
+	 */
+	async updateDevelopmentConfigs(configs: Partial<DevelopmentConfig>): Promise<ApiResponse> {
+		try {
+			const response = await ApiClient.post<ApiResponse>(
+				API_ENDPOINTS.ADMIN.CONFIGURATIONS.DEVELOPMENT,
+				configs
+			);
+			return response;
+		} catch (error) {
+			console.error("Error al actualizar configuraciones de desarrollo:", error);
+			return {
+				status: "error",
+				message: error instanceof Error ? error.message : "Error desconocido",
+			};
+		}
+	}
+
+	/**
 	 * Obtiene configuraciones de notificaciones
 	 */
 	async getNotificationConfigs(): Promise<ApiResponse<NotificationConfig>> {
@@ -462,6 +514,86 @@ class ConfigurationService {
 			return response;
 		} catch (error) {
 			console.error("Error al actualizar configuraciones de descuentos por volumen:", error);
+			return {
+				status: "error",
+				message: error instanceof Error ? error.message : "Error desconocido",
+			};
+		}
+	}
+
+	/**
+	 * Envía un email personalizado a un usuario (solo admin)
+	 */
+	async sendCustomEmail(data: {
+		user_id: number;
+		subject: string;
+		message: string;
+		email_type?: string;
+	}): Promise<ApiResponse> {
+		try {
+			const response = await ApiClient.post<ApiResponse>(
+				API_ENDPOINTS.ADMIN.CONFIGURATIONS.MAIL_SEND_CUSTOM,
+				data
+			);
+			return response;
+		} catch (error) {
+			console.error("Error al enviar email personalizado:", error);
+			return {
+				status: "error",
+				message: error instanceof Error ? error.message : "Error desconocido",
+			};
+		}
+	}
+
+	/**
+	 * Prueba la configuración de correo
+	 */
+	async testMailConfiguration(): Promise<ApiResponse> {
+		try {
+			const response = await ApiClient.post<ApiResponse>(
+				API_ENDPOINTS.ADMIN.CONFIGURATIONS.MAIL_TEST
+			);
+			return response;
+		} catch (error) {
+			console.error("Error al probar configuración de correo:", error);
+			return {
+				status: "error",
+				message: error instanceof Error ? error.message : "Error desconocido",
+			};
+		}
+	}
+
+	/**
+	 * Obtiene la configuración de correo
+	 */
+	async getMailConfiguration(): Promise<ApiResponse<EmailConfig>> {
+		try {
+			const response = await ApiClient.get<ApiResponse<EmailConfig>>(
+				API_ENDPOINTS.ADMIN.CONFIGURATIONS.MAIL
+			);
+			return response;
+		} catch (error) {
+			console.error("Error al obtener configuración de correo:", error);
+			return {
+				status: "error",
+				message: error instanceof Error ? error.message : "Error desconocido",
+				data: {} as EmailConfig,
+			};
+		}
+	}
+
+	/**
+	 * Actualiza la configuración de correo
+	 */
+	async updateMailConfiguration(config: Partial<EmailConfig>): Promise<ApiResponse> {
+		try {
+			const response = await ApiClient.post<ApiResponse>(
+				API_ENDPOINTS.ADMIN.CONFIGURATIONS.MAIL,
+				config
+			);
+			return response;
+		} catch (error) {
+			console.error("Error al actualizar configuración de correo:", error);
 			return {
 				status: "error",
 				message: error instanceof Error ? error.message : "Error desconocido",

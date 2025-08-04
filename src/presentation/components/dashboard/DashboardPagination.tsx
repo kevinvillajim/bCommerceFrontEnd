@@ -41,62 +41,72 @@ const Pagination: React.FC<PaginationProps> = ({
 	const pages = getPageNumbers();
 
 	return (
-		<div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between px-6 py-3 border-t border-gray-200">
-			<div>
-				<p className="text-sm text-gray-700">
-					Mostrando página <span className="font-medium">{currentPage}</span> de{" "}
-					<span className="font-medium">{totalPages}</span>
-				</p>
-			</div>
-			<div>
-				<nav
-					className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px"
-					aria-label="Pagination"
+		<div className="bg-white px-4 py-3 border-t border-gray-200">
+			<div className="flex items-center justify-between">
+				{/* Previous Button */}
+				<button
+					onClick={() => onPageChange(currentPage - 1)}
+					disabled={currentPage === 1}
+					className="relative inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
 				>
-					{/* Botón Anterior */}
-					<button
-						onClick={() => onPageChange(currentPage - 1)}
-						disabled={currentPage === 1}
-						className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:text-gray-300 disabled:cursor-not-allowed"
-					>
-						<span className="sr-only">Anterior</span>
-						<ChevronLeft className="h-5 w-5" />
-					</button>
-
-					{/* Botones de página */}
-					{pages.map((page, index) =>
-						typeof page === "number" ? (
-							<button
-								key={index}
-								onClick={() => onPageChange(page)}
-								className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-									currentPage === page
-										? "z-10 bg-primary-50 border-primary-500 text-primary-600"
-										: "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
-								}`}
-							>
-								{page}
-							</button>
-						) : (
-							<span
-								key={index}
-								className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm text-gray-700"
-							>
-								{page}
-							</span>
-						)
-					)}
-
-					{/* Botón Siguiente */}
-					<button
-						onClick={() => onPageChange(currentPage + 1)}
-						disabled={currentPage === totalPages}
-						className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:text-gray-300 disabled:cursor-not-allowed"
-					>
-						<span className="sr-only">Siguiente</span>
-						<ChevronRight className="h-5 w-5" />
-					</button>
-				</nav>
+					<ChevronLeft className="w-4 h-4 mr-2" />
+					<span className="hidden sm:inline">Anterior</span>
+				</button>
+				
+				{/* Page Info & Numbers */}
+				<div className="flex items-center space-x-2">
+					{/* Mobile: Simple counter */}
+					<div className="flex sm:hidden items-center">
+						<span className="text-sm text-gray-700">
+							<span className="font-semibold text-primary-600">{currentPage}</span>
+							<span className="mx-1">de</span>
+							<span className="font-semibold">{totalPages}</span>
+						</span>
+					</div>
+					
+					{/* Desktop: Page numbers */}
+					<div className="hidden sm:flex items-center space-x-1">
+						{pages.map((page, index) =>
+							typeof page === "number" ? (
+								<button
+									key={index}
+									onClick={() => onPageChange(page)}
+									className={`relative inline-flex items-center justify-center w-10 h-10 text-sm font-medium rounded-lg transition-colors ${
+										currentPage === page
+											? "bg-primary-600 text-white shadow-sm"
+											: "text-gray-700 bg-white border border-gray-300 hover:bg-gray-50"
+									}`}
+								>
+									{page}
+								</button>
+							) : (
+								<span
+									key={index}
+									className="relative inline-flex items-center justify-center w-10 h-10 text-sm text-gray-400"
+								>
+									{page}
+								</span>
+							)
+						)}
+					</div>
+				</div>
+				
+				{/* Next Button */}
+				<button
+					onClick={() => onPageChange(currentPage + 1)}
+					disabled={currentPage === totalPages}
+					className="relative inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+				>
+					<span className="hidden sm:inline">Siguiente</span>
+					<ChevronRight className="w-4 h-4 ml-2" />
+				</button>
+			</div>
+			
+			{/* Desktop: Additional info */}
+			<div className="hidden sm:block mt-3 text-center">
+				<p className="text-xs text-gray-500">
+					Mostrando página {currentPage} de {totalPages}
+				</p>
 			</div>
 		</div>
 	);

@@ -97,9 +97,21 @@ const RegisterPage: React.FC = () => {
 		// Intentar registrar al usuario
 		const result = await register(userData);
 
-		// Si el registro fue exitoso, redirigir al home
+		// Si el registro fue exitoso, verificar si requiere verificación de email
 		if (result) {
-			navigate("/");
+			// Verificar si el usuario necesita verificar el email
+			if (result.user && !result.user.email_verified_at) {
+				// Redirigir a la página de verificación de email
+				navigate("/verify-email", {
+					state: {
+						email: result.user.email,
+						message: "Registro completado. Revisa tu correo para verificar tu cuenta."
+					}
+				});
+			} else {
+				// Si no requiere verificación, ir al home
+				navigate("/");
+			}
 		}
 	};
 

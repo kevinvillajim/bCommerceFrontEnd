@@ -17,6 +17,10 @@ export const API_ENDPOINTS = {
     UPDATE_PASSWORD: "/auth/password/update",
     VERIFY_EMAIL: (id: string | number, hash: string) =>
       `/email/verify/${id}/${hash}`,
+    // New email verification system
+    VERIFY_EMAIL_TOKEN: "/email-verification/verify",
+    RESEND_VERIFICATION: "/email-verification/resend",
+    VERIFICATION_STATUS: "/email-verification/status",
     CHECK_ROLE: "/user/check-role",
     PASSWORD_VALIDATION_RULES: "/auth/password-validation-rules",
   },
@@ -331,6 +335,10 @@ export const API_ENDPOINTS = {
       SHOW: (key: string) => `/admin/configurations/${key}`,
       UPDATE: "/admin/configurations/update",
       RATINGS: "/admin/configurations/ratings",
+      DEVELOPMENT: "/admin/configurations/development",
+      MAIL: "/admin/configurations/mail",
+      MAIL_TEST: "/admin/configurations/mail/test",
+      MAIL_SEND_CUSTOM: "/admin/configurations/mail/send-custom",
       PASSWORD_VALIDATION_RULES: "/admin/configurations/password-validation-rules",
     },
     CATEGORIES: {
