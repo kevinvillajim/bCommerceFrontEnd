@@ -5,11 +5,13 @@ import {
   TrendingDown,
   Shield,
   Lock,
+  Truck,
 } from "lucide-react";
 import RatingConfiguration from "../../components/admin/RatingConfiguration";
 import VolumeDiscountManager from "../../components/admin/VolumeDiscountManager";
 import ModerationConfiguration from "../../components/admin/ModerationConfiguration";
 import SecurityConfiguration from "../../components/admin/SecurityConfiguration";
+import ShippingConfiguration from "../../components/admin/ShippingConfiguration";
 
 /**
  * Página de configuración del sistema para el panel de administración
@@ -95,6 +97,17 @@ const AdminSettingsPage: React.FC = () => {
 							<TrendingDown className="w-5 h-5 inline-block mr-1" />
 							Descuentos
 						</button>
+						<button
+							onClick={() => setActiveTab("shipping")}
+							className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
+								activeTab === "shipping"
+									? "border-primary-500 text-primary-600"
+									: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+							}`}
+						>
+							<Truck className="w-5 h-5 inline-block mr-1" />
+							Envíos
+						</button>
 					</nav>
 				</div>
 			</div>
@@ -130,6 +143,12 @@ const AdminSettingsPage: React.FC = () => {
 					</div>
 				)}
 
+				{/* Configuración de Envíos */}
+				{activeTab === "shipping" && (
+					<div className="p-6">
+						<ShippingConfiguration />
+					</div>
+				)}
 
 			</div>
 		</div>

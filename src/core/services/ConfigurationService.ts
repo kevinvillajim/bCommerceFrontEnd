@@ -74,6 +74,12 @@ export interface ModerationConfig {
 	lowStockThreshold: number;
 }
 
+export interface ShippingConfig {
+	enabled: boolean;
+	freeThreshold: number;
+	defaultCost: number;
+}
+
 export interface NotificationConfig {
 	adminNewOrder: boolean;
 	adminNewUser: boolean;
@@ -344,6 +350,20 @@ class ConfigurationService {
 	 */
 	async updateModerationConfigs(configs: Partial<ModerationConfig>): Promise<ApiResponse> {
 		return this.updateConfigurationsByCategory('moderation', configs);
+	}
+
+	/**
+	 * Obtiene configuraciones de envío
+	 */
+	async getShippingConfigs(): Promise<ApiResponse<ShippingConfig>> {
+		return this.getConfigurationsByCategory('shipping') as Promise<ApiResponse<ShippingConfig>>;
+	}
+
+	/**
+	 * Actualiza configuraciones de envío
+	 */
+	async updateShippingConfigs(configs: Partial<ShippingConfig>): Promise<ApiResponse> {
+		return this.updateConfigurationsByCategory('shipping', configs);
 	}
 
 	/**
