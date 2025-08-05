@@ -390,9 +390,8 @@ export class AuthService {
 				{email}
 			);
 
-			// Verificar resultado
-			const success =
-				response.data?.success || response.data?.status === "success" || false;
+			// Verificar resultado - debe tener status success y email_sent true
+			const success = response.data?.status === "success" && response.data?.email_sent === true;
 			return success;
 		} catch (error) {
 			console.error("Error al solicitar recuperación de contraseña:", error);

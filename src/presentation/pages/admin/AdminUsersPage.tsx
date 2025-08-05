@@ -316,11 +316,6 @@ const AdminUsersPage: React.FC = () => {
 			),
 		},
 		{
-			key: "lastLogin",
-			header: "Último Acceso",
-			sortable: true,
-		},
-		{
 			key: "registeredDate",
 			header: "Registrado",
 			sortable: true,

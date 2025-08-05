@@ -138,6 +138,9 @@ const AdminNotificationsPage = lazy(
 const AdminShippingPage = lazy(
 	() => import("../presentation/pages/admin/AdminShippingPage")
 );
+const AdminSolicitudesPage = lazy(
+	() => import("../presentation/pages/admin/AdminSolicitudesPage")
+);
 const UserChatPage = lazy(
 	() => import("../presentation/pages/UserChatPage")
 );
@@ -515,6 +518,10 @@ const appRoutes: RouteObject[] = [
 			{
 				path: "sellers",
 				element: <AdminSellersPage />,
+			},
+			{
+				path: "solicitudes",
+				element: <AdminSolicitudesPage />,
 			},
 			// Product Management
 			{

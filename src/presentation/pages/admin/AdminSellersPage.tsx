@@ -19,6 +19,7 @@ import type {Seller} from "../../../core/domain/entities/Seller";
 import SellerAdminService from "../../../core/services/SellerAdminService";
 import StatusUpdateModal from "../../components/admin/StatusUpdateModal";
 import SellerFormModal from "../../components/admin/SellerFormModal";
+import { formatCurrency } from "../../../utils/formatters/formatCurrency";
 
 const AdminSellersPage: React.FC = () => {
 	const [sellers, setSellers] = useState<Seller[]>([]);
@@ -78,7 +79,7 @@ const AdminSellersPage: React.FC = () => {
 			}
 
 			if (verificationFilter !== "all") {
-				filters.verification_level = verificationFilter;
+				filters.is_featured = verificationFilter === "featured";
 			}
 
 			const result = await sellerService.getSellers(filters);
@@ -240,28 +241,47 @@ const AdminSellersPage: React.FC = () => {
 		}
 	};
 
-	// Destacar/Quitar destacado de vendedor
+	// Destacar/Quitar destacado de vendedor y sus productos
 	const toggleFeatured = async (sellerId: number) => {
 		// Buscar el vendedor para determinar el estado actual
 		const seller = sellers.find((s) => s.id === sellerId);
 		if (!seller) return;
 
+		const newFeaturedState = !seller.isFeatured;
 		setLoading(true);
 		setError(null);
+		
 		try {
+			// Actualizar el vendedor
 			await sellerService.updateSeller(sellerId, {
-				is_featured: !seller.isFeatured,
+				is_featured: newFeaturedState,
 			});
+
+			// Si se está marcando como destacado, también actualizar todos sus productos
+			if (newFeaturedState) {
+				try {
+					await sellerService.featureAllSellerProducts(sellerId);
+					console.log(`Todos los productos del vendedor ${sellerId} han sido marcados como destacados`);
+				} catch (productError) {
+					console.error("Error al marcar productos como destacados:", productError);
+					// No lanzamos el error para que el vendedor se marque como destacado aunque falle lo de productos
+				}
+			}
 
 			// Actualizar el estado local
 			setSellers((prevSellers) =>
 				prevSellers.map((seller) => {
 					if (seller.id === sellerId) {
-						return {...seller, isFeatured: !seller.isFeatured};
+						return {...seller, isFeatured: newFeaturedState};
 					}
 					return seller;
 				})
 			);
+
+			// Mostrar mensaje de éxito
+			const actionText = newFeaturedState ? "destacado" : "desmarcado como destacado";
+			alert(`Vendedor ${actionText} correctamente${newFeaturedState ? ". Todos sus productos han sido marcados como destacados." : "."}`);
+			
 		} catch (error) {
 			console.error("Error al actualizar estado destacado:", error);
 			setError(
@@ -332,14 +352,6 @@ const AdminSellersPage: React.FC = () => {
 		fetchSellers();
 	};
 
-	// Formatear moneda
-	const formatCurrency = (amount: number) => {
-		return new Intl.NumberFormat("es-ES", {
-			style: "currency",
-			currency: "EUR",
-			minimumFractionDigits: 2,
-		}).format(amount);
-	};
 
 	// Definir columnas de la tabla
 	const columns = [
@@ -419,37 +431,17 @@ const AdminSellersPage: React.FC = () => {
 			header: "Verificación",
 			sortable: true,
 			render: (seller: Seller) => {
-				let verificationColor = "";
-				let verificationText = "";
-
-				switch (seller.verificationLevel) {
-					case "none":
-						verificationColor =
-							"bg-gray-100 text-gray-800";
-						verificationText = "Sin verificar";
-						break;
-					case "basic":
-						verificationColor =
-							"bg-blue-100 text-blue-800";
-						verificationText = "Básica";
-						break;
-					case "verified":
-						verificationColor =
-							"bg-green-100 text-green-800";
-						verificationText = "Verificada";
-						break;
-					case "premium":
-						verificationColor =
-							"bg-purple-100 text-purple-800";
-						verificationText = "Premium";
-						break;
-				}
-
+				const isFeatured = seller.isFeatured;
+				
 				return (
 					<span
-						className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${verificationColor}`}
+						className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+							isFeatured
+								? "bg-yellow-100 text-yellow-800"
+								: "bg-gray-100 text-gray-800"
+						}`}
 					>
-						{verificationText}
+						{isFeatured ? "Destacado" : "Normal"}
 					</span>
 				);
 			},
@@ -505,8 +497,16 @@ const AdminSellersPage: React.FC = () => {
 			header: "Creado",
 			sortable: true,
 			render: (seller: Seller) => {
-				const date = new Date(seller.createdAt || "");
-				return date.toLocaleDateString();
+				if (!seller.createdAt) return "N/A";
+				
+				const date = new Date(seller.createdAt);
+				if (isNaN(date.getTime())) return "Fecha inválida";
+				
+				return date.toLocaleDateString('es-ES', {
+					year: 'numeric',
+					month: 'short',
+					day: 'numeric'
+				});
 			},
 		},
 		{
@@ -548,7 +548,7 @@ const AdminSellersPage: React.FC = () => {
 						</button>
 					)}
 
-					{/* Botón para alternar destacado */}
+					{/* Botón para verificar/desverificar */}
 					<button
 						onClick={() => toggleFeatured(seller.id)}
 						className={`p-1 rounded-md ${
@@ -556,50 +556,11 @@ const AdminSellersPage: React.FC = () => {
 								? "text-yellow-600 hover:bg-yellow-100"
 								: "text-gray-600 hover:bg-gray-100"
 						}`}
-						title={seller.isFeatured ? "Quitar destacado" : "Destacar vendedor"}
+						title={seller.isFeatured ? "Desmarcar como destacado" : "Verificar"}
 					>
-						<Star size={18} />
+						{seller.isFeatured ? <Star size={18} /> : <ShieldCheck size={18} />}
 					</button>
 
-					{/* Botones para niveles de verificación (menú desplegable en una app real) */}
-					<div className="relative group">
-						<button
-							className="p-1 text-blue-600 hover:bg-blue-100 rounded-md"
-							title="Actualizar nivel de verificación"
-						>
-							<ShieldCheck size={18} />
-						</button>
-
-						{/* En una app real, esto sería un menú desplegable */}
-						<div className="hidden group-hover:block absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200">
-							<div className="py-1">
-								<button
-									onClick={() => updateVerificationLevel(seller.id, "none")}
-									className="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100"
-								>
-									Sin verificar
-								</button>
-								<button
-									onClick={() => updateVerificationLevel(seller.id, "basic")}
-									className="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100"
-								>
-									Verificación básica
-								</button>
-								<button
-									onClick={() => updateVerificationLevel(seller.id, "verified")}
-									className="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100"
-								>
-									Verificado
-								</button>
-								<button
-									onClick={() => updateVerificationLevel(seller.id, "premium")}
-									className="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100"
-								>
-									Verificación premium
-								</button>
-							</div>
-						</div>
-					</div>
 
 					{/* Botón para editar vendedor */}
 					<button
@@ -623,14 +584,6 @@ const AdminSellersPage: React.FC = () => {
 						</svg>
 					</button>
 
-					{/* Ver detalles del vendedor */}
-					<Link
-						to={`/admin/sellers/${seller.id}`}
-						className="p-1 text-primary-600 hover:bg-primary-100 rounded-md"
-						title="Ver detalles"
-					>
-						<Eye size={18} />
-					</Link>
 				</div>
 			),
 		},
@@ -643,13 +596,6 @@ const AdminSellersPage: React.FC = () => {
 					Gestión de Vendedores
 				</h1>
 				<div className="flex space-x-2">
-					<button
-						onClick={handleCreateSeller}
-						className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center"
-					>
-						<UserPlus size={18} className="inline mr-2" />
-						Nuevo Vendedor
-					</button>
 					<button
 						onClick={refreshData}
 						className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
@@ -690,18 +636,16 @@ const AdminSellersPage: React.FC = () => {
 						</select>
 					</div>
 
-					{/* Filtro de Nivel de Verificación */}
+					{/* Filtro de Tipo de Vendedor */}
 					<div className="flex items-center space-x-2">
 						<select
 							className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 							value={verificationFilter}
 							onChange={(e) => setVerificationFilter(e.target.value)}
 						>
-							<option value="all">Todos los Niveles de Verificación</option>
-							<option value="none">Sin verificar</option>
-							<option value="basic">Verificación básica</option>
-							<option value="verified">Verificados</option>
-							<option value="premium">Verificación premium</option>
+							<option value="all">Todos los Tipos</option>
+							<option value="featured">Destacados</option>
+							<option value="normal">Normales</option>
 						</select>
 					</div>
 				</div>

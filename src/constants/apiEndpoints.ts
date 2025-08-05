@@ -13,6 +13,7 @@ export const API_ENDPOINTS = {
     FORGOT_PASSWORD_EMAIL: "/auth/forgot-password-email",
     FORGOT_PASSWORD_TOKEN: "/auth/forgot-password-token",
     RESET_PASSWORD: "/auth/reset-password",
+    VALIDATE_RESET_TOKEN: "/auth/reset-password/validate",
     ME: "/auth/me",
     UPDATE_PASSWORD: "/auth/password/update",
     VERIFY_EMAIL: (id: string | number, hash: string) =>

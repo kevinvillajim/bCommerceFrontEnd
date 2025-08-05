@@ -9,7 +9,6 @@ export interface CreateSellerData {
 	store_name: string;
 	description?: string;
 	status: "pending" | "active";
-	verification_level: "none" | "basic" | "verified" | "premium";
 	commission_rate: number;
 	is_featured: boolean;
 }
@@ -17,7 +16,6 @@ export interface CreateSellerData {
 export interface UpdateSellerData {
 	store_name?: string;
 	description?: string;
-	verification_level?: "none" | "basic" | "verified" | "premium";
 	commission_rate?: number;
 	is_featured?: boolean;
 	user_id?: number; // AGREGADO para compatibilidad con SellerFormModal
@@ -25,7 +23,7 @@ export interface UpdateSellerData {
 
 export interface SellerFilter {
 	status?: string;
-	verification_level?: string;
+	is_featured?: boolean;
 	sort_by?: string;
 	sort_dir?: "asc" | "desc";
 	per_page?: number;
@@ -237,6 +235,27 @@ export class SellerAdminService {
 			throw new Error(response?.message || "Error al obtener usuarios");
 		} catch (error) {
 			console.error("Error al obtener usuarios no vendedores:", error);
+			throw error;
+		}
+	}
+
+	/**
+	 * Marca todos los productos de un vendedor como destacados
+	 */
+	async featureAllSellerProducts(sellerId: number) {
+		try {
+			const response = await ApiClient.post<any>(
+				`/admin/sellers/${sellerId}/feature-products`,
+				{}
+			);
+
+			if (response?.status === "success") {
+				return response.data;
+			}
+
+			throw new Error(response?.message || "Error al destacar productos del vendedor");
+		} catch (error) {
+			console.error(`Error al destacar productos del vendedor ${sellerId}:`, error);
 			throw error;
 		}
 	}

@@ -3,6 +3,7 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import axiosInstance from '../../infrastructure/api/axiosConfig';
 import { API_ENDPOINTS } from '../../constants/apiEndpoints';
 import { useAuth } from '../hooks/useAuth';
+import { AuthService } from '../../core/services/AuthService';
 
 /**
  * Página de restablecimiento de contraseña
@@ -30,25 +31,80 @@ const ResetPasswordPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [passwordRules, setPasswordRules] = useState({
+    minLength: 8,
+    requireSpecial: true,
+    requireUppercase: true,
+    requireNumbers: true,
+    validationMessage: '',
+    requirements: [] as string[]
+  });
   
-  // Validar si hay token y email al cargar
+  // Cargar reglas de validación de contraseñas
   useEffect(() => {
-    if (!token) {
-      setError('No se proporcionó un token válido para restablecer la contraseña');
-    }
-    
-    if (!email) {
-      setError('Es necesario proporcionar un correo electrónico para restablecer la contraseña');
-    }
+    const authService = new AuthService();
+    authService.getPasswordValidationRules().then(rules => {
+      setPasswordRules(rules);
+    }).catch(err => {
+      console.error('Error loading password rules:', err);
+    });
+  }, []);
+
+  // Validar token al cargar la página
+  useEffect(() => {
+    const validateToken = async () => {
+      if (!token || !email) {
+        setError(!token 
+          ? 'No se proporcionó un token válido para restablecer la contraseña'
+          : 'Es necesario proporcionar un correo electrónico para restablecer la contraseña'
+        );
+        return;
+      }
+
+      try {
+        const response = await axiosInstance.post(API_ENDPOINTS.AUTH.VALIDATE_RESET_TOKEN, {
+          token,
+          email
+        });
+
+        if (response.data?.status !== 'success' || !response.data?.valid) {
+          setError('El enlace de restablecimiento ha expirado o es inválido. Por favor, solicita un nuevo enlace.');
+        }
+      } catch (err: any) {
+        console.error('Error validating token:', err);
+        if (err.response?.data?.message) {
+          setError(err.response.data.message);
+        } else {
+          setError('El enlace de restablecimiento ha expirado o es inválido. Por favor, solicita un nuevo enlace.');
+        }
+      }
+    };
+
+    validateToken();
   }, [token, email]);
   
   // Manejar el envío del formulario
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validaciones básicas
-    if (password.length < 8) {
-      setError('La contraseña debe tener al menos 8 caracteres');
+    // Validaciones dinámicas de contraseña
+    if (password.length < passwordRules.minLength) {
+      setError(`La contraseña debe tener al menos ${passwordRules.minLength} caracteres`);
+      return;
+    }
+
+    if (passwordRules.requireUppercase && !/[A-Z]/.test(password)) {
+      setError('La contraseña debe incluir al menos una letra mayúscula');
+      return; 
+    }
+
+    if (passwordRules.requireNumbers && !/[0-9]/.test(password)) {
+      setError('La contraseña debe incluir al menos un número');
+      return;
+    }
+
+    if (passwordRules.requireSpecial && !/[!@#$%^&*]/.test(password)) {
+      setError('La contraseña debe incluir al menos un carácter especial (!@#$%^&*)');
       return;
     }
     
@@ -70,7 +126,7 @@ const ResetPasswordPage: React.FC = () => {
       });
       
       // Verificar si la solicitud fue exitosa
-      if (response.data?.success || response.status === 200) {
+      if (response.data?.status === 'success') {
         setSuccess('Contraseña actualizada correctamente. Serás redirigido para iniciar sesión.');
         
         // Si la API devuelve un token de autenticación, iniciar sesión automáticamente
@@ -204,9 +260,29 @@ const ResetPasswordPage: React.FC = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
-            <p className="mt-1 text-xs text-gray-500">
-              La contraseña debe tener al menos 8 caracteres
-            </p>
+            <div className="mt-2 text-xs text-gray-600">
+              <p className="font-medium mb-1">La contraseña debe incluir:</p>
+              <ul className="list-disc list-inside space-y-1">
+                <li className={password.length >= passwordRules.minLength ? 'text-green-600' : 'text-gray-500'}>
+                  Al menos {passwordRules.minLength} caracteres
+                </li>
+                {passwordRules.requireUppercase && (
+                  <li className={/[A-Z]/.test(password) ? 'text-green-600' : 'text-gray-500'}>
+                    Al menos una letra mayúscula
+                  </li>
+                )}
+                {passwordRules.requireNumbers && (
+                  <li className={/[0-9]/.test(password) ? 'text-green-600' : 'text-gray-500'}>
+                    Al menos un número
+                  </li>
+                )}
+                {passwordRules.requireSpecial && (
+                  <li className={/[!@#$%^&*]/.test(password) ? 'text-green-600' : 'text-gray-500'}>
+                    Al menos un carácter especial (!@#$%^&*)
+                  </li>
+                )}
+              </ul>
+            </div>
           </div>
           
           {/* Campo de confirmación de contraseña */}

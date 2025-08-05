@@ -24,6 +24,7 @@ const AdminLayout: React.FC = () => {
 		"/admin/dashboard": "Dashboard",
 		"/admin/users": "Gestión de Usuarios",
 		"/admin/sellers": "Gestión de Vendedores",
+		"/admin/solicitudes": "Solicitudes de Vendedor",
 		"/admin/products": "Gestión de Productos",
 		"/admin/categories": "Gestión de Categorías",
 		"/admin/orders": "Gestión de Pedidos",

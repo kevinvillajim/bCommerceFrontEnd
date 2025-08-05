@@ -36,10 +36,16 @@ const ForgotPasswordPage: React.FC = () => {
     try {
       const response = await axiosInstance.post(API_ENDPOINTS.AUTH.FORGOT_PASSWORD_EMAIL, { email: emailForReset });
       
-      if (response.data?.success || response.status === 200) {
+      // Verificar la respuesta correcta del backend
+      if (response.data?.status === 'success' && response.data?.email_sent) {
         setSuccess(
           'Se ha enviado un correo electrónico con instrucciones para recuperar tu contraseña. ' +
-          'Por favor revisa tu bandeja de entrada.'
+          'Por favor revisa tu bandeja de entrada y carpeta de spam.'
+        );
+      } else if (response.data?.status === 'success') {
+        // Email no enviado pero proceso exitoso (modo desarrollo)
+        setSuccess(
+          'Solicitud procesada correctamente. Si el correo existe en nuestro sistema, recibirás un enlace de restablecimiento.'
         );
       } else {
         setError('No se pudo procesar la solicitud. Inténtalo de nuevo.');

@@ -1,5 +1,5 @@
 // Service Worker para mejorar rendimiento y experiencia offline
-const CACHE_NAME = "comersia-cache-v1";
+const CACHE_NAME = "comersia-cache-v2";
 
 // Recursos estáticos para cachear en instalación
 const STATIC_ASSETS = [
@@ -29,6 +29,12 @@ const BYPASS_PATTERNS = [
 	'/gsi/',
 	'/oauth/',
 	'/auth/',
+	// Rutas de autenticación que no deben ser cacheadas
+	'/reset-password',
+	'/forgot-password',
+	'/verify-email',
+	'/login',
+	'/register',
 	// Otros servicios externos que podrías usar
 	'facebook.com',
 	'twitter.com',

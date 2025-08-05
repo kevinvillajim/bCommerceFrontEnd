@@ -14,7 +14,7 @@ import {
 	Plus,
 	Search,
 } from "lucide-react";
-import {Link} from "react-router-dom";
+import {Link, useLocation} from "react-router-dom";
 import type {Product} from "../../../core/domain/entities/Product";
 import type {ExtendedProductFilterParams} from "../../types/ProductFilterParams";
 
@@ -27,6 +27,12 @@ import {getProductMainImage} from "../../../utils/imageManager";
 import {formatCurrency} from "../../../utils/formatters/formatCurrency";
 
 const AdminProductsPage: React.FC = () => {
+	const location = useLocation();
+	
+	// Extraer sellerId de la URL si está presente
+	const urlParams = new URLSearchParams(location.search);
+	const sellerIdFromUrl = urlParams.get('sellerId');
+	
 	// Hooks de administración
 	const {
 		loading: productsLoading,
@@ -48,6 +54,7 @@ const AdminProductsPage: React.FC = () => {
 
 	// Estado local para filtros y paginación
 	const [categoryFilter, setCategoryFilter] = useState<number>(0); // 0 = Todas
+	const [sellerFilter, setSellerFilter] = useState<number>(sellerIdFromUrl ? parseInt(sellerIdFromUrl) : 0); // 0 = Todos los vendedores
 	const [statusFilter, setStatusFilter] = useState<string>("all");
 	const [stockFilter, setStockFilter] = useState<string>("all");
 	const [searchTerm, setSearchTerm] = useState<string>("");
@@ -66,7 +73,19 @@ const AdminProductsPage: React.FC = () => {
 	// Cargar datos cuando cambien los filtros
 	useEffect(() => {
 		loadData();
-	}, [categoryFilter, statusFilter, stockFilter, searchTerm, currentPage]);
+	}, [categoryFilter, sellerFilter, statusFilter, stockFilter, searchTerm, currentPage]);
+
+	// Actualizar sellerFilter cuando cambie la URL
+	useEffect(() => {
+		const urlParams = new URLSearchParams(location.search);
+		const newSellerId = urlParams.get('sellerId');
+		const newSellerIdInt = newSellerId ? parseInt(newSellerId) : 0;
+		
+		if (newSellerIdInt !== sellerFilter) {
+			setSellerFilter(newSellerIdInt);
+			setCurrentPage(1); // Reset to first page when filter changes
+		}
+	}, [location.search, sellerFilter]);
 
 	/**
 	 * Carga las categorías
@@ -97,6 +116,10 @@ const AdminProductsPage: React.FC = () => {
 
 			if (categoryFilter && categoryFilter > 0) {
 				filterParams.categoryId = categoryFilter;
+			}
+
+			if (sellerFilter && sellerFilter > 0) {
+				filterParams.sellerId = sellerFilter;
 			}
 
 			// Filtros de estado - SOLO si se especifica explícitamente
@@ -140,6 +163,7 @@ const AdminProductsPage: React.FC = () => {
 	}, [
 		fetchAllProducts,
 		categoryFilter,
+		sellerFilter,
 		statusFilter,
 		stockFilter,
 		searchTerm,
@@ -569,10 +593,16 @@ const AdminProductsPage: React.FC = () => {
 				<div>
 					<h1 className="text-2xl font-bold text-gray-900">
 						Gestión de Productos
+						{sellerFilter > 0 && (
+							<span className="ml-2 text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded-md">
+								Vendedor ID: {sellerFilter}
+							</span>
+						)}
 					</h1>
 					{meta && (
 						<p className="text-sm text-gray-600 mt-1">
 							{meta.total} productos encontrados
+							{sellerFilter > 0 && " para este vendedor"}
 						</p>
 					)}
 				</div>
