@@ -19,19 +19,15 @@ export class ApiClient {
 		config?: AxiosRequestConfig
 	): Promise<T> {
 		try {
-			console.log("ApiClient: Realizando petición GET a:", url);
-
 			// Transformar parámetros camelCase a snake_case para API
 			const transformedParams = this.transformParamsToSnakeCase(params);
-
-			console.log("ApiClient: Parámetros transformados:", transformedParams);
 
 			const response: AxiosResponse = await axiosInstance.get(url, {
 				params: transformedParams,
 				...config,
 			});
 
-			console.log("ApiClient: Respuesta de GET a", url, ":", response.status);
+			// Response received successfully
 
 			// Validar y transformar la respuesta
 			return this.handleApiResponse<T>(response);
@@ -53,16 +49,14 @@ export class ApiClient {
     config?: AxiosRequestConfig
 ): Promise<T> {
     try {
-        console.log("ApiClient: Realizando petición POST a:", url);
+        // POST request
 
         // ✅ ARREGLADO: NO transformar FormData
         const transformedData = data instanceof FormData 
             ? data  // FormData se mantiene tal como está
             : data ? this.transformDataToSnakeCase(data) : undefined;
 
-        if (data instanceof FormData) {
-            console.log('📤 FormData detectado - enviando sin transformación');
-        }
+        // FormData is sent without transformation
 
         const response: AxiosResponse = await axiosInstance.post(
             url,
@@ -70,7 +64,7 @@ export class ApiClient {
             config
         );
 
-        console.log("ApiClient: Respuesta de POST a", url, ":", response.status);
+        // POST response received
 
         // Validar y transformar la respuesta
         return this.handleApiResponse<T>(response);
@@ -92,8 +86,6 @@ export class ApiClient {
 		config?: AxiosRequestConfig
 	): Promise<T> {
 		try {
-			console.log("ApiClient: Realizando petición PUT a:", url);
-
 			// Transformar datos de camelCase a snake_case
 			const transformedData = data
 				? this.transformDataToSnakeCase(data)
@@ -104,8 +96,6 @@ export class ApiClient {
 				transformedData,
 				config
 			);
-
-			console.log("ApiClient: Respuesta de PUT a", url, ":", response.status);
 
 			// Validar y transformar la respuesta
 			return this.handleApiResponse<T>(response);
@@ -127,8 +117,6 @@ export class ApiClient {
 		config?: AxiosRequestConfig
 	): Promise<T> {
 		try {
-			console.log("ApiClient: Realizando petición PATCH a:", url);
-
 			// Transformar datos de camelCase a snake_case
 			const transformedData = data
 				? this.transformDataToSnakeCase(data)
@@ -139,8 +127,6 @@ export class ApiClient {
 				transformedData,
 				config
 			);
-
-			console.log("ApiClient: Respuesta de PATCH a", url, ":", response.status);
 
 			// Validar y transformar la respuesta
 			return this.handleApiResponse<T>(response);
@@ -160,16 +146,7 @@ export class ApiClient {
 		config?: AxiosRequestConfig
 	): Promise<T> {
 		try {
-			console.log("ApiClient: Realizando petición DELETE a:", url);
-
 			const response: AxiosResponse = await axiosInstance.delete(url, config);
-
-			console.log(
-				"ApiClient: Respuesta de DELETE a",
-				url,
-				":",
-				response.status
-			);
 
 			// Validar y transformar la respuesta
 			return this.handleApiResponse<T>(response);
@@ -191,8 +168,6 @@ export class ApiClient {
 		config?: AxiosRequestConfig
 	): Promise<T> {
 		try {
-			console.log("ApiClient: Subiendo archivo a:", url);
-
 			// Las claves del FormData ya deben estar en snake_case
 			const response: AxiosResponse = await axiosInstance.post(url, formData, {
 				headers: {
@@ -200,13 +175,6 @@ export class ApiClient {
 				},
 				...config,
 			});
-
-			console.log(
-				"ApiClient: Respuesta de subida de archivo a",
-				url,
-				":",
-				response.status
-			);
 
 			// Validar y transformar la respuesta
 			return this.handleApiResponse<T>(response);
@@ -228,8 +196,6 @@ export class ApiClient {
 		config?: AxiosRequestConfig
 	): Promise<T> {
 		try {
-			console.log("ApiClient: Actualizando archivo en:", url);
-
 			formData.append("_method", "PUT");
 
 			const response: AxiosResponse = await axiosInstance.post(url, formData, {
@@ -238,13 +204,6 @@ export class ApiClient {
 				},
 				...config,
 			});
-
-			console.log(
-				"ApiClient: Respuesta de actualización de archivo a",
-				url,
-				":",
-				response.status
-			);
 
 			// Validar y transformar la respuesta
 			return this.handleApiResponse<T>(response);
@@ -329,9 +288,7 @@ export class ApiClient {
 				(Array.isArray(response.data.data) ||
 					typeof response.data.data === "object")
 			) {
-				console.log(
-					"ApiClient: Procesando respuesta con estructura anidada data.data"
-				);
+				// Processing nested data.data structure
 				return response.data;
 			}
 

@@ -35,7 +35,7 @@ export class AdminProductService {
 			}
 
 			const response = await ApiClient.get<ProductListResponse>(
-				API_ENDPOINTS.PRODUCTS.LIST,
+				API_ENDPOINTS.ADMIN.PRODUCTS.LIST,
 				cleanParams
 			);
 
@@ -271,7 +271,7 @@ export class AdminProductService {
 			);
 
 			const response = await ApiClient.delete(
-				API_ENDPOINTS.PRODUCTS.DELETE(id)
+				API_ENDPOINTS.ADMIN.PRODUCTS.DELETE(id)
 			);
 
 			console.log("✅ AdminProductService: Producto eliminado:", response);
@@ -293,7 +293,7 @@ export class AdminProductService {
 
 			// Usar PATCH en lugar de PUT para actualizaciones parciales
 			const response = await ApiClient.patch(
-				API_ENDPOINTS.PRODUCTS.UPDATE(id),
+				API_ENDPOINTS.ADMIN.PRODUCTS.PARTIAL_UPDATE(id),
 				{featured: featured}
 			);
 
@@ -319,7 +319,7 @@ export class AdminProductService {
 
 			// Usar PATCH en lugar de PUT para actualizaciones parciales
 			const response = await ApiClient.patch(
-				API_ENDPOINTS.PRODUCTS.UPDATE(id),
+				API_ENDPOINTS.ADMIN.PRODUCTS.PARTIAL_UPDATE(id),
 				{published: published}
 			);
 
@@ -345,7 +345,7 @@ export class AdminProductService {
 
 			// Usar PATCH en lugar de PUT para actualizaciones parciales
 			const response = await ApiClient.patch(
-				API_ENDPOINTS.PRODUCTS.UPDATE(id),
+				API_ENDPOINTS.ADMIN.PRODUCTS.PARTIAL_UPDATE(id),
 				{status: status}
 			);
 
@@ -369,8 +369,7 @@ export class AdminProductService {
 				"📤 AdminProductService: Obteniendo estadísticas de productos"
 			);
 
-			// Este endpoint podría necesitar ser creado en el backend
-			const response = await ApiClient.get("/admin/products/stats");
+			const response = await ApiClient.get(API_ENDPOINTS.ADMIN.PRODUCTS.STATS);
 
 			console.log("✅ AdminProductService: Estadísticas obtenidas:", response);
 			return response;

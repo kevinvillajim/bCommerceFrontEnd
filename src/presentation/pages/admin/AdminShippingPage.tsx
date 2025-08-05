@@ -19,6 +19,7 @@ import {
   Share2,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { formatCurrency } from "../../../utils/formatters/formatCurrency";
 import useAdminShipping from "../../hooks/useAdminShipping";
 
 // Mapeo de estado para los envíos
@@ -490,6 +491,33 @@ const AdminShippingPage: React.FC = () => {
                 </button>
               </div>
 
+              {/* Información adicional del pedido */}
+              {(selectedAdminShipping as any).orderTotal && (
+                <div className="mb-6">
+                  <div className="bg-blue-50 rounded-lg p-4">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <h4 className="text-sm font-medium text-blue-900">Valor del pedido</h4>
+                        <p className="text-lg font-bold text-blue-900">
+                          {formatCurrency((selectedAdminShipping as any).orderTotal)}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm text-blue-700">
+                          {(selectedAdminShipping as any).itemCount || 1} producto(s)
+                        </p>
+                        <Link
+                          to={`/admin/orders/${selectedAdminShipping.orderId}`}
+                          className="text-sm text-blue-600 hover:text-blue-800 underline"
+                        >
+                          Ver pedido completo
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 {/* Información del envío */}
                 <div>
@@ -502,7 +530,7 @@ const AdminShippingPage: React.FC = () => {
                         <p className="text-sm font-medium text-gray-500">
                           Pedido
                         </p>
-                        <p className="text-white text-sm font-medium">
+                        <p className="text-gray-900 text-sm font-medium">
                           {selectedAdminShipping.orderNumber}
                         </p>
                       </div>
@@ -510,7 +538,7 @@ const AdminShippingPage: React.FC = () => {
                         <p className="text-sm font-medium text-gray-500">
                           Transportista
                         </p>
-                        <p className="text-white text-sm font-medium">
+                        <p className="text-gray-900 text-sm font-medium">
                           {selectedAdminShipping.carrier}
                         </p>
                       </div>
@@ -530,7 +558,7 @@ const AdminShippingPage: React.FC = () => {
                         <p className="text-sm font-medium text-gray-500">
                           Fecha de creación
                         </p>
-                        <p className="text-white text-sm font-medium">
+                        <p className="text-gray-900 text-sm font-medium">
                           {formatDate(selectedAdminShipping.createdAt)}
                         </p>
                       </div>
@@ -538,7 +566,7 @@ const AdminShippingPage: React.FC = () => {
                         <p className="text-sm font-medium text-gray-500">
                           Peso
                         </p>
-                        <p className="text-white text-sm font-medium">
+                        <p className="text-gray-900 text-sm font-medium">
                           {selectedAdminShipping.weight || "N/A"} kg
                         </p>
                       </div>
@@ -546,10 +574,50 @@ const AdminShippingPage: React.FC = () => {
                         <p className="text-sm font-medium text-gray-500">
                           Dimensiones
                         </p>
-                        <p className="text-white text-sm font-medium">
+                        <p className="text-gray-900 text-sm font-medium">
                           {selectedAdminShipping.dimensions || "N/A"}
                         </p>
                       </div>
+                      {(selectedAdminShipping as any).shippingCost && (
+                        <div>
+                          <p className="text-sm font-medium text-gray-500">
+                            Costo de envío
+                          </p>
+                          <p className="text-gray-900 text-sm font-medium">
+                            {formatCurrency((selectedAdminShipping as any).shippingCost)}
+                          </p>
+                        </div>
+                      )}
+                      {selectedAdminShipping.estimatedDeliveryDate && (
+                        <div>
+                          <p className="text-sm font-medium text-gray-500">
+                            Entrega estimada
+                          </p>
+                          <p className="text-gray-900 text-sm font-medium">
+                            {formatDate(selectedAdminShipping.estimatedDeliveryDate)}
+                          </p>
+                        </div>
+                      )}
+                      {selectedAdminShipping.deliveredDate && (
+                        <div>
+                          <p className="text-sm font-medium text-gray-500">
+                            Fecha de entrega
+                          </p>
+                          <p className="text-gray-900 text-sm font-medium">
+                            {formatDate(selectedAdminShipping.deliveredDate)}
+                          </p>
+                        </div>
+                      )}
+                      {(selectedAdminShipping as any).notes && (
+                        <div className="col-span-2">
+                          <p className="text-sm font-medium text-gray-500">
+                            Notas especiales
+                          </p>
+                          <p className="text-gray-900 text-sm">
+                            {(selectedAdminShipping as any).notes}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -560,7 +628,7 @@ const AdminShippingPage: React.FC = () => {
                     Dirección de entrega
                   </h3>
                   <div className="bg-gray-50 rounded-lg p-4">
-                    <p className="text-white text-sm font-medium mb-1">
+                    <p className="text-gray-900 text-sm font-medium mb-1">
                       {selectedAdminShipping.customerName}
                     </p>
                     <p className="text-sm text-gray-600 mb-1">
@@ -574,9 +642,21 @@ const AdminShippingPage: React.FC = () => {
                       {selectedAdminShipping.address.postalCode},{" "}
                       {selectedAdminShipping.address.country}
                     </p>
-                    <p className="text-sm text-gray-600">
-                      Teléfono: {selectedAdminShipping.address.phone}
-                    </p>
+                    {selectedAdminShipping.address.phone && (
+                      <p className="text-sm text-gray-600">
+                        Teléfono: {selectedAdminShipping.address.phone}
+                      </p>
+                    )}
+                    {(selectedAdminShipping.address as any).email && (
+                      <p className="text-sm text-gray-600">
+                        Email: {(selectedAdminShipping.address as any).email}
+                      </p>
+                    )}
+                    {(selectedAdminShipping as any).customerEmail && (
+                      <p className="text-sm text-gray-600">
+                        Email: {(selectedAdminShipping as any).customerEmail}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -589,56 +669,135 @@ const AdminShippingPage: React.FC = () => {
                 <div className="relative">
                   <div className="absolute left-5 top-0 bottom-0 w-0.5 bg-gray-300"></div>
                   <ul className="space-y-4">
-                    {[...selectedAdminShipping.trackingHistory]
-                      .reverse()
-                      .map((event) => (
-                        <li key={event.id} className="relative pl-12">
-                          <div className="absolute left-4 w-2 h-2 rounded-full bg-primary-600 ring-4 ring-white z-10"></div>
-                          <div className="bg-gray-50 rounded-lg p-4">
-                            <div className="flex justify-between items-start mb-1">
-                              <p className="text-sm font-medium text-gray-900">
-                                {event.status === "shipped" && (
-                                  <Truck className="inline w-4 h-4 mr-1" />
+                    {selectedAdminShipping.trackingHistory && selectedAdminShipping.trackingHistory.length > 0 ? (
+                      [...selectedAdminShipping.trackingHistory]
+                        .reverse()
+                        .map((event, index) => {
+                          const isLatest = index === 0;
+                          return (
+                            <li key={event.id || index} className="relative pl-12">
+                              <div className={`absolute left-4 w-2 h-2 rounded-full ring-4 ring-white z-10 ${
+                                isLatest ? 'bg-green-600' : 'bg-primary-600'
+                              }`}></div>
+                              <div className={`rounded-lg p-4 ${
+                                isLatest ? 'bg-green-50 border border-green-200' : 'bg-gray-50'
+                              }`}>
+                                <div className="flex justify-between items-start mb-2">
+                                  <p className={`text-sm font-medium ${
+                                    isLatest ? 'text-green-900' : 'text-gray-900'
+                                  }`}>
+                                    {/* Iconos por estado */}
+                                    {(event.status === "shipped" || event.status === "in_transit") && (
+                                      <Truck className="inline w-4 h-4 mr-2 text-blue-600" />
+                                    )}
+                                    {event.status === "delivered" && (
+                                      <CheckCircle className="inline w-4 h-4 mr-2 text-green-600" />
+                                    )}
+                                    {event.status === "failed_delivery" && (
+                                      <AlertTriangle className="inline w-4 h-4 mr-2 text-red-600" />
+                                    )}
+                                    {event.status === "pending" && (
+                                      <Clock className="inline w-4 h-4 mr-2 text-yellow-600" />
+                                    )}
+                                    {event.status === "processing" && (
+                                      <Package className="inline w-4 h-4 mr-2 text-blue-600" />
+                                    )}
+                                    {event.description || shippingStatusMap[event.status]?.label || event.status}
+                                  </p>
+                                  <div className="text-right">
+                                    <p className="text-xs text-gray-500">
+                                      {formatDate(event.timestamp || (event as any).createdAt)}
+                                    </p>
+                                    {isLatest && (
+                                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 mt-1">
+                                        Última actualización
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                                {event.location && (
+                                  <p className="text-sm text-gray-600 flex items-center">
+                                    <MapPin className="w-3 h-3 mr-1 text-gray-400" />
+                                    Ubicación: {event.location}
+                                  </p>
                                 )}
-                                {event.status === "delivered" && (
-                                  <CheckCircle className="inline w-4 h-4 mr-1" />
+                                {(event as any).notes && (
+                                  <p className="text-sm text-gray-600 mt-1 italic">
+                                    Nota: {(event as any).notes}
+                                  </p>
                                 )}
-                                {event.status === "failed_delivery" && (
-                                  <AlertTriangle className="inline w-4 h-4 mr-1" />
-                                )}
-                                {event.description}
-                              </p>
-                              <p className="text-xs text-gray-500">
-                                {formatDate(event.timestamp)}
-                              </p>
-                            </div>
-                            <p className="text-sm text-gray-600">
-                              Ubicación: {event.location}
-                            </p>
-                          </div>
-                        </li>
-                      ))}
+                              </div>
+                            </li>
+                          );
+                        })
+                    ) : (
+                      <li className="text-center py-8">
+                        <div className="text-gray-400 mb-2">
+                          <Package className="w-12 h-12 mx-auto" />
+                        </div>
+                        <p className="text-gray-500 text-sm">
+                          No hay historial de seguimiento disponible aún.
+                        </p>
+                        <p className="text-gray-400 text-xs mt-1">
+                          El historial se actualizará cuando el envío comience su tránsito.
+                        </p>
+                      </li>
+                    )}
                   </ul>
                 </div>
               </div>
 
               {/* Botones de acción */}
-              <div className="mt-6 flex justify-end space-x-4">
-                <button
-                  onClick={() =>
-                    sendAdminTrackingNotification(selectedAdminShipping.id)
-                  }
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-                >
-                  <Share2 size={18} className="inline mr-2" />
-                  Enviar notificación
-                </button>
-                <button
-                  onClick={closeTrackingModal}
-                  className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
-                >
-                  Cerrar
-                </button>
+              <div className="mt-6 flex justify-between items-center">
+                <div className="flex space-x-2">
+                  {/* Botón para avanzar estado si es posible */}
+                  {[
+                    "pending",
+                    "processing",
+                    "ready_to_ship",
+                    "shipped",
+                    "in_transit",
+                    "out_for_delivery",
+                    "failed_delivery",
+                  ].includes(selectedAdminShipping.status) && (
+                    <button
+                      onClick={() =>
+                        advanceAdminShippingStatus(
+                          selectedAdminShipping.id,
+                          selectedAdminShipping.status
+                        )
+                      }
+                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                    >
+                      <ArrowRight size={18} className="inline mr-2" />
+                      Avanzar a {shippingStatusMap[getNextStatus(selectedAdminShipping.status)]?.label}
+                    </button>
+                  )}
+                  <Link
+                    to={`/admin/orders/${selectedAdminShipping.orderId}`}
+                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                  >
+                    <ShoppingBag size={18} className="inline mr-2" />
+                    Ver pedido completo
+                  </Link>
+                </div>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() =>
+                      sendAdminTrackingNotification(selectedAdminShipping.id)
+                    }
+                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                  >
+                    <Share2 size={18} className="inline mr-2" />
+                    Notificar cliente
+                  </button>
+                  <button
+                    onClick={closeTrackingModal}
+                    className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors"
+                  >
+                    Cerrar
+                  </button>
+                </div>
               </div>
             </div>
           </div>

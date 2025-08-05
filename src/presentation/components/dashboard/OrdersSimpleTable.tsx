@@ -1,15 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import DataTable from './dataTable/DataTable';
+import { formatCurrency } from '../../../utils/formatters/formatCurrency';
 import type { Order, Column, BaseTableProps, TableHeaderProps } from '../../types/dashboard/dataTable/DataTableTypes';
-
-// Utility function for formatting currency
-const formatCurrency = (amount: number): string => {
-  return new Intl.NumberFormat('es-ES', {
-    style: 'currency',
-    currency: 'EUR'
-  }).format(amount);
-};
 
 // Define the columns for the orders table
 const getOrderColumns = (): Column<Order>[] => [

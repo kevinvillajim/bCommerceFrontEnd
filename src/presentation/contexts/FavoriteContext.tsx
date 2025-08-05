@@ -94,10 +94,14 @@ export const FavoriteProvider: React.FC<FavoriteProviderProps> = ({
 		}
 	}, [isAuthenticated]);
 
-	// ✅ EFECTO SIMPLE - SOLO CUANDO CAMBIA isAuthenticated
+	// Initialize context but don't auto-fetch favorites (use header-counters for count)
 	useEffect(() => {
-		fetchFavorites();
-	}, [isAuthenticated, fetchFavorites]);
+		if (!isAuthenticated) {
+			setFavorites([]);
+			setFavoriteCount(0);
+		}
+		// Don't auto-fetch - only fetch when explicitly requested (e.g., FavoritePage)
+	}, [isAuthenticated]);
 
 	// ✅ CHECK SINCRÓNICO
 	const checkIsFavorite = useCallback(

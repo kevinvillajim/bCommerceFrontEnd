@@ -351,7 +351,7 @@ export const API_ENDPOINTS = {
       DELETE: (id: string | number) => `/admin/categories/${id}`, // RUTA ADMIN ESPECÍFICA
     },
     PRODUCTS: {
-      LIST: "/products", // Admin usa la misma lista pública pero con permisos especiales
+      LIST: "/admin/products", // NUEVA RUTA: Admin con datos completos
       DETAILS: (id: string | number) => `/products/${id}`,
       CREATE: "/admin/products", // RUTA ADMIN ESPECÍFICA
       UPDATE: (id: string | number) => `/admin/products/${id}`, // RUTA ADMIN ESPECÍFICA

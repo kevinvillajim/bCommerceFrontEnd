@@ -1,19 +1,13 @@
 import React from "react";
 import {Link} from "react-router-dom";
 import DataTable from "./dataTable/DataTable";
+import {formatCurrency} from "../../../utils/formatters/formatCurrency";
 import type {
 	Product,
 	Column,
 	BaseTableProps,
 	TableHeaderProps,
 } from "../../types/dashboard/dataTable/DataTableTypes";
-
-const formatCurrency = (amount: number): string => {
-	return new Intl.NumberFormat("es-ES", {
-		style: "currency",
-		currency: "EUR",
-	}).format(amount);
-};
 
 // Columnas para la tabla de productos más vendidos
 const getTopProductColumns = (): Column<Product>[] => [

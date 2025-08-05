@@ -55,13 +55,13 @@ function shouldBypass(url) {
 
 // Instalar service worker
 self.addEventListener("install", (event) => {
-	console.log("[ServiceWorker] Instalando");
+	// ServiceWorker installing
 
 	event.waitUntil(
 		caches
 			.open(CACHE_NAME)
 			.then((cache) => {
-				console.log("[ServiceWorker] Cacheando recursos estáticos");
+				// Caching static resources
 				return cache.addAll(STATIC_ASSETS);
 			})
 			.then(() => self.skipWaiting())
@@ -70,7 +70,7 @@ self.addEventListener("install", (event) => {
 
 // Activar service worker (limpiar cachés antiguas)
 self.addEventListener("activate", (event) => {
-	console.log("[ServiceWorker] Activando");
+	// ServiceWorker activating
 
 	const cacheWhitelist = [CACHE_NAME];
 
@@ -91,7 +91,7 @@ self.addEventListener("activate", (event) => {
 				);
 			})
 			.then(() => {
-				console.log("[ServiceWorker] Reclamando clientes");
+				// Claiming clients
 				return self.clients.claim();
 			})
 	);
@@ -103,19 +103,19 @@ self.addEventListener("fetch", (event) => {
 	
 	// ✅ VERIFICACIÓN 1: Solo GET requests
 	if (event.request.method !== "GET") {
-		console.log(`[ServiceWorker] Ignorando método ${event.request.method}: ${url.href}`);
+		// Ignoring non-GET request
 		return;
 	}
 
 	// ✅ VERIFICACIÓN 2: Verificar si debe ser ignorado
 	if (shouldBypass(url)) {
-		console.log(`[ServiceWorker] BYPASSING (external): ${url.href}`);
+		// Bypassing external URL
 		return; // ← IMPORTANTE: No interceptar
 	}
 
 	// ✅ VERIFICACIÓN 3: Solo nuestro origen
 	if (url.origin !== self.location.origin) {
-		console.log(`[ServiceWorker] Ignorando origen externo: ${url.origin}`);
+		// Ignoring external origin
 		return;
 	}
 
@@ -124,7 +124,7 @@ self.addEventListener("fetch", (event) => {
 		return;
 	}
 
-	console.log(`[ServiceWorker] Interceptando: ${url.href}`);
+	// ServiceWorker intercepting request
 
 	// Estrategia para recursos estáticos
 	if (STATIC_ASSETS.some((asset) => url.pathname.endsWith(asset))) {

@@ -17,6 +17,7 @@ import {
 	AlertTriangle,
 } from "lucide-react";
 import {Link} from "react-router-dom";
+import {formatCurrency} from "../../../utils/formatters/formatCurrency";
 import type {
 	AdminOrderUI,
 } from "../../../core/adapters/AdminOrderServiceAdapter";
@@ -270,14 +271,6 @@ const AdminOrdersPage: React.FC = () => {
 		}
 	};
 
-	// Formatear moneda
-	const formatCurrency = (amount: number) => {
-		return new Intl.NumberFormat("es-ES", {
-			style: "currency",
-			currency: "EUR",
-			minimumFractionDigits: 2,
-		}).format(amount);
-	};
 
 	// Formatear fecha
 	const formatDate = (dateString: string | undefined) => {

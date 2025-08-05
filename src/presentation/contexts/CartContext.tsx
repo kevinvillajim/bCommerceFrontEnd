@@ -349,22 +349,11 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 		}, 100);
 	}, [fetchCartFromAPI, calculateTotalItems]);
 
-	// Initialize cart on mount or when auth state changes
+	// Initialize cart only when needed (not on mount)
 	useEffect(() => {
-		if (
-			isInitialized.current &&
-			isAuthenticatedRef.current === isAuthenticated
-		) {
-			return;
-		}
-
-		fetchCart();
+		// No auto-fetch on mount - only fetch when explicitly requested
 		isInitialized.current = true;
-	}, [isAuthenticated, fetchCart]);
-
-	useEffect(() => {
-		fetchCart();
-	}, [fetchCart]);
+	}, [isAuthenticated]);
 
 	// Update derived states when cart changes
 	useEffect(() => {

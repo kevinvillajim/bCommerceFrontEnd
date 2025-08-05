@@ -68,6 +68,22 @@ const CartPage: React.FC = () => {
 		context: 'CartPage'
 	});
 
+	// Fetch cart data when component mounts
+	useEffect(() => {
+		const loadCartData = async () => {
+			setIsLoading(true);
+			try {
+				await fetchCart();
+			} catch (error) {
+				console.error('Error loading cart data:', error);
+			} finally {
+				setIsLoading(false);
+			}
+		};
+
+		loadCartData();
+	}, [fetchCart]);
+
 	// Hook para actualizaciones optimistas
 	const {
 		optimisticCartAdd,

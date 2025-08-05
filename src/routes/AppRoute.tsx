@@ -141,6 +141,18 @@ const AdminShippingPage = lazy(
 const AdminSolicitudesPage = lazy(
 	() => import("../presentation/pages/admin/AdminSolicitudesPage")
 );
+const AdminProductCreatePage = lazy(
+	() => import("../presentation/pages/admin/AdminProductCreatePage")
+);
+const AdminProductEditPage = lazy(
+	() => import("../presentation/pages/admin/AdminProductEditPage")
+);
+const AdminTestPage = lazy(
+	() => import("../presentation/pages/admin/AdminTestPage")
+);
+const AdminProductsMinimal = lazy(
+	() => import("../presentation/pages/admin/AdminProductsMinimal")
+);
 const UserChatPage = lazy(
 	() => import("../presentation/pages/UserChatPage")
 );
@@ -527,6 +539,22 @@ const appRoutes: RouteObject[] = [
 			{
 				path: "products",
 				element: <AdminProductsPage />,
+			},
+			{
+				path: "products/create",
+				element: <AdminProductCreatePage />,
+			},
+			{
+				path: "products/edit/:id",
+				element: <AdminProductEditPage />,
+			},
+			{
+				path: "test",
+				element: <AdminTestPage />,
+			},
+			{
+				path: "products-minimal",
+				element: <AdminProductsMinimal />,
 			},
 			{
 				path: "categories",

@@ -15,6 +15,7 @@ import {
 	Clock,
 	ExternalLink,
 } from "lucide-react";
+import {formatCurrency} from "../../../utils/formatters/formatCurrency";
 import ShippingServiceAdapter from "../../../core/adapters/ShippingServiceAdapter";
 import type {
 	ShippingItem,
@@ -625,10 +626,7 @@ const SellerShippingDetailsPage: React.FC = () => {
 										Coste de envío:
 									</label>
 									<div className="mt-1 text-gray-900">
-										{new Intl.NumberFormat("es-ES", {
-											style: "currency",
-											currency: "EUR",
-										}).format(shipping.shippingCost)}
+										{formatCurrency(shipping.shippingCost)}
 									</div>
 								</div>
 							)}

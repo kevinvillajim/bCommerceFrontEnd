@@ -53,17 +53,10 @@ const Header: React.FC<HeaderProps> = ({
 	// ✅ USAR EL HOOK UNIFICADO OPTIMIZADO
 	const {
 		counters,
-		loading: countersLoading,
 		error: countersError,
 	} = useHeaderCounters();
 
 	const {cartItemCount, favoriteCount, notificationCount} = counters;
-	console.log("Header: Contadores unificados", {
-		cartItemCount,
-		favoriteCount,
-		notificationCount,
-		loading: countersLoading,
-	});
 
 	// Cerrar los menús al hacer clic fuera de ellos
 	useEffect(() => {

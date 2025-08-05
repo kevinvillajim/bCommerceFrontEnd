@@ -222,7 +222,9 @@ export const useAdminProducts = () => {
 				}
 
 				console.log("🌐 useAdminProducts: Obteniendo productos desde API");
+				console.log("📊 useAdminProducts: FilterParams enviados:", filterParams);
 				const response = await getAllProductsUseCase.execute(filterParams);
+				console.log("📥 useAdminProducts: Respuesta completa recibida:", response);
 
 				if (response) {
 					let adaptedData: Product[] = [];

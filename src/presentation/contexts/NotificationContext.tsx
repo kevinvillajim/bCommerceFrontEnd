@@ -338,13 +338,9 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 		[isAuthenticated, notifications, unreadCount, clearNotificationCache]
 	);
 
-	// Inicialización SIMPLIFICADA
+	// Initialize context but don't auto-fetch notifications (use header-counters for count)
 	useEffect(() => {
-		if (isAuthenticated && !isInitialized.current) {
-			fetchNotifications(1);
-			refreshUnreadCount();
-			isInitialized.current = true;
-		} else if (!isAuthenticated) {
+		if (!isAuthenticated) {
 			// Reset cuando no está autenticado
 			setNotifications([]);
 			setUnreadCount(0);
@@ -353,8 +349,11 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 			setHasMore(false);
 			isInitialized.current = false;
 			clearNotificationCache();
+		} else {
+			isInitialized.current = true;
 		}
-	}, [isAuthenticated]); // ✅ SOLO depende de isAuthenticated
+		// Don't auto-fetch - only fetch when explicitly requested (e.g., NotificationPage)
+	}, [isAuthenticated]);
 
 	// Obtener URL de destino según el tipo de notificación
 	const getNotificationUrl = useCallback(

@@ -102,12 +102,16 @@ const AdminProductsPage: React.FC = () => {
 	 * Carga los productos con filtros aplicados
 	 */
 	const loadData = useCallback(async () => {
+		console.log("🚀 AdminProductsPage: Iniciando loadData...");
+		console.log("📍 AdminProductsPage: Página actual:", currentPage);
+		console.log("📍 AdminProductsPage: Items por página:", itemsPerPage);
 		try {
 			const filterParams: ExtendedProductFilterParams = {
 				limit: itemsPerPage,
 				offset: (currentPage - 1) * itemsPerPage,
 				// NO incluir filtros por defecto - admin debe ver TODOS los productos
 			};
+			console.log("🔧 AdminProductsPage: FilterParams inicial:", filterParams);
 
 			// Aplicar filtros
 			if (searchTerm) {
@@ -359,7 +363,7 @@ const AdminProductsPage: React.FC = () => {
 							)}
 						</div>
 						<div className="text-xs text-gray-500">
-							ID: {product.id} - SKU: {product.sku || "N/A"}
+							ID: {product.id}
 						</div>
 					</div>
 				</div>
@@ -380,18 +384,23 @@ const AdminProductsPage: React.FC = () => {
 			key: "seller",
 			header: "Vendedor",
 			sortable: true,
-			render: (product: Product) => (
-				<div className="text-sm">
-					<div className="font-medium text-gray-900">
-						{product.seller?.name ||
-							product.user?.name ||
-							"Usuario desconocido"}
+			render: (product: Product) => {
+				// Con la nueva API, los datos de seller y user vienen completos
+				const storeName = product.seller?.store_name || product.seller?.name || 'Tienda desconocida';
+				const userName = product.user?.name || 'Usuario desconocido';
+				const sellerId = product.seller_id || product.seller?.id;
+				
+				return (
+					<div className="text-sm">
+						<div className="font-medium text-gray-900">
+							{storeName}
+						</div>
+						<div className="text-xs text-gray-500">
+							Vendedor ID: {sellerId || 'N/A'} - {userName}
+						</div>
 					</div>
-					<div className="text-xs text-gray-500">
-						ID: {product.sellerId || product.userId || "N/A"}
-					</div>
-				</div>
-			),
+				);
+			},
 		},
 		{
 			key: "price",
@@ -485,27 +494,44 @@ const AdminProductsPage: React.FC = () => {
 			key: "rating",
 			header: "Valoración",
 			sortable: true,
-			render: (product: Product) => (
-				<div className="flex items-center">
-					{(product.rating ?? 0) > 0 ? (
-						<>
-							<Star className="h-4 w-4 text-yellow-500 mr-1" />
-							<span>{(product.rating ?? 0).toFixed(1)}</span>
-							<span className="text-xs text-gray-500 ml-1">
-								({product.ratingCount ?? 0})
-							</span>
-						</>
-					) : (
-						<span className="text-xs text-gray-500">Sin valoraciones</span>
-					)}
-				</div>
-			),
+			render: (product: Product) => {
+				// Con la nueva API, usar los ratings calculados directamente
+				const displayRating = (product as any).calculated_rating ?? product.rating ?? 0;
+				const displayCount = (product as any).calculated_rating_count ?? product.ratingCount ?? (product as any).rating_count ?? 0;
+				
+				return (
+					<div className="flex items-center">
+						{displayRating > 0 ? (
+							<>
+								<Star className="h-4 w-4 text-yellow-500 mr-1" />
+								<span>{parseFloat(displayRating).toFixed(1)}</span>
+								<span className="text-xs text-gray-500 ml-1">
+									({displayCount})
+								</span>
+							</>
+						) : (
+							<span className="text-xs text-gray-500">Sin valoraciones</span>
+						)}
+					</div>
+				);
+			},
 		},
 		{
 			key: "sales",
 			header: "Ventas",
 			sortable: true,
-			render: (product: Product) => <span>{product.salesCount || 0} uds.</span>,
+			render: (product: Product) => {
+				// Con la nueva API, los datos de ventas vienen calculados
+				const salesCount = (product as any).sales_count ?? 0;
+				const totalQuantity = (product as any).total_quantity_sold ?? 0;
+				
+				return (
+					<div className="text-sm">
+						<div className="font-medium">{salesCount} órdenes</div>
+						<div className="text-xs text-gray-500">{totalQuantity} uds.</div>
+					</div>
+				);
+			},
 		},
 		{
 			key: "actions",
