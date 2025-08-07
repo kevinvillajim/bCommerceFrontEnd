@@ -25,6 +25,18 @@ export interface AdminActionResponse {
 	};
 }
 
+export interface AdminRatingStatsResponse {
+	status: string;
+	message?: string;
+	data: {
+		total: number;
+		pending: number;
+		approved: number;
+		rejected: number;
+		flagged?: number;
+	};
+}
+
 export interface AdminRatingFilters {
 	status?: string;
 	type?: string;
@@ -117,9 +129,11 @@ export class AdminRatingService {
 	/**
 	 * Obtiene estadísticas generales de valoraciones
 	 */
-	async getRatingStats(): Promise<any> {
+	async getRatingStats(): Promise<AdminRatingStatsResponse> {
 		try {
-			const response = await ApiClient.get(API_ENDPOINTS.ADMIN.RATINGS.STATS);
+			const response = await ApiClient.get<AdminRatingStatsResponse>(
+				API_ENDPOINTS.ADMIN.RATINGS.STATS
+			);
 			return response;
 		} catch (error) {
 			console.error("Error al obtener estadísticas de valoraciones:", error);

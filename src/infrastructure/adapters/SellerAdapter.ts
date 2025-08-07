@@ -12,16 +12,20 @@ export class SellerAdapter {
 			id: backendData.id,
 			userId: backendData.user_id,
 			storeName: backendData.store_name,
-			description: backendData.description || undefined,
+			description: backendData.description,
 			status: backendData.status,
-			verificationLevel: backendData.verification_level,
-			commissionRate: backendData.commission_rate,
+			verificationLevel: backendData.verification_level || "none",
+			commissionRate: backendData.commission_rate || 0,
 			totalSales: backendData.total_sales || 0,
 			isFeatured: backendData.is_featured || false,
 			averageRating: backendData.average_rating,
-			totalRatings: backendData.total_ratings,
+			totalRatings: backendData.total_ratings || 0,
 			createdAt: backendData.created_at,
 			updatedAt: backendData.updated_at,
+			// Campos adicionales del API actual
+			userName: backendData.user_name,
+			email: backendData.email,
+			displayName: backendData.display_name,
 		};
 	}
 

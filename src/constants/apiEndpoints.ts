@@ -90,6 +90,12 @@ export const API_ENDPOINTS = {
     EMPTY: "/cart/empty",
     VOLUME_DISCOUNT_INFO: (productId: string | number) =>
       `/cart/volume-discount-info/${productId}`,
+    // ✅ NUEVO: Endpoints para códigos de descuento del carrito
+    DISCOUNT: {
+      VALIDATE: "/cart/discount/validate",
+      APPLY: "/cart/discount/apply", 
+      REMOVE: "/cart/discount/remove",
+    },
   },
 
   // ✅ NUEVO: Volume Discounts
@@ -251,6 +257,7 @@ export const API_ENDPOINTS = {
   DISCOUNTS: {
     VALIDATE: "/discounts/validate",
     APPLY: "/discounts/apply",
+    MY_CODES: "/discounts/my-codes",
   },
 
   // Notifications

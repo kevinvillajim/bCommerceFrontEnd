@@ -14,6 +14,9 @@ export interface Rating {
 	type: "product" | "seller" | "user";
 	createdAt?: string;
 	updatedAt?: string;
+	// Campos alternativos para compatibilidad con diferentes formatos del backend
+	created_at?: string;
+	updated_at?: string;
 	user?: {
 		id: number;
 		name: string;

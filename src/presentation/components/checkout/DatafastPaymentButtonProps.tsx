@@ -4,6 +4,7 @@ import {useCart} from "../../hooks/useCart";
 import {useAuth} from "../../hooks/useAuth";
 import {DatafastService} from "../../../core/services/DatafastService";
 import {CheckoutService} from "../../../core/services/CheckoutService";
+import {CheckoutItemsService} from "../../../infrastructure/services/CheckoutItemsService";
 import type {DatafastCheckoutRequest} from "../../../core/services/DatafastService";
 import type {PaymentMethod, PaymentInfo} from "../../../core/services/CheckoutService";
 import {NotificationType} from "../../contexts/CartContext";
@@ -29,7 +30,7 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 	onError,
 }) => {
 	const navigate = useNavigate();
-	const {cart, clearCart, showNotification} = useCart();
+	const {cart, clearCart, showNotification, appliedDiscount} = useCart();
 	const {user} = useAuth();
 	const [isLoading, setIsLoading] = useState(false);
 	const [showWidget, setShowWidget] = useState(false);
@@ -293,49 +294,15 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 			const sellerId = cart ? CheckoutService.getSellerIdFromCart(cart) : null;
 			console.log("🏪 Seller ID obtenido (DATAFAST):", sellerId);
 
-			// ✅ CORREGIDO: Construir items del carrito con precios válidos
-			const items = cart.items.map(item => {
-				console.log("🔍 DEBUGGING ITEM INDIVIDUAL:", {
-					item: item,
-					productId: item.productId,
-					quantity: item.quantity,
-					item_price: item.price,
-					item_subtotal: item.subtotal,
-					product_final_price: item.product?.final_price,
-					product_price: item.product?.price,
-					complete_product: item.product
-				});
-				
-				// Priorizar precios válidos: product.final_price > product.price > item.price > subtotal/quantity
-				let price = 0;
-				
-				if (item.product?.final_price && item.product.final_price > 0) {
-					price = item.product.final_price;
-				} else if (item.product?.price && item.product.price > 0) {
-					price = item.product.price;
-				} else if (item.price && item.price > 0) {
-					price = item.price;
-				} else if (item.subtotal && item.quantity > 0) {
-					price = item.subtotal / item.quantity;
-				} else {
-					console.warn(`⚠️ No se pudo determinar precio para producto ${item.productId}, usando 1.00`);
-					price = 1.00; // Precio mínimo como fallback
-				}
-				
-				console.log("🔍 PRECIO FINAL CALCULADO:", price);
-				
-				return {
-					product_id: item.productId,
-					quantity: item.quantity,
-					price: price
-				};
-			});
+			// ✅ USAR MISMA LÓGICA DE CÁLCULO QUE CHECKOUT PAGE
+			const checkoutItems = CheckoutItemsService.prepareItemsForCheckout(cart.items);
+			console.log("🛒 Items formateados con descuentos aplicados (DATAFAST):", JSON.stringify(checkoutItems, null, 2));
 
-			console.log("🛒 Items formateados para backend (DATAFAST):", JSON.stringify(items, null, 2));
+			console.log("🛒 Items formateados para backend (DATAFAST):", JSON.stringify(checkoutItems, null, 2));
 
 			const testCheckoutData = {
 				payment: {
-					method: "transfer" as PaymentMethod,
+					method: "datafast" as PaymentMethod,
 				} as PaymentInfo,
 				shippingAddress: {
 					name: formData.given_name + " " + formData.surname,
@@ -347,7 +314,9 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 					phone: formData.phone || "0999999999",
 				},
 				seller_id: sellerId || undefined,
-				items: items
+				items: checkoutItems, // ✅ USAR ITEMS CON DESCUENTOS CALCULADOS
+				// ✅ NUEVO: Incluir código de descuento aplicado
+				discount_code: appliedDiscount?.discountCode.code || null
 			};
 
 			console.log("📦 Datos completos de checkout (DATAFAST):", JSON.stringify(testCheckoutData, null, 2));
@@ -435,34 +404,12 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 				const sellerId = cart ? CheckoutService.getSellerIdFromCart(cart) : null;
 				console.log("Seller ID obtenido:", sellerId);
 				
-				// ✅ CORREGIDO: Construir items del carrito con precios válidos solo si cart existe
-				const items = cart ? cart.items.map(item => {
-					// Priorizar precios válidos: product.final_price > product.price > item.price > subtotal/quantity
-					let price = 0;
-					
-					if (item.product?.final_price && item.product.final_price > 0) {
-						price = item.product.final_price;
-					} else if (item.product?.price && item.product.price > 0) {
-						price = item.product.price;
-					} else if (item.price && item.price > 0) {
-						price = item.price;
-					} else if (item.subtotal && item.quantity > 0) {
-						price = item.subtotal / item.quantity;
-					} else {
-						console.warn(`⚠️ No se pudo determinar precio para producto ${item.productId}, usando 1.00`);
-						price = 1.00; // Precio mínimo como fallback
-					}
-					
-					return {
-						product_id: item.productId,
-						quantity: item.quantity,
-						price: price
-					};
-				}) : [];
+				// ✅ USAR MISMA LÓGICA DE CÁLCULO QUE CHECKOUT PAGE
+				const items = cart ? CheckoutItemsService.prepareItemsForCheckout(cart.items) : [];
 				
 				const checkoutRequestData = {
 					payment: {
-						method: "transfer" as PaymentMethod,
+						method: "datafast" as PaymentMethod,
 					} as PaymentInfo,
 					shippingAddress: {
 						name: formData.given_name + " " + formData.surname,

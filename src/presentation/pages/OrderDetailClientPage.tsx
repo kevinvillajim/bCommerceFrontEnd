@@ -1,6 +1,6 @@
-import React, {useState, useEffect} from "react";
+import React, {useState, useEffect, useMemo} from "react";
 import {useParams, useNavigate, Link} from "react-router-dom";
-import {ArrowLeft, FileText, Truck, Package} from "lucide-react";
+import {ArrowLeft, FileText, Truck, Package, Tag} from "lucide-react";
 import {formatCurrency} from "../../utils/formatters/formatCurrency";
 import {formatDate} from "../../utils/formatters/formatDate";
 import OrderStatusBadge from "../components/orders/OrderStatusBadge";
@@ -54,39 +54,48 @@ const OrderDetailClientPage: React.FC = () => {
 		}
 	};
 
-	// Función auxiliar para calcular subtotales
-	const calculateSubtotal = () => {
-		if (!order || !order.items || order.items.length === 0) {
-			console.log("💰 calculateSubtotal: No hay items o order");
-			return 0;
-		}
+	// ✅ CORREGIDO: Priorizar pricing_breakdown si está disponible
+	const orderTotals = useMemo(() => {
+		if (!order) return null;
 		
-		console.log("💰 calculateSubtotal - Items para calcular:", order.items);
-		const subtotal = order.items.reduce((sum, item, index) => {
-			const itemTotal = item.price * item.quantity;
-			console.log(`💰 Item ${index + 1}: ${item.product_name} - ${item.price} × ${item.quantity} = ${itemTotal}`);
-			return sum + itemTotal;
-		}, 0);
+		console.log("🔍 OrderDetailClientPage - Analizando totales:");
+		console.log("📊 order.pricing_breakdown:", order.pricing_breakdown);
+		console.log("📊 order.original_total (directo):", order.original_total);
+		console.log("📊 order.total_discounts (directo):", order.total_discounts);
+		console.log("📊 order.seller_discount_savings (directo):", order.seller_discount_savings);
 		
-		console.log("💰 Subtotal total calculado:", subtotal);
-		return subtotal;
-	};
+		// Priorizar datos del pricing_breakdown si están disponibles
+		const pricingData = order.pricing_breakdown || {};
+		
+		const totals = {
+			// ✅ Usar subtotal_with_discounts del pricing_breakdown
+			subtotal_products: pricingData.subtotal_with_discounts ?? order.subtotal_products ?? 0,
+			// ✅ Usar subtotal_original del pricing_breakdown para el precio original
+			original_total: pricingData.subtotal_original ?? order.original_total ?? 0,
+			// ✅ Usar valores del pricing_breakdown
+			iva_amount: pricingData.iva_amount ?? order.iva_amount ?? 0,
+			shipping_cost: pricingData.shipping_cost ?? order.shipping_cost ?? 0,
+			// ✅ Usar final_total del pricing_breakdown
+			total: pricingData.final_total ?? order.total ?? 0,
+			// ✅ Descuentos del pricing_breakdown
+			seller_discount_savings: pricingData.seller_discounts ?? order.seller_discount_savings ?? 0,
+			volume_discount_savings: pricingData.volume_discounts ?? order.volume_discount_savings ?? 0,
+			feedback_discount_amount: order.feedback_discount_amount ?? 0,
+			total_discounts: pricingData.total_discounts ?? order.total_discounts ?? 0,
+			// Códigos y flags
+			feedback_discount_code: order.feedback_discount_code || null,
+			volume_discounts_applied: order.volume_discounts_applied || false,
+			free_shipping: pricingData.free_shipping ?? order.free_shipping ?? false
+		};
+		
+		console.log("🎯 Totales finales calculados:", totals);
+		return totals;
+	}, [order]);
 
-	// Función auxiliar para calcular el IVA (15%)
-	const calculateTax = () => {
-		const subtotal = calculateSubtotal();
-		const tax = subtotal * 0.15;
-		console.log("🧾 Impuesto calculado (15%):", tax, "sobre subtotal:", subtotal);
-		return tax;
-	};
-
-	// Función auxiliar para calcular el total (subtotal + IVA)
-	const calculateTotal = () => {
-		const subtotal = calculateSubtotal();
-		const tax = calculateTax();
-		const total = subtotal + tax;
-		console.log("🎯 Total final:", total, "(subtotal:", subtotal, "+ tax:", tax, ")");
-		return total;
+	// Función auxiliar para calcular subtotal básico (fallback)
+	const calculateItemsSubtotal = () => {
+		if (!order?.items) return 0;
+		return order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 	};
 
 	if (loading) {
@@ -139,7 +148,7 @@ const OrderDetailClientPage: React.FC = () => {
               <span>Volver a mis pedidos</span>
             </button>
             <h1 className="text-2xl font-bold text-gray-800">
-              Pedido #{order.orderNumber || order.orderNumber}
+              Pedido #{order.orderNumber || order.order_number || order.id}
             </h1>
           </div>
 
@@ -441,28 +450,117 @@ const OrderDetailClientPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Resumen de precios */}
+            {/* ✅ CORREGIDO: Resumen de precios con descuentos completos */}
             <div className="bg-white rounded-lg shadow p-6">
               <h2 className="text-lg font-medium text-gray-900 mb-4">
-                Resumen
+                Resumen de la Orden
               </h2>
               <div className="space-y-3">
-                <div className="flex justify-between items-center pb-2">
-                  <span className="text-gray-600">Subtotal:</span>
-                  <span className="text-gray-900">
-                    {formatCurrency(calculateSubtotal())}
+                {/* Subtotal original */}
+                {orderTotals?.original_total && orderTotals.original_total > 0 && (
+                  <div className="flex justify-between items-center pb-2">
+                    <span className="text-gray-600">Subtotal original:</span>
+                    <span className="text-gray-500 line-through">
+                      {formatCurrency(orderTotals.original_total)}
+                    </span>
+                  </div>
+                )}
+                
+                {/* Descuentos aplicados */}
+                {orderTotals?.seller_discount_savings > 0 && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-green-600 text-sm flex items-center">
+                      <Tag className="w-4 h-4 mr-1" />
+                      Descuento del vendedor:
+                    </span>
+                    <span className="text-green-600 font-medium">
+                      -{formatCurrency(orderTotals.seller_discount_savings)}
+                    </span>
+                  </div>
+                )}
+                
+                {orderTotals?.volume_discount_savings > 0 && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-green-600 text-sm flex items-center">
+                      <Package className="w-4 h-4 mr-1" />
+                      Descuento por volumen:
+                    </span>
+                    <span className="text-green-600 font-medium">
+                      -{formatCurrency(orderTotals.volume_discount_savings)}
+                    </span>
+                  </div>
+                )}
+                
+                {orderTotals?.feedback_discount_amount > 0 && orderTotals.feedback_discount_code && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-green-600 text-sm flex items-center">
+                      <Tag className="w-4 h-4 mr-1" />
+                      Código ({orderTotals.feedback_discount_code}):
+                    </span>
+                    <span className="text-green-600 font-medium">
+                      -{formatCurrency(orderTotals.feedback_discount_amount)}
+                    </span>
+                  </div>
+                )}
+                
+                {/* Subtotal con descuentos */}
+                <div className="flex justify-between items-center pb-2 border-b border-gray-200">
+                  <span className="text-gray-900 font-medium">Subtotal:</span>
+                  <span className="text-gray-900 font-medium">
+                    {formatCurrency(orderTotals?.subtotal_products || calculateItemsSubtotal())}
                   </span>
                 </div>
+                
+                {/* IVA */}
                 <div className="flex justify-between items-center pb-2">
                   <span className="text-gray-600">IVA (15%):</span>
                   <span className="text-gray-900">
-                    {formatCurrency(calculateTax())}
+                    {formatCurrency(orderTotals?.iva_amount || 0)}
                   </span>
                 </div>
-                <div className="flex justify-between items-center pt-3 border-t border-gray-200 font-medium">
+                
+                {/* Envío */}
+                {orderTotals?.shipping_cost > 0 && (
+                  <div className="flex justify-between items-center pb-2">
+                    <span className="text-gray-600 flex items-center">
+                      <Truck className="w-4 h-4 mr-1" />
+                      Envío:
+                    </span>
+                    <span className="text-gray-900">
+                      {formatCurrency(orderTotals.shipping_cost)}
+                    </span>
+                  </div>
+                )}
+                
+                {orderTotals?.free_shipping && (
+                  <div className="flex justify-between items-center pb-2">
+                    <span className="text-green-600 flex items-center">
+                      <Truck className="w-4 h-4 mr-1" />
+                      Envío gratuito:
+                    </span>
+                    <span className="text-green-600 font-medium">
+                      ¡Gratis!
+                    </span>
+                  </div>
+                )}
+                
+                {/* Total de ahorros */}
+                {orderTotals?.total_discounts > 0 && (
+                  <div className="flex justify-between items-center py-2 bg-green-50 px-3 rounded-lg">
+                    <span className="text-green-700 font-medium text-sm">
+                      Total ahorrado:
+                    </span>
+                    <span className="text-green-700 font-bold">
+                      {formatCurrency(orderTotals.total_discounts)}
+                    </span>
+                  </div>
+                )}
+                
+                {/* Total final */}
+                <div className="flex justify-between items-center pt-3 border-t-2 border-gray-200 font-bold text-lg">
                   <span className="text-gray-900">Total:</span>
-                  <span className="text-lg text-gray-900">
-                    {formatCurrency(calculateTotal())}
+                  <span className="text-primary-600">
+                    {formatCurrency(orderTotals?.total || 0)}
                   </span>
                 </div>
               </div>

@@ -14,6 +14,7 @@ import {
 	Camera,
 } from "lucide-react";
 import { useSellerProfile } from "../../hooks/useSellerProfile";
+import SellerFeedbackSection from "../../components/seller/SellerFeedbackSection";
 
 const SellerProfilePage: React.FC = () => {
 	const {
@@ -539,8 +540,11 @@ const SellerProfilePage: React.FC = () => {
 						</button>
 					</div>
 				</div>
-			</div>
 
+				
+			</div>
+{/* Feedback Section */}
+				<SellerFeedbackSection />
 			{/* Action Buttons */}
 			<div className="flex justify-end space-x-4">
 				<button 

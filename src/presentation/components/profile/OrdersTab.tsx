@@ -1,6 +1,6 @@
 import React, {useState, useEffect} from "react";
 import {Link} from "react-router-dom";
-import {ShoppingBag} from "lucide-react";
+import {ShoppingBag, Gift, TrendingDown, Truck} from "lucide-react";
 import {OrderServiceAdapter} from "../../../core/adapters/OrderServiceAdapter";
 import {formatCurrency} from "../../../utils/formatters/formatCurrency";
 import OrderStatusBadge from "../orders/OrderStatusBadge";
@@ -163,19 +163,61 @@ const OrdersTab: React.FC = () => {
 												</div>
 											</div>
 										))}
-									<div className="border-t border-gray-100 pt-4 flex justify-between items-center">
-										<div>
-											<span className="text-gray-500 text-sm">Total:</span>
-											<span className="ml-1 font-bold">
-												{formatCurrency(order.total)}
-											</span>
+									<div className="border-t border-gray-100 pt-4">
+										{/* ✅ Mostrar descuentos aplicados */}
+										<div className="flex flex-wrap gap-2 mb-3">
+											{order.seller_discount_savings > 0 && (
+												<span className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded flex items-center">
+													<Gift size={12} className="mr-1" />
+													Vendedor: -{formatCurrency(order.seller_discount_savings)}
+												</span>
+											)}
+											{order.volume_discount_savings > 0 && (
+												<span className="text-xs bg-green-100 text-green-600 px-2 py-1 rounded flex items-center">
+													<TrendingDown size={12} className="mr-1" />
+													Volumen: -{formatCurrency(order.volume_discount_savings)}
+												</span>
+											)}
+											{order.feedback_discount_amount > 0 && order.feedback_discount_code && (
+												<span className="text-xs bg-purple-100 text-purple-600 px-2 py-1 rounded flex items-center">
+													<Gift size={12} className="mr-1" />
+													{order.feedback_discount_code}: -{formatCurrency(order.feedback_discount_amount)}
+												</span>
+											)}
+											{order.free_shipping && (
+												<span className="text-xs bg-green-100 text-green-600 px-2 py-1 rounded flex items-center">
+													<Truck size={12} className="mr-1" />
+													Envío gratis
+												</span>
+											)}
 										</div>
-										<Link
-											to={`/orders/${order.id}`}
-											className="text-primary-600 hover:text-primary-700 text-sm font-medium"
-										>
-											Ver detalles
-										</Link>
+										
+										<div className="flex justify-between items-center">
+											<div>
+												{order.total_discounts > 0 && (
+													<div className="text-xs text-green-600 mb-1">
+														Ahorros: {formatCurrency(order.total_discounts)}
+													</div>
+												)}
+												<div>
+													<span className="text-gray-500 text-sm">Total:</span>
+													<span className="ml-1 font-bold text-lg">
+														{formatCurrency(order.total)}
+													</span>
+													{order.original_total > order.total && (
+														<span className="ml-2 text-xs text-gray-400 line-through">
+															{formatCurrency(order.original_total)}
+														</span>
+													)}
+												</div>
+											</div>
+											<Link
+												to={`/orders/${order.id}`}
+												className="text-primary-600 hover:text-primary-700 text-sm font-medium"
+											>
+												Ver detalles
+											</Link>
+										</div>
 									</div>
 								</div>
 							</div>

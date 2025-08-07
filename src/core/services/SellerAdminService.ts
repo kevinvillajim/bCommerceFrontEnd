@@ -58,17 +58,17 @@ export class SellerAdminService {
 				filters
 			);
 
-			if (response?.status === "success" && response.data) {
-				// Usar adaptador para convertir los datos
-				const sellers = SellerAdapter.toEntityList(response.data.data);
+			if (response && response.data) {
+				// Laravel paginate structure: data array + pagination info
+				const sellers = SellerAdapter.toEntityList(response.data);
 
 				return {
 					sellers,
 					pagination: {
-						currentPage: response.data.current_page || 1,
-						totalPages: response.data.last_page || 1,
-						totalItems: response.data.total || 0,
-						itemsPerPage: response.data.per_page || 10,
+						currentPage: response.current_page || 1,
+						totalPages: response.last_page || 1,
+						totalItems: response.total || 0,
+						itemsPerPage: response.per_page || 10,
 					},
 				};
 			}

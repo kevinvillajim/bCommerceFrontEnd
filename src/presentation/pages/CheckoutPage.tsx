@@ -23,7 +23,7 @@ import {Gift, AlertTriangle, TrendingDown} from "lucide-react";
 
 const CheckoutPage: React.FC = () => {
 	const navigate = useNavigate();
-	const {cart, clearCart, showNotification} = useCart();
+	const {cart, clearCart, showNotification, appliedDiscount} = useCart();
 	const {user} = useAuth();
 	const [isLoading, setIsLoading] = useState(false);
 
@@ -64,7 +64,7 @@ const CheckoutPage: React.FC = () => {
 
 	const checkoutService = new CheckoutService();
 
-	// ✅ NUEVO: Calcular totales y items con descuentos por volumen
+	// ✅ USAR TOTALES DEL BACKEND DIRECTAMENTE
 	const checkoutCalculations = useMemo(() => {
 		if (!cart?.items?.length) {
 			return {
@@ -110,8 +110,19 @@ const CheckoutPage: React.FC = () => {
 				isOutOfStock: !item.product?.is_in_stock,
 			}));
 
-		// ✅ Calcular totales con descuentos por volumen
-		const totals = CheckoutItemsService.calculateCheckoutTotals(cart.items);
+		// ✅ USAR TOTALES DEL BACKEND DIRECTAMENTE (CART YA TIENE LOS CÁLCULOS CORRECTOS)
+		const roundToPrecision = (value: number, decimals: number = 2): number => {
+			return Math.round(value * Math.pow(10, decimals)) / Math.pow(10, decimals);
+		};
+
+		let totals;
+		
+		// ✅ SIEMPRE USAR SECUENCIA EXACTA - MISMO CÁLCULO QUE CART
+		console.log("🔍 FLUJO CHECKOUT - Calculando totales");
+		console.log("📊 Items en checkout:", cart.items.length);
+		console.log("📊 Cupón en checkout:", appliedDiscount?.discountCode?.code || "NINGUNO");
+		totals = CheckoutItemsService.calculateCheckoutTotals(cart.items, appliedDiscount);
+		console.log("🎯 TOTAL CHECKOUT:", totals.total);
 
 		// ✅ Preparar items para envío al backend
 		const checkoutItems = CheckoutItemsService.prepareItemsForCheckout(cart.items);
@@ -122,7 +133,7 @@ const CheckoutPage: React.FC = () => {
 			stockIssues,
 			checkoutItems
 		};
-	}, [cart?.items]);
+	}, [cart?.items, cart?.total, cart?.subtotal, cart?.iva_amount, cart?.shipping_cost, cart?.total_discounts, cart?.feedback_discount_amount, appliedDiscount]);
 
 	// Funciones helper
 	const getAvailableStock = (product: any): number => {
@@ -330,7 +341,9 @@ const CheckoutPage: React.FC = () => {
 				shippingAddress: shippingAddress,
 				billingAddress: useSameAddress ? shippingAddress : billingAddress,
 				seller_id: sellerId || undefined,
-				items: checkoutCalculations.checkoutItems // ✅ Usar items con descuentos calculados
+				items: checkoutCalculations.checkoutItems, // ✅ Usar items con descuentos calculados
+				// ✅ NUEVO: Incluir código de descuento aplicado
+				discount_code: appliedDiscount?.discountCode.code || null
 			};
 
 			console.log(
@@ -539,6 +552,19 @@ const CheckoutPage: React.FC = () => {
 						</span>
 						<span className="font-medium">
 							-{formatCurrency(checkoutCalculations.totals.volumeDiscounts)}
+						</span>
+					</div>
+				)}
+
+				{/* ✅ NUEVO: Mostrar descuento de código aplicado */}
+				{appliedDiscount && (
+					<div className="flex justify-between text-sm text-green-600">
+						<span className="flex items-center">
+							<Gift size={14} className="mr-1" />
+							Código de descuento ({appliedDiscount.discountCode.code}):
+						</span>
+						<span className="font-medium">
+							-{formatCurrency(checkoutCalculations.totals.discountCodeAmount || 0)}
 						</span>
 					</div>
 				)}

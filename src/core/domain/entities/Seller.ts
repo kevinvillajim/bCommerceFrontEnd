@@ -16,6 +16,10 @@ export interface Seller {
   totalRatings?: number;
   createdAt?: string;
   updatedAt?: string;
+  // Campos adicionales del API actual
+  userName?: string;
+  email?: string;
+  displayName?: string;
 }
 
 /**

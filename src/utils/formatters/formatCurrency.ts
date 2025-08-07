@@ -7,8 +7,8 @@ export function formatCurrency(amount: number | null | undefined): string {
 	// Si el valor es nulo, indefinido o no es un número válido, devolver $0.00
 	if (typeof amount !== "number" || isNaN(amount)) return "$0.00";
 
-	// Redondear a 2 decimales para evitar problemas con valores flotantes
-	const roundedAmount = Math.round(amount * 100) / 100;
+	// Usar el valor exacto que se pagó - NO redondear
+	const roundedAmount = Number(amount.toFixed(2));
 
 	// Usar Intl.NumberFormat para formatear correctamente según la localización
 	return new Intl.NumberFormat("es-EC", {

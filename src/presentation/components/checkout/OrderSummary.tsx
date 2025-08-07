@@ -1,12 +1,16 @@
 import React from "react";
 import type {ShoppingCart} from "../../../core/domain/entities/ShoppingCart";
 import {formatCurrency} from "../../../utils/formatters/formatCurrency";
+import {useCart} from "../../hooks/useCart";
 
 interface OrderSummaryProps {
 	cart: ShoppingCart | null;
 }
 
 const OrderSummary: React.FC<OrderSummaryProps> = ({cart}) => {
+	// ✅ INTEGRACIÓN con códigos de descuento de feedback
+	const { appliedDiscount } = useCart();
+	
 	// Si no hay carrito o está vacío
 	if (!cart || cart.items.length === 0) {
 		return (
@@ -25,11 +29,17 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({cart}) => {
 		}, 0);
 	};
 
-	const subtotal = calculateSubtotal();
+	const baseSubtotal = calculateSubtotal();
+	
+	// ✅ APLICAR código de descuento de feedback si existe
+	const feedbackDiscountAmount = appliedDiscount ? 
+		(baseSubtotal * appliedDiscount.discountCode.discount_percentage / 100) : 0;
+	
+	const subtotalAfterFeedbackDiscount = baseSubtotal - feedbackDiscountAmount;
 	const taxRate = 0.15; // 15% IVA
-	const shipping = subtotal > 50 ? 0 : 5.99; // Envío gratis para compras superiores a $50
-	const tax = subtotal * taxRate;
-	const total = subtotal + tax + shipping;
+	const shipping = subtotalAfterFeedbackDiscount > 50 ? 0 : 5.99; // Envío gratis para compras superiores a $50
+	const tax = subtotalAfterFeedbackDiscount * taxRate;
+	const total = subtotalAfterFeedbackDiscount + tax + shipping;
 
 	return (
 		<div>
@@ -89,8 +99,18 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({cart}) => {
 			<div className="space-y-2 pt-2">
 				<div className="flex justify-between text-gray-600">
 					<span>Subtotal</span>
-					<span>{formatCurrency(subtotal)}</span>
+					<span>{formatCurrency(baseSubtotal)}</span>
 				</div>
+
+				{/* ✅ MOSTRAR código de descuento aplicado */}
+				{appliedDiscount && feedbackDiscountAmount > 0 && (
+					<div className="flex justify-between text-green-600">
+						<span className="text-sm">
+							Código {appliedDiscount.discountCode.code} ({appliedDiscount.discountCode.discount_percentage}%):
+						</span>
+						<span>-{formatCurrency(feedbackDiscountAmount)}</span>
+					</div>
+				)}
 
 				<div className="flex justify-between text-gray-600">
 					<span>IVA (15%)</span>
@@ -101,6 +121,14 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({cart}) => {
 					<span>Envío</span>
 					<span>{shipping === 0 ? "Gratis" : formatCurrency(shipping)}</span>
 				</div>
+
+				{/* ✅ MOSTRAR total ahorrado si hay descuentos */}
+				{feedbackDiscountAmount > 0 && (
+					<div className="flex justify-between text-green-600 font-medium text-sm py-1 bg-green-50 px-2 rounded">
+						<span>Total ahorrado:</span>
+						<span>{formatCurrency(feedbackDiscountAmount)}</span>
+					</div>
+				)}
 
 				<div className="flex justify-between pt-3 border-t border-gray-200 font-bold text-lg text-gray-800">
 					<span>Total</span>

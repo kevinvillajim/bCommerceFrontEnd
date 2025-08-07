@@ -34,6 +34,19 @@ interface CartNotification {
 	message: string;
 }
 
+// ✅ NUEVO: Interfaz para manejar códigos de descuento
+interface DiscountCode {
+	code: string;
+	discount_percentage: number;
+	discount_amount: number;
+	expires_at: string;
+}
+
+interface AppliedDiscount {
+	discountCode: DiscountCode;
+	appliedAt: Date;
+}
+
 // Define context interface
 interface CartContextProps {
 	cart: ShoppingCart | null;
@@ -51,6 +64,11 @@ interface CartContextProps {
 	showNotification: (type: NotificationType, message: string) => void;
 	hideNotification: () => void;
 	cartItemCount: number;
+	// ✅ NUEVAS: Propiedades de código de descuento
+	appliedDiscount: AppliedDiscount | null;
+	validateDiscountCode: (code: string) => Promise<{ success: boolean; message: string; data?: DiscountCode }>;
+	applyDiscountCode: (code: string) => Promise<{ success: boolean; message: string; cart?: ShoppingCart }>;
+	removeDiscountCode: () => Promise<{ success: boolean; message: string; cart?: ShoppingCart }>;
 }
 
 // Create context with default values
@@ -69,6 +87,11 @@ export const CartContext = createContext<CartContextProps>({
 	showNotification: () => {},
 	hideNotification: () => {},
 	cartItemCount: 0,
+	// ✅ NUEVOS: Valores por defecto para descuentos
+	appliedDiscount: null,
+	validateDiscountCode: async () => ({ success: false, message: "Not implemented" }),
+	applyDiscountCode: async () => ({ success: false, message: "Not implemented" }),
+	removeDiscountCode: async () => ({ success: false, message: "Not implemented" }),
 });
 
 // Storage service instance
@@ -99,6 +122,8 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 	const [notification, setNotification] = useState<CartNotification | null>(
 		null
 	);
+	// ✅ NUEVO: Estado para descuentos
+	const [appliedDiscount, setAppliedDiscount] = useState<AppliedDiscount | null>(null);
 
 	const {isAuthenticated} = useContext(AuthContext);
 
@@ -674,6 +699,122 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 		}
 	}, [clearCartLocal, fetchCart, invalidateCartCache]);
 
+	// ✅ NUEVO: Validar código de descuento
+	const validateDiscountCode = useCallback(async (code: string): Promise<{ success: boolean; message: string; data?: DiscountCode }> => {
+		try {
+			setLoading(true);
+			const response = await cartService.validateDiscountCode(code);
+			
+			if (response && response.status === "success") {
+				return {
+					success: true,
+					message: response.message || "Código válido",
+					data: response.data
+				};
+			}
+			
+			return {
+				success: false,
+				message: response?.message || "Código de descuento inválido"
+			};
+		} catch (error: any) {
+			console.error("Error validating discount code:", error);
+			return {
+				success: false,
+				message: error.response?.data?.message || error.message || "Error al validar código de descuento"
+			};
+		} finally {
+			setLoading(false);
+		}
+	}, []);
+
+	// ✅ NUEVO: Aplicar código de descuento
+	const applyDiscountCode = useCallback(async (code: string): Promise<{ success: boolean; message: string; cart?: ShoppingCart }> => {
+		try {
+			setLoading(true);
+			const response = await cartService.applyDiscountCode(code);
+			
+			if (response && response.status === "success") {
+				// Actualizar cart state con datos del response
+				if (response.data?.cart) {
+					setCart(response.data.cart);
+					lastCartString.current = JSON.stringify(response.data.cart);
+				}
+				
+				// Guardar información del descuento aplicado
+				if (response.data?.discount_code) {
+					setAppliedDiscount({
+						discountCode: response.data.discount_code,
+						appliedAt: new Date()
+					});
+				}
+				
+				// Invalidar cache
+				invalidateCartCache();
+				
+				return {
+					success: true,
+					message: response.message || "Descuento aplicado exitosamente",
+					cart: response.data?.cart
+				};
+			}
+			
+			return {
+				success: false,
+				message: response?.message || "No se pudo aplicar el código de descuento"
+			};
+		} catch (error: any) {
+			console.error("Error applying discount code:", error);
+			return {
+				success: false,
+				message: error.response?.data?.message || error.message || "Error al aplicar código de descuento"
+			};
+		} finally {
+			setLoading(false);
+		}
+	}, [invalidateCartCache]);
+
+	// ✅ NUEVO: Remover código de descuento
+	const removeDiscountCode = useCallback(async (): Promise<{ success: boolean; message: string; cart?: ShoppingCart }> => {
+		try {
+			setLoading(true);
+			const response = await cartService.removeDiscountCode();
+			
+			if (response && response.status === "success") {
+				// Actualizar cart state
+				if (response.data?.cart) {
+					setCart(response.data.cart);
+					lastCartString.current = JSON.stringify(response.data.cart);
+				}
+				
+				// Limpiar descuento aplicado
+				setAppliedDiscount(null);
+				
+				// Invalidar cache
+				invalidateCartCache();
+				
+				return {
+					success: true,
+					message: response.message || "Descuento removido exitosamente",
+					cart: response.data?.cart
+				};
+			}
+			
+			return {
+				success: false,
+				message: response?.message || "No se pudo remover el código de descuento"
+			};
+		} catch (error: any) {
+			console.error("Error removing discount code:", error);
+			return {
+				success: false,
+				message: error.response?.data?.message || error.message || "Error al remover código de descuento"
+			};
+		} finally {
+			setLoading(false);
+		}
+	}, [invalidateCartCache]);
+
 	return (
 		<CartContext.Provider
 			value={{
@@ -691,6 +832,11 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 				showNotification,
 				hideNotification,
 				cartItemCount: itemCount,
+				// ✅ NUEVOS: Propiedades de código de descuento
+				appliedDiscount,
+				validateDiscountCode,
+				applyDiscountCode,
+				removeDiscountCode,
 			}}
 		>
 			{children}

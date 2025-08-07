@@ -80,21 +80,28 @@ const OrderDetailPage: React.FC = () => {
 		return subtotal;
 	};
 
-	// Función auxiliar para calcular el IVA (15%)
-	const calculateTax = () => {
-		const subtotal = calculateSubtotal();
-		const tax = subtotal * 0.15;
-		console.log("🧾 Impuesto calculado (15%):", tax, "sobre subtotal:", subtotal);
-		return tax;
-	};
-
-	// Función auxiliar para calcular el total (subtotal + IVA)
-	const calculateTotal = () => {
-		const subtotal = calculateSubtotal();
-		const tax = calculateTax();
-		const total = subtotal + tax;
-		console.log("🎯 Total final:", total, "(subtotal:", subtotal, "+ tax:", tax, ")");
-		return total;
+	// ✅ CORREGIDO: Usar datos reales de la orden
+	const getOrderTotals = () => {
+		if (!order) return {
+			subtotal: 0,
+			tax: 0,
+			total: 0,
+			discounts: 0
+		};
+		
+		return {
+			subtotal: order.subtotal_products || calculateSubtotal(),
+			tax: order.iva_amount || 0,
+			total: order.total || 0,
+			discounts: order.total_discounts || 0,
+			// Descuentos específicos
+			sellerDiscount: order.seller_discount_savings || 0,
+			volumeDiscount: order.volume_discount_savings || 0,
+			feedbackDiscount: order.feedback_discount_amount || 0,
+			feedbackCode: order.feedback_discount_code || null,
+			shippingCost: order.shipping_cost || 0,
+			freeShipping: order.free_shipping || false
+		};
 	};
 
 	const handleStatusChange = async (newStatus: OrderStatus) => {
@@ -649,30 +656,91 @@ const OrderDetailPage: React.FC = () => {
 							</div>
 						</div>
 
-						{/* Resumen de precios */}
+						{/* ✅ CORREGIDO: Resumen de precios con descuentos completos */}
 						<div className="bg-white rounded-lg shadow p-6">
 							<h2 className="text-lg font-medium text-gray-900 mb-4">
-								Resumen
+								Resumen de la Orden
 							</h2>
 							<div className="space-y-3">
-								<div className="flex justify-between items-center pb-2">
-									<span className="text-gray-600">Subtotal:</span>
-									<span className="text-gray-900">
-										{formatCurrency(calculateSubtotal())}
-									</span>
-								</div>
-								<div className="flex justify-between items-center pb-2">
-									<span className="text-gray-600">IVA (15%):</span>
-									<span className="text-gray-900">
-										{formatCurrency(calculateTax())}
-									</span>
-								</div>
-								<div className="flex justify-between items-center pt-3 border-t border-gray-200 font-medium">
-									<span className="text-gray-900">Total:</span>
-									<span className="text-lg text-gray-900">
-										{formatCurrency(calculateTotal())}
-									</span>
-								</div>
+								{(() => {
+									const totals = getOrderTotals();
+									return (
+										<>
+											{/* Descuentos aplicados */}
+											{totals.discounts > 0 && (
+												<div className="mb-3 p-3 bg-green-50 rounded-lg">
+													<h4 className="text-sm font-medium text-green-800 mb-2">
+														💰 Descuentos aplicados:
+													</h4>
+													
+													{totals.sellerDiscount > 0 && (
+														<div className="flex justify-between text-sm text-green-700">
+															<span>Descuento del vendedor:</span>
+															<span>-{formatCurrency(totals.sellerDiscount)}</span>
+														</div>
+													)}
+													
+													{totals.volumeDiscount > 0 && (
+														<div className="flex justify-between text-sm text-green-700">
+															<span>Descuento por volumen:</span>
+															<span>-{formatCurrency(totals.volumeDiscount)}</span>
+														</div>
+													)}
+													
+													{totals.feedbackDiscount > 0 && (
+														<div className="flex justify-between text-sm text-green-700">
+															<span>Código {totals.feedbackCode}:</span>
+															<span>-{formatCurrency(totals.feedbackDiscount)}</span>
+														</div>
+													)}
+													
+													<div className="flex justify-between text-sm font-medium text-green-800 mt-2 pt-2 border-t border-green-200">
+														<span>Total ahorrado:</span>
+														<span>-{formatCurrency(totals.discounts)}</span>
+													</div>
+												</div>
+											)}
+											
+											<div className="flex justify-between items-center pb-2">
+												<span className="text-gray-600">Subtotal:</span>
+												<span className="text-gray-900">
+													{formatCurrency(totals.subtotal)}
+												</span>
+											</div>
+											
+											<div className="flex justify-between items-center pb-2">
+												<span className="text-gray-600">IVA (15%):</span>
+												<span className="text-gray-900">
+													{formatCurrency(totals.tax)}
+												</span>
+											</div>
+											
+											{/* Envío */}
+											{totals.shippingCost > 0 && (
+												<div className="flex justify-between items-center pb-2">
+													<span className="text-gray-600">Envío:</span>
+													<span className="text-gray-900">
+														{formatCurrency(totals.shippingCost)}
+													</span>
+												</div>
+											)}
+											
+											{totals.freeShipping && (
+												<div className="flex justify-between items-center pb-2">
+													<span className="text-green-600">Envío gratuito:</span>
+													<span className="text-green-600 font-medium">¡Gratis!</span>
+												</div>
+											)}
+											
+											<div className="flex justify-between items-center pt-3 border-t border-gray-200 font-medium">
+												<span className="text-gray-900">Total:</span>
+												<span className="text-lg text-primary-600 font-bold">
+													{formatCurrency(totals.total)}
+												</span>
+											</div>
+										</>
+									);
+								})()}
 							</div>
 						</div>
 

@@ -388,19 +388,82 @@ const AdminOrderDetailPage: React.FC = () => {
 									)}
 								</span>
 							</div>
+							{/* ✅ NUEVO: Sección de descuentos aplicados */}
+							{(orderDetail.seller_discount_savings > 0 || 
+							  orderDetail.volume_discount_savings > 0 || 
+							  orderDetail.feedback_discount_amount > 0) && (
+								<div className="mt-3 pt-3 border-t border-gray-200">
+									<h4 className="text-sm font-medium text-gray-900 mb-2">
+										Descuentos Aplicados:
+									</h4>
+									
+									{orderDetail.seller_discount_savings > 0 && (
+										<div className="flex justify-between text-sm">
+											<span className="text-green-600">Descuento del vendedor:</span>
+											<span className="font-medium text-green-600">
+												-{formatCurrency(orderDetail.seller_discount_savings)}
+											</span>
+										</div>
+									)}
+									
+									{orderDetail.volume_discount_savings > 0 && (
+										<div className="flex justify-between text-sm">
+											<span className="text-green-600">Descuento por volumen:</span>
+											<span className="font-medium text-green-600">
+												-{formatCurrency(orderDetail.volume_discount_savings)}
+											</span>
+										</div>
+									)}
+									
+									{orderDetail.feedback_discount_amount > 0 && (
+										<div className="flex justify-between text-sm">
+											<span className="text-green-600">
+												Código: {orderDetail.feedback_discount_code || 'N/A'}
+											</span>
+											<span className="font-medium text-green-600">
+												-{formatCurrency(orderDetail.feedback_discount_amount)}
+											</span>
+										</div>
+									)}
+									
+									{orderDetail.total_discounts > 0 && (
+										<div className="flex justify-between text-sm font-medium mt-1 pt-1 border-t border-green-200">
+											<span className="text-green-700">Total ahorros:</span>
+											<span className="text-green-700">
+												-{formatCurrency(orderDetail.total_discounts)}
+											</span>
+										</div>
+									)}
+								</div>
+							)}
+							
 							<div className="flex justify-between text-sm mt-2">
 								<span className="text-gray-600">
 									IVA (15%):
 								</span>
 								<span className="font-medium text-gray-900">
-									{formatCurrency(
-										orderDetail.items.reduce(
-											(sum: number, item: any) => sum + (item.subtotal || 0),
-											0
-										) * 0.15
-									)}
+									{/* ✅ CORREGIDO: Usar IVA calculado desde BD */}
+									{formatCurrency(orderDetail.iva_amount || 0)}
 								</span>
 							</div>
+							
+							{/* ✅ NUEVO: Mostrar envío si aplica */}
+							{orderDetail.shipping_cost > 0 && (
+								<div className="flex justify-between text-sm mt-2">
+									<span className="text-gray-600">Envío:</span>
+									<span className="font-medium text-gray-900">
+										{formatCurrency(orderDetail.shipping_cost)}
+									</span>
+								</div>
+							)}
+							
+							{orderDetail.free_shipping && (
+								<div className="flex justify-between text-sm mt-2">
+									<span className="text-green-600">Envío gratuito:</span>
+									<span className="font-medium text-green-600">¡Gratis!</span>
+								</div>
+							)}
+							
 							<div className="flex justify-between font-bold text-lg mt-2">
 								<span>Total:</span>
 								<span>{formatCurrency(orderDetail.total)}</span>

@@ -1,7 +1,7 @@
 // src/presentation/hooks/useAdminRatings.ts
 import {useState, useEffect, useCallback} from "react";
 import AdminRatingService from "../../core/services/AdminRatingService";
-import type {AdminRatingFilters} from "../../core/services/AdminRatingService";
+import type {AdminRatingFilters, AdminRatingStatsResponse} from "../../core/services/AdminRatingService";
 import type {Rating} from "../../core/domain/entities/Rating";
 import {extractErrorMessage} from "../../utils/errorHandler";
 
@@ -57,6 +57,15 @@ export const useAdminRatings = () => {
 		setError(null);
 
 		try {
+			console.log("Obteniendo valoraciones con filtros:", {
+				page: pagination.currentPage,
+				per_page: pagination.itemsPerPage,
+				statusFilter,
+				typeFilter,
+				ratingFilter,
+				dateRangeFilter
+			});
+
 			// Preparar los filtros para la API
 			const filters: AdminRatingFilters = {
 				page: pagination.currentPage,
@@ -70,24 +79,30 @@ export const useAdminRatings = () => {
 			if (dateRangeFilter.from) filters.from_date = dateRangeFilter.from;
 			if (dateRangeFilter.to) filters.to_date = dateRangeFilter.to;
 
+			console.log("Filtros enviados a la API:", filters);
+
 			// Realizar la petición
 			const response = await adminRatingService.getRatings(filters);
+			
+			console.log("Respuesta recibida de la API:", response);
 
 			// Actualizar el estado con los datos recibidos
-			if (response.status === "success" && response.data) {
-				setRatings(response.data);
+			if (response && response.data) {
+				console.log("Datos de valoraciones:", response.data);
+				setRatings(Array.isArray(response.data) ? response.data : []);
 
-				// Actualizar información de paginación
-				setPagination({
-					currentPage: response.meta.current_page,
-					totalPages: response.meta.last_page,
-					totalItems: response.meta.total,
-					itemsPerPage: response.meta.per_page,
-				});
+				// Actualizar información de paginación si existe
+				if (response.meta) {
+					setPagination({
+						currentPage: response.meta.current_page || pagination.currentPage,
+						totalPages: response.meta.last_page || pagination.totalPages,
+						totalItems: response.meta.total || 0,
+						itemsPerPage: response.meta.per_page || pagination.itemsPerPage,
+					});
+				}
 			} else {
-				throw new Error(
-					response.message || "Error al obtener las valoraciones"
-				);
+				console.warn("Respuesta sin datos válidos:", response);
+				setRatings([]);
 			}
 		} catch (err) {
 			console.error("Error al obtener valoraciones:", err);
@@ -96,6 +111,7 @@ export const useAdminRatings = () => {
 				"Error al cargar las valoraciones"
 			);
 			setError(errorMessage);
+			setRatings([]); // Limpiar ratings en caso de error
 		} finally {
 			setLoading(false);
 		}
@@ -113,67 +129,106 @@ export const useAdminRatings = () => {
 	const fetchStats = useCallback(async () => {
 		setStatsLoading(true);
 		try {
+			console.log("Obteniendo estadísticas de ratings...");
 			const response = await adminRatingService.getRatingStats();
-			if (response.status === "success" && response.data) {
+			console.log("Respuesta de estadísticas:", response);
+			
+			if (response && response.data) {
+				console.log("Datos de estadísticas:", response.data);
 				setStats({
 					total: response.data.total || 0,
 					pending: response.data.pending || 0,
 					approved: response.data.approved || 0,
 					rejected: response.data.rejected || 0,
 				});
+			} else if (response && response.status === "success") {
+				// Si tiene status success pero no data, intentar usar la respuesta directamente
+				console.log("Usando respuesta directa como datos:", response);
+				setStats({
+					total: (response as any).total || 0,
+					pending: (response as any).pending || 0,
+					approved: (response as any).approved || 0,
+					rejected: (response as any).rejected || 0,
+				});
+			} else {
+				console.warn("Respuesta de estadísticas sin datos válidos:", response);
+				setStats({
+					total: 0,
+					pending: 0,
+					approved: 0,
+					rejected: 0,
+				});
 			}
 		} catch (err) {
 			console.error("Error al obtener estadísticas:", err);
+			// En caso de error, mantener estadísticas en 0
+			setStats({
+				total: 0,
+				pending: 0,
+				approved: 0,
+				rejected: 0,
+			});
 		} finally {
 			setStatsLoading(false);
 		}
 	}, [adminRatingService]);
 
+	// Efecto inicial simplificado - cargar datos al montar el componente
 	useEffect(() => {
-		// Función para verificar la sesión antes de cargar datos
-		const checkSessionAndLoad = async () => {
-			try {
-				// Opción 1: Hacer una petición liviana que solo verifique permisos
-				// Por ejemplo: await ApiClient.get('/api/admin/check-session');
+		fetchRatings();
+		fetchStats();
+	}, []); // Solo ejecutar al montar
 
-				// O simplemente esperar un momento para permitir que se inicialice la sesión
-				await new Promise((resolve) => setTimeout(resolve, 500));
-
-				// Si llegamos aquí, procedemos a cargar los datos
-				setIsInitialized(true);
-			} catch (err) {
-				// Si hay un error, no inicializar
-				console.error("Error al verificar la sesión:", err);
-			}
-		};
-
-		checkSessionAndLoad();
-	}, []);
-
-	// Modifica el useEffect original para depender SOLO de isInitialized
+	// Efecto para recargar cuando cambien los filtros
 	useEffect(() => {
 		if (isInitialized) {
 			fetchRatings();
-			fetchStats();
 		}
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [isInitialized]); // Eliminamos fetchRatings y fetchStats de las dependencias
+	}, [statusFilter, typeFilter, ratingFilter, dateRangeFilter, pagination.currentPage]);
+	
+	// Marcar como inicializado después del primer render
+	useEffect(() => {
+		setIsInitialized(true);
+	}, []);
 
-	// Modificamos las funciones que cambian filtros para que llamen a fetchRatings
+	// Función para calcular estadísticas desde los datos cargados (fallback)
+	const calculateStatsFromData = useCallback(() => {
+		if (ratings.length > 0) {
+			const calculatedStats = {
+				total: ratings.length,
+				pending: ratings.filter(r => r.status === 'pending').length,
+				approved: ratings.filter(r => r.status === 'approved').length,
+				rejected: ratings.filter(r => r.status === 'rejected').length,
+			};
+			console.log("Estadísticas calculadas desde los datos:", calculatedStats);
+			setStats(calculatedStats);
+		}
+	}, [ratings]);
+
+	// Calcular estadísticas desde los datos si no se obtuvieron del servidor
+	useEffect(() => {
+		if (ratings.length > 0 && stats.total === 0 && !statsLoading) {
+			console.log("Estadísticas del servidor no disponibles, calculando desde los datos locales...");
+			calculateStatsFromData();
+		}
+	}, [ratings, stats.total, statsLoading, calculateStatsFromData]);
+
+
+	// Funciones simplificadas para cambiar filtros - el useEffect se encarga de recargar
 	const handleStatusFilterChange = (status: string) => {
 		setStatusFilter(status);
-		// Utilizamos setTimeout para asegurar que el estado se actualice antes de fetchRatings
-		setTimeout(() => fetchRatings(), 0);
+		// Resetear a la primera página al cambiar filtros
+		setPagination(prev => ({ ...prev, currentPage: 1 }));
 	};
 
 	const handleTypeFilterChange = (type: string) => {
 		setTypeFilter(type);
-		setTimeout(() => fetchRatings(), 0);
+		setPagination(prev => ({ ...prev, currentPage: 1 }));
 	};
 
 	const handleRatingFilterChange = (rating: number | null) => {
 		setRatingFilter(rating);
-		setTimeout(() => fetchRatings(), 0);
+		setPagination(prev => ({ ...prev, currentPage: 1 }));
 	};
 
 	const handleDateRangeFilterChange = (dateRange: {
@@ -181,7 +236,7 @@ export const useAdminRatings = () => {
 		to: string;
 	}) => {
 		setDateRangeFilter(dateRange);
-		setTimeout(() => fetchRatings(), 0);
+		setPagination(prev => ({ ...prev, currentPage: 1 }));
 	};
 
 	// Función para cambiar de página
@@ -190,8 +245,6 @@ export const useAdminRatings = () => {
 			...prev,
 			currentPage: page,
 		}));
-		// Cargar datos nuevamente cuando cambia la página
-		setTimeout(() => fetchRatings(), 0);
 	};
 
 	// Función para abrir el modal de valoración

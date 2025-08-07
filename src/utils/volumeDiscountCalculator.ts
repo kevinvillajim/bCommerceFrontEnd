@@ -73,8 +73,8 @@ export function calculateVolumeDiscount(
 
   if (!applicableTier) {
     return {
-      originalPrice: basePrice,
-      discountedPrice: basePrice,
+      originalPrice: roundToPrecision(basePrice),
+      discountedPrice: roundToPrecision(basePrice),
       discountPercentage: 0,
       savings: 0,
       savingsTotal: 0,
@@ -83,12 +83,12 @@ export function calculateVolumeDiscount(
     };
   }
 
-  const discountedPrice = basePrice * (1 - applicableTier.discount / 100);
-  const savings = basePrice - discountedPrice;
-  const savingsTotal = savings * quantity;
+  const discountedPrice = roundToPrecision(basePrice * (1 - applicableTier.discount / 100));
+  const savings = roundToPrecision(basePrice - discountedPrice);
+  const savingsTotal = roundToPrecision(savings * quantity);
 
   return {
-    originalPrice: basePrice,
+    originalPrice: roundToPrecision(basePrice),
     discountedPrice: discountedPrice,
     discountPercentage: applicableTier.discount,
     savings: savings,
@@ -98,9 +98,15 @@ export function calculateVolumeDiscount(
   };
 }
 
+// Helper function for precise decimal calculations
+function roundToPrecision(value: number, decimals: number = 2): number {
+  return Math.round(value * Math.pow(10, decimals)) / Math.pow(10, decimals);
+}
+
 /**
  * ✅ FUNCIÓN PRINCIPAL: Calcula todos los descuentos para un item del carrito
  * Incluye descuento del seller + descuento por volumen
+ * SECUENCIA EXACTA: Precio Normal → Descuento del vendedor → Descuento por volumen → Descuento cupón → IVA
  */
 export function calculateCartItemDiscounts(cartItem: any): CartItemWithDiscounts['discount'] {
   
@@ -108,20 +114,20 @@ export function calculateCartItemDiscounts(cartItem: any): CartItemWithDiscounts
   const sellerDiscountPercentage = cartItem.product?.discount_percentage || 0;
   const quantity = cartItem.quantity || 1;
   
-  // 1. Calcular descuento del seller
-  const sellerDiscountAmount = originalPrice * (sellerDiscountPercentage / 100);
-  const priceAfterSellerDiscount = originalPrice - sellerDiscountAmount;
+  // 1. Calcular descuento del seller (sobre precio original)
+  const sellerDiscountAmount = roundToPrecision(originalPrice * (sellerDiscountPercentage / 100));
+  const priceAfterSellerDiscount = roundToPrecision(originalPrice - sellerDiscountAmount);
   
-  // 2. Calcular descuento por volumen sobre el precio con descuento del seller
+  // 2. Calcular descuento por volumen (sobre precio ya con descuento del seller)
   const volumeDiscount = calculateVolumeDiscount(priceAfterSellerDiscount, quantity);
   
-  // 3. Precio final por unidad
-  const finalPricePerUnit = volumeDiscount.discountedPrice;
+  // 3. Precio final por unidad (después de ambos descuentos)
+  const finalPricePerUnit = roundToPrecision(volumeDiscount.discountedPrice);
   
-  // 4. Ahorros totales
-  const totalSellerSavings = sellerDiscountAmount * quantity;
-  const totalVolumeSavings = volumeDiscount.savingsTotal;
-  const totalSavings = totalSellerSavings + totalVolumeSavings;
+  // 4. Ahorros totales (precisos)
+  const totalSellerSavings = roundToPrecision(sellerDiscountAmount * quantity);
+  const totalVolumeSavings = roundToPrecision(volumeDiscount.savingsTotal);
+  const totalSavings = roundToPrecision(totalSellerSavings + totalVolumeSavings);
   
   // 5. Determinar descuento principal a mostrar
   const hasVolumeDiscount = volumeDiscount.hasDiscount;
@@ -129,14 +135,14 @@ export function calculateCartItemDiscounts(cartItem: any): CartItemWithDiscounts
     volumeDiscount.discountPercentage : sellerDiscountPercentage;
   
   return {
-    originalPrice: originalPrice,
+    originalPrice: roundToPrecision(originalPrice),
     discountedPrice: finalPricePerUnit,
     discountPercentage: displayDiscountPercentage,
-    savings: (originalPrice - finalPricePerUnit),
+    savings: roundToPrecision(originalPrice - finalPricePerUnit),
     savingsTotal: totalSavings,
     hasDiscount: sellerDiscountPercentage > 0 || hasVolumeDiscount,
-    sellerDiscountAmount: sellerDiscountAmount,
-    volumeDiscountAmount: volumeDiscount.savings,
+    sellerDiscountAmount: roundToPrecision(sellerDiscountAmount),
+    volumeDiscountAmount: roundToPrecision(volumeDiscount.savings),
     finalPricePerUnit: finalPricePerUnit
   };
 }

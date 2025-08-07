@@ -73,6 +73,7 @@ const AdminRatingsPage: React.FC = () => {
     loading,
     error,
     stats,
+    statsLoading,
     statusFilter,
     typeFilter,
     ratingFilter,
@@ -97,16 +98,27 @@ const AdminRatingsPage: React.FC = () => {
     refreshData
   } = useAdminRatings();
 
-  const formatDate = (dateString: string | undefined) => {
+  const formatDate = (dateString: string | undefined | null) => {
     if (!dateString) return "N/A";
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat("es-ES", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(date);
+    
+    try {
+      const date = new Date(dateString);
+      // Verificar si la fecha es válida
+      if (isNaN(date.getTime())) {
+        return "Fecha inválida";
+      }
+      
+      return new Intl.DateTimeFormat("es-ES", {
+        day: "2-digit",
+        month: "2-digit", 
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }).format(date);
+    } catch (error) {
+      console.error("Error al formatear fecha:", error);
+      return "Error en fecha";
+    }
   };
 
   const renderStars = (rating: number) => {
@@ -172,40 +184,6 @@ const AdminRatingsPage: React.FC = () => {
 			render: (rating: Rating) => renderStars(rating.rating),
 		},
 		{
-			key: "item",
-			header: "Elemento",
-			sortable: true,
-			render: (rating: Rating) => {
-				if (rating.type === "product" && rating.productId) {
-					return (
-						<Link
-							to={`/admin/products/${rating.productId}`}
-							className="flex items-center text-primary-600 hover:text-primary-800"
-						>
-							<Package className="h-4 w-4 mr-1" />
-							Producto #{rating.productId}
-						</Link>
-					);
-				} else if (rating.type === "seller" && rating.sellerId) {
-					return (
-						<Link
-							to={`/admin/sellers/${rating.sellerId}`}
-							className="flex items-center text-primary-600 hover:text-primary-800"
-						>
-							<Store className="h-4 w-4 mr-1" />
-							Vendedor #{rating.sellerId}
-						</Link>
-					);
-				} else {
-					return (
-						<span className="text-gray-500">
-							No especificado
-						</span>
-					);
-				}
-			},
-		},
-		{
 			key: "type",
 			header: "Tipo",
 			sortable: true,
@@ -240,14 +218,20 @@ const AdminRatingsPage: React.FC = () => {
 			key: "date",
 			header: "Fecha",
 			sortable: true,
-			render: (rating: Rating) => (
-				<div className="text-xs text-gray-500">
-					Creado: {formatDate(rating.createdAt)}
-					{rating.updatedAt !== rating.createdAt && (
-						<div>Actualizado: {formatDate(rating.updatedAt)}</div>
-					)}
-				</div>
-			),
+			render: (rating: Rating) => {
+				// Manejar diferentes formatos de fecha del backend
+				const createdDate = rating.createdAt || (rating as any).created_at;
+				const updatedDate = rating.updatedAt || (rating as any).updated_at;
+				
+				return (
+					<div className="text-xs text-gray-500">
+						<div>Creado: {formatDate(createdDate)}</div>
+						{updatedDate && updatedDate !== createdDate && (
+							<div>Actualizado: {formatDate(updatedDate)}</div>
+						)}
+					</div>
+				);
+			},
 		},
 		{
 			key: "status",
@@ -285,14 +269,30 @@ const AdminRatingsPage: React.FC = () => {
 					{rating.status === "pending" && (
 						<>
 							<button
-								onClick={() => approveRating(rating.id || 0)}
+								onClick={async () => {
+									if (!rating.id) {
+										alert("ID de valoración no válido");
+										return;
+									}
+									const success = await approveRating(rating.id);
+									if (success) {
+										console.log("Valoración aprobada exitosamente");
+									}
+								}}
 								className="p-1 text-green-600 hover:bg-green-100 rounded-md"
 								title="Aprobar valoración"
 							>
 								<CheckCircle size={18} />
 							</button>
 							<button
-								onClick={() => rejectRating(rating.id || 0)}
+								onClick={async () => {
+									if (!rating.id) {
+										alert("ID de valoración no válido");
+										return;
+									}
+									// Abrir el modal para que el usuario pueda ingresar una nota antes de rechazar
+									openRatingModal(rating);
+								}}
 								className="p-1 text-red-600 hover:bg-red-100 rounded-md"
 								title="Rechazar valoración"
 							>
@@ -301,14 +301,21 @@ const AdminRatingsPage: React.FC = () => {
 						</>
 					)}
 					<button
-						onClick={() =>
-							flagRating(
-								rating.id || 0,
+						onClick={async () => {
+							if (!rating.id) {
+								alert("ID de valoración no válido");
+								return;
+							}
+							const success = await flagRating(
+								rating.id,
 								rating.status === "flagged"
 									? "Desmarcada por administrador"
 									: "Marcada para revisión por administrador"
-							)
-						}
+							);
+							if (success) {
+								console.log("Estado de flag actualizado exitosamente");
+							}
+						}}
 						className={`p-1 ${
 							rating.status === "flagged"
 								? "text-green-600 hover:bg-green-100"
@@ -411,7 +418,16 @@ const AdminRatingsPage: React.FC = () => {
       {/* ✅ ELIMINADA la sección duplicada de líneas 413-457 */}
 
       {/* Panel de estadísticas */}
-      <StatCardList items={statsItemsRating}/>
+      {statsLoading ? (
+        <div className="bg-white rounded-lg shadow-sm p-8">
+          <div className="flex justify-center items-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+            <span className="ml-3 text-gray-600">Cargando estadísticas...</span>
+          </div>
+        </div>
+      ) : (
+        <StatCardList items={statsItemsRating}/>
+      )}
       {/* Filtros */}
       <div className="bg-white rounded-lg shadow-sm p-4">
         <div className="flex flex-col md:flex-row gap-4">
@@ -438,7 +454,6 @@ const AdminRatingsPage: React.FC = () => {
               <option value="all">Todos los Tipos</option>
               <option value="product">Producto</option>
               <option value="seller">Vendedor</option>
-              <option value="user">Usuario</option>
             </select>
           </div>
 
@@ -567,9 +582,10 @@ const AdminRatingsPage: React.FC = () => {
                   {selectedRating.comment}
                 </div>
                 <div className="text-sm text-gray-500">
-                  <div>Creado: {formatDate(selectedRating.createdAt)}</div>
-                  {selectedRating.updatedAt !== selectedRating.createdAt && (
-                    <div>Actualizado: {formatDate(selectedRating.updatedAt)}</div>
+                  <div>Creado: {formatDate(selectedRating.createdAt || (selectedRating as any).created_at)}</div>
+                  {((selectedRating.updatedAt || (selectedRating as any).updated_at) && 
+                    (selectedRating.updatedAt || (selectedRating as any).updated_at) !== (selectedRating.createdAt || (selectedRating as any).created_at)) && (
+                    <div>Actualizado: {formatDate(selectedRating.updatedAt || (selectedRating as any).updated_at)}</div>
                   )}
                 </div>
               </div>
@@ -623,15 +639,38 @@ const AdminRatingsPage: React.FC = () => {
                   </div>
                   <div className="flex space-x-2">
                     <button
-                      onClick={() => approveRating(selectedRating.id || 0)}
+                      onClick={async () => {
+                        if (!selectedRating.id) {
+                          alert("ID de valoración no válido");
+                          return;
+                        }
+                        const success = await approveRating(selectedRating.id);
+                        if (success) {
+                          console.log("Valoración aprobada desde modal");
+                        }
+                      }}
                       className="flex items-center justify-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                     >
                       <CheckCircle size={18} className="mr-2" />
                       Aprobar
                     </button>
                     <button
-                      onClick={() => rejectRating(selectedRating.id || 0)}
-                      className="flex items-center justify-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                      onClick={async () => {
+                        if (!selectedRating.id) {
+                          alert("ID de valoración no válido");
+                          return;
+                        }
+                        if (!moderationNote.trim()) {
+                          alert("Es necesario agregar una nota de moderación para rechazar");
+                          return;
+                        }
+                        const success = await rejectRating(selectedRating.id);
+                        if (success) {
+                          console.log("Valoración rechazada desde modal");
+                        }
+                      }}
+                      className="flex items-center justify-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+                      disabled={!moderationNote.trim()}
                     >
                       <XCircle size={18} className="mr-2" />
                       Rechazar
@@ -640,41 +679,6 @@ const AdminRatingsPage: React.FC = () => {
                 </div>
               )}
 
-              {/* Enlace al Elemento Valorado */}
-              <div>
-                <h4 className="text-sm font-medium text-gray-500 mb-2">
-                  Enlaces Rápidos
-                </h4>
-                <div className="flex flex-wrap gap-2">
-                  {selectedRating.productId && (
-                    <Link
-                      to={`/admin/products/${selectedRating.productId}`}
-                      className="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
-                    >
-                      <Package className="w-4 h-4 mr-1" />
-                      Ver Producto
-                    </Link>
-                  )}
-                  {selectedRating.sellerId && (
-                    <Link
-                      to={`/admin/sellers/${selectedRating.sellerId}`}
-                      className="inline-flex items-center px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm"
-                    >
-                      <Store className="w-4 h-4 mr-1" />
-                      Ver Vendedor
-                    </Link>
-                  )}
-                  {selectedRating.orderId && (
-                    <Link
-                      to={`/admin/orders/${selectedRating.orderId}`}
-                      className="inline-flex items-center px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm"
-                    >
-                      <Package className="w-4 h-4 mr-1" />
-                      Ver Orden
-                    </Link>
-                  )}
-                </div>
-              </div>
             </div>
           </div>
         </div>

@@ -24,6 +24,7 @@ export interface CheckoutRequest {
 	billingAddress?: Address;
 	seller_id?: number;
 	items?: CheckoutItem[]; // ✅ Usar CheckoutItem con precios finales
+	discount_code?: string | null; // ✅ NUEVO: Código de descuento
 }
 
 export interface BackendCheckoutRequest {
@@ -41,6 +42,15 @@ export interface BackendCheckoutRequest {
 	};
 	seller_id?: number;
 	items?: CheckoutItem[]; // ✅ Usar CheckoutItem con precios finales
+	discount_code?: string; // ✅ FIX: Opcional - solo se incluye si hay cupón
+	// ✅ CRÍTICO: Totales exactos calculados que el backend DEBE usar
+	calculated_totals?: {
+		subtotal: number;
+		tax: number;
+		shipping: number;
+		total: number;
+		total_discounts: number;
+	};
 }
 
 export interface CheckoutResponse {
@@ -170,8 +180,31 @@ export class CheckoutService {
 			console.log("✅ Items validados correctamente:", items);
 
 			// ✅ CONVERSIÓN SEGURA: Mapear dirección a formato requerido por backend
+			// ✅ CALCULAR TOTALES EXACTOS PARA ENVIAR AL BACKEND (CUPÓN OPCIONAL)
+			const appliedDiscount = checkoutData.discount_code ? { 
+				discountCode: { 
+					code: checkoutData.discount_code,
+					discount_percentage: 5, // Esto debe venir de la validación real del cupón
+					discount_amount: 0
+				}
+			} : null;
+			
+			const calculatedTotals = CheckoutItemsService.calculateCheckoutTotals(
+				checkoutData.items, 
+				appliedDiscount // ✅ null si no hay cupón, objeto si hay cupón
+			);
+
+			console.log("🔍 FLUJO COMPLETO DE CHECKOUT:");
+			console.log("1️⃣ Items del carrito:", checkoutData.items?.length || 0);
+			console.log("2️⃣ Código de descuento:", checkoutData.discount_code || "NINGUNO");
+			console.log("3️⃣ appliedDiscount:", appliedDiscount);
+			console.log("4️⃣ TOTALES EXACTOS CALCULADOS PARA BACKEND:", calculatedTotals);
+			console.log("5️⃣ Total final que debe guardarse en DB:", calculatedTotals.total);
+
 			const nameParts = (checkoutData.shippingAddress.name || '').split(' ');
-			const backendData: BackendCheckoutRequest = {
+			
+			// ✅ FIX: Construir objeto base sin discount_code
+			const backendData: any = {
 				payment: {
 					...checkoutData.payment,
 					method: paymentMethod
@@ -188,10 +221,35 @@ export class CheckoutService {
 					country: checkoutData.shippingAddress.country || ''
 				},
 				seller_id: checkoutData.seller_id,
-				items: items // ✅ Usar items con precios finales calculados
+				items: items, // ✅ Usar items con precios finales calculados
+				// ✅ CRÍTICO: Enviar totales exactos calculados para que backend los use
+				calculated_totals: {
+					subtotal: calculatedTotals.subtotal,
+					tax: calculatedTotals.tax,
+					shipping: calculatedTotals.shipping,
+					total: calculatedTotals.total,
+					total_discounts: calculatedTotals.totalDiscounts
+				}
 			};
+			
+			// ✅ FIX: Solo agregar discount_code si hay un cupón válido
+			if (checkoutData.discount_code && checkoutData.discount_code.trim() !== "") {
+				backendData.discount_code = checkoutData.discount_code.trim();
+				console.log("✅ Cupón aplicado enviado al backend:", backendData.discount_code);
+			} else {
+				console.log("✅ No hay cupón - campo discount_code omitido del request");
+			}
 
 			console.log("🔍 DEBUGGING - Datos completos enviados al backend:", JSON.stringify(backendData, null, 2));
+			
+			// ✅ LOGS ESPECÍFICOS PARA TOTALES
+			console.log("💰 TOTALES CRÍTICOS QUE DEBE USAR EL BACKEND:");
+			console.log("   📊 Subtotal:", calculatedTotals.subtotal);
+			console.log("   📊 IVA:", calculatedTotals.tax);
+			console.log("   📊 Envío:", calculatedTotals.shipping);
+			console.log("   📊 TOTAL FINAL:", calculatedTotals.total);
+			console.log("   📊 Total descuentos:", calculatedTotals.totalDiscounts);
+			console.log("🚨 EL BACKEND DEBE GUARDAR total =", calculatedTotals.total, "NO 0");
 
 			// ✅ VALIDACIÓN FINAL antes de enviar
 			if (backendData.items && backendData.items.length > 0) {

@@ -8,6 +8,7 @@ import ProfileSidebar from '../components/profile/ProfileSidebar';
 import PersonalInfoTab from '../components/profile/PersonalInfoTab';
 import SecurityTab from '../components/profile/SecurityTab';
 import SellerApplicationTab from '../components/profile/SellerApplicationTab';
+import FeedbackTab from '../components/profile/FeedbackTab';
 
 // Definición de la interfaz para el perfil en la página principal
 // Esta debe coincidir con la interfaz en los componentes hijos
@@ -43,7 +44,7 @@ const UserProfilePage: React.FC = () => {
   const { user } = useAuth();
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'personal' | 'security' | 'orders' | 'seller-application'>('personal');
+  const [activeTab, setActiveTab] = useState<'personal' | 'security' | 'orders' | 'seller-application' | 'feedback'>('personal');
 
   // Cargar datos del perfil al iniciar
   useEffect(() => {
@@ -103,6 +104,8 @@ const UserProfilePage: React.FC = () => {
         return <PersonalInfoTab userProfile={userProfile} onProfileUpdate={handleProfileUpdate} />;
       case 'security':
         return <SecurityTab />;
+      case 'feedback':
+        return <FeedbackTab />;
       case 'seller-application':
         return <SellerApplicationTab />;
       default:

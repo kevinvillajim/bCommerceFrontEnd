@@ -151,6 +151,66 @@ export class CartService {
 			throw error;
 		}
 	}
+
+	/**
+	 * Valida un código de descuento
+	 * @param code Código de descuento a validar
+	 */
+	async validateDiscountCode(code: string): Promise<any> {
+		try {
+			console.log("CartService: Validando código de descuento:", code);
+
+			const response = await ApiClient.post(API_ENDPOINTS.CART.DISCOUNT.VALIDATE, {
+				code
+			});
+
+			console.log("CartService: Código de descuento validado:", response);
+
+			return response;
+		} catch (error) {
+			console.error("CartService: Error al validar código de descuento:", error);
+			throw error;
+		}
+	}
+
+	/**
+	 * Aplica un código de descuento al carrito
+	 * @param code Código de descuento a aplicar
+	 */
+	async applyDiscountCode(code: string): Promise<any> {
+		try {
+			console.log("CartService: Aplicando código de descuento:", code);
+
+			const response = await ApiClient.post(API_ENDPOINTS.CART.DISCOUNT.APPLY, {
+				code
+			});
+
+			console.log("CartService: Código de descuento aplicado:", response);
+
+			return response;
+		} catch (error) {
+			console.error("CartService: Error al aplicar código de descuento:", error);
+			throw error;
+		}
+	}
+
+	/**
+	 * Remueve el código de descuento aplicado
+	 */
+	async removeDiscountCode(): Promise<any> {
+		try {
+			console.log("CartService: Removiendo código de descuento");
+
+			const response = await ApiClient.post(API_ENDPOINTS.CART.DISCOUNT.REMOVE);
+
+			console.log("CartService: Código de descuento removido:", response);
+
+			return response;
+		} catch (error) {
+			console.error("CartService: Error al remover código de descuento:", error);
+			throw error;
+		}
+	}
 }
 
 export default CartService;

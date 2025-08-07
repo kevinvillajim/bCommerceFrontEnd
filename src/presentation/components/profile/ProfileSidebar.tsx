@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { User, Lock, LogOut, Store } from 'lucide-react';
+import { User, Lock, LogOut, Store, MessageSquare } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 
 interface ProfileSidebarProps {
-  activeTab: 'personal' | 'security' | 'orders' | 'seller-application';
-  setActiveTab: (tab: 'personal' | 'security' | 'orders' | 'seller-application') => void;
+  activeTab: 'personal' | 'security' | 'orders' | 'seller-application' | 'feedback';
+  setActiveTab: (tab: 'personal' | 'security' | 'orders' | 'seller-application' | 'feedback') => void;
   userCreatedAt?: string;
   userName?: string;
   userEmail?: string;
@@ -125,6 +125,20 @@ const ProfileSidebar: React.FC<ProfileSidebarProps> = ({
               </button>
             </li>
             
+            <li>
+              <button 
+                onClick={() => setActiveTab('feedback')}
+                className={`w-full flex items-center p-3 rounded-lg transition-colors ${
+                  activeTab === 'feedback' 
+                    ? 'bg-primary-50 text-primary-600 font-medium' 
+                    : 'text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <MessageSquare size={18} className="mr-3" />
+                Feedback y Sugerencias
+              </button>
+            </li>
+
             {/* Mostrar solicitud de vendedor solo para usuarios normales (no vendedores ni admins) */}
             {!isUserSeller && !isUserAdmin && (
               <li>

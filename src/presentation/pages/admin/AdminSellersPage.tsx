@@ -374,7 +374,10 @@ const AdminSellersPage: React.FC = () => {
 							)}
 						</div>
 						<div className="text-xs text-gray-500">
-							ID: {seller.id} - User ID: {seller.userId}
+							{seller.userName} ({seller.email})
+						</div>
+						<div className="text-xs text-gray-400">
+							ID: {seller.id}
 						</div>
 					</div>
 				</div>
@@ -452,12 +455,12 @@ const AdminSellersPage: React.FC = () => {
 			sortable: true,
 			render: (seller: Seller) => (
 				<div className="flex items-center">
-					{(seller.averageRating ?? 0) > 0 ? (
+					{seller.averageRating && seller.averageRating > 0 ? (
 						<>
 							<Star className="h-4 w-4 text-yellow-500 mr-1" />
-							<span>{(seller.averageRating ?? 0).toFixed(1)}</span>
+							<span>{seller.averageRating.toFixed(1)}</span>
 							<span className="text-xs text-gray-500 ml-1">
-								({seller.totalRatings ?? 0})
+								({seller.totalRatings || 0})
 							</span>
 						</>
 					) : (
@@ -475,7 +478,7 @@ const AdminSellersPage: React.FC = () => {
 			render: (seller: Seller) => (
 				<div className="flex items-center">
 					<DollarSign className="h-4 w-4 text-green-500 mr-1" />
-					<span>{formatCurrency(seller.totalSales)}</span>
+					<span>{formatCurrency(seller.totalSales || 0)}</span>
 				</div>
 			),
 		},
@@ -655,7 +658,7 @@ const AdminSellersPage: React.FC = () => {
 			<Table
 				data={sellers}
 				columns={columns}
-				searchFields={["storeName", "description"]}
+				searchFields={["storeName", "userName", "email"]}
 				loading={loading}
 				emptyMessage="No se encontraron vendedores"
 				pagination={{

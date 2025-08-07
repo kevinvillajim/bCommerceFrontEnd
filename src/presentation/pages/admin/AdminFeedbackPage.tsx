@@ -12,168 +12,61 @@ import {
   Calendar,
   BarChart2,
   Eye,
-  Flag,
   Tag,
-  Store
+  Store,
+  Gift,
+  Star
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import type { Feedback } from "../../../core/domain/entities/Feedback";
 import StatCardList from "../../components/dashboard/StatCardList";
+import ApiClient from "../../../infrastructure/api/apiClient";
+import { API_ENDPOINTS } from "../../../constants/apiEndpoints";
 
+interface User {
+  id: number;
+  name: string;
+  email?: string;
+}
 
+interface Seller {
+  id: number;
+  store_name: string;
+  user_id: number;
+}
 
-// Datos simulados para feedback
-const mockFeedback: Feedback[] = [
-  {
-    id: 1,
-    userId: 101,
-    sellerId: 2,
-    title: "Mejora sugerida para la navegación",
-    description: "Sería genial si pudieran añadir filtros más específicos en la sección de categorías. A veces es difícil encontrar productos específicos.",
-    type: "improvement",
-    status: "pending",
-    createdAt: "2023-11-05T14:30:00Z",
-    updatedAt: "2023-11-05T14:30:00Z",
-    user: {
-      id: 101,
-      name: "Juan Pérez"
-    }
-  },
-  {
-    id: 2,
-    userId: 102,
-    sellerId: 3,
-    title: "Error al cargar imágenes de productos",
-    description: "He notado que algunas imágenes de productos no se cargan correctamente en dispositivos móviles, especialmente en iOS. Esto ocurre regularmente en la sección de ofertas.",
-    type: "bug",
-    status: "approved",
-    adminNotes: "Verificado y enviado al equipo de desarrollo. Se está trabajando en una solución.",
-    reviewedBy: 201,
-    reviewedAt: "2023-11-06T10:15:00Z",
-    createdAt: "2023-11-04T09:20:00Z",
-    updatedAt: "2023-11-06T10:15:00Z",
-    user: {
-      id: 102,
-      name: "María Rodríguez"
-    },
-    admin: {
-      id: 201,
-      name: "Admin Principal"
-    }
-  },
-  {
-    id: 3,
-    userId: 103,
-    title: "Sugerencia para nuevas categorías",
-    description: "Me encantaría ver una categoría específica para productos ecológicos o sostenibles. Creo que sería muy útil para los consumidores que buscan alternativas más respetuosas con el medio ambiente.",
-    type: "feature",
-    status: "pending",
-    createdAt: "2023-11-03T16:45:00Z",
-    updatedAt: "2023-11-03T16:45:00Z",
-    user: {
-      id: 103,
-      name: "Carlos Sánchez"
-    }
-  },
-  {
-    id: 4,
-    userId: 104,
-    sellerId: 5,
-    title: "Problema con el tiempo de carga",
-    description: "El sitio se ha vuelto extremadamente lento en los últimos días, especialmente al buscar productos o cambiar entre categorías. Por favor, mejoren el rendimiento.",
-    type: "bug",
-    status: "approved",
-    adminNotes: "Confirmado, estamos optimizando la carga de imágenes y recursos.",
-    reviewedBy: 202,
-    reviewedAt: "2023-11-05T11:30:00Z",
-    createdAt: "2023-11-02T13:20:00Z",
-    updatedAt: "2023-11-05T11:30:00Z",
-    user: {
-      id: 104,
-      name: "Ana Martínez"
-    },
-    admin: {
-      id: 202,
-      name: "Admin Técnico"
-    }
-  },
-  {
-    id: 5,
-    userId: 105,
-    sellerId: 1,
-    title: "Queja sobre vendedor no profesional",
-    description: "Tuve una experiencia muy negativa con el vendedor 'ElectroStore'. No respondieron a mis mensajes, enviaron un producto diferente al que compré y ahora no quieren aceptar la devolución.",
-    type: "complaint",
-    status: "pending",
-    createdAt: "2023-11-06T09:10:00Z",
-    updatedAt: "2023-11-06T09:10:00Z",
-    user: {
-      id: 105,
-      name: "Javier García"
-    },
-    seller: {
-      id: 1,
-      storeName: "ElectroStore"
-    }
-  },
-  {
-    id: 6,
-    userId: 106,
-    title: "Sugerencia para proceso de checkout",
-    description: "El proceso de pago tiene demasiados pasos. Sería genial si pudieran simplificarlo y ofrecer la opción de guardar información para futuras compras.",
-    type: "improvement",
-    status: "rejected",
-    adminNotes: "Actualmente no es viable reducir pasos debido a requisitos de seguridad. Lo reconsideraremos en futuras actualizaciones.",
-    reviewedBy: 201,
-    reviewedAt: "2023-11-04T14:30:00Z",
-    createdAt: "2023-11-01T10:45:00Z",
-    updatedAt: "2023-11-04T14:30:00Z",
-    user: {
-      id: 106,
-      name: "Lucía Fernández"
-    },
-    admin: {
-      id: 201,
-      name: "Admin Principal"
-    }
-  },
-  {
-    id: 7,
-    userId: 107,
-    title: "Solicitud de nueva función de comparación",
-    description: "Sería muy útil poder comparar varios productos lado a lado. Muchos otros sitios de e-commerce ofrecen esta función y realmente ayuda a tomar decisiones informadas.",
-    type: "feature",
-    status: "approved",
-    adminNotes: "Excelente idea, incluida en el roadmap para el próximo trimestre.",
-    reviewedBy: 203,
-    reviewedAt: "2023-11-06T13:45:00Z",
-    createdAt: "2023-11-04T18:30:00Z",
-    updatedAt: "2023-11-06T13:45:00Z",
-    user: {
-      id: 107,
-      name: "David López"
-    },
-    admin: {
-      id: 203,
-      name: "Admin Producto"
-    }
-  },
-  {
-    id: 8,
-    userId: 108,
-    sellerId: 4,
-    title: "Problema con cupones de descuento",
-    description: "Los cupones de descuento no se aplican correctamente cuando el carrito tiene productos de múltiples vendedores. El sistema muestra un error y no permite completar la compra.",
-    type: "bug",
-    status: "pending",
-    createdAt: "2023-11-05T20:15:00Z",
-    updatedAt: "2023-11-05T20:15:00Z",
-    user: {
-      id: 108,
-      name: "Elena Gómez"
-    }
-  }
-];
+interface Admin {
+  id: number;
+  name: string;
+}
+
+interface Feedback {
+  id: number;
+  user_id: number;
+  seller_id?: number;
+  title: string;
+  description: string;
+  type: 'bug' | 'improvement' | 'other';
+  status: 'pending' | 'approved' | 'rejected';
+  admin_notes?: string;
+  reviewed_by?: number;
+  reviewed_at?: string;
+  created_at: string;
+  updated_at: string;
+  user?: User;
+  seller?: Seller;
+  admin?: Admin;
+  discount_code?: {
+    code: string;
+    discount_percentage: number;
+    expires_at: string;
+  };
+  seller_featured?: {
+    featured_at: string;
+    featured_expires_at: string;
+    featured_days: number;
+    is_active: boolean;
+  };
+}
 
 // Mapeo de estado para feedback
 const feedbackStatusMap: Record<string, { label: string, color: string, icon: React.ReactNode }> = {
@@ -202,19 +95,9 @@ const feedbackTypeMap: Record<string, { label: string, color: string, icon: Reac
     icon: <Tag className="w-3 h-3 mr-1" />
   },
   bug: { 
-    label: "Error", 
+    label: "Error/Bug", 
     color: "bg-red-100 text-red-800",
     icon: <AlertTriangle className="w-3 h-3 mr-1" />
-  },
-  feature: { 
-    label: "Función", 
-    color: "bg-purple-100 text-purple-800",
-    icon: <Tag className="w-3 h-3 mr-1" />
-  },
-  complaint: { 
-    label: "Queja", 
-    color: "bg-orange-100 text-orange-800",
-    icon: <Flag className="w-3 h-3 mr-1" />
   },
   other: { 
     label: "Otro", 
@@ -241,39 +124,62 @@ const AdminFeedbackPage: React.FC = () => {
 		totalItems: 0,
 		itemsPerPage: 10,
 	});
-	const [selectedFeedback, setSelectedFeedback] = useState<Feedback | null>(
-		null
-	);
+	const [selectedFeedback, setSelectedFeedback] = useState<Feedback | null>(null);
 	const [showFeedbackModal, setShowFeedbackModal] = useState(false);
 	const [adminNote, setAdminNote] = useState("");
-	const [generateDiscountCode, setGenerateDiscountCode] = useState(false);
-	const [discountPercentage, setDiscountPercentage] = useState(10); // Valor por defecto: 10%
+	const [generateDiscountCode, setGenerateDiscountCode] = useState(true);
+	const [validityDays, setValidityDays] = useState(30);
+	const [isProcessing, setIsProcessing] = useState(false);
 
 	// Cargar datos de feedback
 	useEffect(() => {
-		const fetchFeedback = () => {
-			setLoading(true);
-			// Simulación de llamada a API
-			setTimeout(() => {
-				setFeedback(mockFeedback);
-				setPagination({
-					currentPage: 1,
-					totalPages: 1,
-					totalItems: mockFeedback.length,
-					itemsPerPage: 10,
-				});
-				setLoading(false);
-			}, 500);
-		};
-
 		fetchFeedback();
-	}, []);
+	}, [pagination.currentPage, statusFilter, typeFilter, dateRangeFilter]);
+
+	const fetchFeedback = async () => {
+		try {
+			setLoading(true);
+			const params = new URLSearchParams({
+				limit: pagination.itemsPerPage.toString(),
+				offset: ((pagination.currentPage - 1) * pagination.itemsPerPage).toString()
+			});
+
+			// Aplicar filtros
+			if (statusFilter !== 'all') {
+				params.append('status', statusFilter);
+			}
+			if (typeFilter !== 'all') {
+				params.append('type', typeFilter);
+			}
+			if (dateRangeFilter.from) {
+				params.append('from_date', dateRangeFilter.from);
+			}
+			if (dateRangeFilter.to) {
+				params.append('to_date', dateRangeFilter.to);
+			}
+
+			const response = await ApiClient.get(`${API_ENDPOINTS.ADMIN.PENDING_FEEDBACK}?${params.toString()}`);
+			
+			if (response.status === 'success') {
+				setFeedback(response.data || []);
+				setPagination(prev => ({
+					...prev,
+					totalItems: response.meta?.total || 0,
+					totalPages: Math.ceil((response.meta?.total || 0) / pagination.itemsPerPage)
+				}));
+			}
+		} catch (error) {
+			console.error('Error fetching feedback:', error);
+			setFeedback([]);
+		} finally {
+			setLoading(false);
+		}
+	};
 
 	// Filtrar feedback
 	const filteredFeedback = feedback.filter((item) => {
 		// Filtro por estado
-		const matchesStatus =
-			statusFilter === "all" || item.status === statusFilter;
+		const matchesStatus = statusFilter === "all" || item.status === statusFilter;
 
 		// Filtro por tipo
 		const matchesType = typeFilter === "all" || item.type === typeFilter;
@@ -281,12 +187,12 @@ const AdminFeedbackPage: React.FC = () => {
 		// Filtro por rango de fechas
 		let matchesDateRange = true;
 		if (dateRangeFilter.from) {
-			const feedbackDate = new Date(item.createdAt || "");
+			const feedbackDate = new Date(item.created_at || "");
 			const fromDate = new Date(dateRangeFilter.from);
 			matchesDateRange = feedbackDate >= fromDate;
 		}
 		if (dateRangeFilter.to && matchesDateRange) {
-			const feedbackDate = new Date(item.createdAt || "");
+			const feedbackDate = new Date(item.created_at || "");
 			const toDate = new Date(dateRangeFilter.to);
 			// Ajustar a final del día
 			toDate.setHours(23, 59, 59, 999);
@@ -299,9 +205,9 @@ const AdminFeedbackPage: React.FC = () => {
 	// Abrir modal de feedback
 	const openFeedbackModal = (item: Feedback) => {
 		setSelectedFeedback(item);
-		setAdminNote(item.adminNotes || "");
-		setGenerateDiscountCode(false);
-		setDiscountPercentage(10);
+		setAdminNote(item.admin_notes || "");
+		setGenerateDiscountCode(true);
+		setValidityDays(30);
 		setShowFeedbackModal(true);
 	};
 
@@ -310,100 +216,130 @@ const AdminFeedbackPage: React.FC = () => {
 		setSelectedFeedback(null);
 		setShowFeedbackModal(false);
 		setAdminNote("");
-		setGenerateDiscountCode(false);
-		setDiscountPercentage(10);
+		setGenerateDiscountCode(true);
+		setValidityDays(30);
+		setIsProcessing(false);
 	};
 
 	// Aprobar feedback
-	const approveFeedback = (feedbackId: number) => {
-		if (selectedFeedback) {
-			if (!adminNote) {
-				alert(
-					"Por favor, proporciona una nota de administrador para la aprobación."
-				);
-				return;
-			}
+	const approveFeedback = async (feedbackId: number) => {
+		if (!adminNote.trim()) {
+			alert("Por favor, proporciona una nota de administrador para la aprobación.");
+			return;
+		}
 
-			// En un caso real, aquí enviarías la solicitud al servidor con el código de descuento si está seleccionado
+		try {
+			setIsProcessing(true);
+			
 			const approvalData = {
-				id: feedbackId,
-				status: "approved",
-				adminNotes: adminNote,
-				generateDiscountCode,
-				discountPercentage: generateDiscountCode
-					? discountPercentage
-					: undefined,
+				status: 'approved',
+				admin_notes: adminNote,
+				generate_discount: generateDiscountCode,
+				validity_days: generateDiscountCode ? validityDays : undefined
 			};
 
-			console.log("Datos de aprobación:", approvalData);
+			const response = await ApiClient.post(
+				`${API_ENDPOINTS.ADMIN.REVIEW_FEEDBACK(feedbackId)}`,
+				approvalData
+			);
 
-			closeFeedbackModal();
-		}
+			if (response.status === 'success') {
+				// Actualizar lista local
+				setFeedback((prevFeedback) =>
+					prevFeedback.map((item) => {
+						if (item.id === feedbackId) {
+							return {
+								...item,
+								status: "approved" as const,
+								admin_notes: adminNote,
+								reviewed_at: new Date().toISOString(),
+								updated_at: new Date().toISOString(),
+								discount_code: response.data?.discount_code,
+								seller_featured: response.data?.seller_featured
+							};
+						}
+						return item;
+					})
+				);
 
-		// Actualizar el estado local
-		setFeedback((prevFeedback) =>
-			prevFeedback.map((item) => {
-				if (item.id === feedbackId) {
-					return {
-						...item,
-						status: "approved",
-						adminNotes: adminNote,
-						reviewedBy: 201, // ID del admin actual (en un caso real vendría del contexto)
-						reviewedAt: new Date().toISOString(),
-						updatedAt: new Date().toISOString(),
-					};
+				// Mostrar mensaje de éxito
+				let message = `Feedback #${feedbackId} aprobado correctamente.`;
+				if (response.data?.discount_code && !selectedFeedback?.seller_id) {
+					message += ` Se ha generado el código de descuento '${response.data.discount_code.code}' para el usuario.`;
 				}
-				return item;
-			})
-		);
+				if (response.data?.seller_featured && selectedFeedback?.seller_id) {
+					message += ` La tienda ha sido destacada por 15 días.`;
+				}
 
-		// Mostrar mensaje de aprobación
-		let message = `Feedback #${feedbackId} aprobado correctamente.`;
-		if (generateDiscountCode) {
-			message += ` Se ha generado un código de descuento del ${discountPercentage}% para el usuario.`;
+				alert(message);
+				closeFeedbackModal();
+				
+				// Recargar datos
+				await fetchFeedback();
+			} else {
+				alert(response.message || 'Error al aprobar feedback');
+			}
+		} catch (error: any) {
+			console.error('Error approving feedback:', error);
+			const errorMessage = error.response?.data?.message || error.message || 'Error al aprobar feedback';
+			alert(errorMessage);
+		} finally {
+			setIsProcessing(false);
 		}
-
-		alert(message);
 	};
 
 	// Rechazar feedback
-	const rejectFeedback = (feedbackId: number) => {
-		if (selectedFeedback) {
-			if (!adminNote) {
-				alert(
-					"Por favor, proporciona una nota de administrador para el rechazo."
-				);
-				return;
-			}
-
-			closeFeedbackModal();
+	const rejectFeedback = async (feedbackId: number) => {
+		if (!adminNote.trim()) {
+			alert("Por favor, proporciona una nota de administrador para el rechazo.");
+			return;
 		}
 
-		// Actualizar el estado local
-		setFeedback((prevFeedback) =>
-			prevFeedback.map((item) => {
-				if (item.id === feedbackId) {
-					return {
-						...item,
-						status: "rejected",
-						adminNotes: adminNote,
-						reviewedBy: 201, // ID del admin actual (en un caso real vendría del contexto)
-						reviewedAt: new Date().toISOString(),
-						updatedAt: new Date().toISOString(),
-					};
-				}
-				return item;
-			})
-		);
+		try {
+			setIsProcessing(true);
+			
+			const rejectionData = {
+				status: 'rejected',
+				admin_notes: adminNote
+			};
 
-		alert(`Feedback #${feedbackId} rechazado.`);
-	};
+			const response = await ApiClient.post(
+				`${API_ENDPOINTS.ADMIN.REVIEW_FEEDBACK(feedbackId)}`,
+				rejectionData
+			);
 
-	// Reportar como inapropiado
-	const reportFeedback = (feedbackId: number) => {
-		alert(
-			`El feedback #${feedbackId} ha sido reportado para revisión adicional.`
-		);
+			if (response.status === 'success') {
+				// Actualizar lista local
+				setFeedback((prevFeedback) =>
+					prevFeedback.map((item) => {
+						if (item.id === feedbackId) {
+							return {
+								...item,
+								status: "rejected" as const,
+								admin_notes: adminNote,
+								reviewed_at: new Date().toISOString(),
+								updated_at: new Date().toISOString(),
+							};
+						}
+						return item;
+					})
+				);
+
+				alert(`Feedback #${feedbackId} rechazado.`);
+				closeFeedbackModal();
+				
+				// Recargar datos
+				await fetchFeedback();
+			} else {
+				alert(response.message || 'Error al rechazar feedback');
+			}
+		} catch (error: any) {
+			console.error('Error rejecting feedback:', error);
+			const errorMessage = error.response?.data?.message || error.message || 'Error al rechazar feedback';
+			alert(errorMessage);
+		} finally {
+			setIsProcessing(false);
+		}
 	};
 
 	// Formatear fecha
@@ -423,16 +359,11 @@ const AdminFeedbackPage: React.FC = () => {
 	// Manejar cambio de página
 	const handlePageChange = (page: number) => {
 		setPagination((prev) => ({...prev, currentPage: page}));
-		// En una app real, aquí obtendrías los datos para la nueva página
 	};
 
 	// Refrescar datos
-	const refreshData = () => {
-		setLoading(true);
-		// Simular recarga de datos
-		setTimeout(() => {
-			setLoading(false);
-		}, 500);
+	const refreshData = async () => {
+		await fetchFeedback();
 	};
 
 	// Definir columnas de la tabla
@@ -448,10 +379,10 @@ const AdminFeedbackPage: React.FC = () => {
 					</div>
 					<div className="ml-3">
 						<div className="text-sm font-medium text-gray-900">
-							{feedback.user?.name || `Usuario #${feedback.userId}`}
+							{feedback.user?.name || `Usuario #${feedback.user_id}`}
 						</div>
 						<div className="text-xs text-gray-500">
-							ID: {feedback.userId}
+							ID: {feedback.user_id}
 						</div>
 					</div>
 				</div>
@@ -462,14 +393,14 @@ const AdminFeedbackPage: React.FC = () => {
 			header: "Vendedor",
 			sortable: true,
 			render: (feedback: Feedback) => {
-				if (feedback.sellerId && feedback.seller) {
+				if (feedback.seller_id && feedback.seller) {
 					return (
 						<Link
-							to={`/admin/sellers/${feedback.sellerId}`}
+							to={`/admin/sellers/${feedback.seller_id}`}
 							className="flex items-center text-primary-600 hover:text-primary-800"
 						>
 							<Store className="h-4 w-4 mr-1" />
-							{feedback.seller.storeName}
+							{feedback.seller.store_name}
 						</Link>
 					);
 				}
@@ -483,8 +414,7 @@ const AdminFeedbackPage: React.FC = () => {
 			render: (feedback: Feedback) => {
 				const type = feedbackTypeMap[feedback.type] || {
 					label: feedback.type,
-					color:
-						"bg-gray-100 text-gray-800",
+					color: "bg-gray-100 text-gray-800",
 					icon: <AlertTriangle className="w-3 h-3 mr-1" />,
 				};
 
@@ -514,9 +444,9 @@ const AdminFeedbackPage: React.FC = () => {
 			sortable: true,
 			render: (feedback: Feedback) => (
 				<div className="text-xs text-gray-500">
-					{formatDate(feedback.createdAt)}
-					{feedback.reviewedAt && (
-						<div>Revisado: {formatDate(feedback.reviewedAt)}</div>
+					{formatDate(feedback.created_at)}
+					{feedback.reviewed_at && (
+						<div>Revisado: {formatDate(feedback.reviewed_at)}</div>
 					)}
 				</div>
 			),
@@ -528,8 +458,7 @@ const AdminFeedbackPage: React.FC = () => {
 			render: (feedback: Feedback) => {
 				const status = feedbackStatusMap[feedback.status] || {
 					label: feedback.status,
-					color:
-						"bg-gray-100 text-gray-800",
+					color: "bg-gray-100 text-gray-800",
 					icon: <AlertTriangle className="w-3 h-3 mr-1" />,
 				};
 
@@ -558,36 +487,41 @@ const AdminFeedbackPage: React.FC = () => {
 							<Eye size={18} />
 						</button>
 
-						{/* Aprobar feedback (si está pendiente) */}
+						{/* Solo mostrar botones para feedback pendiente */}
 						{feedback.status === "pending" && (
-							<button
-								onClick={() => approveFeedback(feedback.id || 0)}
-								className="p-1 text-green-600 hover:bg-green-100 rounded-md"
-								title="Aprobar feedback"
-							>
-								<CheckCircle size={18} />
-							</button>
+							<>
+								<button
+									onClick={() => openFeedbackModal(feedback)}
+									className="p-1 text-green-600 hover:bg-green-100 rounded-md"
+									title="Revisar y aprobar"
+								>
+									<CheckCircle size={18} />
+								</button>
+								<button
+									onClick={() => openFeedbackModal(feedback)}
+									className="p-1 text-red-600 hover:bg-red-100 rounded-md"
+									title="Revisar y rechazar"
+								>
+									<XCircle size={18} />
+								</button>
+							</>
 						)}
 
-						{/* Rechazar feedback (si está pendiente) */}
-						{feedback.status === "pending" && (
-							<button
-								onClick={() => rejectFeedback(feedback.id || 0)}
-								className="p-1 text-red-600 hover:bg-red-100 rounded-md"
-								title="Rechazar feedback"
-							>
-								<XCircle size={18} />
-							</button>
+						{/* Mostrar recompensas si está aprobado */}
+						{feedback.status === "approved" && (
+							<>
+								{feedback.discount_code && (
+									<div className="p-1 text-blue-600" title="Cupón generado">
+										<Gift size={18} />
+									</div>
+								)}
+								{feedback.seller_featured && (
+									<div className="p-1 text-yellow-600" title="Tienda destacada">
+										<Star size={18} />
+									</div>
+								)}
+							</>
 						)}
-
-						{/* Reportar feedback */}
-						<button
-							onClick={() => reportFeedback(feedback.id || 0)}
-							className="p-1 text-orange-600 hover:bg-orange-100 rounded-md"
-							title="Reportar feedback"
-						>
-							<Flag size={18} />
-						</button>
 					</div>
 				);
 			},
@@ -658,14 +592,17 @@ const AdminFeedbackPage: React.FC = () => {
 					<button
 						onClick={refreshData}
 						className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+						disabled={loading}
 					>
-						<RefreshCw size={18} className="inline mr-2" />
+						<RefreshCw size={18} className={`inline mr-2 ${loading ? 'animate-spin' : ''}`} />
 						Actualizar
 					</button>
 				</div>
 			</div>
+			
 			{/* StatCards */}
 			<StatCardList items={statItems} />
+			
 			{/* Filtros */}
 			<div className="bg-white rounded-lg shadow-sm p-4">
 				<div className="flex flex-col md:flex-row gap-4">
@@ -693,9 +630,7 @@ const AdminFeedbackPage: React.FC = () => {
 						>
 							<option value="all">Todos los Tipos</option>
 							<option value="improvement">Mejoras</option>
-							<option value="bug">Errores</option>
-							<option value="feature">Nuevas Funciones</option>
-							<option value="complaint">Quejas</option>
+							<option value="bug">Errores/Bugs</option>
 							<option value="other">Otros</option>
 						</select>
 					</div>
@@ -744,10 +679,10 @@ const AdminFeedbackPage: React.FC = () => {
 			{/* Modal de Detalle de Feedback */}
 			{showFeedbackModal && selectedFeedback && (
 				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-					<div className="bg-white rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+					<div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
 						<div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
 							<h3 className="text-lg font-medium text-gray-900">
-								Detalles de Feedback
+								Detalles de Feedback #{selectedFeedback.id}
 							</h3>
 							<button
 								onClick={closeFeedbackModal}
@@ -759,37 +694,47 @@ const AdminFeedbackPage: React.FC = () => {
 						<div className="p-6">
 							{/* Información de Usuario */}
 							<div className="mb-6">
-								<h4 className="text-sm font-medium text-gray-500 mb-2">
-									Usuario
-								</h4>
+								<h4 className="text-sm font-medium text-gray-500 mb-2">Usuario</h4>
 								<div className="flex items-center">
 									<div className="flex-shrink-0 h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
 										<User className="h-6 w-6 text-gray-500" />
 									</div>
 									<div className="ml-4">
 										<div className="text-sm font-medium text-gray-900">
-											{selectedFeedback.user?.name ||
-												`Usuario #${selectedFeedback.userId}`}
+											{selectedFeedback.user?.name || `Usuario #${selectedFeedback.user_id}`}
 										</div>
 										<div className="text-xs text-gray-500">
-											ID: {selectedFeedback.userId}
+											ID: {selectedFeedback.user_id}
 										</div>
 									</div>
 								</div>
 							</div>
 
+							{/* Si es de un seller, mostrar información del seller */}
+							{selectedFeedback.seller_id && selectedFeedback.seller && (
+								<div className="mb-6">
+									<h4 className="text-sm font-medium text-gray-500 mb-2">Vendedor</h4>
+									<div className="flex items-center">
+										<Store className="h-5 w-5 text-gray-500 mr-2" />
+										<Link
+											to={`/admin/sellers/${selectedFeedback.seller_id}`}
+											className="text-primary-600 hover:text-primary-800"
+										>
+											{selectedFeedback.seller.store_name}
+										</Link>
+									</div>
+								</div>
+							)}
+
 							{/* Información del Feedback */}
 							<div className="mb-6">
 								<div className="flex justify-between items-start mb-2">
-									<h4 className="text-sm font-medium text-gray-500">
-										Detalles
-									</h4>
+									<h4 className="text-sm font-medium text-gray-500">Detalles</h4>
 									<div>
 										{(() => {
 											const type = feedbackTypeMap[selectedFeedback.type] || {
 												label: selectedFeedback.type,
-												color:
-													"bg-gray-100 text-gray-800",
+												color: "bg-gray-100 text-gray-800",
 												icon: <AlertTriangle className="w-4 h-4 mr-1" />,
 											};
 
@@ -811,47 +756,21 @@ const AdminFeedbackPage: React.FC = () => {
 									{selectedFeedback.description}
 								</div>
 								<div className="text-sm text-gray-500">
-									<div>Enviado: {formatDate(selectedFeedback.createdAt)}</div>
-									{selectedFeedback.updatedAt !==
-										selectedFeedback.createdAt && (
-										<div>
-											Actualizado: {formatDate(selectedFeedback.updatedAt)}
-										</div>
+									<div>Enviado: {formatDate(selectedFeedback.created_at)}</div>
+									{selectedFeedback.updated_at !== selectedFeedback.created_at && (
+										<div>Actualizado: {formatDate(selectedFeedback.updated_at)}</div>
 									)}
 								</div>
 							</div>
 
-							{/* Si es una queja sobre un vendedor, mostrar información del vendedor */}
-							{selectedFeedback.sellerId && selectedFeedback.seller && (
-								<div className="mb-6">
-									<h4 className="text-sm font-medium text-gray-500 mb-2">
-										Vendedor Relacionado
-									</h4>
-									<div className="flex items-center">
-										<Store className="h-5 w-5 text-gray-500 mr-2" />
-										<Link
-											to={`/admin/sellers/${selectedFeedback.sellerId}`}
-											className="text-primary-600 hover:text-primary-800"
-										>
-											{selectedFeedback.seller.storeName}
-										</Link>
-									</div>
-								</div>
-							)}
-
 							{/* Estado Actual */}
 							<div className="mb-6">
-								<h4 className="text-sm font-medium text-gray-500 mb-2">
-									Estado Actual
-								</h4>
+								<h4 className="text-sm font-medium text-gray-500 mb-2">Estado Actual</h4>
 								<div className="flex items-center">
 									{(() => {
-										const status = feedbackStatusMap[
-											selectedFeedback.status
-										] || {
+										const status = feedbackStatusMap[selectedFeedback.status] || {
 											label: selectedFeedback.status,
-											color:
-												"bg-gray-100 text-gray-800",
+											color: "bg-gray-100 text-gray-800",
 											icon: <AlertTriangle className="w-4 h-4 mr-1" />,
 										};
 
@@ -868,39 +787,81 @@ const AdminFeedbackPage: React.FC = () => {
 							</div>
 
 							{/* Notas de Administración existentes */}
-							{selectedFeedback.adminNotes && (
+							{selectedFeedback.admin_notes && (
 								<div className="mb-6">
-									<h4 className="text-sm font-medium text-gray-500 mb-2">
-										Notas de Administración
-									</h4>
+									<h4 className="text-sm font-medium text-gray-500 mb-2">Notas de Administración</h4>
 									<div className="bg-gray-50 p-3 rounded-lg text-gray-800 mb-2">
-										{selectedFeedback.adminNotes}
+										{selectedFeedback.admin_notes}
 									</div>
-									<div className="text-sm text-gray-500">
-										{selectedFeedback.admin && (
-											<span>Por: {selectedFeedback.admin.name}</span>
-										)}
-										{selectedFeedback.reviewedAt && (
-											<span className="ml-2">
-												({formatDate(selectedFeedback.reviewedAt)})
-											</span>
-										)}
-									</div>
+									{selectedFeedback.reviewed_at && (
+										<div className="text-sm text-gray-500">
+											Revisado: {formatDate(selectedFeedback.reviewed_at)}
+										</div>
+									)}
+								</div>
+							)}
+
+							{/* Información de recompensas si está aprobado */}
+							{selectedFeedback.status === "approved" && (
+								<div className="mb-6">
+									<h4 className="text-sm font-medium text-gray-500 mb-2">Recompensas Otorgadas</h4>
+									
+									{selectedFeedback.discount_code && (
+										<div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
+											<div className="flex items-center gap-2 mb-2">
+												<Gift className="w-4 h-4 text-blue-600" />
+												<h6 className="font-medium text-blue-900 text-sm">Código de Descuento Generado</h6>
+											</div>
+											<div className="grid grid-cols-2 gap-2 text-xs">
+												<div>
+													<span className="text-blue-700 font-medium">Código:</span>
+													<p className="font-bold text-blue-900">{selectedFeedback.discount_code.code}</p>
+												</div>
+												<div>
+													<span className="text-blue-700 font-medium">Descuento:</span>
+													<p className="font-bold text-blue-900">{selectedFeedback.discount_code.discount_percentage}%</p>
+												</div>
+											</div>
+										</div>
+									)}
+
+									{selectedFeedback.seller_featured && (
+										<div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+											<div className="flex items-center gap-2 mb-2">
+												<Star className="w-4 h-4 text-yellow-600" />
+												<h6 className="font-medium text-yellow-900 text-sm">Tienda Destacada Activada</h6>
+											</div>
+											<div className="grid grid-cols-3 gap-2 text-xs">
+												<div>
+													<span className="text-yellow-700 font-medium">Activada:</span>
+													<p className="font-bold text-yellow-900">{formatDate(selectedFeedback.seller_featured.featured_at)}</p>
+												</div>
+												<div>
+													<span className="text-yellow-700 font-medium">Duración:</span>
+													<p className="font-bold text-yellow-900">{selectedFeedback.seller_featured.featured_days} días</p>
+												</div>
+												<div>
+													<span className="text-yellow-700 font-medium">Válido hasta:</span>
+													<p className="text-yellow-900">{formatDate(selectedFeedback.seller_featured.featured_expires_at)}</p>
+												</div>
+											</div>
+											{selectedFeedback.seller_featured.is_active ? (
+												<p className="text-yellow-600 text-xs mt-1 font-medium">✨ Tienda actualmente destacada</p>
+											) : (
+												<p className="text-gray-600 text-xs mt-1 font-medium">⏰ Destacado expirado</p>
+											)}
+										</div>
+									)}
 								</div>
 							)}
 
 							{/* Acciones de Administración */}
 							{selectedFeedback.status === "pending" && (
 								<div className="mb-6">
-									<h4 className="text-sm font-medium text-gray-500 mb-2">
-										Revisión de Administrador
-									</h4>
+									<h4 className="text-sm font-medium text-gray-500 mb-2">Revisión de Administrador</h4>
 
 									<div className="mb-4">
-										<label
-											htmlFor="adminNote"
-											className="block text-sm font-medium text-gray-700 mb-1"
-										>
+										<label htmlFor="adminNote" className="block text-sm font-medium text-gray-700 mb-1">
 											Nota de Administrador (obligatoria)
 										</label>
 										<textarea
@@ -910,10 +871,11 @@ const AdminFeedbackPage: React.FC = () => {
 											placeholder="Notas adicionales o respuesta al usuario..."
 											value={adminNote}
 											onChange={(e) => setAdminNote(e.target.value)}
+											disabled={isProcessing}
 										></textarea>
 									</div>
 
-									{/* Opción de código de descuento (solo para aprobación) */}
+									{/* Opción de código de descuento/featured store */}
 									<div className="mb-4">
 										<div className="flex items-center mb-2">
 											<input
@@ -921,43 +883,33 @@ const AdminFeedbackPage: React.FC = () => {
 												type="checkbox"
 												className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
 												checked={generateDiscountCode}
-												onChange={(e) =>
-													setGenerateDiscountCode(e.target.checked)
-												}
+												onChange={(e) => setGenerateDiscountCode(e.target.checked)}
+												disabled={isProcessing}
 											/>
-											<label
-												htmlFor="generateDiscount"
-												className="ml-2 block text-sm text-gray-700"
-											>
-												Generar código de descuento para el usuario
+											<label htmlFor="generateDiscount" className="ml-2 block text-sm text-gray-700">
+												{selectedFeedback.seller_id 
+													? "Activar tienda destacada por 15 días" 
+													: "Generar código de descuento para el usuario"
+												}
 											</label>
 										</div>
 
-										{generateDiscountCode && (
+										{generateDiscountCode && !selectedFeedback.seller_id && (
 											<div className="ml-6">
-												<label
-													htmlFor="discountPercentage"
-													className="block text-sm font-medium text-gray-700 mb-1"
-												>
-													Porcentaje de descuento
+												<label htmlFor="validityDays" className="block text-sm font-medium text-gray-700 mb-1">
+													Días de validez del cupón
 												</label>
-												<div className="flex items-center">
-													<input
-														type="range"
-														id="discountPercentage"
-														min="5"
-														max="50"
-														step="5"
-														value={discountPercentage}
-														onChange={(e) =>
-															setDiscountPercentage(parseInt(e.target.value))
-														}
-														className="mr-3 w-40"
-													/>
-													<span className="text-sm font-medium text-gray-700 w-10">
-														{discountPercentage}%
-													</span>
-												</div>
+												<input
+													type="number"
+													id="validityDays"
+													min="1"
+													max="365"
+													value={validityDays}
+													onChange={(e) => setValidityDays(parseInt(e.target.value) || 30)}
+													className="w-24 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+													disabled={isProcessing}
+												/>
+												<span className="ml-2 text-sm text-gray-500">días</span>
 											</div>
 										)}
 									</div>
@@ -965,69 +917,24 @@ const AdminFeedbackPage: React.FC = () => {
 									<div className="flex space-x-2">
 										<button
 											onClick={() => approveFeedback(selectedFeedback.id || 0)}
-											className="flex items-center justify-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-											disabled={!adminNote}
+											className="flex items-center justify-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+											disabled={!adminNote.trim() || isProcessing}
 										>
 											<CheckCircle size={18} className="mr-2" />
-											Aprobar
+											{isProcessing ? "Procesando..." : "Aprobar"}
 										</button>
 										<button
 											onClick={() => rejectFeedback(selectedFeedback.id || 0)}
-											className="flex items-center justify-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-											disabled={!adminNote}
+											className="flex items-center justify-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+											disabled={!adminNote.trim() || isProcessing}
 										>
 											<XCircle size={18} className="mr-2" />
-											Rechazar
+											{isProcessing ? "Procesando..." : "Rechazar"}
 										</button>
 									</div>
 								</div>
 							)}
 
-							{/* Enlaces rápidos (según el tipo de feedback) */}
-							<div>
-								<h4 className="text-sm font-medium text-gray-500 mb-2">
-									Enlaces Rápidos
-								</h4>
-								<div className="flex flex-wrap gap-2">
-									{selectedFeedback.sellerId && (
-										<Link
-											to={`/admin/sellers/${selectedFeedback.sellerId}`}
-											className="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
-										>
-											<Store className="w-4 h-4 mr-1" />
-											Perfil del Vendedor
-										</Link>
-									)}
-
-									<Link
-										to={`/admin/users/${selectedFeedback.userId}`}
-										className="inline-flex items-center px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm"
-									>
-										<User className="w-4 h-4 mr-1" />
-										Ver Usuario
-									</Link>
-
-									{selectedFeedback.type === "bug" && (
-										<Link
-											to="/admin/bugs"
-											className="inline-flex items-center px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm"
-										>
-											<AlertTriangle className="w-4 h-4 mr-1" />
-											Lista de Errores
-										</Link>
-									)}
-
-									{selectedFeedback.type === "feature" && (
-										<Link
-											to="/admin/roadmap"
-											className="inline-flex items-center px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm"
-										>
-											<Tag className="w-4 h-4 mr-1" />
-											Roadmap de Funciones
-										</Link>
-									)}
-								</div>
-							</div>
 						</div>
 					</div>
 				</div>

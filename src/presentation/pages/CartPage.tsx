@@ -20,6 +20,8 @@ import {useErrorHandler} from "../hooks/useErrorHandler";
 import {NotificationType} from "../contexts/CartContext";
 import CacheService from "../../infrastructure/services/CacheService";
 import {formatCurrency} from "../../utils/formatters/formatCurrency";
+import ApiClient from "../../infrastructure/api/apiClient";
+import {API_ENDPOINTS} from "../../constants/apiEndpoints";
 
 // ✅ NUEVO: Importar calculadora de descuentos por volumen
 import {calculateCartItemDiscounts} from "../../utils/volumeDiscountCalculator";
@@ -33,9 +35,8 @@ const CartPage: React.FC = () => {
 	const [isLoading, setIsLoading] = useState(true);
 	const [isEmpty, setIsEmpty] = useState(false);
 	const [couponCode, setCouponCode] = useState("");
-	const [couponApplied, setCouponApplied] = useState(false);
-	const [couponDiscount, setCouponDiscount] = useState(0);
 	const [loadingItem, setLoadingItem] = useState<number | null>(null);
+	const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
 
 	const navigate = useNavigate();
 
@@ -58,6 +59,11 @@ const CartPage: React.FC = () => {
 		updateCartItem,
 		clearCart,
 		showNotification,
+		// ✅ NUEVO: Funciones de descuento del CartContext
+		appliedDiscount,
+		validateDiscountCode,
+		applyDiscountCode,
+		removeDiscountCode,
 	} = useCart();
 
 	const {toggleFavorite} = useFavorites();
@@ -148,7 +154,7 @@ const CartPage: React.FC = () => {
 		});
 	}, [cart?.items, getProductImage]);
 
-	// ✅ ACTUALIZADO: Calcular totales del carrito con descuentos por volumen
+	// ✅ USAR TOTALES DEL BACKEND DIRECTAMENTE (IGUAL QUE CHECKOUT)
 	const cartTotals = useMemo(() => {
 		if (!cartItemsWithDiscounts.length) {
 			return {
@@ -160,46 +166,70 @@ const CartPage: React.FC = () => {
 				totalSellerSavings: 0,
 				totalSavings: 0,
 				volumeDiscountsApplied: false,
+				shipping: 0,
 			};
 		}
 
-		// ✅ Calcular subtotal con TODOS los descuentos aplicados
+		// ✅ SIEMPRE USAR SECUENCIA EXACTA - NO BACKEND
+		console.log("🔍 FLUJO CART - Iniciando cálculo de totales");
+		console.log("📊 Items en carrito:", cartItemsWithDiscounts.length);
+		console.log("📊 Cupón aplicado:", appliedDiscount?.discountCode?.code || "NINGUNO");
+		
+		// Helper for precise calculations
+		const roundToPrecision = (value: number, decimals: number = 2): number => {
+			return Math.round(value * Math.pow(10, decimals)) / Math.pow(10, decimals);
+		};
+		
 		let subtotal = 0;
 		let totalVolumeSavings = 0;
 		let totalSellerSavings = 0;
 		let volumeDiscountsApplied = false;
 
+		// ✅ PASO 1-3: Precio base ($6) → Seller (50%=$3) → Volumen (5%=$2.85)
 		cartItemsWithDiscounts.forEach(item => {
-			const itemTotal = item.discount.finalPricePerUnit * item.quantity;
-			subtotal += itemTotal;
+			const itemTotal = roundToPrecision(item.discount.finalPricePerUnit * item.quantity);
+			subtotal = roundToPrecision(subtotal + itemTotal);
 			
-			// Acumular ahorros
-			totalSellerSavings += item.discount.sellerDiscountAmount * item.quantity;
-			totalVolumeSavings += item.discount.volumeDiscountAmount * item.quantity;
+			// Acumular ahorros precisos
+			const sellerSavings = roundToPrecision(item.discount.sellerDiscountAmount * item.quantity);
+			const volumeSavings = roundToPrecision(item.discount.volumeDiscountAmount * item.quantity);
+			
+			totalSellerSavings = roundToPrecision(totalSellerSavings + sellerSavings);
+			totalVolumeSavings = roundToPrecision(totalVolumeSavings + volumeSavings);
 			
 			if (item.discount.volumeDiscountAmount > 0) {
 				volumeDiscountsApplied = true;
 			}
 		});
 
-		const totalSavings = totalSellerSavings + totalVolumeSavings;
-		const taxRate = 0.15; // 15% IVA
-		const tax = subtotal * taxRate;
-		const couponAmount = couponApplied ? subtotal * (couponDiscount / 100) : 0;
-		const total = subtotal + tax - couponAmount;
+		// ✅ PASO 4: Cupón 5% sobre $2.85 = $2.7075
+		const couponAmount = appliedDiscount ? 
+			roundToPrecision(subtotal * (appliedDiscount.discountCode.discount_percentage / 100)) : 0;
+		
+		const subtotalAfterCoupon = roundToPrecision(subtotal - couponAmount);
 
-		console.log("💰 Totales calculados con descuentos por volumen:", {
-			subtotal,
-			totalSellerSavings,
-			totalVolumeSavings,
-			totalSavings,
-			tax,
-			total,
-			volumeDiscountsApplied
-		});
+		// ✅ PASO 5: Envío $5 (ANTES del IVA) = $7.7075
+		const shipping = 5.00;
+		const subtotalWithShipping = roundToPrecision(subtotalAfterCoupon + shipping);
+		
+		// ✅ PASO 6: IVA 15% AL FINAL sobre TODO ($7.7075 * 0.15 = $1.156)
+		const taxRate = 0.15;
+		const tax = roundToPrecision(subtotalWithShipping * taxRate);
+		
+		// ✅ TOTAL FINAL: $7.7075 + $1.156 = $8.86
+		const total = roundToPrecision(subtotalWithShipping + tax);
+		
+		const totalSavings = roundToPrecision(totalSellerSavings + totalVolumeSavings + couponAmount);
+
+		console.log("🔍 FLUJO CART - Totales finales calculados:");
+		console.log("   💰 Subtotal después de cupón:", subtotalAfterCoupon);
+		console.log("   💰 + Envío:", shipping, "=", subtotalWithShipping);
+		console.log("   💰 + IVA 15%:", tax);
+		console.log("   🎯 TOTAL CART:", total);
+		console.log("   📊 Descuentos: seller=", totalSellerSavings, "volume=", totalVolumeSavings, "cupón=", couponAmount);
 
 		return {
-			subtotal,
+			subtotal: subtotalAfterCoupon,
 			tax,
 			couponAmount,
 			total,
@@ -207,8 +237,9 @@ const CartPage: React.FC = () => {
 			totalSellerSavings,
 			totalSavings,
 			volumeDiscountsApplied,
+			shipping,
 		};
-	}, [cartItemsWithDiscounts, couponApplied, couponDiscount]);
+	}, [cartItemsWithDiscounts, appliedDiscount, cart?.total, cart?.subtotal, cart?.iva_amount, cart?.shipping_cost, cart?.total_discounts, cart?.feedback_discount_amount]);
 
 	// Cargar carrito simple - Solo al montar componente
 	useEffect(() => {
@@ -406,16 +437,48 @@ const CartPage: React.FC = () => {
 		[loadingItem, toggleFavorite, removeFromCart, optimisticFavoriteAdd, optimisticCartRemove, invalidateRelatedPages, cart?.items, fetchCart, handleSuccess, handleError]
 	);
 
-	// ✅ FUNCIÓN PARA APLICAR CUPÓN - AHORA EN USO
-	const applyCoupon = useCallback(() => {
-		if (couponCode.toLowerCase() === "discount10") {
-			setCouponApplied(true);
-			setCouponDiscount(10);
-			handleSuccess("Cupón aplicado exitosamente");
-		} else {
-			showNotification(NotificationType.ERROR, "Código de cupón inválido");
+	// ✅ FUNCIÓN PARA APLICAR CUPÓN - USANDO NUEVA API DE CART CONTEXT
+	const applyCoupon = useCallback(async () => {
+		if (!couponCode.trim()) {
+			showNotification(NotificationType.ERROR, "Por favor ingresa un código de cupón");
+			return;
 		}
-	}, [couponCode, handleSuccess, showNotification]);
+
+		setIsApplyingCoupon(true);
+
+		try {
+			const result = await applyDiscountCode(couponCode);
+			
+			if (result.success) {
+				handleSuccess(result.message);
+				setCouponCode(""); // Limpiar el campo después de aplicar
+			} else {
+				showNotification(NotificationType.ERROR, result.message);
+			}
+		} catch (error: any) {
+			console.error("Error applying coupon:", error);
+			showNotification(NotificationType.ERROR, "Error inesperado al aplicar el cupón");
+		} finally {
+			setIsApplyingCoupon(false);
+		}
+	}, [couponCode, applyDiscountCode, handleSuccess, showNotification]);
+
+	// ✅ FUNCIÓN PARA REMOVER CUPÓN - USANDO NUEVA API DE CART CONTEXT
+	const removeCoupon = useCallback(async () => {
+		try {
+			const result = await removeDiscountCode();
+			
+			if (result.success) {
+				handleSuccess(result.message);
+				setCouponCode(""); // Limpiar el campo
+			} else {
+				showNotification(NotificationType.ERROR, result.message);
+			}
+		} catch (error: any) {
+			console.error("Error removing coupon:", error);
+			showNotification(NotificationType.ERROR, "Error inesperado al remover el cupón");
+		}
+	}, [removeDiscountCode, handleSuccess, showNotification]);
 
 	// ✅ FUNCIÓN PARA VACIAR CARRITO
 	const handleEmptyCart = useCallback(async () => {
@@ -775,15 +838,22 @@ const CartPage: React.FC = () => {
 											value={couponCode}
 											onChange={(e) => setCouponCode(e.target.value)}
 											placeholder="Código de cupón"
-											disabled={couponApplied}
+											disabled={!!appliedDiscount}
 											className="flex-grow p-2 border border-gray-300 rounded-l-md focus:ring-primary-500 focus:border-primary-500 disabled:bg-gray-100"
 										/>
 										<button
 											onClick={applyCoupon}
-											disabled={!couponCode || couponApplied}
-											className="px-4 py-2 bg-gray-800 text-white font-semibold rounded-r-md hover:bg-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
+											disabled={!couponCode || !!appliedDiscount || isApplyingCoupon}
+											className="px-4 py-2 bg-gray-800 text-white font-semibold rounded-r-md hover:bg-gray-900 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
 										>
-											Aplicar
+											{isApplyingCoupon ? (
+												<>
+													<div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+													Aplicando...
+												</>
+											) : (
+												'Aplicar'
+											)}
 										</button>
 									</div>
 								</div>
@@ -825,18 +895,37 @@ const CartPage: React.FC = () => {
 									)}
 
 									<div className="flex justify-between">
+										<span className="text-gray-600">Envío:</span>
+										<span className="font-medium">
+											{cartTotals.shipping === 0 ? 
+												"Gratis" : 
+												formatCurrency(cartTotals.shipping)
+											}
+										</span>
+									</div>
+
+									{appliedDiscount && (
+										<div className="flex justify-between text-green-600">
+											<div className="flex items-center gap-2">
+												<span>Descuento de cupón ({appliedDiscount.discountCode.discount_percentage}%)</span>
+												<button
+													onClick={removeCoupon}
+													className="text-gray-400 hover:text-red-500 transition-colors text-sm"
+													title="Remover cupón"
+												>
+													<Trash2 className="w-4 h-4" />
+												</button>
+											</div>
+											<span>-{formatCurrency(cartTotals.couponAmount)}</span>
+										</div>
+									)}
+
+									<div className="flex justify-between">
 										<span className="text-gray-600">IVA (15%)</span>
 										<span className="font-medium">
 											{formatCurrency(cartTotals.tax)}
 										</span>
 									</div>
-
-									{couponApplied && (
-										<div className="flex justify-between text-green-600">
-											<span>Descuento de cupón</span>
-											<span>-{formatCurrency(cartTotals.couponAmount)}</span>
-										</div>
-									)}
 
 									<div className="flex justify-between border-t border-gray-200 pt-4">
 										<span className="text-xl font-bold">Total</span>
