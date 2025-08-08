@@ -338,7 +338,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 		[isAuthenticated, notifications, unreadCount, clearNotificationCache]
 	);
 
-	// Initialize context but don't auto-fetch notifications (use header-counters for count)
+	// ✅ Initialize context - RECUPERAR CACHE AL AUTENTICARSE
 	useEffect(() => {
 		if (!isAuthenticated) {
 			// Reset cuando no está autenticado
@@ -349,11 +349,28 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 			setHasMore(false);
 			isInitialized.current = false;
 			clearNotificationCache();
-		} else {
+		} else if (!isInitialized.current) {
+			// ✅ RECUPERAR CACHE INMEDIATAMENTE AL AUTENTICARSE
+			const cachedData = CacheService.getItem(CACHE_KEYS.NOTIFICATIONS + "_1_false");
+			if (cachedData) {
+				console.log("🔄 Recuperando notificaciones desde cache al autenticarse");
+				setNotifications(cachedData.notifications || []);
+				setUnreadCount(cachedData.unread_count || 0);
+				setTotalNotifications(cachedData.total || 0);
+				setCurrentPage(1);
+				setHasMore((cachedData.notifications || []).length === 20);
+			}
+			
+			// ✅ RECUPERAR CONTADOR DESDE CACHE
+			const cachedCount = CacheService.getItem(CACHE_KEYS.UNREAD_COUNT);
+			if (cachedCount !== null) {
+				setUnreadCount(cachedCount);
+			}
+			
 			isInitialized.current = true;
 		}
 		// Don't auto-fetch - only fetch when explicitly requested (e.g., NotificationPage)
-	}, [isAuthenticated]);
+	}, [isAuthenticated, clearNotificationCache]);
 
 	// Obtener URL de destino según el tipo de notificación
 	const getNotificationUrl = useCallback(

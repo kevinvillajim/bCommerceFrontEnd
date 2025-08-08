@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import {useNotifications} from "../hooks/useNotifications";
 import {useAuth} from "../hooks/useAuth";
+import {useInvalidateCounters} from "../hooks/useHeaderCounters";
 import type {Notification} from "../../core/domain/entities/Notification";
 import {formatRelativeTime} from "../../utils/dateUtils";
 import CacheService from "../../infrastructure/services/CacheService";
@@ -154,6 +155,9 @@ const NotificationPage: React.FC = () => {
 	const [activeMenu, setActiveMenu] = useState<number | null>(null);
 	const navigate = useNavigate();
 	const {isAuthenticated, roleInfo} = useAuth();
+
+	// ✅ Hook para actualizaciones optimistas del header
+	const {optimisticNotificationRead, forceRefresh: refreshHeaderCounters} = useInvalidateCounters();
 
 	const {
 		notifications,
@@ -396,9 +400,14 @@ const NotificationPage: React.FC = () => {
 
 			// Marcar como leída si no lo está
 			if (!notification.read) {
+				// ✅ ACTUALIZACIÓN OPTIMISTA DEL HEADER INMEDIATA
+				optimisticNotificationRead();
+				
 				await markAsRead(notification.id!);
 				// ✅ INVALIDAR CACHE DESPUÉS DE MARCAR COMO LEÍDA
 				invalidateNotificationsCache();
+				// ✅ REFRESCAR CONTADORES DEL HEADER
+				refreshHeaderCounters();
 			}
 
 			// Obtener URL de destino
@@ -418,35 +427,61 @@ const NotificationPage: React.FC = () => {
 			getNotificationUrl,
 			roleInfo.isSeller,
 			navigate,
+			optimisticNotificationRead,
+			refreshHeaderCounters,
 		]
 	);
 
 	// Manejar eliminación de notificación
 	const handleDelete = useCallback(
 		async (id: number) => {
+			// ✅ Verificar si la notificación era no leída para actualizar contador
+			const notification = notifications.find(n => n.id === id);
+			const wasUnread = notification && !notification.read;
+			
+			if (wasUnread) {
+				// ✅ ACTUALIZACIÓN OPTIMISTA DEL HEADER INMEDIATA
+				optimisticNotificationRead();
+			}
+			
 			await deleteNotification(id);
 			// ✅ INVALIDAR CACHE DESPUÉS DE ELIMINAR
 			invalidateNotificationsCache();
+			// ✅ REFRESCAR CONTADORES DEL HEADER
+			refreshHeaderCounters();
 		},
-		[deleteNotification, invalidateNotificationsCache]
+		[deleteNotification, invalidateNotificationsCache, notifications, optimisticNotificationRead, refreshHeaderCounters]
 	);
 
 	// Manejar marcar como leída
 	const handleMarkAsRead = useCallback(
 		async (id: number) => {
+			// ✅ ACTUALIZACIÓN OPTIMISTA DEL HEADER INMEDIATA
+			optimisticNotificationRead();
+			
 			await markAsRead(id);
 			// ✅ INVALIDAR CACHE DESPUÉS DE MARCAR COMO LEÍDA
 			invalidateNotificationsCache();
+			// ✅ REFRESCAR CONTADORES DEL HEADER
+			refreshHeaderCounters();
 		},
-		[markAsRead, invalidateNotificationsCache]
+		[markAsRead, invalidateNotificationsCache, optimisticNotificationRead, refreshHeaderCounters]
 	);
 
 	// Manejar marcar todas como leídas
 	const handleMarkAllAsRead = useCallback(async () => {
+		// ✅ ACTUALIZACIÓN OPTIMISTA DEL HEADER - Restar todas las no leídas
+		const unreadNotifications = notifications.filter(n => !n.read);
+		for (let i = 0; i < unreadNotifications.length; i++) {
+			optimisticNotificationRead();
+		}
+		
 		await markAllAsRead();
 		// ✅ INVALIDAR CACHE DESPUÉS DE MARCAR TODAS COMO LEÍDAS
 		invalidateNotificationsCache();
-	}, [markAllAsRead, invalidateNotificationsCache]);
+		// ✅ REFRESCAR CONTADORES DEL HEADER
+		refreshHeaderCounters();
+	}, [markAllAsRead, invalidateNotificationsCache, notifications, optimisticNotificationRead, refreshHeaderCounters]);
 
 	// Cargar más notificaciones
 	const loadMore = useCallback(() => {
