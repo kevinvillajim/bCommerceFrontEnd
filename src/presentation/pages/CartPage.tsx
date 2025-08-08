@@ -23,8 +23,9 @@ import {formatCurrency} from "../../utils/formatters/formatCurrency";
 import ApiClient from "../../infrastructure/api/apiClient";
 import {API_ENDPOINTS} from "../../constants/apiEndpoints";
 
-// ✅ NUEVO: Importar calculadora de descuentos por volumen
+// ✅ NUEVO: Importar calculadora centralizada y funciones necesarias
 import {calculateCartItemDiscounts} from "../../utils/volumeDiscountCalculator";
+import {EcommerceCalculator} from "../../utils/ecommerceCalculator";
 import type {CartItemWithDiscounts} from "../../utils/volumeDiscountCalculator";
 
 // Importar hooks optimizados
@@ -154,7 +155,7 @@ const CartPage: React.FC = () => {
 		});
 	}, [cart?.items, getProductImage]);
 
-	// ✅ USAR TOTALES DEL BACKEND DIRECTAMENTE (IGUAL QUE CHECKOUT)
+	// ✅ USAR CALCULADORA CENTRALIZADA DIRECTAMENTE
 	const cartTotals = useMemo(() => {
 		if (!cartItemsWithDiscounts.length) {
 			return {
@@ -170,74 +171,28 @@ const CartPage: React.FC = () => {
 			};
 		}
 
-		// ✅ SIEMPRE USAR SECUENCIA EXACTA - NO BACKEND
-		console.log("🔍 FLUJO CART - Iniciando cálculo de totales");
-		console.log("📊 Items en carrito:", cartItemsWithDiscounts.length);
-		console.log("📊 Cupón aplicado:", appliedDiscount?.discountCode?.code || "NINGUNO");
+		// ✅ USAR CALCULADORA CENTRALIZADA DIRECTAMENTE
+		console.log("🔍 FLUJO CART - Usando calculadora centralizada directamente");
+		const result = EcommerceCalculator.calculateTotals(cartItemsWithDiscounts, appliedDiscount);
 		
-		// Helper for precise calculations
-		const roundToPrecision = (value: number, decimals: number = 2): number => {
-			return Math.round(value * Math.pow(10, decimals)) / Math.pow(10, decimals);
-		};
-		
-		let subtotal = 0;
-		let totalVolumeSavings = 0;
-		let totalSellerSavings = 0;
-		let volumeDiscountsApplied = false;
-
-		// ✅ PASO 1-3: Precio base ($6) → Seller (50%=$3) → Volumen (5%=$2.85)
-		cartItemsWithDiscounts.forEach(item => {
-			const itemTotal = roundToPrecision(item.discount.finalPricePerUnit * item.quantity);
-			subtotal = roundToPrecision(subtotal + itemTotal);
-			
-			// Acumular ahorros precisos
-			const sellerSavings = roundToPrecision(item.discount.sellerDiscountAmount * item.quantity);
-			const volumeSavings = roundToPrecision(item.discount.volumeDiscountAmount * item.quantity);
-			
-			totalSellerSavings = roundToPrecision(totalSellerSavings + sellerSavings);
-			totalVolumeSavings = roundToPrecision(totalVolumeSavings + volumeSavings);
-			
-			if (item.discount.volumeDiscountAmount > 0) {
-				volumeDiscountsApplied = true;
-			}
-		});
-
-		// ✅ PASO 4: Cupón 5% sobre $2.85 = $2.7075
-		const couponAmount = appliedDiscount ? 
-			roundToPrecision(subtotal * (appliedDiscount.discountCode.discount_percentage / 100)) : 0;
-		
-		const subtotalAfterCoupon = roundToPrecision(subtotal - couponAmount);
-
-		// ✅ PASO 5: Envío $5 (ANTES del IVA) = $7.7075
-		const shipping = 5.00;
-		const subtotalWithShipping = roundToPrecision(subtotalAfterCoupon + shipping);
-		
-		// ✅ PASO 6: IVA 15% AL FINAL sobre TODO ($7.7075 * 0.15 = $1.156)
-		const taxRate = 0.15;
-		const tax = roundToPrecision(subtotalWithShipping * taxRate);
-		
-		// ✅ TOTAL FINAL: $7.7075 + $1.156 = $8.86
-		const total = roundToPrecision(subtotalWithShipping + tax);
-		
-		const totalSavings = roundToPrecision(totalSellerSavings + totalVolumeSavings + couponAmount);
-
 		console.log("🔍 FLUJO CART - Totales finales calculados:");
-		console.log("   💰 Subtotal después de cupón:", subtotalAfterCoupon);
-		console.log("   💰 + Envío:", shipping, "=", subtotalWithShipping);
-		console.log("   💰 + IVA 15%:", tax);
-		console.log("   🎯 TOTAL CART:", total);
-		console.log("   📊 Descuentos: seller=", totalSellerSavings, "volume=", totalVolumeSavings, "cupón=", couponAmount);
+		console.log("   💰 Subtotal después de cupón:", result.subtotalAfterCoupon);
+		console.log("   💰 + Envío:", result.shipping, "=", result.subtotalWithShipping);
+		console.log("   💰 + IVA 15%:", result.tax);
+		console.log("   🎯 TOTAL CART:", result.total);
+		console.log("   📊 Descuentos: seller=", result.sellerDiscounts, 
+		         "volume=", result.volumeDiscounts, "cupón=", result.couponDiscount);
 
 		return {
-			subtotal: subtotalAfterCoupon,
-			tax,
-			couponAmount,
-			total,
-			totalVolumeSavings,
-			totalSellerSavings,
-			totalSavings,
-			volumeDiscountsApplied,
-			shipping,
+			subtotal: result.subtotalAfterCoupon,
+			tax: result.tax,
+			couponAmount: result.couponDiscount,
+			total: result.total,
+			totalVolumeSavings: result.volumeDiscounts,
+			totalSellerSavings: result.sellerDiscounts,
+			totalSavings: result.totalDiscounts,
+			volumeDiscountsApplied: result.volumeDiscountsApplied,
+			shipping: result.shipping,
 		};
 	}, [cartItemsWithDiscounts, appliedDiscount, cart?.total, cart?.subtotal, cart?.iva_amount, cart?.shipping_cost, cart?.total_discounts, cart?.feedback_discount_amount]);
 

@@ -6,6 +6,7 @@ import type {Address} from "../domain/valueObjects/Address";
 import type {ShoppingCart} from "../domain/entities/ShoppingCart";
 import {CheckoutItemsService} from "../../infrastructure/services/CheckoutItemsService";
 import type {CheckoutItem} from "../../infrastructure/services/CheckoutItemsService";
+import {EcommerceCalculator} from "../../utils/ecommerceCalculator";
 
 export type PaymentMethod = "credit_card" | "paypal" | "transfer" | "qr" | "datafast" | "debit_card" | "de_una";
 
@@ -25,6 +26,7 @@ export interface CheckoutRequest {
 	seller_id?: number;
 	items?: CheckoutItem[]; // ✅ Usar CheckoutItem con precios finales
 	discount_code?: string | null; // ✅ NUEVO: Código de descuento
+	discount_info?: any; // ✅ NUEVO: Información completa del descuento aplicado
 }
 
 export interface BackendCheckoutRequest {
@@ -180,26 +182,44 @@ export class CheckoutService {
 			console.log("✅ Items validados correctamente:", items);
 
 			// ✅ CONVERSIÓN SEGURA: Mapear dirección a formato requerido por backend
-			// ✅ CALCULAR TOTALES EXACTOS PARA ENVIAR AL BACKEND (CUPÓN OPCIONAL)
-			const appliedDiscount = checkoutData.discount_code ? { 
-				discountCode: { 
-					code: checkoutData.discount_code,
-					discount_percentage: 5, // Esto debe venir de la validación real del cupón
-					discount_amount: 0
-				}
-			} : null;
+			// ✅ USAR CALCULADORA CENTRALIZADA PARA TOTALES EXACTOS
+			const appliedDiscount = checkoutData.discount_info || 
+				(checkoutData.discount_code ? { 
+					discountCode: { 
+						code: checkoutData.discount_code,
+						discount_percentage: 5, // Valor por defecto si no se proporciona discount_info
+						discount_amount: 0
+					}
+				} : null);
 			
-			const calculatedTotals = CheckoutItemsService.calculateCheckoutTotals(
-				checkoutData.items, 
-				appliedDiscount // ✅ null si no hay cupón, objeto si hay cupón
+			// ✅ CRÍTICO: Usar calculadora centralizada directamente
+			const exactCalculation = EcommerceCalculator.calculateTotals(
+				checkoutData.items || [], 
+				appliedDiscount
 			);
+			
+			console.log("🧮 USANDO CALCULADORA CENTRALIZADA - TOTALES EXACTOS:");
+			console.log("   📊 Total calculado:", exactCalculation.total);
+			console.log("   📊 Subtotal después cupón:", exactCalculation.subtotalAfterCoupon);
+			console.log("   📊 Envío:", exactCalculation.shipping);
+			console.log("   📊 IVA:", exactCalculation.tax);
+			console.log("   📊 Descuentos totales:", exactCalculation.totalDiscounts);
+			
+			// Mapear a formato esperado por backend
+			const calculatedTotals = {
+				subtotal: exactCalculation.subtotalWithShipping, // Subtotal + shipping para backend
+				tax: exactCalculation.tax,
+				shipping: exactCalculation.shipping,
+				total: exactCalculation.total, // ✅ ESTE DEBE SER $8.87
+				totalDiscounts: exactCalculation.totalDiscounts
+			};
 
-			console.log("🔍 FLUJO COMPLETO DE CHECKOUT:");
+			console.log("🔍 FLUJO COMPLETO DE CHECKOUT CORREGIDO:");
 			console.log("1️⃣ Items del carrito:", checkoutData.items?.length || 0);
 			console.log("2️⃣ Código de descuento:", checkoutData.discount_code || "NINGUNO");
 			console.log("3️⃣ appliedDiscount:", appliedDiscount);
-			console.log("4️⃣ TOTALES EXACTOS CALCULADOS PARA BACKEND:", calculatedTotals);
-			console.log("5️⃣ Total final que debe guardarse en DB:", calculatedTotals.total);
+			console.log("4️⃣ TOTALES EXACTOS CALCULADOS (CALCULADORA CENTRALIZADA):", calculatedTotals);
+			console.log("5️⃣ Total final CORRECTO que debe guardarse en DB:", calculatedTotals.total, "✅ DEBE SER $8.87");
 
 			const nameParts = (checkoutData.shippingAddress.name || '').split(' ');
 			
@@ -222,7 +242,7 @@ export class CheckoutService {
 				},
 				seller_id: checkoutData.seller_id,
 				items: items, // ✅ Usar items con precios finales calculados
-				// ✅ CRÍTICO: Enviar totales exactos calculados para que backend los use
+				// ✅ CRÍTICO: Enviar totales exactos de calculadora centralizada para que backend los use SIN RECALCULAR
 				calculated_totals: {
 					subtotal: calculatedTotals.subtotal,
 					tax: calculatedTotals.tax,
@@ -242,14 +262,15 @@ export class CheckoutService {
 
 			console.log("🔍 DEBUGGING - Datos completos enviados al backend:", JSON.stringify(backendData, null, 2));
 			
-			// ✅ LOGS ESPECÍFICOS PARA TOTALES
-			console.log("💰 TOTALES CRÍTICOS QUE DEBE USAR EL BACKEND:");
+			// ✅ LOGS CRÍTICOS PARA TOTALES CORREGIDOS
+			console.log("💰 TOTALES CRÍTICOS CORREGIDOS QUE DEBE USAR EL BACKEND:");
 			console.log("   📊 Subtotal:", calculatedTotals.subtotal);
 			console.log("   📊 IVA:", calculatedTotals.tax);
 			console.log("   📊 Envío:", calculatedTotals.shipping);
-			console.log("   📊 TOTAL FINAL:", calculatedTotals.total);
+			console.log("   📊 TOTAL FINAL:", calculatedTotals.total, "✅ DEBE SER $8.87");
 			console.log("   📊 Total descuentos:", calculatedTotals.totalDiscounts);
-			console.log("🚨 EL BACKEND DEBE GUARDAR total =", calculatedTotals.total, "NO 0");
+			console.log("🚨 EL BACKEND NO DEBE RECALCULAR - USAR ESTOS TOTALES EXACTOS");
+			console.log("🚨 TOTAL ESPERADO EN RESPUESTA:", calculatedTotals.total);
 
 			// ✅ VALIDACIÓN FINAL antes de enviar
 			if (backendData.items && backendData.items.length > 0) {
@@ -333,12 +354,13 @@ export class CheckoutService {
 	}
 
 	/**
-	 * ✅ ACTUALIZADO: Preparar items del carrito con descuentos por volumen para checkout
+	 * ✅ CORREGIDO: Preparar items del carrito con descuentos para checkout
 	 */
-	static prepareCartItemsForCheckout(cartItems: any[]): CheckoutItem[] {
-		console.log("🛒 Preparando items del carrito con descuentos por volumen");
+	static prepareCartItemsForCheckout(cartItems: any[], appliedDiscount: any = null): CheckoutItem[] {
+		console.log("🛒 Preparando items del carrito con descuentos");
+		console.log("🎫 Cupón aplicado:", appliedDiscount?.discountCode?.code || "NINGUNO");
 		
-		const checkoutItems = CheckoutItemsService.prepareItemsForCheckout(cartItems);
+		const checkoutItems = CheckoutItemsService.prepareItemsForCheckout(cartItems, appliedDiscount);
 		
 		// ✅ Debug para verificar consistencia
 		CheckoutItemsService.debugItemPricing(cartItems, checkoutItems);

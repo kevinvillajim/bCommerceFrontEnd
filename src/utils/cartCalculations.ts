@@ -1,0 +1,27 @@
+/**
+ * 🔄 MIGRACIÓN A CALCULADORA CENTRALIZADA
+ * Este archivo ahora redirige a EcommerceCalculator para mantener compatibilidad
+ * TODO: Eventualmente, migrar todos los imports directamente a EcommerceCalculator
+ */
+
+import { EcommerceCalculator } from "./ecommerceCalculator";
+import type { CalculationResult } from "./ecommerceCalculator";
+
+// Helper para cálculos precisos (mantenido por compatibilidad)
+export function roundToPrecision(value: number, decimals: number = 2): number {
+  return Math.round(value * Math.pow(10, decimals)) / Math.pow(10, decimals);
+}
+
+/**
+ * ✅ FUNCIÓN PRINCIPAL MIGRADA
+ * Ahora usa EcommerceCalculator para garantizar consistencia total
+ */
+export function calculateTotals(cartItems: any[], appliedDiscount: any = null): CalculationResult {
+  console.log("⚠️ USANDO FUNCIÓN LEGACY - MIGRAR A EcommerceCalculator.calculateTotals()");
+  
+  // ✅ DELEGAR A CALCULADORA CENTRALIZADA
+  return EcommerceCalculator.calculateTotals(cartItems, appliedDiscount);
+}
+
+// Exportar tipos para compatibilidad
+export type { CalculationResult } from "./ecommerceCalculator";

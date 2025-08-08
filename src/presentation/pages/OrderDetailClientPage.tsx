@@ -5,8 +5,11 @@ import {formatCurrency} from "../../utils/formatters/formatCurrency";
 import {formatDate} from "../../utils/formatters/formatDate";
 import OrderStatusBadge from "../components/orders/OrderStatusBadge";
 import OrderServiceAdapter from "../../core/adapters/OrderServiceAdapter";
+import OrderPricingBreakdown from "../components/orders/OrderPricingBreakdown";
+import OrderItemsList from "../components/orders/OrderItemsList";
 import {getProductMainImage} from "../../utils/imageManager";
 import type {OrderDetail} from "../../core/domain/entities/Order";
+import type {OrderUI} from "../../core/adapters/OrderServiceAdapter";
 
 const OrderDetailClientPage: React.FC = () => {
 	const {id} = useParams<{id: string}>();
@@ -92,11 +95,52 @@ const OrderDetailClientPage: React.FC = () => {
 		return totals;
 	}, [order]);
 
-	// Función auxiliar para calcular subtotal básico (fallback)
-	const calculateItemsSubtotal = () => {
-		if (!order?.items) return 0;
-		return order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-	};
+	// ✅ NUEVO: Convertir OrderDetail a OrderUI para compatibilidad con componentes
+	const orderForComponents: OrderUI | null = useMemo(() => {
+		if (!order || !orderTotals) return null;
+
+		return {
+			id: String(order.id),
+			orderNumber: order.orderNumber || order.order_number || String(order.id),
+			date: order.created_at || new Date().toISOString(),
+			customer: {
+				id: order.userId || 0,
+				name: order.user_name || "Cliente",
+				email: order.user_email || "email@example.com",
+			},
+			subtotal: orderTotals.subtotal_products,
+			taxAmount: orderTotals.iva_amount,
+			total: orderTotals.total,
+			items: (order.items || []).map((item) => ({
+				id: item.id || 0,
+				productId: item.productId || 0,
+				name: item.product_name || "Producto",
+				quantity: item.quantity || 1,
+				price: item.price || 0,
+				subtotal: (item.price || 0) * (item.quantity || 1),
+				image: item.product_image,
+				originalPrice: item.original_price || item.price,
+				volumeDiscountPercentage: item.volume_discount_percentage || 0,
+				volumeSavings: item.volume_savings || 0,
+				discountLabel: item.discount_label || null,
+				hasVolumeDiscount: (item.volume_discount_percentage || 0) > 0
+			})),
+			status: order.status || "pending",
+			paymentStatus: (order.payment_status as any) || "pending",
+			shippingAddress: order.shippingData ? 
+				`${order.shippingData.address}, ${order.shippingData.city}, ${order.shippingData.state}` : 
+				undefined,
+			notes: order.shippingData?.notes,
+			itemCount: order.items?.length,
+			originalTotal: orderTotals.original_total,
+			volumeDiscountSavings: orderTotals.volume_discount_savings,
+			volumeDiscountsApplied: orderTotals.volume_discounts_applied,
+			shippingCost: orderTotals.shipping_cost,
+			freeShipping: orderTotals.free_shipping,
+			totalDiscounts: orderTotals.total_discounts,
+			pricingBreakdown: order.pricing_breakdown
+		};
+	}, [order, orderTotals]);
 
 	if (loading) {
 		return (
@@ -337,234 +381,30 @@ const OrderDetailClientPage: React.FC = () => {
 
           {/* Productos y resumen */}
           <div className="col-span-3 md:col-span-2 space-y-6">
-            {/* Productos */}
-            <div className="bg-white rounded-lg shadow overflow-hidden">
-              <h2 className="text-lg font-medium text-gray-900 p-6 pb-3">
-                Productos
-              </h2>
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th
-                        scope="col"
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                      >
-                        Producto
-                      </th>
-                      <th
-                        scope="col"
-                        className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
-                      >
-                        Precio
-                      </th>
-                      <th
-                        scope="col"
-                        className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
-                      >
-                        Cantidad
-                      </th>
-                      <th
-                        scope="col"
-                        className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
-                      >
-                        Subtotal
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {(() => {
-                      console.log("🎨 Renderizando productos...");
-                      console.log("📦 order.items antes del map:", order.items);
-                      return order.items.map((item, index) => {
-                        console.log(`🏷️ Renderizando item ${index + 1}:`, item);
+            {/* ✅ NUEVOS COMPONENTES: Lista de productos con descuentos detallados */}
+            {orderForComponents && (
+              <OrderItemsList 
+                order={orderForComponents} 
+                viewType="customer" 
+              />
+            )}
 
-                        // Crear objeto para el sistema de imágenes
-                        const productForImage = {
-                          id: item.productId,
-                          image: item.product_image,
-                          main_image: item.product_image,
-                          product_image: item.product_image,
-                        };
-
-                        console.log("🖼️ Objeto para imagen:", productForImage);
-                        const imageUrl = getProductMainImage(productForImage);
-                        console.log("🎯 URL final de imagen:", imageUrl);
-
-                        return (
-                          <tr
-                            key={`item-${item.id || index}-${item.productId || "unknown"}`}
-                          >
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="flex items-center">
-                                <div className="flex-shrink-0 h-12 w-12 mr-3">
-                                  <img
-                                    className="h-12 w-12 rounded-md object-cover"
-                                    src={imageUrl}
-                                    alt={item.product_name || "Producto"}
-                                    onError={(_e) => {
-                                      console.log(
-                                        "❌ Error cargando imagen:",
-                                        imageUrl
-                                      );
-                                      console.log("📦 Item con error:", item);
-                                    }}
-                                    onLoad={() => {
-                                      console.log(
-                                        "✅ Imagen cargada correctamente:",
-                                        imageUrl
-                                      );
-                                    }}
-                                  />
-                                </div>
-                                <div>
-                                  <div className="text-sm font-medium text-gray-900">
-                                    {item.product_name || "Producto"}
-                                  </div>
-                                  {item.productId && (
-                                    <Link
-                                      to={`/products/${item.productId}`}
-                                      className="text-xs text-primary-600 hover:underline"
-                                    >
-                                      Ver producto
-                                    </Link>
-                                  )}
-                                </div>
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">
-                              {formatCurrency(item.price)}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">
-                              {item.quantity}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-right">
-                              {formatCurrency(item.price * item.quantity)}
-                            </td>
-                          </tr>
-                        );
-                      });
-                    })()}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* ✅ CORREGIDO: Resumen de precios con descuentos completos */}
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-lg font-medium text-gray-900 mb-4">
-                Resumen de la Orden
-              </h2>
-              <div className="space-y-3">
-                {/* Subtotal original */}
-                {orderTotals?.original_total && orderTotals.original_total > 0 && (
-                  <div className="flex justify-between items-center pb-2">
-                    <span className="text-gray-600">Subtotal original:</span>
-                    <span className="text-gray-500 line-through">
-                      {formatCurrency(orderTotals.original_total)}
-                    </span>
-                  </div>
-                )}
-                
-                {/* Descuentos aplicados */}
-                {orderTotals?.seller_discount_savings > 0 && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-green-600 text-sm flex items-center">
-                      <Tag className="w-4 h-4 mr-1" />
-                      Descuento del vendedor:
-                    </span>
-                    <span className="text-green-600 font-medium">
-                      -{formatCurrency(orderTotals.seller_discount_savings)}
-                    </span>
-                  </div>
-                )}
-                
-                {orderTotals?.volume_discount_savings > 0 && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-green-600 text-sm flex items-center">
-                      <Package className="w-4 h-4 mr-1" />
-                      Descuento por volumen:
-                    </span>
-                    <span className="text-green-600 font-medium">
-                      -{formatCurrency(orderTotals.volume_discount_savings)}
-                    </span>
-                  </div>
-                )}
-                
-                {orderTotals?.feedback_discount_amount > 0 && orderTotals.feedback_discount_code && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-green-600 text-sm flex items-center">
-                      <Tag className="w-4 h-4 mr-1" />
-                      Código ({orderTotals.feedback_discount_code}):
-                    </span>
-                    <span className="text-green-600 font-medium">
-                      -{formatCurrency(orderTotals.feedback_discount_amount)}
-                    </span>
-                  </div>
-                )}
-                
-                {/* Subtotal con descuentos */}
-                <div className="flex justify-between items-center pb-2 border-b border-gray-200">
-                  <span className="text-gray-900 font-medium">Subtotal:</span>
-                  <span className="text-gray-900 font-medium">
-                    {formatCurrency(orderTotals?.subtotal_products || calculateItemsSubtotal())}
-                  </span>
-                </div>
-                
-                {/* IVA */}
-                <div className="flex justify-between items-center pb-2">
-                  <span className="text-gray-600">IVA (15%):</span>
-                  <span className="text-gray-900">
-                    {formatCurrency(orderTotals?.iva_amount || 0)}
-                  </span>
-                </div>
-                
-                {/* Envío */}
-                {orderTotals?.shipping_cost > 0 && (
-                  <div className="flex justify-between items-center pb-2">
-                    <span className="text-gray-600 flex items-center">
-                      <Truck className="w-4 h-4 mr-1" />
-                      Envío:
-                    </span>
-                    <span className="text-gray-900">
-                      {formatCurrency(orderTotals.shipping_cost)}
-                    </span>
-                  </div>
-                )}
-                
-                {orderTotals?.free_shipping && (
-                  <div className="flex justify-between items-center pb-2">
-                    <span className="text-green-600 flex items-center">
-                      <Truck className="w-4 h-4 mr-1" />
-                      Envío gratuito:
-                    </span>
-                    <span className="text-green-600 font-medium">
-                      ¡Gratis!
-                    </span>
-                  </div>
-                )}
-                
-                {/* Total de ahorros */}
-                {orderTotals?.total_discounts > 0 && (
-                  <div className="flex justify-between items-center py-2 bg-green-50 px-3 rounded-lg">
-                    <span className="text-green-700 font-medium text-sm">
-                      Total ahorrado:
-                    </span>
-                    <span className="text-green-700 font-bold">
-                      {formatCurrency(orderTotals.total_discounts)}
-                    </span>
-                  </div>
-                )}
-                
-                {/* Total final */}
-                <div className="flex justify-between items-center pt-3 border-t-2 border-gray-200 font-bold text-lg">
-                  <span className="text-gray-900">Total:</span>
-                  <span className="text-primary-600">
-                    {formatCurrency(orderTotals?.total || 0)}
-                  </span>
-                </div>
-              </div>
-            </div>
+            {/* ✅ NUEVO: Desglose detallado de precios */}
+            {orderTotals && (
+              <OrderPricingBreakdown
+                originalSubtotal={orderTotals.original_total}
+                sellerDiscounts={orderTotals.seller_discount_savings}
+                volumeDiscounts={orderTotals.volume_discount_savings}
+                couponDiscount={orderTotals.feedback_discount_amount}
+                couponCode={orderTotals.feedback_discount_code}
+                subtotalAfterDiscounts={orderTotals.subtotal_products}
+                shipping={orderTotals.shipping_cost}
+                freeShipping={orderTotals.free_shipping}
+                tax={orderTotals.iva_amount}
+                total={orderTotals.total}
+                isSellerView={false}
+              />
+            )}
           </div>
         </div>
       </div>

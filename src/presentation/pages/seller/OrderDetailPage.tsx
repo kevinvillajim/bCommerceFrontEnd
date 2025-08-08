@@ -1,12 +1,16 @@
-import React, {useState, useEffect} from "react";
+import React, {useState, useEffect, useMemo} from "react";
 import {useParams, useNavigate, Link} from "react-router-dom";
 import {ArrowLeft, Truck, Package, Check, X, FileText} from "lucide-react";
 import {formatCurrency} from "../../../utils/formatters/formatCurrency";
 import {formatDate} from "../../../utils/formatters/formatDate";
 import SellerOrderServiceAdapter from "../../../core/adapters/SellerOrderServiceAdapter";
 import ShippingFormModal from "../../components/shipping/ShippingFormModal";
+import OrderPricingDetails from "../../components/orders/OrderPricingDetails";
+import OrderPricingBreakdown from "../../components/orders/OrderPricingBreakdown";
+import OrderItemsList from "../../components/orders/OrderItemsList";
 import {getProductMainImage} from "../../../utils/imageManager";
 import type {ShippingFormData} from "../../components/shipping/ShippingFormModal";
+import type {OrderUI} from "../../../core/adapters/OrderServiceAdapter";
 import {
 	canTransitionTo,
 	isValidOrderStatus,
@@ -103,6 +107,55 @@ const OrderDetailPage: React.FC = () => {
 			freeShipping: order.free_shipping || false
 		};
 	};
+
+	// ✅ NUEVO: Convertir OrderDetail a OrderUI para compatibilidad con componentes (vista seller)
+	const orderForComponents: OrderUI | null = useMemo(() => {
+		if (!order) return null;
+
+		const totals = getOrderTotals();
+		
+		return {
+			id: String(order.id),
+			orderNumber: order.orderNumber || order.order_number || String(order.id),
+			date: order.created_at || new Date().toISOString(),
+			customer: {
+				id: order.userId || 0,
+				name: order.user_name || "Cliente",
+				email: order.user_email || "email@example.com",
+			},
+			subtotal: totals.subtotal,
+			taxAmount: totals.tax,
+			total: totals.total,
+			items: (order.items || []).map((item) => ({
+				id: item.id || 0,
+				productId: item.productId || 0,
+				name: item.product_name || "Producto",
+				quantity: item.quantity || 1,
+				price: item.price || 0,
+				subtotal: (item.price || 0) * (item.quantity || 1),
+				image: item.product_image,
+				originalPrice: item.original_price || item.price,
+				volumeDiscountPercentage: item.volume_discount_percentage || 0,
+				volumeSavings: item.volume_savings || 0,
+				discountLabel: item.discount_label || null,
+				hasVolumeDiscount: (item.volume_discount_percentage || 0) > 0
+			})),
+			status: order.status || "pending",
+			paymentStatus: (order.payment_status as any) || "pending",
+			shippingAddress: order.shippingData ? 
+				`${order.shippingData.address}, ${order.shippingData.city}, ${order.shippingData.state}` : 
+				undefined,
+			notes: order.shippingData?.notes,
+			itemCount: order.items?.length,
+			originalTotal: order.original_total || totals.total,
+			volumeDiscountSavings: totals.volumeDiscount,
+			volumeDiscountsApplied: (totals.volumeDiscount || 0) > 0,
+			shippingCost: totals.shippingCost,
+			freeShipping: totals.freeShipping,
+			totalDiscounts: totals.discounts,
+			pricingBreakdown: order.pricing_breakdown
+		};
+	}, [order]);
 
 	const handleStatusChange = async (newStatus: OrderStatus) => {
 		if (!id || !order) return;
@@ -564,191 +617,49 @@ const OrderDetailPage: React.FC = () => {
 
 					{/* Productos y resumen */}
 					<div className="col-span-3 md:col-span-2 space-y-6">
-						{/* Productos */}
-						<div className="bg-white rounded-lg shadow overflow-hidden">
-							<h2 className="text-lg font-medium text-gray-900 p-6 pb-3">
-								Productos
-							</h2>
-							<div className="overflow-x-auto">
-								<table className="min-w-full divide-y divide-gray-200">
-									<thead className="bg-gray-50">
-										<tr>
-											<th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-												Producto
-											</th>
-											<th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-												Precio
-											</th>
-											<th scope="col" className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-												Cantidad
-											</th>
-											<th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-												Subtotal
-											</th>
-										</tr>
-									</thead>
-									<tbody className="bg-white divide-y divide-gray-200">
-										{(() => {
-											console.log("🎨 Renderizando productos (seller)...");
-											console.log("📦 order.items antes del map:", order.items);
-											return order.items.map((item, index) => {
-												console.log(`🏷️ Renderizando item ${index + 1}:`, item);
+						{/* ✅ NUEVOS COMPONENTES: Lista de productos con descuentos detallados (vista seller) */}
+						{orderForComponents && (
+							<OrderItemsList 
+								order={orderForComponents} 
+								viewType="seller" 
+								sellerId={order.sellerId} // Pasar sellerId si está disponible
+							/>
+						)}
 
-												const productForImage = {
-													id: item.productId,
-													image: item.product_image,
-													main_image: item.product_image,
-													product_image: item.product_image,
-												};
+						{/* ✅ NUEVO COMPONENTE: Detalles de pricing para sellers */}
+						{orderForComponents && (
+							<OrderPricingDetails 
+								order={orderForComponents} 
+								viewType="seller" 
+								sellerId={order.sellerId}
+							/>
+						)}
 
-												console.log("🖼️ Objeto para imagen:", productForImage);
-												const imageUrl = getProductMainImage(productForImage);
-												console.log("🎯 URL final de imagen:", imageUrl);
-
-												return (
-													<tr key={`item-${item.id || index}-${item.productId || "unknown"}`}>
-														<td className="px-6 py-4 whitespace-nowrap">
-															<div className="flex items-center">
-																<div className="flex-shrink-0 h-12 w-12 mr-3">
-																	<img
-																		className="h-12 w-12 rounded-md object-cover"
-																		src={imageUrl}
-																		alt={item.product_name || "Producto"}
-																		onError={(_e) => {
-																			console.log("❌ Error cargando imagen:", imageUrl);
-																			console.log("📦 Item con error:", item);
-																		}}
-																		onLoad={() => {
-																			console.log("✅ Imagen cargada correctamente:", imageUrl);
-																		}}
-																	/>
-																</div>
-																<div>
-																	<div className="text-sm font-medium text-gray-900">
-																		{item.product_name || "Producto"}
-																	</div>
-																	{item.productId && (
-																		<Link
-																			to={`/products/${item.productId}`}
-																			className="text-xs text-primary-600 hover:underline"
-																		>
-																			Ver producto
-																		</Link>
-																	)}
-																</div>
-															</div>
-														</td>
-														<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">
-															{formatCurrency(item.price)}
-														</td>
-														<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">
-															{item.quantity}
-														</td>
-														<td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-right">
-															{formatCurrency(item.price * item.quantity)}
-														</td>
-													</tr>
-												);
-											});
-										})()}
-									</tbody>
-								</table>
-							</div>
-						</div>
-
-						{/* ✅ CORREGIDO: Resumen de precios con descuentos completos */}
-						<div className="bg-white rounded-lg shadow p-6">
-							<h2 className="text-lg font-medium text-gray-900 mb-4">
-								Resumen de la Orden
-							</h2>
-							<div className="space-y-3">
-								{(() => {
-									const totals = getOrderTotals();
-									return (
-										<>
-											{/* Descuentos aplicados */}
-											{totals.discounts > 0 && (
-												<div className="mb-3 p-3 bg-green-50 rounded-lg">
-													<h4 className="text-sm font-medium text-green-800 mb-2">
-														💰 Descuentos aplicados:
-													</h4>
-													
-													{totals.sellerDiscount > 0 && (
-														<div className="flex justify-between text-sm text-green-700">
-															<span>Descuento del vendedor:</span>
-															<span>-{formatCurrency(totals.sellerDiscount)}</span>
-														</div>
-													)}
-													
-													{totals.volumeDiscount > 0 && (
-														<div className="flex justify-between text-sm text-green-700">
-															<span>Descuento por volumen:</span>
-															<span>-{formatCurrency(totals.volumeDiscount)}</span>
-														</div>
-													)}
-													
-													{totals.feedbackDiscount > 0 && (
-														<div className="flex justify-between text-sm text-green-700">
-															<span>Código {totals.feedbackCode}:</span>
-															<span>-{formatCurrency(totals.feedbackDiscount)}</span>
-														</div>
-													)}
-													
-													<div className="flex justify-between text-sm font-medium text-green-800 mt-2 pt-2 border-t border-green-200">
-														<span>Total ahorrado:</span>
-														<span>-{formatCurrency(totals.discounts)}</span>
-													</div>
-												</div>
-											)}
-											
-											<div className="flex justify-between items-center pb-2">
-												<span className="text-gray-600">Subtotal:</span>
-												<span className="text-gray-900">
-													{formatCurrency(totals.subtotal)}
-												</span>
-											</div>
-											
-											<div className="flex justify-between items-center pb-2">
-												<span className="text-gray-600">IVA (15%):</span>
-												<span className="text-gray-900">
-													{formatCurrency(totals.tax)}
-												</span>
-											</div>
-											
-											{/* Envío */}
-											{totals.shippingCost > 0 && (
-												<div className="flex justify-between items-center pb-2">
-													<span className="text-gray-600">Envío:</span>
-													<span className="text-gray-900">
-														{formatCurrency(totals.shippingCost)}
-													</span>
-												</div>
-											)}
-											
-											{totals.freeShipping && (
-												<div className="flex justify-between items-center pb-2">
-													<span className="text-green-600">Envío gratuito:</span>
-													<span className="text-green-600 font-medium">¡Gratis!</span>
-												</div>
-											)}
-											
-											<div className="flex justify-between items-center pt-3 border-t border-gray-200 font-medium">
-												<span className="text-gray-900">Total:</span>
-												<span className="text-lg text-primary-600 font-bold">
-													{formatCurrency(totals.total)}
-												</span>
-											</div>
-										</>
-									);
-								})()}
-							</div>
-						</div>
+						{/* ✅ NUEVO: Desglose detallado para vendedor */}
+						{(() => {
+							const totals = getOrderTotals();
+							return (
+								<OrderPricingBreakdown
+									originalSubtotal={totals.originalTotal}
+									sellerDiscounts={totals.sellerDiscount}
+									volumeDiscounts={totals.volumeDiscount}
+									couponDiscount={totals.feedbackDiscount}
+									couponCode={totals.feedbackCode}
+									subtotalAfterDiscounts={totals.subtotal}
+									shipping={totals.shippingCost}
+									freeShipping={totals.freeShipping}
+									tax={totals.tax}
+									total={totals.total}
+									isSellerView={true}
+								/>
+							);
+						})()}
 
 						{/* Mostrar notas si existen */}
 						{order.shippingData?.notes && (
 							<div className="bg-white rounded-lg shadow p-6">
 								<h2 className="text-lg font-medium text-gray-900 mb-2">
-									Notas
+									Notas del Cliente
 								</h2>
 								<p className="text-gray-600">
 									{order.shippingData.notes}

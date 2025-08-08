@@ -7,6 +7,7 @@ import {useErrorHandler} from "../hooks/useErrorHandler";
 import {CheckoutService} from "../../core/services/CheckoutService";
 import {CheckoutItemsService} from "../../infrastructure/services/CheckoutItemsService";
 import {calculateCartItemDiscounts} from "../../utils/volumeDiscountCalculator";
+import {calculateTotals} from "../../utils/cartCalculations";
 import type {
 	PaymentInfo,
 	PaymentMethod,
@@ -124,8 +125,8 @@ const CheckoutPage: React.FC = () => {
 		totals = CheckoutItemsService.calculateCheckoutTotals(cart.items, appliedDiscount);
 		console.log("🎯 TOTAL CHECKOUT:", totals.total);
 
-		// ✅ Preparar items para envío al backend
-		const checkoutItems = CheckoutItemsService.prepareItemsForCheckout(cart.items);
+		// ✅ Preparar items para envío al backend CON CUPÓN
+		const checkoutItems = CheckoutItemsService.prepareItemsForCheckout(cart.items, appliedDiscount);
 
 		return {
 			items: itemsWithDiscounts,
@@ -342,8 +343,9 @@ const CheckoutPage: React.FC = () => {
 				billingAddress: useSameAddress ? shippingAddress : billingAddress,
 				seller_id: sellerId || undefined,
 				items: checkoutCalculations.checkoutItems, // ✅ Usar items con descuentos calculados
-				// ✅ NUEVO: Incluir código de descuento aplicado
-				discount_code: appliedDiscount?.discountCode.code || null
+				// ✅ NUEVO: Incluir código de descuento aplicado y su información
+				discount_code: appliedDiscount?.discountCode?.code || null,
+				discount_info: appliedDiscount || null // ✅ Pasar información completa del descuento
 			};
 
 			console.log(

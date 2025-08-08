@@ -315,8 +315,9 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 				},
 				seller_id: sellerId || undefined,
 				items: checkoutItems, // ✅ USAR ITEMS CON DESCUENTOS CALCULADOS
-				// ✅ NUEVO: Incluir código de descuento aplicado
-				discount_code: appliedDiscount?.discountCode.code || null
+				// ✅ NUEVO: Incluir código de descuento aplicado y su información
+				discount_code: appliedDiscount?.discountCode.code || null,
+				discount_info: appliedDiscount || null // ✅ Pasar información completa del descuento
 			};
 
 			console.log("📦 Datos completos de checkout (DATAFAST):", JSON.stringify(testCheckoutData, null, 2));

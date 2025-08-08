@@ -10,7 +10,7 @@ interface TestCheckoutButtonProps {}
 
 const TestCheckoutButton: React.FC<TestCheckoutButtonProps> = () => {
 	const navigate = useNavigate();
-	const {cart, clearCart, showNotification} = useCart();
+	const {cart, clearCart, showNotification, appliedDiscount} = useCart();
 	const checkoutService = new CheckoutService();
 	const [isLoading, setIsLoading] = useState(false);
 
@@ -124,7 +124,10 @@ const TestCheckoutButton: React.FC<TestCheckoutButtonProps> = () => {
 					phone: "123456789",
 				},
 				seller_id: sellerId || undefined,
-				items: items // ✅ AGREGAR ITEMS CON PRECIOS VÁLIDOS
+				items: items, // ✅ AGREGAR ITEMS CON PRECIOS VÁLIDOS
+				// ✅ NUEVO: Incluir código de descuento aplicado y su información
+				discount_code: appliedDiscount?.discountCode?.code || null,
+				discount_info: appliedDiscount || null // ✅ Pasar información completa del descuento
 			};
 
 			console.log("📦 Datos completos de checkout de prueba:", JSON.stringify(testData, null, 2));
