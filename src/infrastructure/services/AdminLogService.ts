@@ -1,7 +1,10 @@
-import { httpClient } from '../api/httpClient';
+import { ApiClient } from '../api/apiClient';
+import appConfig from '../../config/appConfig';
 import {
-  AdminLog,
   AdminLogEntity,
+} from '../../core/domain/entities/AdminLog';
+import type {
+  AdminLog,
   AdminLogFilters,
   AdminLogResponse,
   AdminLogSingleResponse,
@@ -34,7 +37,7 @@ export class AdminLogService {
       }
     });
 
-    const response = await httpClient.get<AdminLogResponse>(
+    const response = await ApiClient.get<AdminLogResponse>(
       `${this.baseUrl}?${params.toString()}`
     );
 
@@ -53,7 +56,7 @@ export class AdminLogService {
    * Get specific log by ID
    */
   async getLog(id: number): Promise<AdminLogEntity> {
-    const response = await httpClient.get<AdminLogSingleResponse>(`${this.baseUrl}/${id}`);
+    const response = await ApiClient.get<AdminLogSingleResponse>(`${this.baseUrl}/${id}`);
     return new AdminLogEntity(response.data);
   }
 
@@ -61,7 +64,7 @@ export class AdminLogService {
    * Get logs statistics
    */
   async getStats(): Promise<AdminLogStatsResponse['data']> {
-    const response = await httpClient.get<AdminLogStatsResponse>(`${this.baseUrl}/stats`);
+    const response = await ApiClient.get<AdminLogStatsResponse>(`${this.baseUrl}/stats`);
     return response.data;
   }
 
@@ -72,7 +75,7 @@ export class AdminLogService {
     const params = new URLSearchParams();
     if (limit) params.append('limit', String(limit));
 
-    const response = await httpClient.get<{ data: AdminLog[] }>(
+    const response = await ApiClient.get<{ data: AdminLog[] }>(
       `${this.baseUrl}/recent?${params.toString()}`
     );
 
@@ -90,7 +93,7 @@ export class AdminLogService {
     const params = new URLSearchParams();
     if (hours) params.append('hours', String(hours));
 
-    const response = await httpClient.get<{
+    const response = await ApiClient.get<{
       data: AdminLog[];
       meta: { hours: number; count: number };
     }>(`${this.baseUrl}/critical?${params.toString()}`);
@@ -116,7 +119,7 @@ export class AdminLogService {
     params.append('event_type', eventType);
     if (limit) params.append('limit', String(limit));
 
-    const response = await httpClient.get<{
+    const response = await ApiClient.get<{
       data: AdminLog[];
       meta: { event_type: string; count: number };
     }>(`${this.baseUrl}/by-event-type?${params.toString()}`);
@@ -134,7 +137,7 @@ export class AdminLogService {
    * Get available event types
    */
   async getEventTypes(): Promise<string[]> {
-    const response = await httpClient.get<AdminLogEventTypesResponse>(`${this.baseUrl}/event-types`);
+    const response = await ApiClient.get<AdminLogEventTypesResponse>(`${this.baseUrl}/event-types`);
     return response.data;
   }
 
@@ -142,7 +145,7 @@ export class AdminLogService {
    * Get users that have generated logs
    */
   async getLogUsers(): Promise<AdminLogUsersResponse['data']> {
-    const response = await httpClient.get<AdminLogUsersResponse>(`${this.baseUrl}/users`);
+    const response = await ApiClient.get<AdminLogUsersResponse>(`${this.baseUrl}/users`);
     return response.data;
   }
 
@@ -150,14 +153,14 @@ export class AdminLogService {
    * Delete specific log
    */
   async deleteLog(id: number): Promise<void> {
-    await httpClient.delete(`${this.baseUrl}/${id}`);
+    await ApiClient.delete(`${this.baseUrl}/${id}`);
   }
 
   /**
    * Execute manual cleanup of old logs
    */
   async cleanupLogs(request: AdminLogCleanupRequest = {}): Promise<AdminLogCleanupResponse['data']> {
-    const response = await httpClient.post<AdminLogCleanupResponse>(
+    const response = await ApiClient.post<AdminLogCleanupResponse>(
       `${this.baseUrl}/cleanup`,
       request
     );
@@ -224,10 +227,11 @@ export class AdminLogService {
       }
     });
 
-    const response = await fetch(`${this.baseUrl}/export?${params.toString()}`, {
+    // Use app configuration for API base URL and token key
+    const response = await fetch(`${appConfig.api.baseUrl}${this.baseUrl}/export?${params.toString()}`, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Authorization': `Bearer ${localStorage.getItem(appConfig.storage.authTokenKey)}`,
         'Accept': 'application/json',
       },
     });

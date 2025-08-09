@@ -7,16 +7,17 @@ import {
   Server,
   User,
   Info,
-  AlertCircle,
   XCircle,
   AlertTriangle,
   Filter,
   Trash2,
+  Trash,
 } from "lucide-react";
 import Table from "../../components/dashboard/Table";
 import StatCardList from "../../components/dashboard/StatCardList";
 import { AdminLogService } from "../../../infrastructure/services/AdminLogService";
-import { AdminLogEntity, AdminLogFilters } from "../../../core/domain/entities/AdminLog";
+import { AdminLogEntity } from "../../../core/domain/entities/AdminLog";
+import type { AdminLogFilters } from "../../../core/domain/entities/AdminLog";
 
 const adminLogService = new AdminLogService();
 
@@ -234,6 +235,30 @@ const AdminLogViewerPage: React.FC = () => {
 		}
 	};
 
+	// Eliminar todos los logs
+	const handleDeleteAllLogs = async () => {
+		if (!confirm('⚠️ ¿Estás seguro de que quieres BORRAR TODOS LOS LOGS?\n\nEsta acción no se puede deshacer y eliminará todos los registros de errores del sistema.')) {
+			return;
+		}
+		
+		try {
+			// Call the cleanup endpoint with days=0 to delete all logs
+			await adminLogService.cleanupLogs({ days: 0 });
+			
+			// Clear the UI
+			setLogs([]);
+			setSelectedLog(null);
+			
+			// Refresh stats
+			await loadInitialData();
+			
+			alert('✅ Todos los logs han sido eliminados correctamente.');
+		} catch (error) {
+			console.error('Error eliminando todos los logs:', error);
+			alert('❌ Error al eliminar los logs. Por favor intenta nuevamente.');
+		}
+	};
+
 	// Refrescar logs
 	const refreshLogs = async () => {
 		await loadLogs();
@@ -342,6 +367,13 @@ const AdminLogViewerPage: React.FC = () => {
 						title="Exportar registros"
 					>
 						<Download size={20} />
+					</button>
+					<button
+						onClick={handleDeleteAllLogs}
+						className="px-3 py-2 bg-red-100 text-red-700 rounded-md hover:bg-red-200"
+						title="Borrar todos los logs"
+					>
+						<Trash size={20} />
 					</button>
 				</div>
 			</div>
