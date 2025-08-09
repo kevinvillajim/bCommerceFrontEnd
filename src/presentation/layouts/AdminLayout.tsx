@@ -1,23 +1,17 @@
-import React, {useState, useEffect} from "react";
-import type {ReactNode} from "react";
-import {Shield, AlertTriangle} from "lucide-react";
-import {DashboardProvider} from "../components/dashboard/DashboardContext";
+import React, { useMemo } from "react";
+import type { ReactNode } from "react";
+import { Shield, AlertTriangle } from "lucide-react";
+import { DashboardProvider } from "../components/dashboard/DashboardContext";
 import BaseDashboardLayout from "../components/dashboard/BaseDashboardLayout";
 import adminGroups from "./groups/adminGroups";
-import type {PendingActions} from "../components/dashboard";
+import { useAdminNotifications } from "../hooks/useAdminNotifications";
 
 /**
  * Componente de Layout para el Panel de Administración
  */
 const AdminLayout: React.FC = () => {
-	const [pendingActions, setPendingActions] = useState<PendingActions>({
-		ratings: 0,
-		feedback: 0,
-		sellerRequests: 0,
-	});
-
-	// ✅ CORREGIDO - Eliminar variable no utilizada 'notifications'
-	// const [notifications, setNotifications] = useState<Notification[]>([]);
+	// Hook para obtener contadores de notificaciones automáticas
+	const { counts } = useAdminNotifications();
 
 	// Títulos dinámicos basados en rutas
 	const pageTitles: {[key: string]: string} = {
@@ -43,39 +37,88 @@ const AdminLayout: React.FC = () => {
 		icon: <Shield className="w-7 h-7 text-primary-400" />,
 	};
 
-	// Obtener acciones pendientes
-	useEffect(() => {
-		const fetchPendingActions = async () => {
-			try {
-				// Simulación de llamadas a API
-				setPendingActions({
-					ratings: Math.floor(Math.random() * 6),
-					feedback: Math.floor(Math.random() * 4),
-					sellerRequests: Math.floor(Math.random() * 3),
-				});
-			} catch (error) {
-				console.error("Error al obtener datos:", error);
-			}
-		};
-
-		fetchPendingActions();
-	}, []);
+	// Grupos del sidebar con contadores dinámicos
+	const dynamicAdminGroups = useMemo(() => {
+		return adminGroups.map(group => ({
+			...group,
+			links: group.links.map(link => {
+				let notificationCount = 0;
+				
+				// Asignar contadores según la ruta
+				switch (link.path) {
+					case "/admin/users":
+						notificationCount = counts.users;
+						break;
+					case "/admin/sellers":
+						notificationCount = counts.sellers;
+						break;
+					case "/admin/solicitudes":
+						notificationCount = counts.solicitudes;
+						break;
+					case "/admin/orders":
+						notificationCount = counts.orders;
+						break;
+					case "/admin/shipping":
+						notificationCount = counts.shipping;
+						break;
+					case "/admin/ratings":
+						notificationCount = counts.ratings;
+						break;
+					case "/admin/feedback":
+						notificationCount = counts.feedback;
+						break;
+					case "/admin/logs":
+						notificationCount = counts.logs;
+						break;
+					case "/admin/invoices":
+						notificationCount = counts.invoices;
+						break;
+					default:
+						notificationCount = (link as any).notificationCount || 0;
+				}
+				
+				return {
+					...link,
+					notificationCount,
+					isNotificated: notificationCount > 0
+				};
+			})
+		}));
+	}, [counts]);
 
 	// Componente de alertas del sistema para mostrar en el header
 	const SystemAlertsHeader = (): ReactNode => {
-		// Simulación de una alerta a nivel de sistema
-		const hasSystemAlert =
-			pendingActions.ratings > 3 || pendingActions.feedback > 2;
+		// Calcular total de notificaciones críticas
+		const totalCritical = counts.logs + counts.feedback + counts.solicitudes;
+		const totalModerate = counts.ratings + counts.orders + counts.invoices;
+		const totalNotifications = Object.values(counts).reduce((sum, count) => sum + count, 0);
 
-		if (!hasSystemAlert) return null;
+		if (totalNotifications === 0) return null;
+
+		// Determinar nivel de alerta
+		const isHighPriority = totalCritical > 0;
+		const alertClass = isHighPriority 
+			? "bg-red-50 border-b border-red-200" 
+			: "bg-amber-50 border-b border-amber-200";
+		const iconClass = isHighPriority ? "text-red-500" : "text-amber-500";
+		const textClass = isHighPriority ? "text-red-800" : "text-amber-800";
 
 		return (
-			<div className="bg-amber-50 border-b border-amber-200 px-4 py-2">
+			<div className={alertClass + " px-4 py-2"}>
 				<div className="flex items-center">
-					<AlertTriangle className="h-5 w-5 text-amber-500 mr-2" />
-					<span className="text-sm text-amber-800">
-						Hay acciones pendientes que requieren tu atención en el panel de
-						administración.
+					<AlertTriangle className={`h-5 w-5 ${iconClass} mr-2`} />
+					<span className={`text-sm ${textClass}`}>
+						{isHighPriority ? (
+							<>
+								<strong>¡Atención!</strong> Tienes {totalCritical} notificación{totalCritical !== 1 ? 'es' : ''} crítica{totalCritical !== 1 ? 's' : ''} 
+								{totalModerate > 0 && ` y ${totalModerate} adicionales`} pendientes.
+							</>
+						) : (
+							<>
+								Tienes <strong>{totalNotifications}</strong> notificación{totalNotifications !== 1 ? 'es' : ''} 
+								pendiente{totalNotifications !== 1 ? 's' : ''} en el panel de administración.
+							</>
+						)}
 					</span>
 				</div>
 			</div>
@@ -85,7 +128,7 @@ const AdminLayout: React.FC = () => {
 	return (
 		<DashboardProvider initialType="admin" initialPageTitles={pageTitles}>
 			<BaseDashboardLayout
-				sidebarGroups={adminGroups}
+				sidebarGroups={dynamicAdminGroups}
 				sidebarTitle={sidebarTitle}
 				headerExtras={<SystemAlertsHeader />}
 			/>
