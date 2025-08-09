@@ -15,123 +15,19 @@ import {
   Check,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import type { DiscountCode } from "../../../core/domain/entities/DescountCode";
+import type { AdminDiscountCode, AdminDiscountCodeFilterParams, AdminDiscountCodeCreationData } from "../../../core/domain/entities/AdminDiscountCode";
+import { adminDiscountService } from "../../../core/services/AdminDiscountService";
 import StatCardList from "../../components/dashboard/StatCardList";
 
-// Datos simulados para códigos de descuento
-const mockDiscounts: DiscountCode[] = [
-  {
-    id: 1,
-    feedbackId: 5,
-    code: "GRACIAS10",
-    discountPercentage: 10,
-    isUsed: false,
-    expiresAt: "2023-12-31T23:59:59Z",
-    createdAt: "2023-11-01T15:30:00Z",
-    updatedAt: "2023-11-01T15:30:00Z",
-    isValid: true,
-    daysUntilExpiration: 58
-  },
-  {
-    id: 2,
-    feedbackId: 12,
-    code: "BIENVENIDA20",
-    discountPercentage: 20,
-    isUsed: true,
-    usedBy: 105,
-    usedAt: "2023-11-03T14:20:00Z",
-    usedOnProductId: 8,
-    expiresAt: "2023-12-15T23:59:59Z",
-    createdAt: "2023-10-15T10:45:00Z",
-    updatedAt: "2023-11-03T14:20:00Z",
-    isValid: false,
-    daysUntilExpiration: 42
-  },
-  {
-    id: 3,
-    feedbackId: 7,
-    code: "BLACKFRIDAY30",
-    discountPercentage: 30,
-    isUsed: false,
-    expiresAt: "2023-11-30T23:59:59Z",
-    createdAt: "2023-11-02T08:15:00Z",
-    updatedAt: "2023-11-02T08:15:00Z",
-    isValid: true,
-    daysUntilExpiration: 25
-  },
-  {
-    id: 4,
-    feedbackId: 9,
-    code: "NAVIDAD25",
-    discountPercentage: 25,
-    isUsed: false,
-    expiresAt: "2023-12-25T23:59:59Z",
-    createdAt: "2023-11-05T16:40:00Z",
-    updatedAt: "2023-11-05T16:40:00Z",
-    isValid: true,
-    daysUntilExpiration: 50
-  },
-  {
-    id: 5,
-    feedbackId: 3,
-    code: "ANIVERSARIO15",
-    discountPercentage: 15,
-    isUsed: false,
-    expiresAt: "2023-11-15T23:59:59Z",
-    createdAt: "2023-10-20T11:30:00Z",
-    updatedAt: "2023-10-20T11:30:00Z",
-    isValid: true,
-    daysUntilExpiration: 10
-  },
-  {
-    id: 6,
-    feedbackId: 8,
-    code: "CLIENTE50",
-    discountPercentage: 50,
-    isUsed: true,
-    usedBy: 102,
-    usedAt: "2023-10-30T09:15:00Z",
-    usedOnProductId: 5,
-    expiresAt: "2023-11-10T23:59:59Z",
-    createdAt: "2023-10-10T14:20:00Z",
-    updatedAt: "2023-10-30T09:15:00Z",
-    isValid: false,
-    daysUntilExpiration: 5
-  },
-  {
-    id: 7,
-    feedbackId: 15,
-    code: "INVIERNO20",
-    discountPercentage: 20,
-    isUsed: false,
-    expiresAt: "2024-01-15T23:59:59Z",
-    createdAt: "2023-11-01T10:00:00Z",
-    updatedAt: "2023-11-01T10:00:00Z",
-    isValid: true,
-    daysUntilExpiration: 73
-  },
-  {
-    id: 8,
-    feedbackId: 4,
-    code: "VERANO15",
-    discountPercentage: 15,
-    isUsed: false,
-    expiresAt: "2023-08-31T23:59:59Z",
-    createdAt: "2023-06-01T12:00:00Z",
-    updatedAt: "2023-06-01T12:00:00Z",
-    isValid: false,
-    daysUntilExpiration: -70
-  }
-];
 
 const AdminDiscountsPage: React.FC = () => {
-	const [discounts, setDiscounts] = useState<DiscountCode[]>([]);
+	const [discounts, setDiscounts] = useState<AdminDiscountCode[]>([]);
 	const [loading, setLoading] = useState(true);
-	const [validityFilter, setValidityFilter] = useState<string>("all");
-	const [usageFilter, setUsageFilter] = useState<string>("all");
-	const [percentageFilter, setPercentageFilter] = useState<string>("all");
+	const [validityFilter, setValidityFilter] = useState<"all" | "valid" | "expired">("all");
+	const [usageFilter, setUsageFilter] = useState<"all" | "used" | "unused">("all");
+	const [percentageFilter, setPercentageFilter] = useState<"all" | "10" | "20" | "30" | "50+">("all");
 	const [showDiscountModal, setShowDiscountModal] = useState(false);
-	const [selectedDiscount, setSelectedDiscount] = useState<DiscountCode | null>(
+	const [selectedDiscount, setSelectedDiscount] = useState<AdminDiscountCode | null>(
 		null
 	);
 	const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
@@ -141,88 +37,98 @@ const AdminDiscountsPage: React.FC = () => {
 		totalItems: 0,
 		itemsPerPage: 10,
 	});
+	const [stats, setStats] = useState({
+		total: 0,
+		valid: 0,
+		expired: 0,
+		used: 0,
+		unused: 0,
+		active: 0,
+	});
 
 	// Formulario para nuevo descuento
 	const [newDiscount, setNewDiscount] = useState({
 		code: "",
-		discountPercentage: 10,
+		discount_percentage: 10,
 		expirationDays: 30,
-		isForFeedback: false,
-		feedbackId: "",
+		description: "",
 	});
 
-	// Cargar datos
+	// Load data
 	useEffect(() => {
-		const fetchDiscounts = () => {
-			setLoading(true);
-			// Simulación de llamada a API
-			setTimeout(() => {
-				setDiscounts(mockDiscounts);
-				setPagination({
-					currentPage: 1,
-					totalPages: 1,
-					totalItems: mockDiscounts.length,
-					itemsPerPage: 10,
-				});
-				setLoading(false);
-			}, 500);
-		};
-
 		fetchDiscounts();
-	}, []);
+		fetchStats();
+	}, [validityFilter, usageFilter, percentageFilter, pagination.currentPage]);
 
-	// Filtrar descuentos
-	const filteredDiscounts = discounts.filter((discount) => {
-		// Filtro por validez
-		const matchesValidity = (() => {
-			if (validityFilter === "all") return true;
-			if (validityFilter === "valid") return discount.isValid;
-			if (validityFilter === "expired") return !discount.isValid;
-			return true;
-		})();
+	// Fetch discount codes from API
+	const fetchDiscounts = async () => {
+		setLoading(true);
+		try {
+			const filterParams: AdminDiscountCodeFilterParams = {
+				validity: validityFilter,
+				usage: usageFilter,
+				percentage: percentageFilter,
+				limit: pagination.itemsPerPage,
+				offset: (pagination.currentPage - 1) * pagination.itemsPerPage,
+			};
 
-		// Filtro por uso
-		const matchesUsage = (() => {
-			if (usageFilter === "all") return true;
-			if (usageFilter === "used") return discount.isUsed;
-			if (usageFilter === "unused") return !discount.isUsed;
-			return true;
-		})();
+			const response = await adminDiscountService.getDiscountCodes(filterParams);
+			if (response && response.status === 'success') {
+				setDiscounts(response.data);
+				setPagination(prev => ({
+					...prev,
+					totalItems: response.meta.total,
+					totalPages: response.meta.total_pages,
+					currentPage: response.meta.current_page,
+				}));
+			}
+		} catch (error) {
+			console.error('Error fetching discounts:', error);
+		} finally {
+			setLoading(false);
+		}
+	};
 
-		// Filtro por porcentaje
-		const matchesPercentage = (() => {
-			if (percentageFilter === "all") return true;
+	// Fetch statistics
+	const fetchStats = async () => {
+		try {
+			const response = await adminDiscountService.getDiscountCodeStats();
+			if (response && response.status === 'success') {
+				setStats(response.data);
+			}
+		} catch (error) {
+			console.error('Error fetching stats:', error);
+		}
+	};
 
-			const percentage = parseInt(percentageFilter);
-			if (percentage === 10) return discount.discountPercentage <= 10;
-			if (percentage === 20)
-				return (
-					discount.discountPercentage > 10 && discount.discountPercentage <= 20
-				);
-			if (percentage === 30)
-				return (
-					discount.discountPercentage > 20 && discount.discountPercentage <= 30
-				);
-			if (percentage > 50) return discount.discountPercentage > 30;
-			return true;
-		})();
+	// Filtering is now handled on the backend, so we just use the discounts as-is
+	const filteredDiscounts = discounts;
 
-		return matchesValidity && matchesUsage && matchesPercentage;
-	});
-
-	// Abrir modal para ver/editar descuento
-	const openDiscountModal = (discount?: DiscountCode) => {
+	// Open modal to view/edit discount
+	const openDiscountModal = async (discount?: AdminDiscountCode) => {
 		if (discount) {
 			setSelectedDiscount(discount);
 		} else {
 			setSelectedDiscount(null);
-			setNewDiscount({
-				code: generateRandomCode(),
-				discountPercentage: 10,
-				expirationDays: 30,
-				isForFeedback: false,
-				feedbackId: "",
-			});
+			// Generate a random code
+			try {
+				const codeResponse = await adminDiscountService.generateRandomCode();
+				const generatedCode = codeResponse?.data?.code || generateRandomCode();
+				setNewDiscount({
+					code: generatedCode,
+					discount_percentage: 10,
+					expirationDays: 30,
+					description: "",
+				});
+			} catch (error) {
+				console.error('Error generating code:', error);
+				setNewDiscount({
+					code: generateRandomCode(),
+					discount_percentage: 10,
+					expirationDays: 30,
+					description: "",
+				});
+			}
 		}
 		setShowDiscountModal(true);
 	};
@@ -247,51 +153,70 @@ const AdminDiscountsPage: React.FC = () => {
 		return result;
 	};
 
-	// Guardar descuento (nuevo o editado)
-	const saveDiscount = () => {
-		if (selectedDiscount) {
-			// Actualizar descuento existente
-			setDiscounts((prevDiscounts) =>
-				prevDiscounts.map((d) =>
-					d.id === selectedDiscount.id
-						? {...selectedDiscount, updatedAt: new Date().toISOString()}
-						: d
-				)
-			);
-		} else {
-			// Crear nuevo descuento
-			const newDiscountCode: DiscountCode = {
-				id: Math.max(...discounts.map((d) => d.id || 0)) + 1,
-				feedbackId: newDiscount.isForFeedback
-					? parseInt(newDiscount.feedbackId)
-					: 0,
-				code: newDiscount.code,
-				discountPercentage: newDiscount.discountPercentage,
-				isUsed: false,
-				expiresAt: new Date(
+	// Save discount (new or edited)
+	const saveDiscount = async () => {
+		try {
+			if (selectedDiscount) {
+				// Update existing discount
+				const updateData = {
+					code: selectedDiscount.code,
+					discount_percentage: selectedDiscount.discount_percentage,
+					expires_at: selectedDiscount.expires_at,
+					description: selectedDiscount.description || undefined,
+				};
+				const result = await adminDiscountService.updateDiscountCode(selectedDiscount.id!, updateData);
+				if (result.success) {
+					alert(result.message);
+					fetchDiscounts();
+					fetchStats();
+				} else {
+					alert(result.message);
+				}
+			} else {
+				// Create new discount
+				const expirationDate = new Date(
 					Date.now() + newDiscount.expirationDays * 24 * 60 * 60 * 1000
-				).toISOString(),
-				createdAt: new Date().toISOString(),
-				updatedAt: new Date().toISOString(),
-				isValid: true,
-				daysUntilExpiration: newDiscount.expirationDays,
-			};
-
-			setDiscounts((prevDiscounts) => [...prevDiscounts, newDiscountCode]);
+				).toISOString();
+				
+				const createData: AdminDiscountCodeCreationData = {
+					code: newDiscount.code,
+					discount_percentage: newDiscount.discount_percentage,
+					expires_at: expirationDate,
+					description: newDiscount.description || undefined,
+				};
+				
+				const result = await adminDiscountService.createDiscountCode(createData);
+				if (result.success) {
+					alert(result.message);
+					fetchDiscounts();
+					fetchStats();
+				} else {
+					alert(result.message);
+				}
+			}
+		} catch (error) {
+			console.error('Error saving discount:', error);
+			alert('Error saving discount code');
 		}
-
 		closeDiscountModal();
 	};
 
-	// Eliminar descuento
-	const deleteDiscount = () => {
-		if (selectedDiscount) {
-			setDiscounts((prevDiscounts) =>
-				prevDiscounts.filter((d) => d.id !== selectedDiscount.id)
-			);
-			alert(
-				`El código de descuento ${selectedDiscount.code} ha sido eliminado.`
-			);
+	// Delete discount
+	const deleteDiscount = async () => {
+		if (selectedDiscount && selectedDiscount.id) {
+			try {
+				const result = await adminDiscountService.deleteDiscountCode(selectedDiscount.id);
+				if (result.success) {
+					alert(result.message);
+					fetchDiscounts();
+					fetchStats();
+				} else {
+					alert(result.message);
+				}
+			} catch (error) {
+				console.error('Error deleting discount:', error);
+				alert('Error deleting discount code');
+			}
 		}
 		closeDiscountModal();
 	};
@@ -346,13 +271,13 @@ const AdminDiscountsPage: React.FC = () => {
 		return diffDays;
 	};
 
-	// Definir columnas de la tabla
+	// Define table columns
 	const columns = [
 		{
 			key: "code",
 			header: "Código",
 			sortable: true,
-			render: (discount: DiscountCode) => (
+			render: (discount: AdminDiscountCode) => (
 				<div className="flex items-center">
 					<div className="flex-shrink-0 h-8 w-8 bg-primary-100 rounded-md flex items-center justify-center">
 						<Tag className="h-4 w-4 text-primary-600" />
@@ -372,13 +297,13 @@ const AdminDiscountsPage: React.FC = () => {
 			key: "percentage",
 			header: "Descuento",
 			sortable: true,
-			render: (discount: DiscountCode) => (
+			render: (discount: AdminDiscountCode) => (
 				<div className="flex items-center">
 					<div className="flex-shrink-0 h-8 w-8 bg-green-100 rounded-md flex items-center justify-center">
 						<Percent className="h-4 w-4 text-green-600" />
 					</div>
 					<div className="ml-3 text-lg font-semibold text-gray-900">
-						{discount.discountPercentage}%
+						{discount.discount_percentage}%
 					</div>
 				</div>
 			),
@@ -387,9 +312,9 @@ const AdminDiscountsPage: React.FC = () => {
 			key: "validity",
 			header: "Validez",
 			sortable: true,
-			render: (discount: DiscountCode) => {
-				const isExpired = isDateExpired(discount.expiresAt);
-				const daysRemaining = getDaysRemaining(discount.expiresAt);
+			render: (discount: AdminDiscountCode) => {
+				const isExpired = isDateExpired(discount.expires_at);
+				const daysRemaining = getDaysRemaining(discount.expires_at);
 
 				return (
 					<div>
@@ -410,7 +335,7 @@ const AdminDiscountsPage: React.FC = () => {
 								: `Expira en ${daysRemaining} día${daysRemaining !== 1 ? "s" : ""}`}
 						</div>
 						<div className="text-xs text-gray-500">
-							{formatDate(discount.expiresAt)}
+							{formatDate(discount.expires_at)}
 						</div>
 					</div>
 				);
@@ -420,10 +345,10 @@ const AdminDiscountsPage: React.FC = () => {
 			key: "usage",
 			header: "Uso",
 			sortable: true,
-			render: (discount: DiscountCode) => {
+			render: (discount: AdminDiscountCode) => {
 				return (
 					<div>
-						{discount.isUsed ? (
+						{discount.is_used ? (
 							<span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
 								<Check className="w-3 h-3 mr-1" />
 								Utilizado
@@ -434,14 +359,14 @@ const AdminDiscountsPage: React.FC = () => {
 								Sin usar
 							</span>
 						)}
-						{discount.isUsed && discount.usedBy && (
+						{discount.is_used && discount.used_by_user && (
 							<div className="text-xs text-gray-500 mt-1">
-								Por: Usuario #{discount.usedBy}
+								Por: {discount.used_by_user.name}
 							</div>
 						)}
-						{discount.isUsed && discount.usedAt && (
+						{discount.is_used && discount.used_at && (
 							<div className="text-xs text-gray-500">
-								{formatDate(discount.usedAt)}
+								{formatDate(discount.used_at)}
 							</div>
 						)}
 					</div>
@@ -449,22 +374,19 @@ const AdminDiscountsPage: React.FC = () => {
 			},
 		},
 		{
-			key: "feedback",
-			header: "Feedback",
+			key: "description",
+			header: "Descripción",
 			sortable: true,
-			render: (discount: DiscountCode) => {
-				if (discount.feedbackId) {
+			render: (discount: AdminDiscountCode) => {
+				if (discount.description) {
 					return (
-						<Link
-							to={`/admin/feedback/${discount.feedbackId}`}
-							className="text-primary-600 hover:text-primary-800 text-sm"
-						>
-							Ver feedback #{discount.feedbackId}
-						</Link>
+						<div className="text-sm text-gray-900 max-w-xs truncate" title={discount.description}>
+							{discount.description}
+						</div>
 					);
 				}
 				return (
-					<span className="text-gray-500 text-sm">N/A</span>
+					<span className="text-gray-500 text-sm">Sin descripción</span>
 				);
 			},
 		},
@@ -472,16 +394,23 @@ const AdminDiscountsPage: React.FC = () => {
 			key: "created",
 			header: "Creado",
 			sortable: true,
-			render: (discount: DiscountCode) => (
-				<div className="text-sm text-gray-500">
-					{formatDate(discount.createdAt)}
+			render: (discount: AdminDiscountCode) => (
+				<div>
+					<div className="text-sm text-gray-500">
+						{formatDate(discount.created_at)}
+					</div>
+					{discount.created_by_user && (
+						<div className="text-xs text-gray-400">
+							Por: {discount.created_by_user.name}
+						</div>
+					)}
 				</div>
 			),
 		},
 		{
 			key: "actions",
 			header: "Acciones",
-			render: (discount: DiscountCode) => {
+			render: (discount: AdminDiscountCode) => {
 				return (
 					<div className="flex justify-end space-x-2">
 						{/* Ver detalles / Editar */}
@@ -524,7 +453,7 @@ const AdminDiscountsPage: React.FC = () => {
 		},
 		{ 
 		  title: "Activos", 
-		  value: discounts.filter((d) => !isDateExpired(d.expiresAt) && !d.isUsed).length, 
+		  value: stats.active, 
 		  description: "Disponibles para uso", 
 		  icon: CheckCircle, 
 		  bgColor: "bg-green-50/20", 
@@ -535,7 +464,7 @@ const AdminDiscountsPage: React.FC = () => {
 		},
 		{ 
 		  title: "Utilizados", 
-		  value: discounts.filter((d) => d.isUsed).length, 
+		  value: stats.used, 
 		  description: "Ya redimidos", 
 		  icon: Check, 
 		  bgColor: "bg-yellow-50", 
@@ -546,7 +475,7 @@ const AdminDiscountsPage: React.FC = () => {
 		},
 		{ 
 		  title: "Expirados", 
-		  value: discounts.filter((d) => isDateExpired(d.expiresAt) && !d.isUsed).length, 
+		  value: stats.expired, 
 		  description: "Ya no válidos", 
 		  icon: XCircle, 
 		  bgColor: "bg-red-50/20", 
@@ -572,7 +501,7 @@ const AdminDiscountsPage: React.FC = () => {
 						Nuevo Código
 					</button>
 					<button
-						onClick={refreshData}
+						onClick={() => { fetchDiscounts(); fetchStats(); }}
 						className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
 					>
 						<RefreshCw size={18} className="inline mr-2" />
@@ -723,17 +652,17 @@ const AdminDiscountsPage: React.FC = () => {
 													min="5"
 													max="50"
 													step="5"
-													value={selectedDiscount.discountPercentage}
+													value={selectedDiscount.discount_percentage}
 													onChange={(e) =>
 														setSelectedDiscount({
 															...selectedDiscount,
-															discountPercentage: parseInt(e.target.value),
+															discount_percentage: parseInt(e.target.value),
 														})
 													}
 													className="w-full mr-3"
 												/>
 												<span className="text-lg font-semibold text-gray-900 min-w-[50px] text-center">
-													{selectedDiscount.discountPercentage}%
+													{selectedDiscount.discount_percentage}%
 												</span>
 											</div>
 										</div>
@@ -749,8 +678,8 @@ const AdminDiscountsPage: React.FC = () => {
 												type="date"
 												className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 												value={
-													selectedDiscount.expiresAt
-														? new Date(selectedDiscount.expiresAt)
+													selectedDiscount.expires_at
+														? new Date(selectedDiscount.expires_at)
 																.toISOString()
 																.split("T")[0]
 														: ""
@@ -760,31 +689,27 @@ const AdminDiscountsPage: React.FC = () => {
 													date.setHours(23, 59, 59, 999);
 													setSelectedDiscount({
 														...selectedDiscount,
-														expiresAt: date.toISOString(),
+														expires_at: date.toISOString(),
 													});
 												}}
 											/>
 										</div>
 										<div>
 											<label className="block text-sm font-medium text-gray-700 mb-1">
-												Feedback Relacionado
+												Descripción
 											</label>
-											<div className="flex items-center">
-												<span className="border border-gray-300 rounded-lg px-3 py-2 bg-gray-100 text-gray-600 w-full">
-													{selectedDiscount.feedbackId
-														? `Feedback #${selectedDiscount.feedbackId}`
-														: "Sin feedback relacionado"}
-												</span>
-												{selectedDiscount.feedbackId && (
-													<Link
-														to={`/admin/feedback/${selectedDiscount.feedbackId}`}
-														className="ml-2 p-2 text-primary-600 hover:bg-primary-100 rounded-md"
-														title="Ver feedback"
-													>
-														<Eye size={18} />
-													</Link>
-												)}
-											</div>
+											<textarea
+												className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+												rows={3}
+												value={selectedDiscount.description || ""}
+												onChange={(e) =>
+													setSelectedDiscount({
+														...selectedDiscount,
+														description: e.target.value,
+													})
+												}
+												placeholder="Descripción opcional del código de descuento..."
+											/>
 										</div>
 									</div>
 
@@ -794,7 +719,7 @@ const AdminDiscountsPage: React.FC = () => {
 											Estado de Uso
 										</h4>
 										<div className="flex items-center mb-2">
-											{selectedDiscount.isUsed ? (
+											{selectedDiscount.is_used ? (
 												<span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
 													<Check className="w-4 h-4 mr-1" />
 													Utilizado
@@ -806,41 +731,41 @@ const AdminDiscountsPage: React.FC = () => {
 												</span>
 											)}
 										</div>
-										{selectedDiscount.isUsed && (
+										{selectedDiscount.is_used && (
 											<div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
-												{selectedDiscount.usedBy && (
+												{selectedDiscount.used_by_user && (
 													<div>
 														<span className="text-sm text-gray-600">
 															Usado por:
 														</span>
 														<Link
-															to={`/admin/users/${selectedDiscount.usedBy}`}
+															to={`/admin/users/${selectedDiscount.used_by_user.id}`}
 															className="ml-2 text-primary-600 hover:text-primary-800"
 														>
-															Usuario #{selectedDiscount.usedBy}
+															{selectedDiscount.used_by_user.name} ({selectedDiscount.used_by_user.email})
 														</Link>
 													</div>
 												)}
-												{selectedDiscount.usedAt && (
+												{selectedDiscount.used_at && (
 													<div>
 														<span className="text-sm text-gray-600">
 															Fecha de uso:
 														</span>
 														<span className="ml-2 text-gray-900">
-															{formatDate(selectedDiscount.usedAt)}
+															{formatDate(selectedDiscount.used_at)}
 														</span>
 													</div>
 												)}
-												{selectedDiscount.usedOnProductId && (
+												{selectedDiscount.used_on_product && (
 													<div className="col-span-2">
 														<span className="text-sm text-gray-600">
 															Aplicado en:
 														</span>
 														<Link
-															to={`/admin/products/${selectedDiscount.usedOnProductId}`}
+															to={`/admin/products/${selectedDiscount.used_on_product.id}`}
 															className="ml-2 text-primary-600 hover:text-primary-800"
 														>
-															Producto #{selectedDiscount.usedOnProductId}
+															{selectedDiscount.used_on_product.name} (${selectedDiscount.used_on_product.price})
 														</Link>
 													</div>
 												)}
@@ -909,17 +834,17 @@ const AdminDiscountsPage: React.FC = () => {
 													min="5"
 													max="50"
 													step="5"
-													value={newDiscount.discountPercentage}
+													value={newDiscount.discount_percentage}
 													onChange={(e) =>
 														setNewDiscount({
 															...newDiscount,
-															discountPercentage: parseInt(e.target.value),
+															discount_percentage: parseInt(e.target.value),
 														})
 													}
 													className="w-full mr-3"
 												/>
 												<span className="text-lg font-semibold text-gray-900 min-w-[50px] text-center">
-													{newDiscount.discountPercentage}%
+													{newDiscount.discount_percentage}%
 												</span>
 											</div>
 										</div>
@@ -950,42 +875,21 @@ const AdminDiscountsPage: React.FC = () => {
 											</p>
 										</div>
 										<div>
-											<div className="flex items-center mb-2">
-												<input
-													id="isForFeedback"
-													type="checkbox"
-													className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-													checked={newDiscount.isForFeedback}
-													onChange={(e) =>
-														setNewDiscount({
-															...newDiscount,
-															isForFeedback: e.target.checked,
-														})
-													}
-												/>
-												<label
-													htmlFor="isForFeedback"
-													className="ml-2 block text-sm text-gray-700"
-												>
-													Asociar a un feedback
-												</label>
-											</div>
-											{newDiscount.isForFeedback && (
-												<div>
-													<input
-														type="text"
-														className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
-														value={newDiscount.feedbackId}
-														onChange={(e) =>
-															setNewDiscount({
-																...newDiscount,
-																feedbackId: e.target.value,
-															})
-														}
-														placeholder="ID del feedback"
-													/>
-												</div>
-											)}
+											<label className="block text-sm font-medium text-gray-700 mb-1">
+												Descripción (Opcional)
+											</label>
+											<textarea
+												className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+												rows={3}
+												value={newDiscount.description || ""}
+												onChange={(e) =>
+													setNewDiscount({
+														...newDiscount,
+														description: e.target.value,
+													})
+												}
+												placeholder="Describe el propósito de este código de descuento..."
+											/>
 										</div>
 									</div>
 
@@ -1002,7 +906,7 @@ const AdminDiscountsPage: React.FC = () => {
 												</span>{" "}
 												con un valor del{" "}
 												<span className="font-semibold">
-													{newDiscount.discountPercentage}%
+													{newDiscount.discount_percentage}%
 												</span>{" "}
 												válido por
 												<span className="font-semibold">
@@ -1011,14 +915,13 @@ const AdminDiscountsPage: React.FC = () => {
 												</span>
 												.
 											</p>
-											{newDiscount.isForFeedback && newDiscount.feedbackId && (
+											{newDiscount.description && (
 												<p className="mt-2">
-													Este código estará asociado al
+													Descripción: 
 													<span className="font-semibold">
 														{" "}
-														Feedback #{newDiscount.feedbackId}
+														{newDiscount.description}
 													</span>
-													.
 												</p>
 											)}
 										</div>

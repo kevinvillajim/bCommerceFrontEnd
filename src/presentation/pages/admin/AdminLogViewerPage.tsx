@@ -10,37 +10,45 @@ import {
   AlertCircle,
   XCircle,
   AlertTriangle,
+  Filter,
+  Trash2,
 } from "lucide-react";
 import Table from "../../components/dashboard/Table";
 import StatCardList from "../../components/dashboard/StatCardList";
+import { AdminLogService } from "../../../infrastructure/services/AdminLogService";
+import { AdminLogEntity, AdminLogFilters } from "../../../core/domain/entities/AdminLog";
 
-// Definir el tipo para una entrada de registro
-interface LogEntry {
-	id: number;
-	timestamp: string;
-	level: "info" | "warning" | "error" | "critical";
-	message: string;
-	source: string;
-	details?: string;
-	userId?: number;
-	ip?: string;
-	userAgent?: string;
-}
+const adminLogService = new AdminLogService();
 
 // Página de Visualización de Registros de Errores
 const AdminLogViewerPage: React.FC = () => {
 	// Estados
-	const [logs, setLogs] = useState<LogEntry[]>([]);
+	const [logs, setLogs] = useState<AdminLogEntity[]>([]);
 	const [loading, setLoading] = useState<boolean>(true);
 	const [currentPage, setCurrentPage] = useState<number>(1);
-	const [selectedLog, setSelectedLog] = useState<LogEntry | null>(null);
-	const [levelFilter, setLevelFilter] = useState<string>("all");
-	const [sourceFilter, setSourceFilter] = useState<string>("all");
-	const [dateFilter, setDateFilter] = useState<string>("");
+	const [selectedLog, setSelectedLog] = useState<AdminLogEntity | null>(null);
+	const [stats, setStats] = useState<any>(null);
+	const [totalPages, setTotalPages] = useState<number>(1);
+	const [totalItems, setTotalItems] = useState<number>(0);
+	const [eventTypes, setEventTypes] = useState<string[]>([]);
+	const [logUsers, setLogUsers] = useState<any[]>([]);
+	
+	// Filtros
+	const [filters, setFilters] = useState<AdminLogFilters>({
+		page: 1,
+		per_page: 20,
+		level: undefined,
+		event_type: undefined,
+		user_id: undefined,
+		status_code: undefined,
+		from_date: undefined,
+		to_date: undefined,
+		search: undefined,
+	});
 
 	// Opciones para filtros
-	const levels = ["all", "info", "warning", "error", "critical"];
-	const sources = ["all", "backend", "frontend", "database", "auth", "payment"];
+	const levels = ["error", "critical", "warning", "info"];
+	const statusCodes = [401, 403, 404, 429, 500, 502, 503, 504];
 
 	// Columnas para la tabla
 	const columns = [
@@ -50,234 +58,240 @@ const AdminLogViewerPage: React.FC = () => {
 			sortable: true,
 		},
 		{
-			key: "timestamp",
+			key: "createdAt",
 			header: "Fecha y Hora",
 			sortable: true,
-			render: (log: LogEntry) => {
-				const date = new Date(log.timestamp);
-				return (
-					<div className="flex items-center">
-						<Clock className="w-4 h-4 mr-1 text-gray-400" />
-						<span>{date.toLocaleString()}</span>
+			render: (log: AdminLogEntity) => (
+				<div className="flex items-center">
+					<Clock className="w-4 h-4 mr-1 text-gray-400" />
+					<div className="flex flex-col">
+						<span className="text-sm">{log.getFormattedDate()}</span>
+						<span className="text-xs text-gray-500">{log.timeAgo}</span>
 					</div>
-				);
-			},
+				</div>
+			),
 		},
 		{
 			key: "level",
 			header: "Nivel",
 			sortable: true,
-			render: (log: LogEntry) => {
-				const colors = {
-					info: "bg-blue-100 text-blue-800",
-					warning:
-						"bg-yellow-100 text-yellow-800",
-					error: "bg-red-100 text-red-800",
-					critical:
-						"bg-purple-100 text-purple-800",
-				};
-
-				return (
-					<span
-						className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${colors[log.level]}`}
-					>
-						{log.level.toUpperCase()}
-					</span>
-				);
-			},
+			render: (log: AdminLogEntity) => (
+				<span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${log.getLevelColor()}`}>
+					{log.getLevelIcon()} {log.level.toUpperCase()}
+				</span>
+			),
+		},
+		{
+			key: "eventType",
+			header: "Tipo de Evento",
+			sortable: true,
+			render: (log: AdminLogEntity) => (
+				<div className="flex items-center">
+					<Server className="w-4 h-4 mr-1 text-gray-400" />
+					<span className="text-sm">{log.getEventTypeDisplayName()}</span>
+				</div>
+			),
 		},
 		{
 			key: "message",
 			header: "Mensaje",
 			sortable: true,
-		},
-		{
-			key: "source",
-			header: "Origen",
-			sortable: true,
-			render: (log: LogEntry) => (
-				<div className="flex items-center">
-					<Server className="w-4 h-4 mr-1 text-gray-400" />
-					<span>{log.source}</span>
+			render: (log: AdminLogEntity) => (
+				<div className="max-w-xs">
+					<p className="text-sm text-gray-900 truncate" title={log.message}>
+						{log.getShortMessage(60)}
+					</p>
 				</div>
 			),
 		},
 		{
-			key: "userId",
+			key: "user",
 			header: "Usuario",
 			sortable: true,
-			render: (log: LogEntry) => (
+			render: (log: AdminLogEntity) => (
 				<div className="flex items-center">
 					<User className="w-4 h-4 mr-1 text-gray-400" />
-					<span>{log.userId || "N/A"}</span>
+					<span className="text-sm">{log.getUserDisplayName()}</span>
 				</div>
+			),
+		},
+		{
+			key: "statusCode",
+			header: "Estado",
+			sortable: true,
+			render: (log: AdminLogEntity) => (
+				<span className={`px-2 py-1 text-xs rounded ${
+					!log.statusCode ? 'bg-gray-100 text-gray-600' :
+					log.statusCode >= 500 ? 'bg-red-100 text-red-800' :
+					log.statusCode >= 400 ? 'bg-yellow-100 text-yellow-800' :
+					'bg-green-100 text-green-800'
+				}`}>
+					{log.statusCode || 'N/A'}
+				</span>
 			),
 		},
 		{
 			key: "actions",
 			header: "Acciones",
-			render: (log: LogEntry) => (
+			render: (log: AdminLogEntity) => (
 				<div className="flex space-x-2">
 					<button
 						onClick={() => setSelectedLog(log)}
 						className="text-primary-600 hover:text-primary-900"
 						title="Ver detalles"
 					>
-						<Eye size={18} />
+						<Eye size={16} />
+					</button>
+					<button
+						onClick={() => handleDeleteLog(log.id)}
+						className="text-red-600 hover:text-red-900"
+						title="Eliminar log"
+					>
+						<Trash2 size={16} />
 					</button>
 				</div>
 			),
 		},
 	];
 
-	// Datos simulados para logs
-	const generateMockLogs = (): LogEntry[] => {
-		const mockLogs: LogEntry[] = [];
-		const levels: ("info" | "warning" | "error" | "critical")[] = [
-			"info",
-			"warning",
-			"error",
-			"critical",
-		];
-		const sources = ["backend", "frontend", "database", "auth", "payment"];
-		const messages = [
-			"Error al procesar el pago",
-			"Usuario no encontrado",
-			"Fallo de conexión a la base de datos",
-			"Tiempo de espera excedido",
-			"Error de autenticación",
-			"Solicitud incorrecta",
-			"Recurso no encontrado",
-			"Error interno del servidor",
-			"Error en la validación de datos",
-			"Producto no disponible",
-		];
-
-		// Generar 100 logs aleatorios
-		for (let i = 1; i <= 100; i++) {
-			const randomDate = new Date();
-			randomDate.setDate(randomDate.getDate() - Math.floor(Math.random() * 30));
-
-			mockLogs.push({
-				id: i,
-				timestamp: randomDate.toISOString(),
-				level: levels[Math.floor(Math.random() * levels.length)],
-				message: messages[Math.floor(Math.random() * messages.length)],
-				source: sources[Math.floor(Math.random() * sources.length)],
-				details: `Detalles completos del error #${i}. Incluye información adicional y stack trace.`,
-				userId:
-					Math.random() > 0.3
-						? Math.floor(Math.random() * 1000) + 1
-						: undefined,
-				ip: `192.168.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`,
-				userAgent: `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/${Math.floor(Math.random() * 10) + 90}.0.${Math.floor(Math.random() * 1000) + 4000}.${Math.floor(Math.random() * 100)}`,
-			});
+	// Cargar datos iniciales
+	const loadInitialData = async () => {
+		try {
+			const [statsResult, eventTypesResult, logUsersResult] = await Promise.all([
+				adminLogService.getStats(),
+				adminLogService.getEventTypes(),
+				adminLogService.getLogUsers(),
+			]);
+			
+			setStats(statsResult);
+			setEventTypes(eventTypesResult);
+			setLogUsers(logUsersResult);
+		} catch (error) {
+			console.error('Error loading initial data:', error);
 		}
+	};
 
-		// Ordenar por ID en orden descendente (más recientes primero)
-		return mockLogs.sort((a, b) => b.id - a.id);
+	// Cargar logs con filtros
+	const loadLogs = async (newFilters: AdminLogFilters = filters) => {
+		try {
+			setLoading(true);
+			const result = await adminLogService.getLogs(newFilters);
+			
+			setLogs(result.logs);
+			setTotalPages(result.lastPage);
+			setTotalItems(result.total);
+			setCurrentPage(result.currentPage);
+		} catch (error) {
+			console.error('Error loading logs:', error);
+			// En caso de error, mostrar array vacío
+			setLogs([]);
+		} finally {
+			setLoading(false);
+		}
 	};
 
 	// Cargar datos al montar el componente
 	useEffect(() => {
-		// Simulación de carga de datos
-		setLoading(true);
-		setTimeout(() => {
-			setLogs(generateMockLogs());
-			setLoading(false);
-		}, 800);
+		loadInitialData();
+		loadLogs();
 	}, []);
 
-	// Filtrar logs
-	const filteredLogs = logs.filter((log) => {
-		// Filtrar por nivel
-		if (levelFilter !== "all" && log.level !== levelFilter) {
-			return false;
-		}
+	// Recargar logs cuando cambien los filtros
+	useEffect(() => {
+		loadLogs(filters);
+	}, [filters]);
 
-		// Filtrar por origen
-		if (sourceFilter !== "all" && log.source !== sourceFilter) {
-			return false;
-		}
+	// Manejar cambios en filtros
+	const handleFilterChange = (key: keyof AdminLogFilters, value: any) => {
+		const newFilters = {
+			...filters,
+			[key]: value === '' || value === 'all' ? undefined : value,
+			page: 1, // Resetear página al cambiar filtros
+		};
+		setFilters(newFilters);
+	};
 
-		// Filtrar por fecha
-		if (dateFilter) {
-			const filterDate = new Date(dateFilter).setHours(0, 0, 0, 0);
-			const logDate = new Date(log.timestamp).setHours(0, 0, 0, 0);
-			if (filterDate !== logDate) {
-				return false;
-			}
-		}
+	// Manejar cambio de página
+	const handlePageChange = (page: number) => {
+		const newFilters = { ...filters, page };
+		setFilters(newFilters);
+	};
 
-		return true;
-	});
+	// Eliminar log
+	const handleDeleteLog = async (logId: number) => {
+		if (!confirm('¿Estás seguro de que quieres eliminar este log?')) {
+			return;
+		}
+		
+		try {
+			await adminLogService.deleteLog(logId);
+			// Recargar logs después de eliminar
+			await loadLogs();
+			await loadInitialData(); // Recargar stats
+		} catch (error) {
+			console.error('Error deleting log:', error);
+			alert('Error al eliminar el log');
+		}
+	};
 
 	// Refrescar logs
-	const refreshLogs = () => {
-		setLoading(true);
-		setTimeout(() => {
-			setLogs(generateMockLogs());
-			setLoading(false);
-		}, 800);
+	const refreshLogs = async () => {
+		await loadLogs();
+		await loadInitialData();
 	};
 
 	// Limpiar filtros
 	const clearFilters = () => {
-		setLevelFilter("all");
-		setSourceFilter("all");
-		setDateFilter("");
+		setFilters({
+			page: 1,
+			per_page: 20,
+			level: undefined,
+			event_type: undefined,
+			user_id: undefined,
+			status_code: undefined,
+			from_date: undefined,
+			to_date: undefined,
+			search: undefined,
+		});
 	};
 
 	// Exportar logs
-	const exportLogs = () => {
-		const dataStr = JSON.stringify(filteredLogs, null, 2);
-		const dataUri =
-			"data:application/json;charset=utf-8," + encodeURIComponent(dataStr);
-
-		const exportFileDefaultName = `logs_export_${new Date().toISOString().slice(0, 10)}.json`;
-
-		const linkElement = document.createElement("a");
-		linkElement.setAttribute("href", dataUri);
-		linkElement.setAttribute("download", exportFileDefaultName);
-		linkElement.click();
+	const exportLogs = async () => {
+		try {
+			const blob = await adminLogService.exportLogs(filters);
+			const url = URL.createObjectURL(blob);
+			const exportFileDefaultName = `admin_logs_export_${new Date().toISOString().slice(0, 10)}.json`;
+			
+			const linkElement = document.createElement("a");
+			linkElement.setAttribute("href", url);
+			linkElement.setAttribute("download", exportFileDefaultName);
+			linkElement.click();
+			
+			URL.revokeObjectURL(url);
+		} catch (error) {
+			console.error('Error exporting logs:', error);
+			alert('Error al exportar los logs');
+		}
 	};
 
-	// Resumen de logs por nivel
-	const logSummary = {
-		info: logs.filter((log) => log.level === "info").length,
-		warning: logs.filter((log) => log.level === "warning").length,
-		error: logs.filter((log) => log.level === "error").length,
-		critical: logs.filter((log) => log.level === "critical").length,
-	};
-
-	const statItems = [
+	// Estadísticas para las tarjetas
+	const statItems = stats ? [
 		{ 
-		  title: "Info", 
-		  value: logSummary.info, 
-		  description: "Registros informativos", 
+		  title: "Total", 
+		  value: stats.total || 0, 
+		  description: "Total de registros", 
 		  icon: Info, 
-		  bgColor: "bg-blue-50/20", 
-		  textColor: "text-blue-700", 
-		  valueColor: "text-blue-800", 
-		  descriptionColor: "text-blue-600", 
-		  iconColor: "text-blue-600", 
+		  bgColor: "bg-gray-50/20", 
+		  textColor: "text-gray-700", 
+		  valueColor: "text-gray-800", 
+		  descriptionColor: "text-gray-600", 
+		  iconColor: "text-gray-600", 
 		},
 		{ 
-		  title: "Advertencias", 
-		  value: logSummary.warning, 
-		  description: "Registros de advertencia", 
-		  icon: AlertCircle, 
-		  bgColor: "bg-yellow-50/20", 
-		  textColor: "text-yellow-700", 
-		  valueColor: "text-yellow-800", 
-		  descriptionColor: "text-yellow-600", 
-		  iconColor: "text-yellow-600", 
-		},
-		{ 
-		  title: "Errores", 
-		  value: logSummary.error, 
-		  description: "Registros de error", 
-		  icon: XCircle, 
+		  title: "Críticos", 
+		  value: stats.critical || 0, 
+		  description: "Registros críticos", 
+		  icon: AlertTriangle, 
 		  bgColor: "bg-red-50/20", 
 		  textColor: "text-red-700", 
 		  valueColor: "text-red-800", 
@@ -285,17 +299,28 @@ const AdminLogViewerPage: React.FC = () => {
 		  iconColor: "text-red-600", 
 		},
 		{ 
-		  title: "Críticos", 
-		  value: logSummary.critical, 
-		  description: "Registros críticos", 
-		  icon: AlertTriangle, 
-		  bgColor: "bg-purple-50/20", 
-		  textColor: "text-purple-700", 
-		  valueColor: "text-purple-800", 
-		  descriptionColor: "text-purple-600", 
-		  iconColor: "text-purple-600", 
+		  title: "Errores", 
+		  value: stats.errors || 0, 
+		  description: "Registros de error", 
+		  icon: XCircle, 
+		  bgColor: "bg-orange-50/20", 
+		  textColor: "text-orange-700", 
+		  valueColor: "text-orange-800", 
+		  descriptionColor: "text-orange-600", 
+		  iconColor: "text-orange-600", 
+		},
+		{ 
+		  title: "Hoy", 
+		  value: stats.today || 0, 
+		  description: "Registros de hoy", 
+		  icon: Clock, 
+		  bgColor: "bg-blue-50/20", 
+		  textColor: "text-blue-700", 
+		  valueColor: "text-blue-800", 
+		  descriptionColor: "text-blue-600", 
+		  iconColor: "text-blue-600", 
 		}
-	  ];
+	  ] : [];
 
 	return (
 		<div className="space-y-6">
@@ -322,82 +347,133 @@ const AdminLogViewerPage: React.FC = () => {
 			</div>
 
 			{/* Tarjetas de resumen */}
-			<StatCardList items={statItems} />
+			{statItems.length > 0 && <StatCardList items={statItems} />}
 
 			{/* Filtros */}
 			<div className="bg-white p-4 rounded-lg shadow-sm space-y-4">
 				<div className="flex items-center mb-2">
-					<AlertTriangle className="w-5 h-5 text-gray-500 mr-2" />
+					<Filter className="w-5 h-5 text-gray-500 mr-2" />
 					<h2 className="text-lg font-medium text-gray-900">
 						Filtros
 					</h2>
 				</div>
 
-				<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+				<div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-4">
 					{/* Filtro por nivel */}
 					<div>
-						<label
-							htmlFor="levelFilter"
-							className="block text-sm font-medium text-gray-700 mb-1"
-						>
+						<label className="block text-sm font-medium text-gray-700 mb-1">
 							Nivel
 						</label>
 						<select
-							id="levelFilter"
-							value={levelFilter}
-							onChange={(e) => setLevelFilter(e.target.value)}
+							value={filters.level || 'all'}
+							onChange={(e) => handleFilterChange('level', e.target.value)}
 							className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
 						>
+							<option value="all">Todos</option>
 							{levels.map((level) => (
 								<option key={level} value={level}>
-									{level === "all"
-										? "Todos los niveles"
-										: level.charAt(0).toUpperCase() + level.slice(1)}
+									{level.charAt(0).toUpperCase() + level.slice(1)}
 								</option>
 							))}
 						</select>
 					</div>
 
-					{/* Filtro por origen */}
+					{/* Filtro por tipo de evento */}
 					<div>
-						<label
-							htmlFor="sourceFilter"
-							className="block text-sm font-medium text-gray-700 mb-1"
-						>
-							Origen
+						<label className="block text-sm font-medium text-gray-700 mb-1">
+							Tipo de Evento
 						</label>
 						<select
-							id="sourceFilter"
-							value={sourceFilter}
-							onChange={(e) => setSourceFilter(e.target.value)}
+							value={filters.event_type || 'all'}
+							onChange={(e) => handleFilterChange('event_type', e.target.value)}
 							className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
 						>
-							{sources.map((source) => (
-								<option key={source} value={source}>
-									{source === "all"
-										? "Todos los orígenes"
-										: source.charAt(0).toUpperCase() + source.slice(1)}
+							<option value="all">Todos</option>
+							{eventTypes.map((eventType) => (
+								<option key={eventType} value={eventType}>
+									{eventType.replace('_', ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
 								</option>
 							))}
 						</select>
 					</div>
 
-					{/* Filtro por fecha */}
+					{/* Filtro por usuario */}
 					<div>
-						<label
-							htmlFor="dateFilter"
-							className="block text-sm font-medium text-gray-700 mb-1"
+						<label className="block text-sm font-medium text-gray-700 mb-1">
+							Usuario
+						</label>
+						<select
+							value={filters.user_id || 'all'}
+							onChange={(e) => handleFilterChange('user_id', e.target.value)}
+							className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
 						>
-							Fecha
+							<option value="all">Todos</option>
+							{logUsers.map((user) => (
+								<option key={user.id} value={user.id}>
+									{user.name || user.email}
+								</option>
+							))}
+						</select>
+					</div>
+
+					{/* Filtro por código de estado */}
+					<div>
+						<label className="block text-sm font-medium text-gray-700 mb-1">
+							Código HTTP
+						</label>
+						<select
+							value={filters.status_code || 'all'}
+							onChange={(e) => handleFilterChange('status_code', e.target.value)}
+							className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+						>
+							<option value="all">Todos</option>
+							{statusCodes.map((code) => (
+								<option key={code} value={code}>
+									{code}
+								</option>
+							))}
+						</select>
+					</div>
+
+					{/* Filtro fecha desde */}
+					<div>
+						<label className="block text-sm font-medium text-gray-700 mb-1">
+							Desde
 						</label>
 						<input
 							type="date"
-							id="dateFilter"
-							value={dateFilter}
-							onChange={(e) => setDateFilter(e.target.value)}
+							value={filters.from_date || ''}
+							onChange={(e) => handleFilterChange('from_date', e.target.value)}
 							className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
 						/>
 					</div>
+
+					{/* Filtro fecha hasta */}
+					<div>
+						<label className="block text-sm font-medium text-gray-700 mb-1">
+							Hasta
+						</label>
+						<input
+							type="date"
+							value={filters.to_date || ''}
+							onChange={(e) => handleFilterChange('to_date', e.target.value)}
+							className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+						/>
+					</div>
+				</div>
+
+				{/* Búsqueda de texto */}
+				<div>
+					<label className="block text-sm font-medium text-gray-700 mb-1">
+						Buscar en mensajes, URLs y eventos
+					</label>
+					<input
+						type="text"
+						value={filters.search || ''}
+						onChange={(e) => handleFilterChange('search', e.target.value)}
+						placeholder="Escribir para buscar..."
+						className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+					/>
 				</div>
 
 				<div className="flex justify-end">
@@ -412,117 +488,112 @@ const AdminLogViewerPage: React.FC = () => {
 
 			{/* Tabla de logs */}
 			<Table
-				data={filteredLogs}
+				data={logs}
 				columns={columns}
 				loading={loading}
-				searchFields={["message", "source"]}
 				emptyMessage="No se encontraron registros de errores"
 				pagination={{
 					currentPage,
-					totalPages: Math.ceil(filteredLogs.length / 10),
-					totalItems: filteredLogs.length,
-					itemsPerPage: 10,
-					onPageChange: setCurrentPage,
+					totalPages,
+					totalItems,
+					itemsPerPage: filters.per_page || 20,
+					onPageChange: handlePageChange,
 				}}
 			/>
 
 			{/* Modal de detalles */}
 			{selectedLog && (
 				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-					<div className="bg-white rounded-lg shadow-lg w-full max-w-3xl max-h-[80vh] overflow-hidden">
+					<div className="bg-white rounded-lg shadow-lg w-full max-w-4xl max-h-[90vh] overflow-hidden">
 						<div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-							<h3 className="text-lg font-medium text-gray-900">
-								Detalles del Registro #{selectedLog.id}
-							</h3>
+							<div className="flex items-center space-x-3">
+								<span className={`px-2 py-1 text-xs rounded-full ${selectedLog.getLevelColor()}`}>
+									{selectedLog.getLevelIcon()} {selectedLog.level.toUpperCase()}
+								</span>
+								<h3 className="text-lg font-medium text-gray-900">
+									Detalles del Log #{selectedLog.id}
+								</h3>
+							</div>
 							<button
 								onClick={() => setSelectedLog(null)}
 								className="text-gray-500 hover:text-gray-700"
 							>
-								<svg
-									className="w-5 h-5"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-									xmlns="http://www.w3.org/2000/svg"
-								>
-									<path
-										strokeLinecap="round"
-										strokeLinejoin="round"
-										strokeWidth={2}
-										d="M6 18L18 6M6 6l12 12"
-									/>
+								<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
 								</svg>
 							</button>
 						</div>
-						<div className="px-6 py-4 overflow-y-auto max-h-[60vh]">
-							<div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+						<div className="px-6 py-4 overflow-y-auto max-h-[70vh]">
+							<div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
 								<div>
-									<p className="text-sm font-medium text-gray-500">
-										Nivel
-									</p>
-									<p className="font-semibold text-gray-900">
-										{selectedLog.level.toUpperCase()}
-									</p>
+									<p className="text-sm font-medium text-gray-500 mb-1">Fecha y Hora</p>
+									<p className="font-semibold text-gray-900">{selectedLog.getFormattedDate()}</p>
+									<p className="text-sm text-gray-500">{selectedLog.timeAgo}</p>
 								</div>
 								<div>
-									<p className="text-sm font-medium text-gray-500">
-										Fecha y Hora
-									</p>
-									<p className="font-semibold text-gray-900">
-										{new Date(selectedLog.timestamp).toLocaleString()}
-									</p>
+									<p className="text-sm font-medium text-gray-500 mb-1">Tipo de Evento</p>
+									<p className="font-semibold text-gray-900">{selectedLog.getEventTypeDisplayName()}</p>
 								</div>
 								<div>
-									<p className="text-sm font-medium text-gray-500">
-										Origen
-									</p>
-									<p className="font-semibold text-gray-900">
-										{selectedLog.source}
-									</p>
+									<p className="text-sm font-medium text-gray-500 mb-1">Usuario</p>
+									<p className="font-semibold text-gray-900">{selectedLog.getUserDisplayName()}</p>
+									{selectedLog.user?.email && (
+										<p className="text-sm text-gray-500">{selectedLog.user.email}</p>
+									)}
 								</div>
 								<div>
-									<p className="text-sm font-medium text-gray-500">
-										Usuario ID
-									</p>
-									<p className="font-semibold text-gray-900">
-										{selectedLog.userId || "N/A"}
-									</p>
+									<p className="text-sm font-medium text-gray-500 mb-1">Código de Estado</p>
+									<p className="font-semibold text-gray-900">{selectedLog.statusCode || 'N/A'}</p>
 								</div>
-								<div>
-									<p className="text-sm font-medium text-gray-500">
-										Dirección IP
-									</p>
-									<p className="font-semibold text-gray-900">
-										{selectedLog.ip || "N/A"}
-									</p>
+								{selectedLog.method && (
+									<div>
+										<p className="text-sm font-medium text-gray-500 mb-1">Método HTTP</p>
+										<p className="font-semibold text-gray-900">{selectedLog.method}</p>
+									</div>
+								)}
+								{selectedLog.ipAddress && (
+									<div>
+										<p className="text-sm font-medium text-gray-500 mb-1">Dirección IP</p>
+										<p className="font-semibold text-gray-900">{selectedLog.ipAddress}</p>
+									</div>
+								)}
+							</div>
+
+							{selectedLog.url && (
+								<div className="mb-4">
+									<p className="text-sm font-medium text-gray-500 mb-1">URL</p>
+									<p className="font-semibold text-gray-900 break-all">{selectedLog.url}</p>
 								</div>
-								<div className="md:col-span-2">
-									<p className="text-sm font-medium text-gray-500">
-										Mensaje
-									</p>
-									<p className="font-semibold text-gray-900">
-										{selectedLog.message}
-									</p>
+							)}
+
+							<div className="mb-4">
+								<p className="text-sm font-medium text-gray-500 mb-1">Mensaje</p>
+								<p className="font-semibold text-gray-900 whitespace-pre-wrap">{selectedLog.message}</p>
+							</div>
+
+							{selectedLog.userAgent && (
+								<div className="mb-4">
+									<p className="text-sm font-medium text-gray-500 mb-1">User Agent</p>
+									<p className="text-sm text-gray-900 break-words bg-gray-50 p-2 rounded">{selectedLog.userAgent}</p>
 								</div>
-								<div className="md:col-span-2">
-									<p className="text-sm font-medium text-gray-500">
-										User Agent
-									</p>
-									<p className="font-semibold text-gray-900 break-words">
-										{selectedLog.userAgent || "N/A"}
-									</p>
-								</div>
-								<div className="md:col-span-2">
-									<p className="text-sm font-medium text-gray-500">
-										Detalles
-									</p>
-									<pre className="mt-2 p-3 bg-gray-100 rounded-md text-sm text-gray-900 overflow-x-auto">
-										{selectedLog.details || "Sin detalles adicionales."}
+							)}
+
+							{selectedLog.hasContext() && (
+								<div className="mb-4">
+									<p className="text-sm font-medium text-gray-500 mb-1">Contexto Adicional</p>
+									<pre className="mt-2 p-3 bg-gray-100 rounded-md text-sm text-gray-900 overflow-x-auto max-h-60">
+										{JSON.stringify(selectedLog.context, null, 2)}
 									</pre>
 								</div>
-							</div>
+							)}
 						</div>
-						<div className="px-6 py-3 border-t border-gray-200 flex justify-end">
+						<div className="px-6 py-3 border-t border-gray-200 flex justify-end space-x-3">
+							<button
+								onClick={() => handleDeleteLog(selectedLog.id)}
+								className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+							>
+								Eliminar Log
+							</button>
 							<button
 								onClick={() => setSelectedLog(null)}
 								className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700"

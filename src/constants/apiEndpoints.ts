@@ -380,6 +380,19 @@ export const API_ENDPOINTS = {
         `/admin/volume-discounts/product/${productId}`,
       BULK_APPLY: "/admin/volume-discounts/bulk/apply-defaults",
     },
+    
+    // ✅ NUEVO: Admin Discount Codes Management
+    DISCOUNT_CODES: {
+      LIST: "/admin/discount-codes",
+      STATS: "/admin/discount-codes/stats",
+      GENERATE_CODE: "/admin/discount-codes/generate-code",
+      CREATE: "/admin/discount-codes",
+      DETAILS: (id: string | number) => `/admin/discount-codes/${id}`,
+      UPDATE: (id: string | number) => `/admin/discount-codes/${id}`,
+      DELETE: (id: string | number) => `/admin/discount-codes/${id}`,
+      VALIDATE: "/admin/discount-codes/validate",
+      APPLY: "/admin/discount-codes/apply",
+    },
   },
 
   // Development & Testing

@@ -14,15 +14,15 @@ import type {Notification} from "../../core/domain/entities/Notification";
 import {useAuth} from "../hooks/useAuth";
 import {CacheService} from "../../infrastructure/services/CacheService";
 
-// Cache keys simplificados
+// ✅ Cache keys UNIFICADOS Y SIMPLES
 const CACHE_KEYS = {
-	NOTIFICATIONS: "notifications_list",
+	NOTIFICATIONS_DATA: "notifications_data", // ✅ CLAVE ÚNICA PARA DATOS DE NOTIFICACIONES
 	UNREAD_COUNT: "notifications_unread_count",
 };
 
 const CACHE_TIMES = {
-	NOTIFICATIONS: 3 * 60 * 1000, // 3 minutos
-	UNREAD_COUNT: 2 * 60 * 1000, // 2 minutos
+	NOTIFICATIONS: 5 * 60 * 1000, // ✅ 5 minutos para notificaciones (más tiempo)
+	UNREAD_COUNT: 3 * 60 * 1000, // ✅ 3 minutos para contador
 };
 
 interface NotificationContextProps {
@@ -93,22 +93,16 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 	const isInitialized = useRef(false);
 	const fetchPromiseRef = useRef<Promise<any> | null>(null);
 
-	// Función simplificada para limpiar cache específico
+	// ✅ Función SIMPLIFICADA para limpiar cache específico
 	const clearNotificationCache = useCallback(() => {
+		console.log("🗑️ Limpiando cache de notificaciones");
+		CacheService.removeItem(CACHE_KEYS.NOTIFICATIONS_DATA);
 		CacheService.removeItem(CACHE_KEYS.UNREAD_COUNT);
-		CacheService.removeItem(CACHE_KEYS.NOTIFICATIONS + "_1_false");
 	}, []);
 
-	// Obtener contador de notificaciones no leídas (SIMPLIFICADO)
+	// ✅ FUNCIÓN SIMPLE para obtener contador (SIN CACHE AUTOMÁTICO)
 	const refreshUnreadCount = useCallback(async (): Promise<void> => {
 		if (!isAuthenticated) return;
-
-		// Verificar cache específico primero
-		const cachedCount = CacheService.getItem(CACHE_KEYS.UNREAD_COUNT);
-		if (cachedCount !== null) {
-			setUnreadCount(cachedCount);
-			return;
-		}
 
 		try {
 			const response = await ApiClient.get<{
@@ -119,36 +113,37 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 			if (response.status === "success" && response.data) {
 				const count = response.data.unread_count;
 				setUnreadCount(count);
+				// ✅ Cache separado solo para contador
 				CacheService.setItem(CACHE_KEYS.UNREAD_COUNT, count, CACHE_TIMES.UNREAD_COUNT);
+				console.log(`📊 Contador de notificaciones actualizado: ${count}`);
 			}
 		} catch (err) {
 			console.error("Error fetching notification count:", err);
 		}
 	}, [isAuthenticated]);
 
-	// Obtener notificaciones (SIMPLIFICADO)
+	// ✅ FUNCIÓN COMPLETAMENTE SIMPLIFICADA para obtener notificaciones
 	const fetchNotifications = useCallback(
 		async (page: number = 1, showUnreadOnly: boolean = false): Promise<void> => {
 			if (!isAuthenticated) return;
 
-			// Evitar múltiples llamadas simultáneas
-			if (fetchPromiseRef.current && page === 1) {
-				return fetchPromiseRef.current;
-			}
-
-			const cacheKey = `${CACHE_KEYS.NOTIFICATIONS}_${page}_${showUnreadOnly}`;
-
-			// Verificar cache solo para primera página sin filtros
+			// ✅ SOLO verificar cache para página 1 sin filtros
 			if (page === 1 && !showUnreadOnly) {
-				const cachedData = CacheService.getItem(cacheKey);
+				const cachedData = CacheService.getItem(CACHE_KEYS.NOTIFICATIONS_DATA);
 				if (cachedData) {
-					setNotifications(cachedData.notifications);
-					setUnreadCount(cachedData.unread_count);
-					setTotalNotifications(cachedData.total);
-					setCurrentPage(page);
-					setHasMore(cachedData.notifications.length === 20);
+					console.log("📦 Usando notificaciones desde cache");
+					setNotifications(cachedData.notifications || []);
+					setUnreadCount(cachedData.unread_count || 0);
+					setTotalNotifications(cachedData.total || 0);
+					setCurrentPage(1);
+					setHasMore((cachedData.notifications || []).length >= 20);
 					return;
 				}
+			}
+
+			// Evitar múltiples llamadas simultáneas para página 1
+			if (fetchPromiseRef.current && page === 1) {
+				return fetchPromiseRef.current;
 			}
 
 			setLoading(true);
@@ -160,12 +155,6 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 						? API_ENDPOINTS.NOTIFICATIONS.UNREAD
 						: API_ENDPOINTS.NOTIFICATIONS.LIST;
 
-					const params = {
-						page,
-						limit: 20,
-						...(showUnreadOnly && {unread: true}),
-					};
-
 					const response = await ApiClient.get<{
 						status: string;
 						data: {
@@ -173,7 +162,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 							unread_count: number;
 							total: number;
 						};
-					}>(endpoint, params);
+					}>(endpoint, { page, limit: 20, ...(showUnreadOnly && {unread: true}) });
 
 					if (response.status === "success" && response.data) {
 						const {notifications: newNotifications, unread_count, total} = response.data;
@@ -181,13 +170,16 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 
 						if (page === 1) {
 							setNotifications(normalizedNotifications);
-							// Guardar en cache solo primera página sin filtros
+							// ✅ Cache SOLO para primera página sin filtros 
 							if (!showUnreadOnly) {
-								CacheService.setItem(cacheKey, {
+								const cacheData = {
 									notifications: normalizedNotifications,
 									unread_count,
 									total,
-								}, CACHE_TIMES.NOTIFICATIONS);
+									timestamp: Date.now(),
+								};
+								CacheService.setItem(CACHE_KEYS.NOTIFICATIONS_DATA, cacheData, CACHE_TIMES.NOTIFICATIONS);
+								console.log("💾 Notificaciones guardadas en cache");
 							}
 						} else {
 							setNotifications((prev) => [...prev, ...normalizedNotifications]);
@@ -196,14 +188,16 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 						setUnreadCount(unread_count);
 						setTotalNotifications(total);
 						setCurrentPage(page);
-						setHasMore(newNotifications.length === 20);
+						setHasMore(newNotifications.length >= 20);
 
-						// Actualizar cache de contador
+						// ✅ Cache contador separado
 						CacheService.setItem(CACHE_KEYS.UNREAD_COUNT, unread_count, CACHE_TIMES.UNREAD_COUNT);
+						
+						console.log(`✅ Notificaciones cargadas: ${normalizedNotifications.length}, No leídas: ${unread_count}`);
 					}
 				} catch (err) {
 					setError(err instanceof Error ? err.message : "Error al cargar notificaciones");
-					console.error("Error fetching notifications:", err);
+					console.error("❌ Error fetching notifications:", err);
 				} finally {
 					setLoading(false);
 					if (page === 1) {
@@ -338,10 +332,10 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 		[isAuthenticated, notifications, unreadCount, clearNotificationCache]
 	);
 
-	// ✅ Initialize context - RECUPERAR CACHE AL AUTENTICARSE
+	// ✅ INICIALIZACIÓN SIMPLE - SOLO LIMPIAR AL DESAUTENTICARSE
 	useEffect(() => {
 		if (!isAuthenticated) {
-			// Reset cuando no está autenticado
+			console.log("🔐 Usuario no autenticado - limpiando notificaciones");
 			setNotifications([]);
 			setUnreadCount(0);
 			setCurrentPage(1);
@@ -349,27 +343,17 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 			setHasMore(false);
 			isInitialized.current = false;
 			clearNotificationCache();
-		} else if (!isInitialized.current) {
-			// ✅ RECUPERAR CACHE INMEDIATAMENTE AL AUTENTICARSE
-			const cachedData = CacheService.getItem(CACHE_KEYS.NOTIFICATIONS + "_1_false");
-			if (cachedData) {
-				console.log("🔄 Recuperando notificaciones desde cache al autenticarse");
-				setNotifications(cachedData.notifications || []);
-				setUnreadCount(cachedData.unread_count || 0);
-				setTotalNotifications(cachedData.total || 0);
-				setCurrentPage(1);
-				setHasMore((cachedData.notifications || []).length === 20);
-			}
+		} else {
+			console.log("✅ Usuario autenticado - contexto listo");
+			isInitialized.current = true;
 			
-			// ✅ RECUPERAR CONTADOR DESDE CACHE
+			// ✅ RECUPERAR SOLO EL CONTADOR DESDE CACHE (las notificaciones se cargan cuando se necesitan)
 			const cachedCount = CacheService.getItem(CACHE_KEYS.UNREAD_COUNT);
 			if (cachedCount !== null) {
 				setUnreadCount(cachedCount);
+				console.log(`📊 Contador recuperado desde cache: ${cachedCount}`);
 			}
-			
-			isInitialized.current = true;
 		}
-		// Don't auto-fetch - only fetch when explicitly requested (e.g., NotificationPage)
 	}, [isAuthenticated, clearNotificationCache]);
 
 	// Obtener URL de destino según el tipo de notificación

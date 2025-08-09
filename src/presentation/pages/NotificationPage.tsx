@@ -174,59 +174,14 @@ const NotificationPage: React.FC = () => {
 		refreshUnreadCount,
 	} = useNotifications();
 
-	// ✅ FUNCIÓN PARA INVALIDAR CACHE DE NOTIFICACIONES
+	// ✅ FUNCIÓN SIMPLE PARA INVALIDAR CACHE
 	const invalidateNotificationsCache = useCallback(() => {
-		// Limpiar cache de ambos filtros y todas las páginas
-		for (let page = 1; page <= 10; page++) {
-			// Asumir máximo 10 páginas
-			CacheService.removeItem(`notifications_all_${page}`);
-			CacheService.removeItem(`notifications_unread_${page}`);
-		}
-		console.log("🗑️ Cache de notificaciones invalidado");
+		console.log("🗑️ Invalidando cache de notificaciones");
+		CacheService.removeItem("notifications_data");
+		CacheService.removeItem("notifications_unread_count");
 	}, []);
 
-	// ✅ MARCAR NOTIFICACIONES COMO "VISTAS" AL ENTRAR A LA PÁGINA
-	useEffect(() => {
-		if (isAuthenticated && notifications.length > 0) {
-			console.log("👀 Usuario viendo página de notificaciones - actualizando contador");
-			
-			// Pequeño delay para que se vea natural
-			setTimeout(() => {
-				refreshUnreadCount();
-			}, 500);
-		}
-	}, [isAuthenticated, notifications.length, refreshUnreadCount]);
-
-	// ✅ FUNCIÓN OPTIMIZADA PARA OBTENER NOTIFICACIONES CON CACHE
-	const fetchNotificationsWithCache = useCallback(
-		async (page: number = 1, unreadOnly: boolean = false) => {
-			const cacheKey = `notifications_${unreadOnly ? "unread" : "all"}_${page}`;
-			const cachedNotifications = CacheService.getItem(cacheKey);
-
-			if (cachedNotifications && page === 1) {
-				console.log("💾 Usando notificaciones desde cache");
-				// No podemos setear el estado directamente aquí ya que viene del hook useNotifications
-				// Pero podemos evitar hacer la llamada si hay cache válido
-
-				// Opcional: refrescar en background si el cache es viejo (>1 minuto)
-				const cacheAge = Date.now() - (cachedNotifications.timestamp || 0);
-				if (cacheAge > 60 * 1000) {
-					setTimeout(() => {
-						fetchNotifications(page, unreadOnly);
-					}, 100);
-				}
-				return;
-			}
-
-			console.log("🌐 Cargando notificaciones desde API");
-			await fetchNotifications(page, unreadOnly);
-
-			// Guardar resultado en cache (esto se hará en el useEffect después del fetch exitoso)
-		},
-		[fetchNotifications]
-	);
-
-	// ✅ FUNCIÓN PARA REFRESCAR MANUALMENTE (LIMPIAR CACHE)
+	// ✅ FUNCIÓN SIMPLE PARA REFRESCAR MANUALMENTE
 	const forceRefresh = useCallback(() => {
 		console.log("🔄 Forzando refresh de notificaciones");
 		invalidateNotificationsCache();
@@ -240,59 +195,13 @@ const NotificationPage: React.FC = () => {
 		}
 	}, [isAuthenticated, navigate]);
 
-	// ✅ CARGAR NOTIFICACIONES INICIALES CON CACHE INTELIGENTE
+	// ✅ CARGAR NOTIFICACIONES INICIALES SIMPLE
 	useEffect(() => {
 		if (isAuthenticated) {
-			// Verificar cache inmediatamente
-			const cacheKey = `notifications_${filter === "unread" ? "unread" : "all"}_1`;
-			const cachedNotifications = CacheService.getItem(cacheKey);
-
-			if (cachedNotifications) {
-				console.log("⚡ Carga instantánea de notificaciones desde cache");
-				// El hook useNotifications manejará la lógica de estado
-
-				// Opcional: refrescar en background si el cache es viejo
-				const cacheAge = Date.now() - (cachedNotifications.timestamp || 0);
-				if (cacheAge > 60 * 1000) {
-					setTimeout(() => {
-						fetchNotifications(1, filter === "unread");
-					}, 100);
-				}
-			} else {
-				fetchNotifications(1, filter === "unread");
-			}
+			console.log(`📋 Cargando notificaciones (filtro: ${filter})`);
+			fetchNotifications(1, filter === "unread");
 		}
 	}, [isAuthenticated, filter, fetchNotifications]);
-
-	// ✅ GUARDAR NOTIFICACIONES EN CACHE DESPUÉS DE CARGAR EXITOSAMENTE
-	useEffect(() => {
-		if (notifications.length > 0 && !loading && !error) {
-			const cacheKey = `notifications_${filter === "unread" ? "unread" : "all"}_${currentPage}`;
-			const cacheData = {
-				notifications,
-				meta: {
-					total: totalNotifications,
-					unreadCount,
-					hasMore,
-					currentPage,
-				},
-				timestamp: Date.now(),
-			};
-
-			// Guardar en cache por 2 minutos para notificaciones
-			CacheService.setItem(cacheKey, cacheData, 2 * 60 * 1000);
-			console.log(`💾 Notificaciones guardadas en cache: ${cacheKey}`);
-		}
-	}, [
-		notifications,
-		loading,
-		error,
-		filter,
-		currentPage,
-		totalNotifications,
-		unreadCount,
-		hasMore,
-	]);
 
 	useEffect(() => {
 		if (notifications.length > 0) {
@@ -486,19 +395,19 @@ const NotificationPage: React.FC = () => {
 	// Cargar más notificaciones
 	const loadMore = useCallback(() => {
 		if (hasMore && !loading) {
-			fetchNotificationsWithCache(currentPage + 1, filter === "unread");
+			fetchNotifications(currentPage + 1, filter === "unread");
 		}
-	}, [hasMore, loading, currentPage, filter, fetchNotificationsWithCache]);
+	}, [hasMore, loading, currentPage, filter, fetchNotifications]);
 
 	// Cambiar filtro
 	const handleFilterChange = useCallback(
 		(newFilter: "all" | "unread") => {
 			setFilter(newFilter);
 			setActiveMenu(null);
-			// Usar cache inteligente al cambiar filtro
-			fetchNotificationsWithCache(1, newFilter === "unread");
+			// Cargar notificaciones con el nuevo filtro
+			fetchNotifications(1, newFilter === "unread");
 		},
-		[fetchNotificationsWithCache]
+		[fetchNotifications]
 	);
 
 	if (!isAuthenticated) {

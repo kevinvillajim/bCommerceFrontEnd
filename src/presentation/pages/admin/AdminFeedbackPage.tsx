@@ -176,31 +176,8 @@ const AdminFeedbackPage: React.FC = () => {
 		}
 	};
 
-	// Filtrar feedback
-	const filteredFeedback = feedback.filter((item) => {
-		// Filtro por estado
-		const matchesStatus = statusFilter === "all" || item.status === statusFilter;
-
-		// Filtro por tipo
-		const matchesType = typeFilter === "all" || item.type === typeFilter;
-
-		// Filtro por rango de fechas
-		let matchesDateRange = true;
-		if (dateRangeFilter.from) {
-			const feedbackDate = new Date(item.created_at || "");
-			const fromDate = new Date(dateRangeFilter.from);
-			matchesDateRange = feedbackDate >= fromDate;
-		}
-		if (dateRangeFilter.to && matchesDateRange) {
-			const feedbackDate = new Date(item.created_at || "");
-			const toDate = new Date(dateRangeFilter.to);
-			// Ajustar a final del día
-			toDate.setHours(23, 59, 59, 999);
-			matchesDateRange = feedbackDate <= toDate;
-		}
-
-		return matchesStatus && matchesType && matchesDateRange;
-	});
+	// ✅ El filtrado ahora se hace en el backend, no necesitamos filtrar en el frontend
+	const filteredFeedback = feedback;
 
 	// Abrir modal de feedback
 	const openFeedbackModal = (item: Feedback) => {
@@ -528,11 +505,14 @@ const AdminFeedbackPage: React.FC = () => {
 		},
 	];
 
+	// ✅ Estadísticas basadas en los datos actuales (pueden estar filtrados)
 	const statItems = [
 		{
 		  title: "Total",
 		  value: feedback.length,
-		  description: "Comentarios y sugerencias",
+		  description: statusFilter !== "all" || typeFilter !== "all" || dateRangeFilter.from || dateRangeFilter.to 
+		    ? "En filtros aplicados" 
+		    : "Comentarios y sugerencias",
 		  icon: MessageSquare,
 		  bgColor: "bg-blue-50/20",
 		  textColor: "text-blue-800",
