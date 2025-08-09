@@ -9,158 +9,25 @@ import {
 	Briefcase,
 	Star,
 	MessageSquare,
+	RefreshCw,
+	Clock,
 } from "lucide-react";
 import DashboardCardList from "../../components/dashboard/DashboardCardList";
 import PendingCardList from "../../components/dashboard/PendingCardList";
 import AlertCardList from "../../components/dashboard/AlertCardList";
-import { formatCurrency } from "../../../utils/formatters/formatCurrency";
 import OrdersTable from '../../components/dashboard/OrdersSimpleTable';
 import SellersTable from '../../components/dashboard/SellersSimpleTable';
 import type { Order, Seller } from '../../types/dashboard/dataTable/DataTableTypes';
+import { useAdminDashboard } from '../../hooks/useAdminDashboard';
 
-  const cards = [
-    {
-      title: "Ventas Totales",
-      value: formatCurrency(426380.85),
-      change: 8.3,
-      icon: DollarSign,
-      iconBgColor: "bg-green-50",
-      iconColor: "text-green-600",
-    },
-    {
-      title: "Usuarios Totales",
-      value: 2458,
-      change: 15.2,
-      icon: Users,
-      iconBgColor: "bg-blue-50",
-      iconColor: "text-blue-600",
-    },
-    {
-      title: "Pedidos Totales",
-      value: 3749,
-      change: 5.7,
-      icon: ShoppingBag,
-      iconBgColor: "bg-purple-50",
-      iconColor: "text-purple-600",
-    },
-    {
-      title: "Productos Activos",
-      value: `1186 / 1284`,
-      change: Number(((1186 / 1284) * 100).toFixed(1)),
-      icon: Package,
-      iconBgColor: "bg-yellow-50",
-      iconColor: "text-yellow-600",
-    },
-  ];
-
-  const pendingCardItems = [
-	{
-	  icon: Star,
-	  iconBgColor: "bg-yellow-50",
-	  iconColor: "text-yellow-600",
-	  title: "Valoraciones y Reseñas",
-	  description: "14 reseñas pendientes requieren aprobación",
-	  linkText: "Moderar Reseñas",
-	  linkTo: "/admin/ratings?status=pending",
-	},
-	{
-	  icon: Briefcase,
-	  iconBgColor: "bg-blue-50",
-	  iconColor: "text-blue-600",
-	  title: "Solicitudes de Vendedores",
-	  description: "3 solicitudes de verificación de vendedores",
-	  linkText: "Ver solicitudes",
-	  linkTo: "/admin/sellers?status=pending",
-	},
-	{
-	  icon: MessageSquare,
-	  iconBgColor: "bg-purple-50",
-	  iconColor: "text-purple-600",
-	  title: "Customer Feedback",
-	  description: "8 comentarios para revisar",
-	  linkText: "Revisar Comentarios",
-	  linkTo: "/admin/feedback?status=pending",
-	},
-  ];
-
-  const alertItems = [
-	{
-	  icon: AlertTriangle,
-	  borderColor: "border-amber-500",
-	  bgColor: "bg-amber-50",
-	  iconColor: "text-amber-500",
-	  title: "Alerta de Inventario Bajo",
-	  description: "15 productos tienen el inventario por debajo del umbral mínimo.",
-	  linkText: "Ver productos",
-	  linkTo: "/admin/products?lowStock=true",
-	  textColor: "text-amber-800",
-	  hoverTextColor: "text-amber-600",
-	},
-	{
-	  icon: AlertTriangle,
-	  borderColor: "border-blue-500",
-	  bgColor: "bg-blue-50/30",
-	  iconColor: "text-blue-500",
-	  title: "Mensaje del Desarrollador",
-	  description: "La nueva versión (1.0.1) está ya disponible con mejoras de seguridad.",
-	  linkText: "Ver detalles de la actualización",
-	  linkTo: "/admin/settings/updates",
-	  textColor: "text-blue-800",
-	  hoverTextColor: "text-blue-600",
-	},
-  ];
-
-  const recentOrders: Order[] = [
-    {
-      id: "23456",
-      date: "2023-11-05",
-      customer: "John Doe",
-      total: 129.99,
-      status: "Completed",
-    },
-    {
-      id: "23455",
-      date: "2023-11-05",
-      customer: "Jane Smith",
-      total: 79.95,
-      status: "Processing",
-    },
-    {
-      id: "23454",
-      date: "2023-11-04",
-      customer: "Mike Johnson",
-      total: 55.5,
-      status: "Processing",
-    },
-    {
-      id: "23453",
-      date: "2023-11-04",
-      customer: "Sarah Williams",
-      total: 199.99,
-      status: "Shipped",
-    },
-    {
-      id: "23452",
-      date: "2023-11-03",
-      customer: "Alex Brown",
-      total: 45.25,
-      status: "Completed",
-    },
-  ];
-
-  const topSellers: Seller[] = [
-    {id: 1, name: "TechGizmo Shop", orderCount: 285, revenue: 35420.5},
-    {id: 2, name: "Fashion Trends", orderCount: 217, revenue: 28950.25},
-    {id: 3, name: "Home Essentials", orderCount: 198, revenue: 22340.75},
-    {id: 4, name: "Sports Equipment", orderCount: 156, revenue: 18750.3},
-    {id: 5, name: "Beauty World", orderCount: 142, revenue: 15670.45},
-  ];
+// Component now uses real API data
   
 
 const AdminDashboard: React.FC = () => {
-
   const navigate = useNavigate();
-	  const handleOrderClick = (order: Order) => {
+  const { transformedData, loading, error, refetch, lastUpdated } = useAdminDashboard(true, 300000); // Auto-refresh every 5 minutes
+
+  const handleOrderClick = (order: Order) => {
     navigate(`/admin/orders/${order.id}`);
   };
 
@@ -168,49 +35,181 @@ const AdminDashboard: React.FC = () => {
     navigate(`/admin/sellers/${seller.id}`);
   };
 
+  const handleRefresh = async () => {
+    await refetch();
+  };
 
+  // Loading state
+  if (loading && !transformedData) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-2xl font-bold text-gray-900">Dashboard Admin</h1>
+        <div className="flex items-center justify-center py-12">
+          <RefreshCw className="w-6 h-6 animate-spin text-gray-400 mr-2" />
+          <span className="text-gray-600">Cargando estadísticas del dashboard...</span>
+        </div>
+      </div>
+    );
+  }
 
-	return (
+  // Error state
+  if (error && !transformedData) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-2xl font-bold text-gray-900">Dashboard Admin</h1>
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex items-center">
+            <AlertTriangle className="w-5 h-5 text-red-400 mr-2" />
+            <div>
+              <h3 className="text-sm font-medium text-red-800">Error cargando dashboard</h3>
+              <p className="text-sm text-red-700 mt-1">{error}</p>
+              <button
+                onClick={handleRefresh}
+                className="mt-2 text-sm bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-md transition-colors"
+              >
+                Intentar nuevamente
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!transformedData) {
+    return null;
+  }
+
+  // Icon mapping helper
+  const getIcon = (iconName: string) => {
+    const icons: { [key: string]: any } = {
+      DollarSign,
+      Users,
+      ShoppingBag,
+      Package,
+      Star,
+      Briefcase,
+      MessageSquare,
+      AlertTriangle,
+    };
+    return icons[iconName] || AlertTriangle;
+  };
+
+  // Map cards with real icons
+  const cardsWithIcons = transformedData.cards.map(card => ({
+    ...card,
+    icon: getIcon(card.icon),
+  }));
+
+  // Map pending items with real icons
+  const pendingItemsWithIcons = transformedData.pendingCardItems.map(item => ({
+    ...item,
+    icon: getIcon(item.icon),
+  }));
+
+  // Map alert items with real icons
+  const alertItemsWithIcons = transformedData.alertItems.map(item => ({
+    ...item,
+    icon: getIcon(item.icon),
+  }));
+
+  return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">
-        Dashboard Admin
-      </h1>
+      {/* Header with refresh button */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-gray-900">Dashboard Admin</h1>
+        <div className="flex items-center space-x-3">
+          {lastUpdated && (
+            <div className="flex items-center text-sm text-gray-500">
+              <Clock className="w-4 h-4 mr-1" />
+              Actualizado: {new Date(lastUpdated).toLocaleTimeString()}
+            </div>
+          )}
+          <button
+            onClick={handleRefresh}
+            disabled={loading}
+            className="flex items-center px-3 py-2 text-sm bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-md transition-colors"
+          >
+            <RefreshCw className={`w-4 h-4 mr-1 ${loading ? 'animate-spin' : ''}`} />
+            Actualizar
+          </button>
+        </div>
+      </div>
+
       {/* Stats Cards */}
-      <DashboardCardList cards={cards} />
+      <DashboardCardList cards={cardsWithIcons} />
+
+      {/* Pending Moderation */}
       <div className="bg-white rounded-lg shadow-sm p-6">
         <h2 className="text-lg font-medium text-gray-900 mb-4">
-          Pending Moderation
+          Moderación Pendiente
         </h2>
-        {/* Pending Moderation Section */}
-        <PendingCardList items={pendingCardItems} />
+        <PendingCardList items={pendingItemsWithIcons} />
       </div>
+
       {/* Recent Orders & Top Sellers */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Orders */}
         <OrdersTable
-        orders={recentOrders}
-        title="Pedidos Recientes"
-        viewAllLink="/admin/orders"
-        onOrderClick={handleOrderClick}
+          orders={transformedData.recentOrders}
+          title="Pedidos Recientes"
+          viewAllLink="/admin/orders"
+          onOrderClick={handleOrderClick}
         />
         {/* Top Sellers */}
         <SellersTable
-        sellers={topSellers}
-        title="Mejores Vendedores"
-        viewAllLink="/admin/sellers"
-        onSellerClick={handleSellerClick}
+          sellers={transformedData.topSellers}
+          title="Mejores Vendedores"
+          viewAllLink="/admin/sellers"
+          onSellerClick={handleSellerClick}
         />
       </div>
+
       {/* System Alerts */}
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <div className="flex items-center mb-4">
-          <AlertTriangle className="w-5 h-5 text-amber-500 mr-2" />
-          <h2 className="text-lg font-medium text-gray-900">
-            Alertas del Sistema
-          </h2>
+      {alertItemsWithIcons.length > 0 && (
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="flex items-center mb-4">
+            <AlertTriangle className="w-5 h-5 text-amber-500 mr-2" />
+            <h2 className="text-lg font-medium text-gray-900">
+              Alertas del Sistema
+            </h2>
+          </div>
+          <AlertCardList items={alertItemsWithIcons} />
         </div>
-        <AlertCardList items={alertItems} />
-      </div>
+      )}
+
+      {/* Performance Metrics Summary (Optional) */}
+      {transformedData.performanceMetrics && (
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <h2 className="text-lg font-medium text-gray-900 mb-4">Métricas de Rendimiento</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-600">
+                {transformedData.performanceMetrics.conversion_rate.toFixed(1)}%
+              </div>
+              <div className="text-sm text-gray-600">Tasa de Conversión</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-green-600">
+                ${transformedData.performanceMetrics.average_order_value.toFixed(2)}
+              </div>
+              <div className="text-sm text-gray-600">Valor Promedio de Orden</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-purple-600">
+                {transformedData.performanceMetrics.order_fulfillment_rate.toFixed(1)}%
+              </div>
+              <div className="text-sm text-gray-600">Tasa de Cumplimiento</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-orange-600">
+                {transformedData.performanceMetrics.customer_retention_rate.toFixed(1)}%
+              </div>
+              <div className="text-sm text-gray-600">Retención de Clientes</div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

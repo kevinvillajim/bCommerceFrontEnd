@@ -117,7 +117,7 @@ const AdminProductCreatePage: React.FC = () => {
 		const loadSellers = async () => {
 			try {
 				setLoadingSellers(true);
-				const response = await ApiClient.get('/admin/sellers');
+				const response = await ApiClient.get('/admin/sellers-dropdown');
 				if (response?.status === 'success' && response.data) {
 					setSellers(response.data.data || response.data);
 				}

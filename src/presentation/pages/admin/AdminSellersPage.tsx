@@ -13,10 +13,11 @@ import {
 	CheckCircle,
 	Clock,
 	UserPlus,
+	ShoppingBag,
 } from "lucide-react";
 import {Link} from "react-router-dom";
 import type {Seller} from "../../../core/domain/entities/Seller";
-import SellerAdminService from "../../../core/services/SellerAdminService";
+import ApiClient from "../../../infrastructure/api/apiClient";
 import StatusUpdateModal from "../../components/admin/StatusUpdateModal";
 import SellerFormModal from "../../components/admin/SellerFormModal";
 import { formatCurrency } from "../../../utils/formatters/formatCurrency";
@@ -56,35 +57,62 @@ const AdminSellersPage: React.FC = () => {
 	const [error, setError] = useState<string | null>(null);
 
 	// Inicializar el servicio
-	const sellerService = new SellerAdminService();
-
 	// Cargar datos de vendedores
 	useEffect(() => {
 		fetchSellers();
 	}, [statusFilter, verificationFilter, pagination.currentPage]);
 
-	// Función para obtener vendedores del backend
+	// Función para obtener vendedores del backend usando nuestro endpoint de admin
 	const fetchSellers = async () => {
 		setLoading(true);
 		setError(null);
 		try {
-			const filters: any = {
-				page: pagination.currentPage,
-				per_page: pagination.itemsPerPage,
-			};
+			const params = new URLSearchParams({
+				page: pagination.currentPage.toString(),
+				per_page: pagination.itemsPerPage.toString(),
+			});
 
 			// Añadir filtros si están definidos
 			if (statusFilter !== "all") {
-				filters.status = statusFilter;
+				params.append('status', statusFilter);
 			}
 
 			if (verificationFilter !== "all") {
-				filters.is_featured = verificationFilter === "featured";
+				params.append('is_featured', verificationFilter === "featured" ? '1' : '0');
 			}
 
-			const result = await sellerService.getSellers(filters);
-			setSellers(result.sellers);
-			setPagination(result.pagination);
+			const response = await ApiClient.get(`/admin/sellers?${params.toString()}`);
+			
+			console.log('Full response:', JSON.stringify(response, null, 2)); // Debug detallado
+			
+			// Manejo flexible: la respuesta puede tener o no tener el campo success
+			let sellersData = [];
+			
+			// Si la respuesta es exitosa O si directamente tiene data
+			if (response.success !== false && response.data) {
+				// Extraer los sellers de diferentes posibles ubicaciones
+				if (Array.isArray(response.data.data)) {
+					sellersData = response.data.data; // Laravel paginated response
+				} else if (Array.isArray(response.data)) {
+					sellersData = response.data; // Direct array in data
+				}
+				
+				console.log('Extracted sellers data:', sellersData);
+				setSellers(sellersData);
+				
+				// Manejar paginación si está disponible
+				if (response.data && response.data.current_page) {
+					setPagination({
+						currentPage: response.data.current_page,
+						totalPages: response.data.last_page,
+						totalItems: response.data.total,
+						itemsPerPage: response.data.per_page,
+					});
+				}
+			} else {
+				console.error('Response not successful:', response);
+				throw new Error(response.message || response.error || 'Error al obtener sellers');
+			}
 		} catch (error) {
 			console.error("Error al obtener vendedores:", error);
 			setError("Error al cargar vendedores. Por favor, inténtalo de nuevo.");
@@ -366,7 +394,7 @@ const AdminSellersPage: React.FC = () => {
 					</div>
 					<div className="ml-4">
 						<div className="text-sm font-medium text-gray-900 flex items-center">
-							{seller.storeName}
+							{seller.store_name}
 							{seller.isFeatured && (
 								<span className="ml-2">
 									<Star className="h-4 w-4 text-yellow-500 inline" />
@@ -374,7 +402,7 @@ const AdminSellersPage: React.FC = () => {
 							)}
 						</div>
 						<div className="text-xs text-gray-500">
-							{seller.userName} ({seller.email})
+							{seller.user_name} ({seller.email})
 						</div>
 						<div className="text-xs text-gray-400">
 							ID: {seller.id}
@@ -449,60 +477,45 @@ const AdminSellersPage: React.FC = () => {
 				);
 			},
 		},
+		// Temporalmente deshabilitadas hasta que el backend envíe los datos
+		
 		{
 			key: "rating",
 			header: "Valoración",
 			sortable: true,
 			render: (seller: Seller) => (
 				<div className="flex items-center">
-					{seller.averageRating && seller.averageRating > 0 ? (
+					{seller.average_rating && seller.average_rating > 0 ? (
 						<>
 							<Star className="h-4 w-4 text-yellow-500 mr-1" />
-							<span>{seller.averageRating.toFixed(1)}</span>
-							<span className="text-xs text-gray-500 ml-1">
-								({seller.totalRatings || 0})
-							</span>
+							<span>{seller.average_rating.toFixed(1)}</span>
 						</>
 					) : (
-						<span className="text-xs text-gray-500">
-							Sin valoraciones
-						</span>
+						<span className="text-xs text-gray-500">Sin valoraciones</span>
 					)}
 				</div>
 			),
 		},
 		{
-			key: "sales",
+			key: "sales", 
 			header: "Ventas",
 			sortable: true,
 			render: (seller: Seller) => (
 				<div className="flex items-center">
 					<DollarSign className="h-4 w-4 text-green-500 mr-1" />
-					<span>{formatCurrency(seller.totalSales || 0)}</span>
+					<span>{formatCurrency(seller.total_revenue || 0)}</span>
 				</div>
 			),
 		},
 		{
-			key: "products",
-			header: "Productos",
-			render: (seller: Seller) => (
-				<Link
-					to={`/admin/products?sellerId=${seller.id}`}
-					className="text-primary-600 hover:text-primary-800 underline flex items-center"
-				>
-					<Package className="h-4 w-4 mr-1" />
-					Ver productos
-				</Link>
-			),
-		},
-		{
 			key: "createdAt",
-			header: "Creado",
+			header: "Creado", 
 			sortable: true,
 			render: (seller: Seller) => {
-				if (!seller.createdAt) return "N/A";
+				const dateString = seller.created_at;
+				if (!dateString) return "N/A";
 				
-				const date = new Date(seller.createdAt);
+				const date = new Date(dateString);
 				if (isNaN(date.getTime())) return "Fecha inválida";
 				
 				return date.toLocaleDateString('es-ES', {
@@ -512,8 +525,9 @@ const AdminSellersPage: React.FC = () => {
 				});
 			},
 		},
+		
 		{
-			key: "actions",
+			key: "actions", 
 			header: "Acciones",
 			render: (seller: Seller) => (
 				<div className="flex justify-end space-x-2">
@@ -658,7 +672,7 @@ const AdminSellersPage: React.FC = () => {
 			<Table
 				data={sellers}
 				columns={columns}
-				searchFields={["storeName", "userName", "email"]}
+				searchFields={["store_name", "storeName", "name", "userName", "email"]}
 				loading={loading}
 				emptyMessage="No se encontraron vendedores"
 				pagination={{

@@ -4,21 +4,33 @@
  */
 export interface Seller {
   id: number;
-  userId: number;
-  storeName: string;
+  user_id: number; // Backend field
+  userId?: number; // Legacy field for compatibility
+  store_name?: string; // Backend field
+  storeName?: string; // Legacy field for compatibility
+  name?: string; // User name from backend
+  email?: string; // User email from backend
   description?: string;
   status: 'pending' | 'active' | 'suspended' | 'inactive';
-  verificationLevel: 'none' | 'basic' | 'verified' | 'premium';
-  commissionRate: number;
-  totalSales: number;
-  isFeatured: boolean;
+  verificationLevel?: 'none' | 'basic' | 'verified' | 'premium';
+  commissionRate?: number;
+  totalSales?: number;
+  total_orders?: number; // Backend field
+  total_revenue?: number; // Backend field
+  products_count?: number; // Backend field
+  average_rating?: number; // Backend field
+  isFeatured?: boolean;
+  is_blocked?: boolean; // Backend field
   averageRating?: number;
   totalRatings?: number;
+  created_at?: string; // Backend field
+  store_created_at?: string; // Backend field
+  joined_date?: string; // Backend field
+  last_order_date?: string; // Backend field
   createdAt?: string;
   updatedAt?: string;
   // Campos adicionales del API actual
   userName?: string;
-  email?: string;
   displayName?: string;
 }
 
