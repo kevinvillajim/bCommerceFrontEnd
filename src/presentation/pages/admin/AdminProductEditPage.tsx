@@ -178,12 +178,21 @@ const AdminProductEditPage: React.FC = () => {
 		const loadSellers = async () => {
 			try {
 				setLoadingSellers(true);
-				const response = await ApiClient.get('/admin/sellers-dropdown');
-				if (response?.status === 'success' && response.data) {
-					setSellers(response.data.data || response.data);
+				const response = await ApiClient.get('/admin/sellers-simple');
+				console.log('Sellers API response:', response); // Debug log
+				
+				// Manejo flexible de la respuesta
+				if (response?.data) {
+					const sellersData = response.data.data || response.data;
+					console.log('Processed sellers data:', sellersData); // Debug log
+					setSellers(Array.isArray(sellersData) ? sellersData : []);
+				} else {
+					console.error('No data in sellers response:', response);
+					setSellers([]);
 				}
 			} catch (error) {
 				console.error('Error loading sellers:', error);
+				setSellers([]);
 			} finally {
 				setLoadingSellers(false);
 			}
@@ -861,7 +870,7 @@ const AdminProductEditPage: React.FC = () => {
 										<option value="">Seleccionar Vendedor</option>
 										{sellers.map((seller) => (
 											<option key={seller.id} value={seller.id}>
-												{seller.store_name || seller.name} (ID: {seller.id})
+												{seller.display_name || `${seller.store_name || seller.name} (${seller.user_name})`}
 											</option>
 										))}
 									</select>

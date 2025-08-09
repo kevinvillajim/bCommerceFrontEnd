@@ -135,10 +135,6 @@ const Header: React.FC<HeaderProps> = ({
 							<span>Envío gratis en pedidos superiores a $50</span>
 						</div>
 						<div className="flex space-x-4 text-xs md:text-sm">
-							<a href="tracking" className="hover:underline">
-								Seguimiento de pedido
-							</a>
-							<span>|</span>
 							<a href="faq" className="hover:underline">
 								Ayuda
 							</a>
