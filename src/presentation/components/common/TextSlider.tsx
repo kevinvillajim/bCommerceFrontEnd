@@ -36,7 +36,11 @@ const TextSlider: React.FC<SliderProps> = ({ slides, interval = 5000 }) => {
   return (
     <div className="relative overflow-hidden rounded-xl h-96 text-slider">
       {slides.map((slide, index) => {
-        const contentPosition = index % 2 === 0 ? "items-start text-left" : "items-end text-right";
+        const contentPosition =
+        // Determinar la posición del contenido según el índice del slide (comentado) 
+        // index % 2 === 0 ? 
+        "items-start text-left" 
+        // : "items-end text-right";
 
         return (
           <div
@@ -52,7 +56,7 @@ const TextSlider: React.FC<SliderProps> = ({ slides, interval = 5000 }) => {
             }}
           >
             <div className={`relative h-full flex flex-col justify-center p-8 md:p-12 ${contentPosition}`}>
-              <div className="max-w-lg">
+              <div className="max-w-md">
                 <h1 className="text-3xl md:text-4xl font-bold mb-4 text-white">{slide.title}</h1>
                 <p className="text-lg md:text-xl mb-6 text-white opacity-90">{slide.description}</p>
                 <button

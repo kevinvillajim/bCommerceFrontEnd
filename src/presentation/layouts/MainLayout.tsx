@@ -10,7 +10,7 @@ import Footer from '../components/common/Footer.jsx'
 const MainLayout: React.FC = () => {
 
   const logo = {
-    img: "",
+    img: "./logo.png", // Path to the logo image
     name: "Comersia"
   }
   const navLinks = [

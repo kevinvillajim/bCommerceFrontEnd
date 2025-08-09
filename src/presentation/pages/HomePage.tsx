@@ -36,12 +36,8 @@ const HomePage: React.FC = () => {
   } = useInvalidateCounters();
 
   const images = [
-    'https://images.unsplash.com/photo-1605648916361-9bc12ad6a569?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80',
-    'https://images.unsplash.com/photo-1555774698-0b77e0d5fac6?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80',
-    'https://images.unsplash.com/photo-1585298723682-7115561c51b7?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80',
-    'https://images.unsplash.com/photo-1572635196237-14b3f281503f?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80',
-    'https://images.unsplash.com/photo-1581235720704-06d3acfcb36f?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80',
-    'https://images.unsplash.com/photo-1484704849700-f032a568e944?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80'
+    './banner1.png',
+    './banner2.png',
   ];
 
   //Actualizar links
@@ -54,28 +50,28 @@ const HomePage: React.FC = () => {
 
   const slidesData = [
   {
-    title: "Bienvenido a Comersia",
-    description: "Su solución integral para todas tus necesidades tecnológicas.",
+    title: "Llévate más, paga menos ¡Solo en comersia!",
+    description: "Regreso a clase con los mejores precios del mercado.",
     buttonText: "Comprar Ahora",
     buttonAction: () => console.log("Shop Now clicked"),
-    image: "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80",
-    color: "rgba(75, 0, 130, 0.3)"
+    image: "./2banner1.png",
+    color: "rgba(75, 0, 130, 0)"
   },
   {
-    title: "Colección de verano 2025",
-    description: "Descubre nuestros novedosos productos con increíbles descuentos.",
+    title: "Tú proveedor mayorista de confianza.",
+    description: "Envío gratis a todo el Ecuador en tu primera compra.",
     buttonText: "Ver Colección",
     buttonAction: () => console.log("View Collection clicked"),
-    image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80",
-    color: "rgba(46, 204, 113, 0.3)"
+    image: "./2banner2.png",
+    color: "rgba(46, 204, 113, 0)"
   },
   {
-    title: "Ofertas Especiales",
-    description: "Ofertas por tiempo limitado en productos premium. ¡No te las pierdas!",
+    title: "Potencia, precisión y precios bajos para tu taller.",
+    description: "Aplica cupón de descuento",
     buttonText: "Ver Ofertas",
     buttonAction: () => console.log("See Offers clicked"),
-    image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80",
-    color: "rgba(255, 165, 0, 0.3)"
+    image: "./2banner3.png",
+    color: "rgba(255, 165, 0, 0)"
   }
   ];
   

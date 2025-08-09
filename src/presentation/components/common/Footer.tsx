@@ -20,7 +20,7 @@ interface FooterProps {
 
 const Footer: React.FC<FooterProps> = ({
   logo = {
-    img: undefined,
+    img: "./logo.png",
     name: "Comersia"
   },
   quickLinks = [
