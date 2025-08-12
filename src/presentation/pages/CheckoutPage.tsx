@@ -766,7 +766,6 @@ const CheckoutPage: React.FC = () => {
 										: "border-gray-300 hover:bg-gray-50"
 								}`}
 							>
-								<span className="mr-2">💳</span>
 								<span>Tarjeta de crédito</span>
 							</button>
 
@@ -779,8 +778,7 @@ const CheckoutPage: React.FC = () => {
 										: "border-gray-300 hover:bg-gray-50"
 								}`}
 							>
-								<span className="mr-2">🚀</span>
-								<span>Pago con DeUna!</span>
+								<span>Pago con Deuna!</span>
 							</button>
 						</div>
 
@@ -798,7 +796,34 @@ const CheckoutPage: React.FC = () => {
 							/>
 						)}
 
-						{paymentMethod === "deuna" && <QRPaymentForm />}
+						{paymentMethod === "deuna" && (
+					<QRPaymentForm 
+						total={checkoutCalculations.totals.total}
+						onPaymentSuccess={(paymentData) => {
+							console.log('DeUna payment successful:', paymentData);
+							// Process the payment success similar to regular checkout
+							setOrderComplete(true);
+							setOrderDetails({
+								order_id: paymentData.payment_id,
+								order_number: paymentData.order_id,
+								total: paymentData.amount,
+								payment_status: 'paid'
+							});
+							
+							let successMessage = "¡Pago con DeUna completado con éxito!";
+							if (checkoutCalculations.totals.totalDiscounts > 0) {
+								successMessage += ` Has ahorrado ${formatCurrency(checkoutCalculations.totals.totalDiscounts)} con descuentos aplicados.`;
+							}
+							
+							handleSuccess(successMessage);
+							clearCart();
+						}}
+						onPaymentError={(error) => {
+							console.error('DeUna payment error:', error);
+							handleError(new Error(error), "Error en el pago con DeUna. Por favor, intenta de nuevo.");
+						}}
+					/>
+				)}
 					</div>
 				</div>
 

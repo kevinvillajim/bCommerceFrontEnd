@@ -160,7 +160,7 @@ const Header: React.FC<HeaderProps> = ({
 					<div className="flex items-center">
 						<Link to="/" className="flex items-center">
 							{logoSrc ? (
-  <img src={logoSrc} alt={logo.name} className="h-8 w-auto" />
+  <img src={logoSrc} alt={logo.name} className="h-6 lg:h-8 w-auto" />
 ) : (
   <span className="text-2xl font-bold text-gray-800">
     <span className="text-primary-600">
