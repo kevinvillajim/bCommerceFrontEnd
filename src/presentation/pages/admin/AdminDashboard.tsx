@@ -128,7 +128,7 @@ const AdminDashboard: React.FC = () => {
           <button
             onClick={handleRefresh}
             disabled={loading}
-            className="flex items-center px-3 py-2 text-sm bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-md transition-colors"
+            className="flex items-center px-3 py-2 text-sm bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400 text-white rounded-md transition-colors"
           >
             <RefreshCw className={`w-4 h-4 mr-1 ${loading ? 'animate-spin' : ''}`} />
             Actualizar
@@ -184,7 +184,7 @@ const AdminDashboard: React.FC = () => {
           <h2 className="text-lg font-medium text-gray-900 mb-4">Métricas de Rendimiento</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">
+              <div className="text-2xl font-bold text-primary-600">
                 {transformedData.performanceMetrics.conversion_rate.toFixed(1)}%
               </div>
               <div className="text-sm text-gray-600">Tasa de Conversión</div>

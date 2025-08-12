@@ -11,6 +11,7 @@ const MainLayout: React.FC = () => {
 
   const logo = {
     img: "./logo.png", // Path to the logo image
+    imgdark: "./logowhite.png", // Path to the dark mode logo image
     name: "Comersia"
   }
   const navLinks = [

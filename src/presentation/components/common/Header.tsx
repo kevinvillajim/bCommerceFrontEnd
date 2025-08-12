@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useRef} from "react";
+import React, {useState, useEffect, useRef, useMemo} from "react";
 import {
 	ShoppingCart,
 	User,
@@ -13,10 +13,12 @@ import {useAuth} from "../../hooks/useAuth";
 import {useHeaderCounters} from "../../hooks/useHeaderCounters";
 import ThemeToggle from "./ThemeToggle";
 import SearchAutocomplete from "./SearchAutocomplete";
+import { useTheme } from '../../hooks/useTheme';
 
 // Interfaz para el logo
 interface Logo {
 	img?: string;
+	imgdark?: string;
 	name: string;
 }
 
@@ -31,6 +33,7 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({
 	logo = {
 		img: "./logo.png",
+		imgdark: "./logowhite.png",
 		name: "Comersia",
 	},
 	navLinks = [
@@ -46,9 +49,16 @@ const Header: React.FC<HeaderProps> = ({
 	const [sellerMenuOpen, setSellerMenuOpen] = useState(false); // 🎆 NUEVO: Menu dropdown para seller/admin
 	const userMenuRef = useRef<HTMLDivElement>(null);
 	const sellerMenuRef = useRef<HTMLDivElement>(null); // 🎆 NUEVO: Ref para seller menu
+	const { theme } = useTheme();
 
 	// Obtener información del usuario y estado de autenticación
 	const {user, isAuthenticated, logout} = useAuth();
+
+	const logoSrc = useMemo(() => {
+		return theme === 'dark'
+			? logo.imgdark || logo.img || null
+			: logo.img || null;
+	}, [theme, logo.imgdark, logo.img]);
 
 	// ✅ USAR EL HOOK UNIFICADO OPTIMIZADO
 	const {
@@ -149,16 +159,16 @@ const Header: React.FC<HeaderProps> = ({
 					{/* Logo */}
 					<div className="flex items-center">
 						<Link to="/" className="flex items-center">
-							{logo.img ? (
-								<img src={logo.img} alt={logo.name} className="h-10 w-auto" />
-							) : (
-								<span className="text-2xl font-bold text-gray-800">
-									<span className="text-primary-600">
-										{logo.name.charAt(0)}
-									</span>
-									{logo.name.slice(1)}
-								</span>
-							)}
+							{logoSrc ? (
+  <img src={logoSrc} alt={logo.name} className="h-8 w-auto" />
+) : (
+  <span className="text-2xl font-bold text-gray-800">
+    <span className="text-primary-600">
+      {logo.name.charAt(0)}
+    </span>
+    {logo.name.slice(1)}
+  </span>
+)}
 						</Link>
 					</div>
 

@@ -180,45 +180,6 @@ const VolumeDiscountManager: React.FC = () => {
 				</div>
 				
 				<div className="space-y-6">
-					{/* Configuración básica */}
-					<div>
-						<h3 className="text-lg font-medium mb-4">Configuración Básica</h3>
-						<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-							<label className="flex items-center">
-								<input
-									type="checkbox"
-									checked={config.enabled}
-									onChange={(e) => handleConfigChange('enabled', e.target.checked)}
-									className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-								/>
-								<span className="ml-2 text-sm font-medium text-gray-700">
-									Habilitar descuentos por volumen
-								</span>
-							</label>
-							<label className="flex items-center">
-								<input
-									type="checkbox"
-									checked={config.stackable}
-									onChange={(e) => handleConfigChange('stackable', e.target.checked)}
-									className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-								/>
-								<span className="ml-2 text-sm font-medium text-gray-700">
-									Acumular con otros descuentos
-								</span>
-							</label>
-							<label className="flex items-center">
-								<input
-									type="checkbox"
-									checked={config.show_savings_message}
-									onChange={(e) => handleConfigChange('show_savings_message', e.target.checked)}
-									className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-								/>
-								<span className="ml-2 text-sm font-medium text-gray-700">
-									Mostrar mensajes de ahorro
-								</span>
-							</label>
-						</div>
-					</div>
 
 					{/* Niveles de descuento por defecto */}
 					<div>

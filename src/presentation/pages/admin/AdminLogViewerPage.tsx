@@ -280,12 +280,84 @@ const AdminLogViewerPage: React.FC = () => {
 		});
 	};
 
-	// Exportar logs
+	// Helper function to convert logs to CSV format
+	const convertLogsToCSV = (logs: AdminLogEntity[]): string => {
+		if (logs.length === 0) return '';
+
+		// CSV headers
+		const headers = [
+			'ID',
+			'Fecha',
+			'Nivel',
+			'Tipo de Evento',
+			'Mensaje',
+			'Usuario',
+			'Email Usuario',
+			'Código de Estado',
+			'Método HTTP',
+			'URL',
+			'IP',
+			'User Agent',
+			'Contexto'
+		];
+
+		// Convert logs to CSV rows
+		const csvRows = logs.map(log => [
+			log.id,
+			log.getFormattedDate(),
+			log.level,
+			log.eventType || '',
+			`"${log.message.replace(/"/g, '""')}"`, // Escape quotes in message
+			log.user?.name || '',
+			log.user?.email || '',
+			log.statusCode || '',
+			log.method || '',
+			`"${(log.url || '').replace(/"/g, '""')}"`, // Escape quotes in URL
+			log.ipAddress || '',
+			`"${(log.userAgent || '').replace(/"/g, '""')}"`, // Escape quotes in user agent
+			log.hasContext() ? `"${JSON.stringify(log.context).replace(/"/g, '""')}"` : ''
+		]);
+
+		// Combine headers and rows
+		return [headers.join(','), ...csvRows.map(row => row.join(','))].join('\n');
+	};
+
+	// Exportar logs como CSV
 	const exportLogs = async () => {
 		try {
-			const blob = await adminLogService.exportLogs(filters);
+			const allLogs: AdminLogEntity[] = [];
+			let currentPage = 1;
+			const maxPerPage = 100; // Backend limit
+			let hasMorePages = true;
+
+			// Fetch all logs in batches
+			while (hasMorePages) {
+				const exportFilters = { 
+					...filters, 
+					per_page: maxPerPage, 
+					page: currentPage 
+				};
+				
+				const result = await adminLogService.getLogs(exportFilters);
+				allLogs.push(...result.logs);
+				
+				// Check if there are more pages
+				hasMorePages = currentPage < result.lastPage;
+				currentPage++;
+			}
+			
+			if (allLogs.length === 0) {
+				alert('No hay logs para exportar con los filtros actuales');
+				return;
+			}
+
+			// Convert to CSV
+			const csvContent = convertLogsToCSV(allLogs);
+			
+			// Create and download CSV file
+			const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
 			const url = URL.createObjectURL(blob);
-			const exportFileDefaultName = `admin_logs_export_${new Date().toISOString().slice(0, 10)}.json`;
+			const exportFileDefaultName = `admin_logs_export_${new Date().toISOString().slice(0, 10)}.csv`;
 			
 			const linkElement = document.createElement("a");
 			linkElement.setAttribute("href", url);
@@ -364,7 +436,7 @@ const AdminLogViewerPage: React.FC = () => {
 					<button
 						onClick={exportLogs}
 						className="px-3 py-2 bg-green-100 text-green-700 rounded-md hover:bg-green-200"
-						title="Exportar registros"
+						title="Exportar registros como CSV"
 					>
 						<Download size={20} />
 					</button>

@@ -216,7 +216,7 @@ const DevelopmentConfiguration: React.FC = () => {
             </p>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+              <label className=" text-sm font-medium text-gray-700 mb-2 flex items-center">
                 <Clock className="w-4 h-4 mr-1" />
                 Timeout de verificación (horas)
               </label>
@@ -237,12 +237,12 @@ const DevelopmentConfiguration: React.FC = () => {
       </div>
 
       {/* Información adicional */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+      <div className="bg-primary-50 border border-primary-200 rounded-lg p-4">
         <div className="flex items-start">
-          <Info className="w-5 h-5 text-blue-500 mr-3 mt-1 flex-shrink-0" />
+          <Info className="w-5 h-5 text-primary-500 mr-3 mt-1 flex-shrink-0" />
           <div>
-            <h4 className="font-medium text-blue-900 mb-2">Configuraciones Recomendadas</h4>
-            <ul className="text-sm text-blue-800 space-y-1">
+            <h4 className="font-medium text-primary-900 mb-2">Configuraciones Recomendadas</h4>
+            <ul className="text-sm text-primary-800 space-y-1">
               <li><strong>Desarrollo:</strong> Bypass email ON, Verificación OFF</li>
               <li><strong>Testing:</strong> Bypass email ON, Verificación ON (para probar flujo)</li>
               <li><strong>Producción:</strong> Bypass email OFF, Verificación ON</li>
@@ -273,13 +273,13 @@ const DevelopmentConfiguration: React.FC = () => {
           </div>
           <div>
             <span className="text-gray-600">Bypass Email:</span>
-            <span className={`ml-2 px-2 py-1 rounded text-xs ${config.bypassEmailVerification ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800'}`}>
+            <span className={`ml-2 px-2 py-1 rounded text-xs ${config.bypassEmailVerification ? 'bg-yellow-100 text-yellow-800' : 'bg-primary-100 text-primary-800'}`}>
               {config.bypassEmailVerification ? 'Activo' : 'Inactivo'}
             </span>
           </div>
           <div>
             <span className="text-gray-600">Verificación Requerida:</span>
-            <span className={`ml-2 px-2 py-1 rounded text-xs ${config.requireEmailVerification ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}`}>
+            <span className={`ml-2 px-2 py-1 rounded text-xs ${config.requireEmailVerification ? 'bg-primary-100 text-primary-800' : 'bg-gray-100 text-gray-800'}`}>
               {config.requireEmailVerification ? 'Sí' : 'No'}
             </span>
           </div>
