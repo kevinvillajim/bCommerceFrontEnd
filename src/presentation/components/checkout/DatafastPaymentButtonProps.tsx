@@ -37,6 +37,7 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 	const [checkoutData, setCheckoutData] = useState<any>(null);
 	const [showForm, setShowForm] = useState(false);
 	const [widgetLoaded, setWidgetLoaded] = useState(false);
+	const [calculatedTotals, setCalculatedTotals] = useState<any>(null);
 
 	const [formData, setFormData] = useState<FormData>({
 		address: "Av. Test 123",
@@ -110,6 +111,16 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 		setIsLoading(true);
 
 		try {
+			// ✅ USAR MISMA LÓGICA QUE EL BOTÓN "PRUEBA COMPLETA" QUE FUNCIONA PERFECTO
+			const checkoutItems = CheckoutItemsService.prepareItemsForCheckout(cart.items); // SIN appliedDiscount
+			const totals = CheckoutItemsService.calculateCheckoutTotals(cart.items, appliedDiscount);
+			
+			// Almacenar totales para usar en el widget
+			setCalculatedTotals(totals);
+			
+			console.log("💰 Totales calculados para Datafast:", totals);
+			console.log("🛒 Items para Datafast (preparados como Prueba Completa):", checkoutItems);
+			
 			const requestData: DatafastCheckoutRequest = {
 				shipping: {
 					address: formData.address,
@@ -123,9 +134,18 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 					phone: formData.phone,
 					doc_id: formData.doc_id,
 				},
+				items: checkoutItems,
+				total: totals.total,
+				subtotal: totals.subtotal,
+				shipping_cost: totals.shipping,
+				tax: totals.tax,
+				// ✅ AGREGAR LO MISMO QUE HACE "PRUEBA COMPLETA"
+				discount_code: appliedDiscount?.discountCode.code || null,
+				discount_info: appliedDiscount || null
 			};
 
 			console.log("Iniciando checkout con Datafast...", requestData);
+			console.log("💰 Total enviado a Datafast: $", totals.total);
 
 			const response = await datafastService.createCheckout(requestData);
 			console.log("Respuesta del checkout:", response);
@@ -135,10 +155,14 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 				setShowForm(false);
 				setShowWidget(true);
 
+				// ✅ GUARDAR DATOS NECESARIOS PARA LA VERIFICACIÓN
 				localStorage.setItem(
 					"datafast_transaction_id",
 					response.data.transaction_id
 				);
+				
+				// ✅ GUARDAR TOTAL CALCULADO PARA PAGOS REALES
+				localStorage.setItem("datafast_calculated_total", totals.total.toString());
 
 				showNotification(
 					NotificationType.SUCCESS,
@@ -180,12 +204,52 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 
 			(window as any).wpwlOptions = {
 				onReady: function () {
-					console.log("Widget de Datafast listo!");
+					console.log("✅ Widget de Datafast listo!");
 					setWidgetLoaded(true);
 					showNotification(
 						NotificationType.SUCCESS,
 						"Formulario de pago cargado correctamente."
 					);
+				},
+				onBeforeSubmitCard: function (data: any) {
+					console.log("🔄 Widget Datafast: Usuario hizo clic en Pagar, procesando...");
+					console.log("🔍 Datos de la tarjeta que se están enviando:", data);
+					showNotification(
+						NotificationType.INFO,
+						"Procesando pago con Datafast..."
+					);
+				},
+				onAfterSubmitCard: function (data: any) {
+					console.log("⏳ Widget Datafast: Datos enviados, esperando respuesta...");
+					console.log("📤 Respuesta después del envío:", data);
+				},
+				onLoadThreeDSecure: function () {
+					console.log("🔐 Widget Datafast: Cargando 3D Secure...");
+				},
+				onBeforeRedirectToResult: function (data: any) {
+					console.log("🔄 Widget Datafast: Redirigiendo a página de resultado...");
+					console.log("🔗 Datos de redirección:", data);
+				},
+				onChangeBrand: function (e: any) {
+					console.log("💳 Widget Datafast: Marca de tarjeta detectada:", e.brand);
+					console.log("💳 Datos completos del evento:", e);
+				},
+				onError: function (error: any) {
+					console.error("❌ Widget Datafast: Error en el pago", error);
+					console.error("❌ Detalles completos del error:", {
+						message: error.message,
+						code: error.code,
+						name: error.name,
+						full: error
+					});
+					showNotification(
+						NotificationType.ERROR,
+						"Error al procesar el pago: " + (error.message || error.code || 'Error desconocido')
+					);
+				},
+				onSubmit: function (data: any) {
+					console.log("📋 Widget Datafast: Formulario enviado");
+					console.log("📋 Datos del formulario:", data);
 				},
 				style: "card",
 				locale: "es",
@@ -195,9 +259,15 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 				},
 			};
 
+			// Cargar script adicional de validaciones de Datafast
+			const additionalScript = document.createElement("script");
+			additionalScript.src = "https://www.datafast.com.ec/js/dfAdditionalValidations1.js";
+			additionalScript.async = true;
+			document.head.appendChild(additionalScript);
+
 			const script = document.createElement("script");
 			script.id = "datafast-widget-script";
-			script.src = `https://eu-test.oppwa.com/v1/paymentWidgets.js?checkoutId=${checkoutId}`;
+			script.src = checkoutData?.widget_url || `https://test.oppwa.com/v1/paymentWidgets.js?checkoutId=${checkoutId}`;
 			script.async = true;
 
 			script.onload = () => {
@@ -391,9 +461,13 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 		try {
 			console.log("Simulando pago exitoso completo...");
 
+			// ✅ ENVIAR EL TOTAL CALCULADO CORRECTO PARA SIMULACIÓN
+			const totals = cart ? CheckoutItemsService.calculateCheckoutTotals(cart.items, appliedDiscount) : null;
+			
 			const verifyResponse = await datafastService.simulateSuccessfulPayment(
 				checkoutData.checkout_id,
-				checkoutData.transaction_id
+				checkoutData.transaction_id,
+				totals?.total || 0
 			);
 
 			console.log("Respuesta de verificación Datafast:", verifyResponse);
@@ -463,9 +537,16 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 	};
 
 	const handleRealPayment = () => {
+		// ✅ GUARDAR EL TOTAL CALCULADO EN LOCALSTORAGE PARA LA PÁGINA DE RESULTADO
+		const totals = cart ? CheckoutItemsService.calculateCheckoutTotals(cart.items, appliedDiscount) : null;
+		if (totals) {
+			localStorage.setItem("datafast_calculated_total", totals.total.toString());
+			console.log("💰 Total calculado guardado para verificación:", totals.total);
+		}
+		
 		showNotification(
 			NotificationType.INFO,
-			"Complete los datos de su tarjeta en el formulario y haga clic en 'Pagar'. Nota: En Fase 1, las transacciones son simuladas."
+			"Complete los datos de su tarjeta en el formulario y haga clic en 'Pagar'."
 		);
 	};
 
@@ -479,13 +560,13 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 						<h4 className="font-semibold text-blue-800">
 							Información del pedido:
 						</h4>
-						<p className="text-blue-700">Monto: ${checkoutData?.amount}</p>
+						<p className="text-blue-700">Monto: ${calculatedTotals?.total?.toFixed(2) || checkoutData?.amount || cart?.total}</p>
 						<p className="text-blue-700">ID: {checkoutData?.transaction_id}</p>
 					</div>
 
 					<div className="min-h-[400px] border border-gray-200 rounded-lg p-4">
 						<form
-							action={`${window.location.origin}/datafast-result`}
+							action={`${import.meta.env.VITE_URL_BASE}/datafast-result`}
 							className="paymentWidgets"
 							data-brands="VISA MASTER AMEX DINERS DISCOVER"
 						>
@@ -508,17 +589,20 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 						</h4>
 						<div className="text-sm text-yellow-700 space-y-1">
 							<p>
-								<strong>Tarjeta:</strong> 4200 0000 0000 0000
+								<strong>Tarjeta VISA:</strong> 4200 0000 0000 0000
 							</p>
 							<p>
-								<strong>Fecha:</strong> 12/25
+								<strong>Fecha:</strong> 07/26
 							</p>
 							<p>
-								<strong>CVV:</strong> 123
+								<strong>CVV:</strong> 246
 							</p>
 							<p>
 								<strong>Titular:</strong> {formData.given_name}{" "}
 								{formData.surname}
+							</p>
+							<p className="text-xs mt-2 text-blue-600">
+								<strong>Fase 2:</strong> Credenciales de testing avanzado con transacciones reales limitadas
 							</p>
 						</div>
 					</div>

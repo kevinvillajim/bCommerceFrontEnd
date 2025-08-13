@@ -7,16 +7,6 @@
     <!-- Meta tags para FedCM -->
   <meta http-equiv="Permissions-Policy" content="identity-credentials-get=*">
   
-  <!-- Content Security Policy SIN frame-ancestors (solo para server headers) -->
-  <!-- <meta http-equiv="Content-Security-Policy" content="
-    default-src 'self';
-    script-src 'self' 'unsafe-inline' 'unsafe-eval' https://accounts.google.com/gsi/client;
-    style-src 'self' 'unsafe-inline' https://accounts.google.com;
-    img-src 'self' data: https: blob:;
-    font-src 'self' data: https:;
-    connect-src 'self' https://accounts.google.com;
-    frame-src 'self' https://accounts.google.com;
-  "> -->
     <title>Comersia</title>
     <!-- Preload crítico para Google -->
   <link rel="preconnect" href="https://accounts.google.com">
@@ -56,5 +46,8 @@
   </script>
   <!-- Script React -->
     <script type="module" src="/src/main.tsx"></script>
+  
+  <!-- Script requerido por Datafast según documentación -->
+  <script type="text/javascript" src="https://www.datafast.com.ec/js/dfAdditionalValidations1.js"></script>
   </body>
 </html>

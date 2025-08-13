@@ -109,6 +109,78 @@ export class DeunaService {
   }
 
   /**
+   * Cancel a payment
+   */
+  static async cancelPayment(paymentId: string, reason?: string): Promise<{
+    success: boolean;
+    message: string;
+    data: {
+      payment_id: string;
+      status: string;
+      reason: string;
+      cancelled_at: string;
+    };
+  }> {
+    try {
+      console.log('DeunaService: Cancelling payment', { paymentId, reason });
+
+      const response = await ApiClient.post(
+        `${this.BASE_PATH}/payments/${paymentId}/cancel`,
+        { reason: reason || 'Cancelled by user' }
+      );
+
+      console.log('DeunaService: Payment cancelled successfully', response);
+      return response;
+
+    } catch (error: any) {
+      console.error('DeunaService: Error cancelling payment', error);
+      throw new Error(
+        error.response?.data?.message || 
+        error.message || 
+        'Error cancelling payment'
+      );
+    }
+  }
+
+  /**
+   * Void/Refund a payment
+   */
+  static async voidPayment(paymentId: string, amount: number, reason?: string): Promise<{
+    success: boolean;
+    message: string;
+    data: {
+      payment_id: string;
+      status: string;
+      refund_amount: number;
+      reason: string;
+      refunded_at: string;
+    };
+  }> {
+    try {
+      console.log('DeunaService: Processing void/refund', { paymentId, amount, reason });
+
+      const response = await ApiClient.post(
+        `${this.BASE_PATH}/payments/${paymentId}/void`,
+        { 
+          amount,
+          reason: reason || 'Void/refund requested by user' 
+        }
+      );
+
+      console.log('DeunaService: Payment void/refund processed successfully', response);
+      return response;
+
+    } catch (error: any) {
+      console.error('DeunaService: Error processing void/refund', error);
+      throw new Error(
+        error.response?.data?.message || 
+        error.message || 
+        'Error processing void/refund'
+      );
+    }
+  }
+
+  /**
    * List payments with filters
    */
   static async listPayments(filters?: {
@@ -171,58 +243,160 @@ export class DeunaService {
   }
 
   /**
-   * Poll payment status until completion or timeout
+   * Poll payment status until completion or timeout (cancelable)
    */
-  static async pollPaymentStatus(
+  static pollPaymentStatus(
     paymentId: string, 
     options?: {
       maxAttempts?: number;
       interval?: number;
       onStatusChange?: (status: string) => void;
+      abortSignal?: AbortSignal;
     }
-  ): Promise<DeunaPaymentStatus> {
+  ): { promise: Promise<DeunaPaymentStatus>; cancel: () => void } {
     const maxAttempts = options?.maxAttempts || 60; // 5 minutes with 5s intervals
     const interval = options?.interval || 5000; // 5 seconds
     const onStatusChange = options?.onStatusChange;
 
-    let attempts = 0;
-    let lastStatus = '';
+    // Create abort controller for cancellation
+    const abortController = new AbortController();
+    
+    const promise = new Promise<DeunaPaymentStatus>(async (resolve, reject) => {
+      let attempts = 0;
+      let lastStatus = '';
+      let timeoutId: NodeJS.Timeout | null = null;
 
-    while (attempts < maxAttempts) {
+      const cleanup = () => {
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+          timeoutId = null;
+        }
+      };
+
+      // Handle abort signal
+      const onAbort = () => {
+        cleanup();
+        reject(new Error('Payment polling was cancelled'));
+      };
+
+      abortController.signal.addEventListener('abort', onAbort);
+
       try {
-        const statusResponse = await this.getPaymentStatus(paymentId);
-        const currentStatus = statusResponse.data.status;
+        while (attempts < maxAttempts && !abortController.signal.aborted) {
+          try {
+            const statusResponse = await this.getPaymentStatus(paymentId);
+            const currentStatus = statusResponse.data.status;
 
-        // Notify status change if callback provided
-        if (currentStatus !== lastStatus && onStatusChange) {
-          onStatusChange(currentStatus);
-          lastStatus = currentStatus;
+            // Check for abortion before processing
+            if (abortController.signal.aborted) {
+              cleanup();
+              return;
+            }
+
+            // Notify status change if callback provided
+            if (currentStatus !== lastStatus && onStatusChange) {
+              onStatusChange(currentStatus);
+              lastStatus = currentStatus;
+            }
+
+            // Check if payment is in final state
+            if (['completed', 'failed', 'cancelled', 'refunded'].includes(currentStatus)) {
+              console.log(`DeunaService: Payment reached final status: ${currentStatus}`);
+              cleanup();
+              abortController.signal.removeEventListener('abort', onAbort);
+              resolve(statusResponse);
+              return;
+            }
+
+            attempts++;
+            
+            // Wait before next attempt (with cancellation check)
+            if (attempts < maxAttempts && !abortController.signal.aborted) {
+              await new Promise<void>((resolveTimeout, rejectTimeout) => {
+                timeoutId = setTimeout(() => {
+                  timeoutId = null;
+                  if (abortController.signal.aborted) {
+                    rejectTimeout(new Error('Cancelled'));
+                  } else {
+                    resolveTimeout();
+                  }
+                }, interval);
+
+                // Also check abort during timeout
+                const checkAbort = () => {
+                  if (timeoutId) {
+                    clearTimeout(timeoutId);
+                    timeoutId = null;
+                  }
+                  rejectTimeout(new Error('Cancelled'));
+                };
+
+                abortController.signal.addEventListener('abort', checkAbort, { once: true });
+              });
+            }
+
+          } catch (error: any) {
+            if (abortController.signal.aborted) {
+              cleanup();
+              return;
+            }
+
+            console.warn(`DeunaService: Error polling payment status (attempt ${attempts + 1})`, error);
+            attempts++;
+            
+            if (attempts < maxAttempts) {
+              // Wait before retry with cancellation check
+              await new Promise<void>((resolveTimeout, rejectTimeout) => {
+                timeoutId = setTimeout(() => {
+                  timeoutId = null;
+                  if (abortController.signal.aborted) {
+                    rejectTimeout(new Error('Cancelled'));
+                  } else {
+                    resolveTimeout();
+                  }
+                }, interval);
+
+                const checkAbort = () => {
+                  if (timeoutId) {
+                    clearTimeout(timeoutId);
+                    timeoutId = null;
+                  }
+                  rejectTimeout(new Error('Cancelled'));
+                };
+
+                abortController.signal.addEventListener('abort', checkAbort, { once: true });
+              });
+            }
+          }
         }
 
-        // Check if payment is in final state
-        if (['completed', 'failed', 'cancelled', 'refunded'].includes(currentStatus)) {
-          console.log(`DeunaService: Payment reached final status: ${currentStatus}`);
-          return statusResponse;
+        cleanup();
+        abortController.signal.removeEventListener('abort', onAbort);
+
+        if (abortController.signal.aborted) {
+          reject(new Error('Payment polling was cancelled'));
+        } else {
+          reject(new Error(`Payment status polling timed out after ${maxAttempts} attempts`));
         }
 
-        attempts++;
-        
-        // Wait before next attempt
-        if (attempts < maxAttempts) {
-          await new Promise(resolve => setTimeout(resolve, interval));
-        }
-
-      } catch (error) {
-        console.warn(`DeunaService: Error polling payment status (attempt ${attempts + 1})`, error);
-        attempts++;
-        
-        if (attempts < maxAttempts) {
-          await new Promise(resolve => setTimeout(resolve, interval));
+      } catch (error: any) {
+        cleanup();
+        abortController.signal.removeEventListener('abort', onAbort);
+        if (error.message === 'Cancelled') {
+          reject(new Error('Payment polling was cancelled'));
+        } else {
+          reject(error);
         }
       }
-    }
+    });
 
-    throw new Error(`Payment status polling timed out after ${maxAttempts} attempts`);
+    return {
+      promise,
+      cancel: () => {
+        console.log('DeunaService: Cancelling payment polling');
+        abortController.abort();
+      }
+    };
   }
 
   /**

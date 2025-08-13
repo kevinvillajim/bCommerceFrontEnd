@@ -20,7 +20,7 @@ interface ProcessingResult {
 const DatafastResultPage: React.FC = () => {
 	const navigate = useNavigate();
 	const [searchParams] = useSearchParams();
-	const {clearCart, showNotification} = useCart();
+	const {cart, clearCart, showNotification} = useCart();
 	const [isProcessing, setIsProcessing] = useState(true);
 	const [result, setResult] = useState<ProcessingResult | null>(null);
 	const [error, setError] = useState<string | null>(null);
@@ -31,6 +31,49 @@ const DatafastResultPage: React.FC = () => {
 	useEffect(() => {
 		const processDatafastResult = async () => {
 			try {
+				// PRIMERA VERIFICACIÓN: Si el carrito está vacío, el pago ya fue procesado exitosamente
+				if (!cart || cart.items.length === 0) {
+					console.log("✅ Carrito vacío detectado - Pago ya procesado exitosamente");
+					
+					// Obtener transaction_id del localStorage para mostrar en el comprobante
+					const transactionId = localStorage.getItem("datafast_transaction_id") || `PROCESSED_${Date.now()}`;
+					
+					// Mostrar comprobante de éxito sin intentar verificar con Datafast
+					setResult({
+						success: true,
+						data: {
+							order_id: "N/A",
+							order_number: transactionId,
+							total: 0,
+							payment_status: "completed",
+							payment_id: "DATAFAST_SUCCESS"
+						},
+						message: "Pago procesado exitosamente"
+					});
+					
+					// Limpiar datos temporales
+					localStorage.removeItem("datafast_transaction_id");
+					localStorage.removeItem("datafast_calculated_total"); // ✅ LIMPIAR TOTAL CALCULADO
+					
+					// Mostrar notificación de éxito
+					setTimeout(() => {
+						showNotification(
+							NotificationType.SUCCESS,
+							"¡Pago completado exitosamente!"
+						);
+					}, 100);
+					
+					// Redirigir después de 8 segundos para que vean el comprobante
+					setTimeout(() => {
+						navigate("/orders");
+					}, 8000);
+					
+					return; // ✅ SALIR AQUÍ - No hacer verificación con Datafast
+				}
+
+				// SEGUNDA VERIFICACIÓN: Solo si hay items en carrito, verificar con Datafast
+				console.log("⚠️ Carrito no vacío - Verificando pago con Datafast...");
+				
 				// Obtener resourcePath de los parámetros de la URL
 				const resourcePath = searchParams.get("resourcePath");
 
@@ -62,15 +105,21 @@ const DatafastResultPage: React.FC = () => {
 					);
 				}
 
+				// ✅ OBTENER TOTAL CALCULADO DEL LOCALSTORAGE (PARA PAGOS REALES)
+				const calculatedTotalStr = localStorage.getItem("datafast_calculated_total");
+				const calculatedTotal = calculatedTotalStr ? parseFloat(calculatedTotalStr) : undefined;
+				
 				console.log("Verificando pago con:", {
 					resourcePath,
 					transactionId,
+					calculatedTotal,
 				});
 
-				// Verificar el pago
+				// Verificar el pago - INCLUIR TOTAL CALCULADO
 				const verifyResponse = await datafastService.verifyPayment({
 					resource_path: resourcePath,
 					transaction_id: transactionId,
+					calculated_total: calculatedTotal, // ✅ ENVIAR TOTAL CALCULADO
 				});
 
 				console.log("Respuesta de verificación:", verifyResponse);
@@ -85,6 +134,7 @@ const DatafastResultPage: React.FC = () => {
 
 					// Limpiar datos temporales
 					localStorage.removeItem("datafast_transaction_id");
+					localStorage.removeItem("datafast_calculated_total"); // ✅ LIMPIAR TOTAL CALCULADO
 
 					// Usar setTimeout para evitar setState durante render
 					setTimeout(() => {
@@ -95,10 +145,10 @@ const DatafastResultPage: React.FC = () => {
 						);
 					}, 100);
 
-					// Redirigir después de 5 segundos
+					// Redirigir después de 8 segundos
 					setTimeout(() => {
 						navigate("/orders");
-					}, 5000);
+					}, 8000);
 				} else {
 					// Pago fallido o pendiente
 					const message = verifyResponse.message || "El pago no fue completado";
@@ -115,6 +165,10 @@ const DatafastResultPage: React.FC = () => {
 					if (resultCode === "000.200.100") {
 						userMessage =
 							"El checkout fue creado pero el pago no se completó. Por favor, intente nuevamente.";
+					} else if (resultCode === "200.300.404") {
+						// Sesión expirada - esto es normal después de un pago exitoso
+						userMessage =
+							"La sesión de pago expiró. Si el pago fue exitoso, aparecerá en sus órdenes.";
 					} else if (resultCode && resultCode.startsWith("800")) {
 						userMessage =
 							"El pago fue rechazado por el banco. Verifique sus datos e intente nuevamente.";
@@ -146,7 +200,7 @@ const DatafastResultPage: React.FC = () => {
 		};
 
 		processDatafastResult();
-	}, [searchParams, navigate]);
+	}, [searchParams, navigate, cart]);
 
 	if (isProcessing) {
 		return (

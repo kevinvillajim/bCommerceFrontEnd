@@ -15,6 +15,17 @@ export interface DatafastCheckoutRequest {
 		phone?: string;
 		doc_id?: string;
 	};
+	items?: {
+		product_id: number;
+		quantity: number;
+		price: number;
+	}[];
+	total?: number;
+	subtotal?: number;
+	shipping_cost?: number;
+	tax?: number;
+	discount_code?: string | null;
+	discount_info?: any;
 }
 
 export interface DatafastCheckoutResponse {
@@ -32,6 +43,7 @@ export interface DatafastCheckoutResponse {
 export interface DatafastVerifyPaymentRequest {
 	resource_path: string;
 	transaction_id: string;
+	calculated_total?: number; // ✅ AGREGAR SOPORTE PARA TOTAL CALCULADO
 }
 
 export interface DatafastVerifyPaymentResponse {
@@ -113,7 +125,8 @@ export class DatafastService {
 	 */
 	async simulateSuccessfulPayment(
 		checkoutId: string,
-		transactionId: string
+		transactionId: string,
+		calculatedTotal?: number
 	): Promise<DatafastVerifyPaymentResponse> {
 		if (!checkoutId) {
 			throw new Error("checkout_id es requerido para simular el pago");
@@ -134,12 +147,17 @@ export class DatafastService {
 
 		try {
 			// Llamar al endpoint de verificación con el parámetro simulate_success
+			const requestData = {
+				resource_path: mockResourcePath,
+				transaction_id: transactionId,
+				calculated_total: calculatedTotal, // ✅ ENVIAR TOTAL CALCULADO
+			};
+			
+			console.log("🔄 Enviando datos de simulación:", requestData);
+			
 			const response = await ApiClient.post<DatafastVerifyPaymentResponse>(
 				API_ENDPOINTS.DATAFAST.VERIFY_PAYMENT + "?simulate_success=true",
-				{
-					resource_path: mockResourcePath,
-					transaction_id: transactionId,
-				}
+				requestData
 			);
 
 			console.log("DatafastService: Respuesta de simulación:", response);
@@ -162,17 +180,20 @@ export class DatafastService {
 	 */
 	async handleDatafastResult(
 		resourcePath: string,
-		transactionId: string
+		transactionId: string,
+		calculatedTotal?: number
 	): Promise<DatafastVerifyPaymentResponse> {
 		try {
 			console.log("DatafastService: Manejando resultado real de Datafast", {
 				resourcePath,
 				transactionId,
+				calculatedTotal,
 			});
 
 			const response = await this.verifyPayment({
 				resource_path: resourcePath,
 				transaction_id: transactionId,
+				calculated_total: calculatedTotal, // ✅ INCLUIR TOTAL CALCULADO
 			});
 
 			// Si es el error típico de Fase 1, devolver un mensaje más claro

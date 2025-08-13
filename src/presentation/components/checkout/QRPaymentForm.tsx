@@ -29,6 +29,9 @@ const QRPaymentForm: React.FC<QRPaymentFormProps> = ({
   const [currentStatus, setCurrentStatus] = useState<string>("");
   const [timeRemaining, setTimeRemaining] = useState<number>(600); // 10 minutes
   const [copySuccess, setCopySuccess] = useState<boolean>(false);
+  
+  // References for cleanup
+  const pollingRef = React.useRef<any>(null);
 
   // Use prop total if provided, otherwise fallback to cart total
   const total = totalProp ?? cart?.total ?? 0;
@@ -161,15 +164,23 @@ const QRPaymentForm: React.FC<QRPaymentFormProps> = ({
         // Start polling for status updates
         setIsPolling(true);
         
-        // Start polling in background
-        DeunaService.pollPaymentStatus(response.data.payment_id, {
+        // Start polling in background (now cancelable)
+        const polling = DeunaService.pollPaymentStatus(response.data.payment_id, {
           maxAttempts: 120, // 10 minutes
           interval: 5000, // 5 seconds
           onStatusChange: handleStatusChange
-        }).catch(err => {
-          console.error('Polling error:', err);
-          if (isPolling) {
-            setError('Error monitoreando el estado del pago');
+        });
+
+        pollingRef.current = polling;
+
+        polling.promise.catch(err => {
+          if (err.message === 'Payment polling was cancelled') {
+            console.log('DeunaService: Polling cancelled successfully');
+          } else {
+            console.error('Polling error:', err);
+            if (isPolling) {
+              setError('Error monitoreando el estado del pago');
+            }
           }
         });
         
@@ -190,12 +201,96 @@ const QRPaymentForm: React.FC<QRPaymentFormProps> = ({
 
   // Reset payment process
   const resetPayment = () => {
+    // Cancel active polling
+    if (pollingRef.current?.cancel) {
+      pollingRef.current.cancel();
+      pollingRef.current = null;
+    }
+    
     setPaymentData(null);
     setError("");
     setCurrentStatus("");
     setIsPolling(false);
     setTimeRemaining(600);
     setCopySuccess(false);
+  };
+
+  // Cancel payment
+  const handleCancelPayment = async () => {
+    if (!paymentData?.payment_id || currentStatus === 'completed') {
+      resetPayment();
+      return;
+    }
+
+    if (!isPolling) {
+      resetPayment();
+      return;
+    }
+
+    try {
+      console.log('Cancelling payment:', paymentData.payment_id);
+      
+      // Stop polling first (cancel the polling Promise)
+      if (pollingRef.current?.cancel) {
+        pollingRef.current.cancel();
+        pollingRef.current = null;
+      }
+      setIsPolling(false);
+      
+      // Cancel payment via API
+      await DeunaService.cancelPayment(paymentData.payment_id, 'Cancelled by user');
+      
+      // Update UI
+      setCurrentStatus('cancelled');
+      setError('Pago cancelado por el usuario');
+      
+      console.log('Payment successfully cancelled by user');
+      
+    } catch (error: any) {
+      console.error('Error cancelling payment:', error);
+      setError('Error al cancelar el pago: ' + error.message);
+      setIsPolling(false);
+    }
+  };
+
+  // Handle generating new QR (cancels current payment first if active)
+  const handleNewQR = async () => {
+    try {
+      setIsGenerating(true);
+      setError("");
+
+      // If there's an active payment being polled, cancel it first
+      if (paymentData?.payment_id && isPolling && !['completed', 'cancelled', 'failed'].includes(currentStatus)) {
+        try {
+          console.log('Cancelling current payment before generating new QR:', paymentData.payment_id);
+          
+          // Stop polling
+          if (pollingRef.current?.cancel) {
+            pollingRef.current.cancel();
+            pollingRef.current = null;
+          }
+          setIsPolling(false);
+          
+          // Cancel current payment
+          await DeunaService.cancelPayment(paymentData.payment_id, 'Cancelled to generate new QR');
+          
+          console.log('Current payment cancelled successfully');
+          
+        } catch (error: any) {
+          console.error('Error cancelling current payment:', error);
+          // Continue with new payment generation even if cancel fails
+        }
+      }
+
+      // Generate new payment (reuse existing logic)
+      await generateQRPayment();
+
+    } catch (error: any) {
+      console.error('Error generating new QR:', error);
+      setError('Error al generar nuevo código QR: ' + error.message);
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   // Status indicator component
@@ -240,7 +335,7 @@ const QRPaymentForm: React.FC<QRPaymentFormProps> = ({
         )}
 
         {/* QR Code Display with DeUna Style */}
-        {paymentData.qr_code_base64 ? (
+        {paymentData.qr_code_base64 && !['cancelled', 'failed'].includes(currentStatus) ? (
           <div className="mb-4 mx-auto">
             <div className="bg-[#2fd8a8] p-6 rounded-lg text-white">
               {/* Logo de DeUna placeholder */}
@@ -267,21 +362,43 @@ const QRPaymentForm: React.FC<QRPaymentFormProps> = ({
 
               <p className="text-purple-100 text-sm mb-4 flex items-center justify-center">
                 <Smartphone className="w-4 h-4 mr-2" />
-                Escanea con tu app de pagos favorita
+                Escanea con tu app DeUna!
               </p>
 
               <button
-                onClick={resetPayment}
+                onClick={handleCancelPayment}
                 className="bg-white/20 hover:bg-white/30 text-white font-medium py-2 px-4 rounded-md transition-colors"
+                disabled={!isPolling || currentStatus === 'completed'}
               >
-                Cancelar
+                {isPolling ? 'Cancelar Pago' : 'Cerrar'}
               </button>
             </div>
           </div>
-        ) : null}
+        ) : (
+          // Show message when payment is cancelled or failed
+          ['cancelled', 'failed'].includes(currentStatus) && (
+            <div className="mb-4 mx-auto">
+              <div className="bg-gray-100 border-2 border-gray-300 p-6 rounded-lg text-center">
+                <div className="w-24 h-24 mx-auto mb-4 bg-gray-300 rounded-full flex items-center justify-center">
+                  <XCircle className="w-12 h-12 text-gray-500" />
+                </div>
+                
+                <h3 className="text-xl font-bold text-gray-700 mb-2">
+                  {currentStatus === 'cancelled' ? 'Pago Cancelado' : 'Pago Fallido'}
+                </h3>
+                <p className="text-gray-600 mb-4">
+                  {currentStatus === 'cancelled' 
+                    ? 'El pago fue cancelado. Puedes generar un nuevo código QR.' 
+                    : 'El pago falló. Puedes intentar generar un nuevo código QR.'
+                  }
+                </p>
+              </div>
+            </div>
+          )
+        )}
 
         {/* Payment Link */}
-        {paymentData.payment_url && (
+        {paymentData.payment_url && !['cancelled', 'failed'].includes(currentStatus) && (
           <div className="space-y-3">
             <div className="flex flex-col sm:flex-row gap-2">
               <input
@@ -312,7 +429,7 @@ const QRPaymentForm: React.FC<QRPaymentFormProps> = ({
         )}
 
         {/* Numeric Code */}
-        {paymentData.numeric_code && (
+        {paymentData.numeric_code && !['cancelled', 'failed'].includes(currentStatus) && (
           <div className="bg-gray-50 p-4 rounded-lg text-center">
             <p className="text-sm text-gray-600 mb-2">Código numérico:</p>
             <p className="text-2xl font-mono font-bold text-gray-900 tracking-wider">
@@ -334,10 +451,18 @@ const QRPaymentForm: React.FC<QRPaymentFormProps> = ({
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-3">
           <button
-            onClick={resetPayment}
-            className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-lg transition-colors"
+            onClick={handleNewQR}
+            disabled={isGenerating}
+            className="flex-1 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed text-gray-700 font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center"
           >
-            Generar Nuevo QR
+            {isGenerating ? (
+              <>
+                <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                Generando...
+              </>
+            ) : (
+              'Generar Nuevo QR'
+            )}
           </button>
           
           {currentStatus === 'completed' && (
