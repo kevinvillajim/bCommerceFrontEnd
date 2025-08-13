@@ -67,13 +67,6 @@ const VolumeDiscountManager: React.FC = () => {
 		}
 	};
 
-	// Manejar cambios en la configuración básica
-	const handleConfigChange = (field: keyof VolumeDiscountConfig, value: boolean) => {
-		setConfig(prev => ({
-			...prev,
-			[field]: value
-		}));
-	};
 
 	// Manejar cambios en los tiers por defecto
 	const handleDefaultTierChange = (index: number, field: keyof VolumeDiscountTier, value: string | number) => {

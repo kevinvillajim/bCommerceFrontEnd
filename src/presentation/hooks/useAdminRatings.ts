@@ -1,7 +1,7 @@
 // src/presentation/hooks/useAdminRatings.ts
 import {useState, useEffect, useCallback} from "react";
 import AdminRatingService from "../../core/services/AdminRatingService";
-import type {AdminRatingFilters, AdminRatingStatsResponse} from "../../core/services/AdminRatingService";
+import type {AdminRatingFilters} from "../../core/services/AdminRatingService";
 import type {Rating} from "../../core/domain/entities/Rating";
 import {extractErrorMessage} from "../../utils/errorHandler";
 

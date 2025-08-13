@@ -241,14 +241,6 @@ const AdminDiscountsPage: React.FC = () => {
 		// En una app real, aquí obtendrías los datos para la nueva página
 	};
 
-	// Refrescar datos
-	const refreshData = () => {
-		setLoading(true);
-		// Simular recarga de datos
-		setTimeout(() => {
-			setLoading(false);
-		}, 500);
-	};
 
 	// Verificar si una fecha está expirada
 	const isDateExpired = (dateString: string | undefined): boolean => {
@@ -522,7 +514,7 @@ const AdminDiscountsPage: React.FC = () => {
 						<select
 							className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 							value={validityFilter}
-							onChange={(e) => setValidityFilter(e.target.value)}
+							onChange={(e) => setValidityFilter(e.target.value as "all" | "valid" | "expired")}
 						>
 							<option value="all">Todas las Validez</option>
 							<option value="valid">Válidos</option>
@@ -535,7 +527,7 @@ const AdminDiscountsPage: React.FC = () => {
 						<select
 							className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 							value={usageFilter}
-							onChange={(e) => setUsageFilter(e.target.value)}
+							onChange={(e) => setUsageFilter(e.target.value as "all" | "used" | "unused")}
 						>
 							<option value="all">Todos los Usos</option>
 							<option value="used">Utilizados</option>
@@ -549,7 +541,7 @@ const AdminDiscountsPage: React.FC = () => {
 						<select
 							className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
 							value={percentageFilter}
-							onChange={(e) => setPercentageFilter(e.target.value)}
+							onChange={(e) => setPercentageFilter(e.target.value as "all" | "10" | "20" | "30" | "50+")}
 						>
 							<option value="all">Todos los Porcentajes</option>
 							<option value="10">Hasta 10%</option>

@@ -7,7 +7,6 @@ import {useErrorHandler} from "../hooks/useErrorHandler";
 import {CheckoutService} from "../../core/services/CheckoutService";
 import {CheckoutItemsService} from "../../infrastructure/services/CheckoutItemsService";
 import {calculateCartItemDiscounts} from "../../utils/volumeDiscountCalculator";
-import {calculateTotals} from "../../utils/cartCalculations";
 import type {
 	PaymentInfo,
 	PaymentMethod,
@@ -76,6 +75,7 @@ const CheckoutPage: React.FC = () => {
 					sellerDiscounts: 0,
 					volumeDiscounts: 0,
 					totalDiscounts: 0,
+					couponDiscount: 0,
 					tax: 0,
 					shipping: 0,
 					total: 0,
@@ -112,9 +112,6 @@ const CheckoutPage: React.FC = () => {
 			}));
 
 		// ✅ USAR TOTALES DEL BACKEND DIRECTAMENTE (CART YA TIENE LOS CÁLCULOS CORRECTOS)
-		const roundToPrecision = (value: number, decimals: number = 2): number => {
-			return Math.round(value * Math.pow(10, decimals)) / Math.pow(10, decimals);
-		};
 
 		let totals;
 		
@@ -134,7 +131,7 @@ const CheckoutPage: React.FC = () => {
 			stockIssues,
 			checkoutItems
 		};
-	}, [cart?.items, cart?.total, cart?.subtotal, cart?.iva_amount, cart?.shipping_cost, cart?.total_discounts, cart?.feedback_discount_amount, appliedDiscount]);
+	}, [cart?.items, cart?.total, cart?.subtotal, appliedDiscount]);
 
 	// Funciones helper
 	const getAvailableStock = (product: any): number => {
@@ -566,7 +563,7 @@ const CheckoutPage: React.FC = () => {
 							Código de descuento ({appliedDiscount.discountCode.code}):
 						</span>
 						<span className="font-medium">
-							-{formatCurrency(checkoutCalculations.totals.discountCodeAmount || 0)}
+							-{formatCurrency(checkoutCalculations.totals.couponDiscount || 0)}
 						</span>
 					</div>
 				)}
@@ -799,24 +796,57 @@ const CheckoutPage: React.FC = () => {
 						{paymentMethod === "deuna" && (
 					<QRPaymentForm 
 						total={checkoutCalculations.totals.total}
-						onPaymentSuccess={(paymentData) => {
+						onPaymentSuccess={async (paymentData) => {
 							console.log('DeUna payment successful:', paymentData);
-							// Process the payment success similar to regular checkout
-							setOrderComplete(true);
-							setOrderDetails({
-								order_id: paymentData.payment_id,
-								order_number: paymentData.order_id,
-								total: paymentData.amount,
-								payment_status: 'paid'
-							});
 							
-							let successMessage = "¡Pago con DeUna completado con éxito!";
-							if (checkoutCalculations.totals.totalDiscounts > 0) {
-								successMessage += ` Has ahorrado ${formatCurrency(checkoutCalculations.totals.totalDiscounts)} con descuentos aplicados.`;
+							try {
+								setIsLoading(true);
+								
+								// Crear la orden completa llamando al mismo flujo que el checkout normal
+								const checkoutData: CheckoutRequest = {
+									payment: {
+										method: "de_una",
+										card_number: "",
+										card_expiry: "",
+										card_cvc: "",
+									},
+									shippingAddress: formData.shippingAddress,
+									billingAddress: useSameAddress ? formData.shippingAddress : formData.billingAddress,
+									seller_id: CheckoutService.getSellerIdFromCart(cart),
+									items: CheckoutService.prepareCartItemsForCheckout(
+										cart?.items || [],
+										appliedDiscount
+									),
+									discount_code: appliedDiscount?.discountCode?.code || null,
+									discount_info: appliedDiscount,
+								};
+
+								console.log('Creating order after DeUna payment:', checkoutData);
+								
+								const response = await checkoutService.processCheckout(checkoutData, user?.email);
+
+								if (response.status === "success") {
+									console.log('Order created successfully after DeUna payment:', response);
+									setOrderComplete(true);
+									setOrderDetails(response.data);
+
+									let successMessage = "¡Pago con DeUna completado y orden creada con éxito!";
+									if (checkoutCalculations.totals.totalDiscounts > 0) {
+										successMessage += ` Has ahorrado ${formatCurrency(checkoutCalculations.totals.totalDiscounts)} con descuentos aplicados.`;
+									}
+
+									handleSuccess(successMessage);
+									clearCart();
+								} else {
+									throw new Error(response.message || 'Error creando la orden');
+								}
+								
+							} catch (error: any) {
+								console.error('Error creating order after DeUna payment:', error);
+								handleError(error, "El pago fue exitoso pero hubo un error creando la orden. Contacta soporte.");
+							} finally {
+								setIsLoading(false);
 							}
-							
-							handleSuccess(successMessage);
-							clearCart();
 						}}
 						onPaymentError={(error) => {
 							console.error('DeUna payment error:', error);

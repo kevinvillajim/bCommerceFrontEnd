@@ -20,8 +20,6 @@ import {useErrorHandler} from "../hooks/useErrorHandler";
 import {NotificationType} from "../contexts/CartContext";
 import CacheService from "../../infrastructure/services/CacheService";
 import {formatCurrency} from "../../utils/formatters/formatCurrency";
-import ApiClient from "../../infrastructure/api/apiClient";
-import {API_ENDPOINTS} from "../../constants/apiEndpoints";
 
 // ✅ NUEVO: Importar calculadora centralizada y funciones necesarias
 import {calculateCartItemDiscounts} from "../../utils/volumeDiscountCalculator";
@@ -62,7 +60,6 @@ const CartPage: React.FC = () => {
 		showNotification,
 		// ✅ NUEVO: Funciones de descuento del CartContext
 		appliedDiscount,
-		validateDiscountCode,
 		applyDiscountCode,
 		removeDiscountCode,
 	} = useCart();
@@ -194,7 +191,7 @@ const CartPage: React.FC = () => {
 			volumeDiscountsApplied: result.volumeDiscountsApplied,
 			shipping: result.shipping,
 		};
-	}, [cartItemsWithDiscounts, appliedDiscount, cart?.total, cart?.subtotal, cart?.iva_amount, cart?.shipping_cost, cart?.total_discounts, cart?.feedback_discount_amount]);
+	}, [cartItemsWithDiscounts, appliedDiscount, cart?.total, cart?.subtotal]);
 
 	// Cargar carrito simple - Solo al montar componente
 	useEffect(() => {

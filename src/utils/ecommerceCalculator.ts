@@ -185,7 +185,7 @@ export class EcommerceCalculator {
   /**
    * PASO 2: Aplicar descuentos del vendedor
    */
-  private static calculateStep2_SellerDiscounts(items: CartItem[], originalSubtotal: number): { subtotal: number; totalDiscount: number } {
+  private static calculateStep2_SellerDiscounts(items: CartItem[], _originalSubtotal: number): { subtotal: number; totalDiscount: number } {
     let totalDiscount = 0;
     let subtotalAfterDiscount = 0;
 
@@ -214,7 +214,7 @@ export class EcommerceCalculator {
   /**
    * PASO 3: Aplicar descuentos por volumen
    */
-  private static calculateStep3_VolumeDiscounts(items: CartItem[], currentSubtotal: number): { subtotal: number; totalDiscount: number } {
+  private static calculateStep3_VolumeDiscounts(items: CartItem[], _currentSubtotal: number): { subtotal: number; totalDiscount: number } {
     let totalDiscount = 0;
     let subtotalAfterDiscount = 0;
 

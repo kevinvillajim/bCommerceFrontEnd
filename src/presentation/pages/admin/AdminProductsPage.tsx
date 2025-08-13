@@ -386,7 +386,7 @@ const AdminProductsPage: React.FC = () => {
 			sortable: true,
 			render: (product: Product) => {
 				// Con la nueva API, los datos de seller y user vienen completos
-				const storeName = product.seller?.store_name || product.seller?.name || 'Tienda desconocida';
+				const storeName = product.seller?.name || 'Tienda desconocida';
 				const userName = product.user?.name || 'Usuario desconocido';
 				const sellerId = product.seller_id || product.seller?.id;
 				

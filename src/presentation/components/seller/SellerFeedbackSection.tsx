@@ -59,7 +59,7 @@ const SellerFeedbackSection: React.FC = () => {
   const fetchFeedbacks = async () => {
     try {
       setIsLoading(true);
-      const response = await ApiClient.get(`${API_ENDPOINTS.FEEDBACK.LIST}?limit=20`);
+      const response = await ApiClient.get(`${API_ENDPOINTS.FEEDBACK.LIST}?limit=20`) as { data: Feedback[] };
       setFeedbacks(response.data || []);
     } catch (error) {
       console.error('Error fetching feedbacks:', error);

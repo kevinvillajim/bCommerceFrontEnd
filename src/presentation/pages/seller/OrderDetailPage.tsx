@@ -1,14 +1,12 @@
 import React, {useState, useEffect, useMemo} from "react";
 import {useParams, useNavigate, Link} from "react-router-dom";
 import {ArrowLeft, Truck, Package, Check, X, FileText} from "lucide-react";
-import {formatCurrency} from "../../../utils/formatters/formatCurrency";
 import {formatDate} from "../../../utils/formatters/formatDate";
 import SellerOrderServiceAdapter from "../../../core/adapters/SellerOrderServiceAdapter";
 import ShippingFormModal from "../../components/shipping/ShippingFormModal";
 import OrderPricingDetails from "../../components/orders/OrderPricingDetails";
 import OrderPricingBreakdown from "../../components/orders/OrderPricingBreakdown";
 import OrderItemsList from "../../components/orders/OrderItemsList";
-import {getProductMainImage} from "../../../utils/imageManager";
 import type {ShippingFormData} from "../../components/shipping/ShippingFormModal";
 import type {OrderUI} from "../../../core/adapters/OrderServiceAdapter";
 import {
@@ -99,10 +97,10 @@ const OrderDetailPage: React.FC = () => {
 			total: order.total || 0,
 			discounts: order.total_discounts || 0,
 			// Descuentos específicos
-			sellerDiscount: order.seller_discount_savings || 0,
+			sellerDiscount: order.volume_discount_savings || 0,
 			volumeDiscount: order.volume_discount_savings || 0,
-			feedbackDiscount: order.feedback_discount_amount || 0,
-			feedbackCode: order.feedback_discount_code || null,
+			feedbackDiscount: 0, // Esta propiedad no existe en OrderDetail
+			feedbackCode: null, // Esta propiedad no existe en OrderDetail
 			shippingCost: order.shipping_cost || 0,
 			freeShipping: order.free_shipping || false
 		};
@@ -116,7 +114,7 @@ const OrderDetailPage: React.FC = () => {
 		
 		return {
 			id: String(order.id),
-			orderNumber: order.orderNumber || order.order_number || String(order.id),
+			orderNumber: order.orderNumber || String(order.id),
 			date: order.created_at || new Date().toISOString(),
 			customer: {
 				id: order.userId || 0,
@@ -640,14 +638,14 @@ const OrderDetailPage: React.FC = () => {
 							const totals = getOrderTotals();
 							return (
 								<OrderPricingBreakdown
-									originalSubtotal={totals.originalTotal}
-									sellerDiscounts={totals.sellerDiscount}
-									volumeDiscounts={totals.volumeDiscount}
-									couponDiscount={totals.feedbackDiscount}
-									couponCode={totals.feedbackCode}
+									originalSubtotal={order.original_total || totals.total}
+									sellerDiscounts={totals.sellerDiscount || 0}
+									volumeDiscounts={totals.volumeDiscount || 0}
+									couponDiscount={totals.feedbackDiscount || 0}
+									couponCode={totals.feedbackCode || undefined}
 									subtotalAfterDiscounts={totals.subtotal}
-									shipping={totals.shippingCost}
-									freeShipping={totals.freeShipping}
+									shipping={totals.shippingCost || 0}
+									freeShipping={totals.freeShipping || false}
 									tax={totals.tax}
 									total={totals.total}
 									isSellerView={true}

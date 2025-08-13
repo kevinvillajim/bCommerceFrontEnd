@@ -1,6 +1,5 @@
 // src/services/CheckoutItemsService.ts - CORREGIDO CON CALCULADORA CENTRALIZADA
 import { EcommerceCalculator } from "../../utils/ecommerceCalculator";
-import type { CartItem, CalculationResult } from "../../utils/ecommerceCalculator";
 
 export interface CheckoutItem {
   product_id: number;
@@ -21,6 +20,7 @@ export interface CheckoutTotals {
   sellerDiscounts: number; // Total de descuentos del seller
   volumeDiscounts: number; // Total de descuentos por volumen
   totalDiscounts: number; // Total de todos los descuentos
+  couponDiscount: number; // Descuento por cupón específico
   tax: number; // IVA
   shipping: number; // Costo de envío
   total: number; // Total final
@@ -91,6 +91,7 @@ export class CheckoutItemsService {
       sellerDiscounts: result.sellerDiscounts,
       volumeDiscounts: result.volumeDiscounts,
       totalDiscounts: result.totalDiscounts,
+      couponDiscount: result.couponDiscount,
       tax: result.tax,
       shipping: result.shipping,
       total: result.total, // ✅ ESTE ES EL VALOR CRÍTICO: $8.87

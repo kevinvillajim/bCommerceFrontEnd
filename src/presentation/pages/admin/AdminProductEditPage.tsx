@@ -182,8 +182,8 @@ const AdminProductEditPage: React.FC = () => {
 				console.log('Sellers API response:', response); // Debug log
 				
 				// Manejo flexible de la respuesta
-				if (response?.data) {
-					const sellersData = response.data.data || response.data;
+				if ((response as any)?.data) {
+					const sellersData = (response as any).data?.data || (response as any).data;
 					console.log('Processed sellers data:', sellersData); // Debug log
 					setSellers(Array.isArray(sellersData) ? sellersData : []);
 				} else {
@@ -870,7 +870,7 @@ const AdminProductEditPage: React.FC = () => {
 										<option value="">Seleccionar Vendedor</option>
 										{sellers.map((seller) => (
 											<option key={seller.id} value={seller.id}>
-												{seller.display_name || `${seller.store_name || seller.name} (${seller.user_name})`}
+												{seller.store_name || seller.name || `Vendedor ${seller.id}`}
 											</option>
 										))}
 									</select>

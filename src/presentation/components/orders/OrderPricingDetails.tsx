@@ -24,11 +24,7 @@ const OrderPricingDetails: React.FC<OrderPricingDetailsProps> = ({
   
   // ✅ FILTRAR ITEMS DEL SELLER (si es vista de seller)
   const relevantItems = viewType === 'seller' && sellerId 
-    ? order.items.filter(item => {
-        // Aquí deberías filtrar por seller_id del producto
-        // Por ahora asumimos que todos los items son del seller
-        return true;
-      })
+    ? order.items // Por ahora asumimos que todos los items son del seller
     : order.items;
 
   // ✅ CALCULAR VALORES SEGÚN EL TIPO DE VISTA
@@ -43,7 +39,7 @@ const OrderPricingDetails: React.FC<OrderPricingDetailsProps> = ({
         sellerDiscounts: relevantItems.reduce((sum, item) => 
           sum + ((item.originalPrice || item.price) - item.price) * item.quantity, 0),
         volumeDiscounts: order.volumeDiscountSavings || 0,
-        couponDiscounts: order.totalDiscounts - (order.volumeDiscountSavings || 0), // Cupones = total - volumen
+        couponDiscounts: (order.totalDiscounts || 0) - (order.volumeDiscountSavings || 0), // Cupones = total - volumen
         shippingCost: order.shippingCost || 0,
         taxAmount: order.taxAmount,
         finalTotal: order.total,

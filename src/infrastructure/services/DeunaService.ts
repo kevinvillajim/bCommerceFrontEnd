@@ -130,7 +130,16 @@ export class DeunaService {
       );
 
       console.log('DeunaService: Payment cancelled successfully', response);
-      return response;
+      return response as {
+        success: boolean;
+        message: string;
+        data: {
+          payment_id: string;
+          status: string;
+          reason: string;
+          cancelled_at: string;
+        };
+      };
 
     } catch (error: any) {
       console.error('DeunaService: Error cancelling payment', error);
@@ -168,7 +177,17 @@ export class DeunaService {
       );
 
       console.log('DeunaService: Payment void/refund processed successfully', response);
-      return response;
+      return response as {
+        success: boolean;
+        message: string;
+        data: {
+          payment_id: string;
+          status: string;
+          refund_amount: number;
+          reason: string;
+          refunded_at: string;
+        };
+      };
 
     } catch (error: any) {
       console.error('DeunaService: Error processing void/refund', error);
@@ -230,7 +249,27 @@ export class DeunaService {
       );
 
       console.log('DeunaService: Payments listed successfully', response);
-      return response;
+      return response as {
+        success: boolean;
+        data: {
+          payment_id: string;
+          order_id: string;
+          status: string;
+          amount: number;
+          currency: string;
+          customer: Record<string, any>;
+          created_at: string;
+          updated_at: string;
+          completed_at?: string;
+        }[];
+        meta: {
+          count: number;
+          total: number;
+          limit: number;
+          offset: number;
+          filters_applied: Record<string, any>;
+        };
+      };
 
     } catch (error: any) {
       console.error('DeunaService: Error listing payments', error);

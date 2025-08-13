@@ -1,13 +1,11 @@
 import React, {useState, useEffect, useMemo} from "react";
 import {useParams, useNavigate, Link} from "react-router-dom";
-import {ArrowLeft, FileText, Truck, Package, Tag} from "lucide-react";
-import {formatCurrency} from "../../utils/formatters/formatCurrency";
+import {ArrowLeft, FileText, Truck, Package} from "lucide-react";
 import {formatDate} from "../../utils/formatters/formatDate";
 import OrderStatusBadge from "../components/orders/OrderStatusBadge";
 import OrderServiceAdapter from "../../core/adapters/OrderServiceAdapter";
 import OrderPricingBreakdown from "../components/orders/OrderPricingBreakdown";
 import OrderItemsList from "../components/orders/OrderItemsList";
-import {getProductMainImage} from "../../utils/imageManager";
 import type {OrderDetail} from "../../core/domain/entities/Order";
 import type {OrderUI} from "../../core/adapters/OrderServiceAdapter";
 
@@ -65,7 +63,7 @@ const OrderDetailClientPage: React.FC = () => {
 		console.log("📊 order.pricing_breakdown:", order.pricing_breakdown);
 		console.log("📊 order.original_total (directo):", order.original_total);
 		console.log("📊 order.total_discounts (directo):", order.total_discounts);
-		console.log("📊 order.seller_discount_savings (directo):", order.seller_discount_savings);
+		console.log("📊 order.volume_discount_savings (directo):", order.volume_discount_savings);
 		
 		// Priorizar datos del pricing_breakdown si están disponibles
 		const pricingData = order.pricing_breakdown || {};
@@ -81,12 +79,12 @@ const OrderDetailClientPage: React.FC = () => {
 			// ✅ Usar final_total del pricing_breakdown
 			total: pricingData.final_total ?? order.total ?? 0,
 			// ✅ Descuentos del pricing_breakdown
-			seller_discount_savings: pricingData.seller_discounts ?? order.seller_discount_savings ?? 0,
+			seller_discount_savings: pricingData.seller_discounts ?? order.volume_discount_savings ?? 0,
 			volume_discount_savings: pricingData.volume_discounts ?? order.volume_discount_savings ?? 0,
-			feedback_discount_amount: order.feedback_discount_amount ?? 0,
+			feedback_discount_amount: 0, // Esta propiedad no existe en OrderDetail
 			total_discounts: pricingData.total_discounts ?? order.total_discounts ?? 0,
 			// Códigos y flags
-			feedback_discount_code: order.feedback_discount_code || null,
+			feedback_discount_code: null, // Esta propiedad no existe en OrderDetail
 			volume_discounts_applied: order.volume_discounts_applied || false,
 			free_shipping: pricingData.free_shipping ?? order.free_shipping ?? false
 		};
@@ -101,7 +99,7 @@ const OrderDetailClientPage: React.FC = () => {
 
 		return {
 			id: String(order.id),
-			orderNumber: order.orderNumber || order.order_number || String(order.id),
+			orderNumber: order.orderNumber || String(order.id),
 			date: order.created_at || new Date().toISOString(),
 			customer: {
 				id: order.userId || 0,
@@ -192,7 +190,7 @@ const OrderDetailClientPage: React.FC = () => {
               <span>Volver a mis pedidos</span>
             </button>
             <h1 className="text-2xl font-bold text-gray-800">
-              Pedido #{order.orderNumber || order.order_number || order.id}
+              Pedido #{order.orderNumber || order.id}
             </h1>
           </div>
 
@@ -396,7 +394,7 @@ const OrderDetailClientPage: React.FC = () => {
                 sellerDiscounts={orderTotals.seller_discount_savings}
                 volumeDiscounts={orderTotals.volume_discount_savings}
                 couponDiscount={orderTotals.feedback_discount_amount}
-                couponCode={orderTotals.feedback_discount_code}
+                couponCode={orderTotals.feedback_discount_code || undefined}
                 subtotalAfterDiscounts={orderTotals.subtotal_products}
                 shipping={orderTotals.shipping_cost}
                 freeShipping={orderTotals.free_shipping}

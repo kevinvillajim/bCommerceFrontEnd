@@ -4,7 +4,6 @@ import {
 	Store,
 	ShieldCheck,
 	Star,
-	Package,
 	DollarSign,
 	Filter,
 	RefreshCw,
@@ -12,12 +11,10 @@ import {
 	Ban,
 	CheckCircle,
 	Clock,
-	UserPlus,
-	ShoppingBag,
 } from "lucide-react";
-import {Link} from "react-router-dom";
 import type {Seller} from "../../../core/domain/entities/Seller";
 import ApiClient from "../../../infrastructure/api/apiClient";
+import adminSellerService from "../../../infrastructure/services/AdminSellerService";
 import StatusUpdateModal from "../../components/admin/StatusUpdateModal";
 import SellerFormModal from "../../components/admin/SellerFormModal";
 import { formatCurrency } from "../../../utils/formatters/formatCurrency";
@@ -51,9 +48,6 @@ const AdminSellersPage: React.FC = () => {
 		title: "Crear nuevo vendedor",
 	});
 
-	const [nonSellerUsers, setNonSellerUsers] = useState<
-		Array<{id: number; name: string; email: string}>
-	>([]);
 	const [error, setError] = useState<string | null>(null);
 
 	// Inicializar el servicio
@@ -89,29 +83,29 @@ const AdminSellersPage: React.FC = () => {
 			let sellersData = [];
 			
 			// Si la respuesta es exitosa O si directamente tiene data
-			if (response.success !== false && response.data) {
+			if ((response as any).success !== false && (response as any).data) {
 				// Extraer los sellers de diferentes posibles ubicaciones
-				if (Array.isArray(response.data.data)) {
-					sellersData = response.data.data; // Laravel paginated response
-				} else if (Array.isArray(response.data)) {
-					sellersData = response.data; // Direct array in data
+				if (Array.isArray((response as any).data.data)) {
+					sellersData = (response as any).data.data; // Laravel paginated response
+				} else if (Array.isArray((response as any).data)) {
+					sellersData = (response as any).data; // Direct array in data
 				}
 				
 				console.log('Extracted sellers data:', sellersData);
 				setSellers(sellersData);
 				
 				// Manejar paginación si está disponible
-				if (response.data && response.data.current_page) {
+				if ((response as any).data && (response as any).data.current_page) {
 					setPagination({
-						currentPage: response.data.current_page,
-						totalPages: response.data.last_page,
-						totalItems: response.data.total,
-						itemsPerPage: response.data.per_page,
+						currentPage: (response as any).data.current_page,
+						totalPages: (response as any).data.last_page,
+						totalItems: (response as any).data.total,
+						itemsPerPage: (response as any).data.per_page,
 					});
 				}
 			} else {
 				console.error('Response not successful:', response);
-				throw new Error(response.message || response.error || 'Error al obtener sellers');
+				throw new Error((response as any).message || (response as any).error || 'Error al obtener sellers');
 			}
 		} catch (error) {
 			console.error("Error al obtener vendedores:", error);
@@ -121,16 +115,6 @@ const AdminSellersPage: React.FC = () => {
 		}
 	};
 
-	// Cargar usuarios no vendedores (para crear nuevos vendedores)
-	const loadNonSellerUsers = async () => {
-		try {
-			const users = await sellerService.getNonSellerUsers();
-			setNonSellerUsers(users);
-		} catch (error) {
-			console.error("Error al cargar usuarios:", error);
-			setError("Error al cargar usuarios. Por favor, inténtalo de nuevo.");
-		}
-	};
 
 	// Manejar cambio de estado de vendedor
 	const toggleSellerStatus = (sellerId: number) => {
@@ -186,7 +170,7 @@ const AdminSellersPage: React.FC = () => {
 				newStatus = "inactive";
 			}
 
-			await sellerService.updateSellerStatus(sellerId, newStatus, reason);
+			await adminSellerService.updateSellerStatus(sellerId, newStatus, reason);
 
 			// Actualizar el estado local para reflejar el cambio inmediatamente
 			setSellers((prevSellers) =>
@@ -215,7 +199,7 @@ const AdminSellersPage: React.FC = () => {
 		setLoading(true);
 		setError(null);
 		try {
-			await sellerService.updateSellerStatus(sellerId, "active");
+			await adminSellerService.updateSellerStatus(sellerId, "active");
 
 			// Actualizar el estado local
 			setSellers((prevSellers) =>
@@ -236,38 +220,6 @@ const AdminSellersPage: React.FC = () => {
 		}
 	};
 
-	// Cambiar nivel de verificación
-	const updateVerificationLevel = async (
-		sellerId: number,
-		level: "none" | "basic" | "verified" | "premium"
-	) => {
-		setLoading(true);
-		setError(null);
-		try {
-			await sellerService.updateSeller(sellerId, {verification_level: level});
-
-			// Actualizar el estado local
-			setSellers((prevSellers) =>
-				prevSellers.map((seller) => {
-					if (seller.id === sellerId) {
-						return {...seller, verificationLevel: level};
-					}
-					return seller;
-				})
-			);
-
-			alert(
-				`Nivel de verificación actualizado a "${level}" para vendedor #${sellerId}`
-			);
-		} catch (error) {
-			console.error("Error al actualizar verificación:", error);
-			setError(
-				"Error al actualizar nivel de verificación. Por favor, inténtalo de nuevo."
-			);
-		} finally {
-			setLoading(false);
-		}
-	};
 
 	// Destacar/Quitar destacado de vendedor y sus productos
 	const toggleFeatured = async (sellerId: number) => {
@@ -281,14 +233,14 @@ const AdminSellersPage: React.FC = () => {
 		
 		try {
 			// Actualizar el vendedor
-			await sellerService.updateSeller(sellerId, {
+			await ApiClient.put(`/admin/sellers/${sellerId}`, {
 				is_featured: newFeaturedState,
 			});
 
 			// Si se está marcando como destacado, también actualizar todos sus productos
 			if (newFeaturedState) {
 				try {
-					await sellerService.featureAllSellerProducts(sellerId);
+					await ApiClient.post(`/admin/sellers/${sellerId}/feature-products`);
 					console.log(`Todos los productos del vendedor ${sellerId} han sido marcados como destacados`);
 				} catch (productError) {
 					console.error("Error al marcar productos como destacados:", productError);
@@ -320,18 +272,6 @@ const AdminSellersPage: React.FC = () => {
 		}
 	};
 
-	// Abrir modal para crear nuevo vendedor
-	const handleCreateSeller = () => {
-		// Cargar usuarios no vendedores
-		loadNonSellerUsers();
-
-		setSellerFormModal({
-			isOpen: true,
-			seller: null,
-			isCreate: true,
-			title: "Crear nuevo vendedor",
-		});
-	};
 
 	// Abrir modal para editar vendedor
 	const handleEditSeller = (seller: Seller) => {
@@ -350,11 +290,11 @@ const AdminSellersPage: React.FC = () => {
 		try {
 			if (sellerFormModal.isCreate) {
 				// Crear nuevo vendedor
-				await sellerService.createSeller(formData);
+				await ApiClient.post('/admin/sellers', formData);
 				alert("Vendedor creado correctamente");
 			} else if (sellerFormModal.seller) {
 				// Actualizar vendedor existente
-				await sellerService.updateSeller(sellerFormModal.seller.id, formData);
+				await ApiClient.put(`/admin/sellers/${sellerFormModal.seller.id}`, formData);
 				alert("Vendedor actualizado correctamente");
 			}
 
@@ -402,7 +342,7 @@ const AdminSellersPage: React.FC = () => {
 							)}
 						</div>
 						<div className="text-xs text-gray-500">
-							{seller.user_name} ({seller.email})
+							{seller.userName} ({seller.email})
 						</div>
 						<div className="text-xs text-gray-400">
 							ID: {seller.id}
@@ -703,7 +643,7 @@ const AdminSellersPage: React.FC = () => {
 				seller={sellerFormModal.seller}
 				title={sellerFormModal.title}
 				isCreate={sellerFormModal.isCreate}
-				users={nonSellerUsers}
+				users={[]}
 			/>
 		</div>
 	);

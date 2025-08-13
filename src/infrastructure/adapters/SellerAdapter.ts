@@ -10,6 +10,7 @@ export class SellerAdapter {
 	static toEntity(backendData: any): Seller {
 		return {
 			id: backendData.id,
+			user_id: backendData.user_id,
 			userId: backendData.user_id,
 			storeName: backendData.store_name,
 			description: backendData.description,

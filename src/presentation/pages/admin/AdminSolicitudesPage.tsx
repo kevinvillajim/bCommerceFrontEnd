@@ -100,7 +100,7 @@ const AdminSolicitudesPage: React.FC = () => {
 
       const response = await ApiClient.get('/admin/seller-applications', params);
       
-      if (response && 'status' in response && response.status === 'success' && 'data' in response && response.data) {
+      if (response && typeof response === 'object' && 'status' in response && (response as any).status === 'success' && 'data' in response && (response as any).data) {
         const responseData = response.data as any;
         setApplications(responseData.data || []);
         setPagination({
@@ -121,7 +121,7 @@ const AdminSolicitudesPage: React.FC = () => {
   const fetchStats = async () => {
     try {
       const response = await ApiClient.get('/admin/seller-applications/stats');
-      if (response && 'status' in response && response.status === 'success' && 'data' in response) {
+      if (response && typeof response === 'object' && 'status' in response && (response as any).status === 'success' && 'data' in response) {
         setStats(response.data as ApplicationStats);
       }
     } catch (error) {
@@ -138,7 +138,7 @@ const AdminSolicitudesPage: React.FC = () => {
         admin_notes: adminNotes
       });
       
-      if (response && 'status' in response && response.status === 'success') {
+      if (response && typeof response === 'object' && 'status' in response && (response as any).status === 'success') {
         setSuccess('Solicitud aprobada exitosamente. Se ha creado la cuenta de vendedor y el usuario ha sido notificado.');
         await fetchApplications();
         await fetchStats();
@@ -165,7 +165,7 @@ const AdminSolicitudesPage: React.FC = () => {
         admin_notes: adminNotes
       });
       
-      if (response && 'status' in response && response.status === 'success') {
+      if (response && typeof response === 'object' && 'status' in response && (response as any).status === 'success') {
         setSuccess('Solicitud rechazada exitosamente. El usuario ha sido notificado con el motivo del rechazo.');
         await fetchApplications();
         await fetchStats();

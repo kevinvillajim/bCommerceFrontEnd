@@ -100,7 +100,7 @@ const RegisterPage: React.FC = () => {
 		// Si el registro fue exitoso, verificar si requiere verificación de email
 		if (result) {
 			// Verificar si el usuario necesita verificar el email
-			if (result.user && !result.user.email_verified_at) {
+			if (result.user && !result.user.emailVerifiedAt) {
 				// Redirigir a la página de verificación de email
 				navigate("/verify-email", {
 					state: {

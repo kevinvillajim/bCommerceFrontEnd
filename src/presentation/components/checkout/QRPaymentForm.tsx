@@ -134,7 +134,7 @@ const QRPaymentForm: React.FC<QRPaymentFormProps> = ({
           name: item.product?.name || 'Producto',
           quantity: item.quantity,
           price: item.final_price || item.price || item.subtotal || 0,
-          description: item.product?.description || undefined,
+          description: (item.product as any)?.description || undefined,
         })),
         qr_type: 'dynamic',
         format: '2', // QR + Payment Link
@@ -347,7 +347,7 @@ const QRPaymentForm: React.FC<QRPaymentFormProps> = ({
                 />
               </div>
 
-              <h3 className="text-xl font-bold mb-2">Pago con DeUna!</h3>
+              <h3 className="text-xl font-bold mb-2">Pago con Deuna</h3>
               <p className="text-purple-100 mb-4">
                 Monto a pagar: {formatCurrency(paymentData.amount)}
               </p>
@@ -362,7 +362,7 @@ const QRPaymentForm: React.FC<QRPaymentFormProps> = ({
 
               <p className="text-purple-100 text-sm mb-4 flex items-center justify-center">
                 <Smartphone className="w-4 h-4 mr-2" />
-                Escanea con tu app DeUna!
+                Escanea con tu app Deuna
               </p>
 
               <button

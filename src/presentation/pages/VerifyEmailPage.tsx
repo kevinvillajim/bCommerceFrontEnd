@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { CheckCircle, AlertCircle, Mail, RefreshCw } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
-import ConfigurationService from '../../core/services/ConfigurationService';
 
 /**
  * Página de verificación de email
@@ -11,7 +10,7 @@ import ConfigurationService from '../../core/services/ConfigurationService';
 const VerifyEmailPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, refreshUser } = useAuth();
+  const { user } = useAuth();
   
   // Obtener token de la URL
   const queryParams = new URLSearchParams(location.search);
@@ -38,7 +37,7 @@ const VerifyEmailPage: React.FC = () => {
 
   // Verificar estado del usuario
   useEffect(() => {
-    if (user && user.email_verified_at) {
+    if (user && user.emailVerifiedAt) {
       setVerificationStatus('verified');
       setSuccess('Tu email ya está verificado correctamente.');
     }
@@ -56,15 +55,7 @@ const VerifyEmailPage: React.FC = () => {
     setSuccess(null);
 
     try {
-      const configService = new ConfigurationService();
-      const result = await configService.sendCustomEmail({
-        user_id: 0, // Not used for verification
-        subject: '', // Not used for verification  
-        message: '', // Not used for verification
-      });
-
-      // Since we don't have a direct verify method in ConfigurationService,
-      // we'll need to make a direct API call here
+      // Se hace llamada directa a la API de verificación
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api'}/email-verification/verify`, {
         method: 'POST',
         headers: {
@@ -80,10 +71,7 @@ const VerifyEmailPage: React.FC = () => {
         setVerificationStatus('verified');
         setSuccess('¡Email verificado correctamente! Tu cuenta está ahora activa.');
         
-        // Refrescar información del usuario
-        if (refreshUser) {
-          await refreshUser();
-        }
+        // Usuario verificado exitosamente
         
         // Redirigir después de un momento
         setTimeout(() => {

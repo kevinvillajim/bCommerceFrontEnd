@@ -84,7 +84,7 @@ export class AdminSellerService {
   /**
    * Update seller status
    */
-  async updateSellerStatus(sellerId: string | number, status: 'pending' | 'active' | 'suspended', reason?: string): Promise<void> {
+  async updateSellerStatus(sellerId: string | number, status: 'pending' | 'active' | 'suspended' | 'inactive', reason?: string): Promise<void> {
     try {
       const response = await ApiClient.put<{ success: boolean; message?: string }>(`/admin/sellers/${sellerId}/status`, {
         status,

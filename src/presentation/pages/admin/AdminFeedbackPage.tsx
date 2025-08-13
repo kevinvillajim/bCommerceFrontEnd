@@ -158,7 +158,11 @@ const AdminFeedbackPage: React.FC = () => {
 				params.append('to_date', dateRangeFilter.to);
 			}
 
-			const response = await ApiClient.get(`${API_ENDPOINTS.ADMIN.PENDING_FEEDBACK}?${params.toString()}`);
+			const response = await ApiClient.get(`${API_ENDPOINTS.ADMIN.PENDING_FEEDBACK}?${params.toString()}`) as {
+				status: string;
+				data: Feedback[];
+				meta?: { total: number };
+			};
 			
 			if (response.status === 'success') {
 				setFeedback(response.data || []);
@@ -218,7 +222,14 @@ const AdminFeedbackPage: React.FC = () => {
 			const response = await ApiClient.post(
 				`${API_ENDPOINTS.ADMIN.REVIEW_FEEDBACK(feedbackId)}`,
 				approvalData
-			);
+			) as {
+				status: string;
+				data?: {
+					discount_code?: { code: string; discount_percentage: number; expires_at: string };
+					seller_featured?: { featured_at: string; featured_expires_at: string; featured_days: number; is_active: boolean };
+				};
+				message?: string;
+			};
 
 			if (response.status === 'success') {
 				// Actualizar lista local
@@ -283,7 +294,10 @@ const AdminFeedbackPage: React.FC = () => {
 			const response = await ApiClient.post(
 				`${API_ENDPOINTS.ADMIN.REVIEW_FEEDBACK(feedbackId)}`,
 				rejectionData
-			);
+			) as {
+				status: string;
+				message?: string;
+			};
 
 			if (response.status === 'success') {
 				// Actualizar lista local

@@ -9,8 +9,6 @@ import {
   Calendar, 
   Mail, 
   Package, 
-  Users, 
-  TrendingUp, 
   Clock,
   CheckCircle,
   XCircle,

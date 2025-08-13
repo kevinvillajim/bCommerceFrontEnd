@@ -26,10 +26,7 @@ const OrderItemsList: React.FC<OrderItemsListProps> = ({
   
   // ✅ FILTRAR ITEMS RELEVANTES
   const relevantItems = viewType === 'seller' && sellerId 
-    ? order.items.filter(item => {
-        // Filtrar por seller_id del producto cuando esté disponible
-        return true; // Por ahora mostrar todos
-      })
+    ? order.items // Por ahora mostrar todos
     : order.items;
 
   if (!relevantItems || relevantItems.length === 0) {

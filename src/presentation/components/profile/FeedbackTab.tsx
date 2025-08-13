@@ -46,7 +46,7 @@ const FeedbackTab: React.FC = () => {
   const fetchFeedbacks = async () => {
     try {
       setIsLoading(true);
-      const response = await ApiClient.get(`${API_ENDPOINTS.FEEDBACK.LIST}?limit=50`);
+      const response = await ApiClient.get(`${API_ENDPOINTS.FEEDBACK.LIST}?limit=50`) as { data: Feedback[] };
       setFeedbacks(response.data || []);
     } catch (error) {
       console.error('Error fetching feedbacks:', error);
@@ -174,7 +174,7 @@ const FeedbackTab: React.FC = () => {
     });
   };
 
-function DiasAHorasYMinutos(decimalDias) {
+function DiasAHorasYMinutos(decimalDias: number): string {
   const dias = Math.floor(decimalDias);
   const horasDecimales = (decimalDias - dias) * 24;
   const horas = Math.floor(horasDecimales);

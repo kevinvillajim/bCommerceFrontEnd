@@ -1,7 +1,7 @@
 // src/presentation/hooks/useAdminSellers.ts
 
 import {useState, useCallback} from "react";
-import {AdminSellerService, AdminSeller} from "../../core/services/AdminSellerService";
+import {AdminSellerService, type AdminSeller} from "../../core/services/AdminSellerService";
 
 const adminSellerService = new AdminSellerService();
 

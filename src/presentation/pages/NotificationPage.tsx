@@ -171,7 +171,6 @@ const NotificationPage: React.FC = () => {
 		markAsRead,
 		markAllAsRead,
 		deleteNotification,
-		refreshUnreadCount,
 	} = useNotifications();
 
 	// ✅ FUNCIÓN SIMPLE PARA INVALIDAR CACHE

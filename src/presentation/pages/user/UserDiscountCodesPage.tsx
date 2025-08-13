@@ -49,7 +49,11 @@ const UserDiscountCodesPage: React.FC = () => {
         include_expired: includeExpired.toString(),
       });
 
-      const response = await ApiClient.get(`${API_ENDPOINTS.DISCOUNTS.MY_CODES}?${params.toString()}`);
+      const response = await ApiClient.get(`${API_ENDPOINTS.DISCOUNTS.MY_CODES}?${params.toString()}`) as {
+        status: string;
+        data: DiscountCode[];
+        meta?: { total: number };
+      };
       
       if (response.status === 'success') {
         setDiscountCodes(response.data || []);

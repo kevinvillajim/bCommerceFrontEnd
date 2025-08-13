@@ -74,7 +74,7 @@ const SellerApplicationTab: React.FC = () => {
   const fetchApplication = async () => {
     setIsLoading(true);
     try {
-      const response = await ApiClient.get('/seller-applications/my-application');
+      const response = await ApiClient.get('/seller-applications/my-application') as { status: string; data: SellerApplication | null };
       if (response?.status === 'success' && response.data) {
         setApplication(response.data);
       } else if (response?.status === 'success' && !response.data) {
@@ -103,7 +103,7 @@ const SellerApplicationTab: React.FC = () => {
     setSuccess(null);
 
     try {
-      const response = await ApiClient.post('/seller-applications', formData);
+      const response = await ApiClient.post('/seller-applications', formData) as { status: string };
       if (response?.status === 'success') {
         setSuccess('Solicitud enviada exitosamente. Te contactaremos pronto.');
         setShowForm(false);
