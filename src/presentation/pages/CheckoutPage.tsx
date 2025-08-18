@@ -61,7 +61,7 @@ const CheckoutPage: React.FC = () => {
 	const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 	const [orderComplete, setOrderComplete] = useState(false);
 	const [orderDetails, setOrderDetails] = useState<any>(null);
-	const [countdown, setCountdown] = useState(8);
+	const [countdown, setCountdown] = useState(5);
 
 	const checkoutService = new CheckoutService();
 
@@ -212,17 +212,18 @@ const CheckoutPage: React.FC = () => {
 		}
 	}, [cart, navigate, showNotification]);
 
-	// ✅ NUEVO: Redirect automático después de completar orden (similar a DatafastResultPage)
+	// ✅ NUEVO: Redirect automático después de completar orden - mostrar recibo por 5 segundos
 	useEffect(() => {
 		if (orderComplete) {
 			// Reset countdown when order completes
-			setCountdown(8);
+			setCountdown(5);
 			
 			// Update countdown every second
 			const countdownTimer = setInterval(() => {
 				setCountdown(prev => {
 					if (prev <= 1) {
 						clearInterval(countdownTimer);
+						console.log('🔄 Auto-redirecting to orders page after 5 seconds');
 						navigate("/orders");
 						return 0;
 					}
@@ -652,11 +653,11 @@ const CheckoutPage: React.FC = () => {
 							</svg>
 						</div>
 						<h2 className="text-3xl font-bold text-gray-800 mb-4">
-							¡Pedido realizado con éxito!
+							¡Pago con DeUna completado!
 						</h2>
 						<p className="text-gray-600 mb-6">
-							Tu pedido ha sido procesado correctamente. Hemos enviado un correo
-							electrónico con los detalles.
+							Tu pago se procesó correctamente y tu pedido está siendo preparado. 
+							Recibirás un correo electrónico con los detalles.
 						</p>
 
 						{/* ✅ MOSTRAR AHORROS EN CONFIRMACIÓN */}
@@ -829,30 +830,48 @@ const CheckoutPage: React.FC = () => {
 					<QRPaymentForm 
 						total={checkoutCalculations.totals.total}
 						onPaymentSuccess={async (paymentData) => {
-							console.log('DeUna payment successful:', paymentData);
+							console.log('✅ DeUna payment successful, processing completion:', paymentData);
 							
-							// BEST PRACTICE: Webhook creates the order, frontend just updates UI
-							setOrderComplete(true);
-							setOrderDetails({
-								order_id: paymentData.order_id,
-								order_number: paymentData.order_id,
-								total: paymentData.amount,
-								payment_status: 'paid',
-								payment_method: 'deuna',
-								created_via: 'webhook'
-							});
+							try {
+								// Set order completion state FIRST for receipt display
+								console.log('🎯 Setting orderComplete to true and orderDetails');
+								
+								setOrderDetails({
+									order_id: paymentData.order_id,
+									order_number: paymentData.order_id || `DEUNA-${Date.now()}`,
+									total: paymentData.amount || checkoutCalculations.totals.total,
+									payment_status: 'paid',
+									payment_method: 'deuna',
+									payment_id: paymentData.payment_id,
+									created_via: 'deuna_webhook',
+									completed_at: paymentData.completed_at || new Date().toISOString()
+								});
+								
+								// IMPORTANT: Set this AFTER orderDetails to ensure proper rendering
+								setOrderComplete(true);
+								
+								// Clear cart after setting state
+								clearCart();
 
-							let successMessage = "¡Pago con DeUna completado con éxito!";
-							if (checkoutCalculations.totals.totalDiscounts > 0) {
-								successMessage += ` Has ahorrado ${formatCurrency(checkoutCalculations.totals.totalDiscounts)} con descuentos aplicados.`;
+								let successMessage = "¡Pago con DeUna completado con éxito!";
+								if (checkoutCalculations.totals.totalDiscounts > 0) {
+									successMessage += ` Has ahorrado ${formatCurrency(checkoutCalculations.totals.totalDiscounts)} con descuentos aplicados.`;
+								}
+								
+								handleSuccess(successMessage);
+								console.log('✅ DeUna payment completion processed successfully - should show receipt now');
+								console.log('📊 Order details set:', {
+									order_id: paymentData.order_id,
+									total: paymentData.amount || checkoutCalculations.totals.total
+								});
+								
+							} catch (error) {
+								console.error('❌ Error processing DeUna payment completion:', error);
+								handleError(error as Error, "Error procesando la confirmación del pago. Por favor, verifica tus órdenes.");
 							}
-							successMessage += " Tu orden ha sido procesada automáticamente.";
-
-							handleSuccess(successMessage);
-							clearCart();
 						}}
 						onPaymentError={(error) => {
-							console.error('DeUna payment error:', error);
+							console.error('❌ DeUna payment error:', error);
 							handleError(new Error(error), "Error en el pago con DeUna. Por favor, intenta de nuevo.");
 						}}
 					/>

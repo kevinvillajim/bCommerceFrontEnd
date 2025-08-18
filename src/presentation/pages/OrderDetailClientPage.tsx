@@ -67,7 +67,7 @@ const OrderDetailClientPage: React.FC = () => {
 		
 		// Priorizar datos del pricing_breakdown si están disponibles
 		// 🔧 CORREGIDO: Parsear JSON si pricing_breakdown es string
-		let pricingData = {};
+		let pricingData: any = {};
 		if (order.pricing_breakdown) {
 			try {
 				pricingData = typeof order.pricing_breakdown === 'string' 

@@ -56,6 +56,18 @@ export class ApiClient {
             ? data  // FormData se mantiene tal como está
             : data ? this.transformDataToSnakeCase(data) : undefined;
 
+        // Debug: Log data transformation for Deuna payments
+        if (url.includes('/deuna/payments')) {
+            console.log('🔍 API CLIENT - DATA TRANSFORMATION:', {
+                original_data: data,
+                transformed_data: transformedData,
+                original_items: data?.items,
+                transformed_items: transformedData?.items,
+                original_first_item: data?.items?.[0],
+                transformed_first_item: transformedData?.items?.[0]
+            });
+        }
+
         // FormData is sent without transformation
 
         const response: AxiosResponse = await axiosInstance.post(
@@ -245,7 +257,23 @@ export class ApiClient {
 		if (!data || typeof data !== "object") return data;
 
 		if (Array.isArray(data)) {
-			return data.map((item) => this.transformDataToSnakeCase(item));
+			const transformedArray = data.map((item, index) => {
+				const transformed = this.transformDataToSnakeCase(item);
+				
+				// Debug log for items arrays in Deuna payments
+				if (typeof item === 'object' && item !== null && (item.product_id !== undefined || item.name !== undefined)) {
+					console.log(`🔍 TRANSFORM ARRAY ITEM ${index}:`, {
+						original: item,
+						transformed: transformed,
+						original_keys: Object.keys(item),
+						transformed_keys: Object.keys(transformed),
+						product_id_preserved: transformed.product_id === item.product_id
+					});
+				}
+				
+				return transformed;
+			});
+			return transformedArray;
 		}
 
 		const transformed: Record<string, any> = {};

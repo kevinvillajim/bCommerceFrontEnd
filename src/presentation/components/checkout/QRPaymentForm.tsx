@@ -5,7 +5,7 @@ import { useAuth } from "../../hooks/useAuth";
 import { formatCurrency } from "../../../utils/formatters/formatCurrency";
 import { DeunaService } from "../../../infrastructure/services/DeunaService";
 import type { DeunaPaymentRequest } from "../../../infrastructure/services/DeunaTypes";
-import { CheckCircle, XCircle, Clock, RefreshCw, Copy, ExternalLink, Smartphone } from "lucide-react";
+import { CheckCircle, XCircle, Clock, RefreshCw, Copy, ExternalLink, Smartphone, Zap } from "lucide-react";
 
 interface QRPaymentFormProps {
   total?: number;
@@ -29,6 +29,7 @@ const QRPaymentForm: React.FC<QRPaymentFormProps> = ({
   const [currentStatus, setCurrentStatus] = useState<string>("");
   const [timeRemaining, setTimeRemaining] = useState<number>(600); // 10 minutes
   const [copySuccess, setCopySuccess] = useState<boolean>(false);
+  const [isSimulating, setIsSimulating] = useState<boolean>(false);
   
   // References for cleanup
   const pollingRef = React.useRef<any>(null);
@@ -91,9 +92,17 @@ const QRPaymentForm: React.FC<QRPaymentFormProps> = ({
     switch (status) {
       case 'completed':
         setIsPolling(false);
-        if (onPaymentSuccess) {
-          onPaymentSuccess(paymentData);
-        }
+        console.log('✅ Payment completed successfully, calling onPaymentSuccess');
+        // Give webhook time to process and create the order
+        setTimeout(() => {
+          if (onPaymentSuccess) {
+            onPaymentSuccess({
+              ...paymentData,
+              status: 'completed',
+              completed_at: new Date().toISOString()
+            });
+          }
+        }, 2000); // 2 second delay to allow webhook processing
         break;
       case 'failed':
       case 'cancelled':
@@ -120,6 +129,18 @@ const QRPaymentForm: React.FC<QRPaymentFormProps> = ({
     try {
       const orderId = generateOrderId();
 
+      // Debug: Log cart items before transformation
+      console.log('🔍 CART ITEMS BEFORE TRANSFORMATION:', cart.items.map((item, index) => ({
+        index,
+        productId: item.productId,
+        product_name: item.product?.name,
+        quantity: item.quantity,
+        final_price: item.final_price,
+        price: item.price,
+        subtotal: item.subtotal,
+        all_keys: Object.keys(item)
+      })));
+
       // Prepare payment request
       const paymentRequest: DeunaPaymentRequest = {
         order_id: orderId,
@@ -130,12 +151,25 @@ const QRPaymentForm: React.FC<QRPaymentFormProps> = ({
           email: user.email,
           phone: user.phone || undefined,
         },
-        items: cart.items.map(item => ({
-          name: item.product?.name || 'Producto',
-          quantity: item.quantity,
-          price: item.final_price || item.price || item.subtotal || 0,
-          description: `${(item.product as any)?.description || ''} [product_id:${item.productId}]`,
-        })),
+        items: cart.items.map((item, index) => {
+          const mappedItem = {
+            name: item.product?.name || 'Producto',
+            quantity: item.quantity,
+            price: item.final_price || item.price || item.subtotal || 0,
+            description: (item.product as any)?.description || '',
+            product_id: item.productId, // Include product_id as separate field
+          };
+          
+          // Debug: Log each item transformation
+          console.log(`🔍 ITEM ${index} TRANSFORMATION:`, {
+            original_productId: item.productId,
+            mapped_product_id: mappedItem.product_id,
+            mapped_item_keys: Object.keys(mappedItem),
+            mapped_item: mappedItem
+          });
+          
+          return mappedItem;
+        }),
         qr_type: 'dynamic',
         format: '2', // QR + Payment Link
         metadata: {
@@ -145,6 +179,15 @@ const QRPaymentForm: React.FC<QRPaymentFormProps> = ({
           checkout_timestamp: new Date().toISOString(),
         }
       };
+
+      // Debug: Log final payment request
+      console.log('🚀 FINAL PAYMENT REQUEST TO SEND:', {
+        order_id: paymentRequest.order_id,
+        amount: paymentRequest.amount,
+        items_count: paymentRequest.items.length,
+        items: paymentRequest.items,
+        first_item_keys: paymentRequest.items.length > 0 ? Object.keys(paymentRequest.items[0]) : 'no_items'
+      });
 
       console.log('Creating DeUna payment:', paymentRequest);
 
@@ -290,6 +333,61 @@ const QRPaymentForm: React.FC<QRPaymentFormProps> = ({
       setError('Error al generar nuevo código QR: ' + error.message);
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  // Simulate payment success (for testing only)
+  const handleSimulatePayment = async () => {
+    if (!paymentData?.payment_id) {
+      setError("No hay un pago activo para simular");
+      return;
+    }
+
+    setIsSimulating(true);
+    setError("");
+
+    try {
+      console.log('🧪 Simulating payment success for testing purposes');
+      
+      // Call the simulation endpoint
+      const result = await DeunaService.simulatePaymentSuccess(
+        paymentData.payment_id,
+        paymentData.amount,
+        user?.email
+      );
+
+      if (result.success) {
+        console.log('✅ Payment simulation successful:', result);
+        
+        // Update status to completed
+        setCurrentStatus('completed');
+        setIsPolling(false);
+        
+        // Stop any active polling
+        if (pollingRef.current?.cancel) {
+          pollingRef.current.cancel();
+          pollingRef.current = null;
+        }
+        
+        // Trigger success callback
+        if (onPaymentSuccess) {
+          onPaymentSuccess({
+            ...paymentData,
+            status: 'completed',
+            completed_at: new Date().toISOString(),
+            simulated: true
+          });
+        }
+        
+      } else {
+        throw new Error(result.message || 'Simulation failed');
+      }
+
+    } catch (error: any) {
+      console.error('❌ Error simulating payment:', error);
+      setError('Error simulando el pago: ' + error.message);
+    } finally {
+      setIsSimulating(false);
     }
   };
 
@@ -464,6 +562,27 @@ const QRPaymentForm: React.FC<QRPaymentFormProps> = ({
               'Generar Nuevo QR'
             )}
           </button>
+
+          {/* Simulation Button - Only show in development and when payment is active */}
+          {DeunaService.isDevelopmentMode() && isPolling && !['completed', 'cancelled', 'failed'].includes(currentStatus) && (
+            <button
+              onClick={handleSimulatePayment}
+              disabled={isSimulating}
+              className="flex-1 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center"
+            >
+              {isSimulating ? (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                  Simulando...
+                </>
+              ) : (
+                <>
+                  <Zap className="w-4 h-4 mr-2" />
+                  🧪 Simular Pago
+                </>
+              )}
+            </button>
+          )}
           
           {currentStatus === 'completed' && (
             <button
@@ -495,6 +614,15 @@ const QRPaymentForm: React.FC<QRPaymentFormProps> = ({
             <li><strong>3.</strong> Completa el pago en la aplicación</li>
             <li><strong>4.</strong> Espera la confirmación automática</li>
           </ol>
+          
+          {/* Development Note */}
+          {DeunaService.isDevelopmentMode() && isPolling && (
+            <div className="mt-3 pt-3 border-t border-blue-300">
+              <p className="text-xs text-orange-700 bg-orange-50 p-2 rounded">
+                🧪 <strong>Modo de desarrollo:</strong> Puedes usar el botón "Simular Pago" para testear el flujo completo sin necesidad de realizar un pago real.
+              </p>
+            </div>
+          )}
         </div>
       </div>
     );

@@ -13,6 +13,7 @@ export interface DeunaPaymentRequest {
     quantity: number;
     price: number;
     description?: string;
+    product_id?: number; // Include product_id for order creation
   }>;
   qr_type?: 'static' | 'dynamic';
   format?: '0' | '1' | '2' | '3' | '4';

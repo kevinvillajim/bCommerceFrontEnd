@@ -16,6 +16,16 @@ export class DeunaService {
   static async createPayment(paymentData: DeunaPaymentRequest): Promise<DeunaPaymentResponse> {
     try {
       console.log('DeunaService: Creating payment', paymentData);
+      
+      // Debug: Log exactly what we're sending to the API
+      console.log('🔍 DEUNA SERVICE - EXACT PAYLOAD TO SEND:', {
+        path: `${this.BASE_PATH}/payments`,
+        payload: paymentData,
+        payload_json: JSON.stringify(paymentData),
+        items_in_payload: paymentData.items,
+        items_count: paymentData.items?.length || 0,
+        first_item_keys: paymentData.items?.length > 0 ? Object.keys(paymentData.items[0]) : 'no_items'
+      });
 
       const response = await ApiClient.post<DeunaPaymentResponse>(
         `${this.BASE_PATH}/payments`,
@@ -500,5 +510,54 @@ export class DeunaService {
     };
 
     return statusMap[status] || { label: status, color: 'gray', icon: React.createElement(HelpCircle, { className: "w-4 h-4" }) };
+  }
+
+  /**
+   * Simulate payment success (for testing only)
+   * This triggers the webhook simulation endpoint
+   */
+  static async simulatePaymentSuccess(paymentId: string, amount?: number, customerEmail?: string): Promise<{
+    success: boolean;
+    message: string;
+    data?: any;
+  }> {
+    try {
+      console.log('🧪 Simulating payment success for testing', { paymentId, amount, customerEmail });
+
+      const response = await ApiClient.post<{
+        success: boolean;
+        message: string;
+        data: any;
+      }>(
+        '/webhooks/deuna/simulate-payment-success',
+        {
+          payment_id: paymentId,
+          amount: amount || 100.00,
+          currency: 'USD',
+          customer_email: customerEmail || 'test@example.com',
+          customer_name: 'Test Customer'
+        }
+      );
+
+      console.log('🎉 Payment simulation response:', response);
+      return response;
+
+    } catch (error: any) {
+      console.error('❌ Error simulating payment:', error);
+      throw new Error(
+        error.response?.data?.message || 
+        error.message || 
+        'Error simulando el pago'
+      );
+    }
+  }
+
+  /**
+   * Check if we're in development environment
+   */
+  static isDevelopmentMode(): boolean {
+    return process.env.NODE_ENV === 'development' || 
+           window.location.hostname === 'localhost' || 
+           window.location.hostname === '127.0.0.1';
   }
 }
