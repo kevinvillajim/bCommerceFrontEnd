@@ -134,7 +134,7 @@ const QRPaymentForm: React.FC<QRPaymentFormProps> = ({
           name: item.product?.name || 'Producto',
           quantity: item.quantity,
           price: item.final_price || item.price || item.subtotal || 0,
-          description: (item.product as any)?.description || undefined,
+          description: `${(item.product as any)?.description || ''} [product_id:${item.productId}]`,
         })),
         qr_type: 'dynamic',
         format: '2', // QR + Payment Link

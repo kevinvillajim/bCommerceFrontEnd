@@ -18,12 +18,8 @@ import "./styles/main.css";
 // Iniciar precarga de datos frecuentes pero con menos agresividad
 PrefetchService.initPrefetch();
 
-// Registrar Service Worker en producción
-if ('serviceWorker' in navigator && import.meta.env.PROD) {
-  navigator.serviceWorker.register('/sw.js')
-    .then(() => console.log('✅ Service Worker registrado exitosamente'))
-    .catch((error) => console.warn('⚠️ Error registrando Service Worker:', error));
-}
+// Service Worker removido - no implementado actualmente
+// TODO: Implementar Service Worker para caching offline en el futuro
 
 // ✅ ORDEN OPTIMIZADO DE CONTEXTOS
 // AuthProvider debe ir primero para que los demás puedan usar isAuthenticated

@@ -66,7 +66,18 @@ const OrderDetailClientPage: React.FC = () => {
 		console.log("📊 order.volume_discount_savings (directo):", order.volume_discount_savings);
 		
 		// Priorizar datos del pricing_breakdown si están disponibles
-		const pricingData = order.pricing_breakdown || {};
+		// 🔧 CORREGIDO: Parsear JSON si pricing_breakdown es string
+		let pricingData = {};
+		if (order.pricing_breakdown) {
+			try {
+				pricingData = typeof order.pricing_breakdown === 'string' 
+					? JSON.parse(order.pricing_breakdown) 
+					: order.pricing_breakdown;
+			} catch (e) {
+				console.warn("⚠️ Error parsing pricing_breakdown:", e);
+				pricingData = {};
+			}
+		}
 		
 		const totals = {
 			// ✅ Usar subtotal_with_discounts del pricing_breakdown
@@ -234,7 +245,8 @@ const OrderDetailClientPage: React.FC = () => {
                   <span className="text-gray-900">
                     {order.payment_method === "credit_card" &&
                       "Tarjeta de crédito"}
-                    {order.payment_method === "datafast" && "Dastafast"}
+                    {order.payment_method === "datafast" && "Datafast"}
+                    {order.payment_method === "deuna" && "DeUna"}
                     {order.payment_method === "transfer" && "Transferencia"}
                     {order.payment_method === "other" && "Otro"}
                     {!order.payment_method && "No especificado"}

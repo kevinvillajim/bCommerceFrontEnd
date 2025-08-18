@@ -115,7 +115,7 @@ export class AdminOrderService {
 				`AdminOrderService: Actualizando estado de orden ${orderId} a ${data.status}`
 			);
 
-			const response = await ApiClient.patch<any>(
+			const response = await ApiClient.put<any>(
 				API_ENDPOINTS.ADMIN.UPDATE_ORDER_STATUS(orderId),
 				data
 			);

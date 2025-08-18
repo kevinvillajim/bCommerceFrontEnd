@@ -515,11 +515,12 @@ const OrderDetailPage: React.FC = () => {
 								<div className="flex justify-between items-center">
 									<span className="text-gray-600">Método de pago:</span>
 									<span className="text-gray-900">
-										{order.payment.method === "credit_card" && "Tarjeta de crédito"}
-										{order.payment.method === "datafast" && "Datafast"}
-										{order.payment_method === "transfer" && "Transferencia"}
-										{order.payment_method === "other" && "Otro"}
-										{(order.payment_method === null) && "No especificado"}
+										{(order.payment?.method === "credit_card" || order.payment_method === "credit_card") && "Tarjeta de crédito"}
+										{(order.payment?.method === "datafast" || order.payment_method === "datafast") && "Datafast"}
+										{(order.payment?.method === "deuna" || order.payment_method === "deuna") && "DeUna"}
+										{(order.payment?.method === "transfer" || order.payment_method === "transfer") && "Transferencia"}
+										{(order.payment?.method === "other" || order.payment_method === "other") && "Otro"}
+										{(!order.payment?.method && !order.payment_method) && "No especificado"}
 
 									</span>
 								</div>

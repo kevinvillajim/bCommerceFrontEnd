@@ -61,6 +61,7 @@ const CheckoutPage: React.FC = () => {
 	const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 	const [orderComplete, setOrderComplete] = useState(false);
 	const [orderDetails, setOrderDetails] = useState<any>(null);
+	const [countdown, setCountdown] = useState(8);
 
 	const checkoutService = new CheckoutService();
 
@@ -210,6 +211,28 @@ const CheckoutPage: React.FC = () => {
 			}
 		}
 	}, [cart, navigate, showNotification]);
+
+	// ✅ NUEVO: Redirect automático después de completar orden (similar a DatafastResultPage)
+	useEffect(() => {
+		if (orderComplete) {
+			// Reset countdown when order completes
+			setCountdown(8);
+			
+			// Update countdown every second
+			const countdownTimer = setInterval(() => {
+				setCountdown(prev => {
+					if (prev <= 1) {
+						clearInterval(countdownTimer);
+						navigate("/orders");
+						return 0;
+					}
+					return prev - 1;
+				});
+			}, 1000);
+
+			return () => clearInterval(countdownTimer);
+		}
+	}, [orderComplete, navigate]);
 
 	const handlePaymentMethodChange = (method: "credit_card" | "deuna") => {
 		setPaymentMethod(method);
@@ -681,6 +704,15 @@ const CheckoutPage: React.FC = () => {
 						</div>
 					</div>
 
+					{/* ✅ NUEVO: Mensaje de redirección automática */}
+					<div className="text-center mb-6">
+						<p className="text-sm text-gray-500">
+							Serás redirigido a tus pedidos en{" "}
+							<span className="font-medium text-primary-600">{countdown}</span>{" "}
+							segundos...
+						</p>
+					</div>
+
 					<div className="flex justify-center space-x-4 mt-6">
 						<button
 							onClick={() => navigate("/")}
@@ -799,54 +831,25 @@ const CheckoutPage: React.FC = () => {
 						onPaymentSuccess={async (paymentData) => {
 							console.log('DeUna payment successful:', paymentData);
 							
-							try {
-								setIsLoading(true);
-								
-								// Crear la orden completa llamando al mismo flujo que el checkout normal
-								const checkoutData: CheckoutRequest = {
-									payment: {
-										method: "de_una",
-										card_number: "",
-										card_expiry: "",
-										card_cvc: "",
-									},
-									shippingAddress: formData.shippingAddress,
-									billingAddress: useSameAddress ? formData.shippingAddress : formData.billingAddress,
-									seller_id: CheckoutService.getSellerIdFromCart(cart),
-									items: CheckoutService.prepareCartItemsForCheckout(
-										cart?.items || [],
-										appliedDiscount
-									),
-									discount_code: appliedDiscount?.discountCode?.code || null,
-									discount_info: appliedDiscount,
-								};
+							// BEST PRACTICE: Webhook creates the order, frontend just updates UI
+							setOrderComplete(true);
+							setOrderDetails({
+								order_id: paymentData.order_id,
+								order_number: paymentData.order_id,
+								total: paymentData.amount,
+								payment_status: 'paid',
+								payment_method: 'deuna',
+								created_via: 'webhook'
+							});
 
-								console.log('Creating order after DeUna payment:', checkoutData);
-								
-								const response = await checkoutService.processCheckout(checkoutData, user?.email);
-
-								if (response.status === "success") {
-									console.log('Order created successfully after DeUna payment:', response);
-									setOrderComplete(true);
-									setOrderDetails(response.data);
-
-									let successMessage = "¡Pago con DeUna completado y orden creada con éxito!";
-									if (checkoutCalculations.totals.totalDiscounts > 0) {
-										successMessage += ` Has ahorrado ${formatCurrency(checkoutCalculations.totals.totalDiscounts)} con descuentos aplicados.`;
-									}
-
-									handleSuccess(successMessage);
-									clearCart();
-								} else {
-									throw new Error(response.message || 'Error creando la orden');
-								}
-								
-							} catch (error: any) {
-								console.error('Error creating order after DeUna payment:', error);
-								handleError(error, "El pago fue exitoso pero hubo un error creando la orden. Contacta soporte.");
-							} finally {
-								setIsLoading(false);
+							let successMessage = "¡Pago con DeUna completado con éxito!";
+							if (checkoutCalculations.totals.totalDiscounts > 0) {
+								successMessage += ` Has ahorrado ${formatCurrency(checkoutCalculations.totals.totalDiscounts)} con descuentos aplicados.`;
 							}
+							successMessage += " Tu orden ha sido procesada automáticamente.";
+
+							handleSuccess(successMessage);
+							clearCart();
 						}}
 						onPaymentError={(error) => {
 							console.error('DeUna payment error:', error);
