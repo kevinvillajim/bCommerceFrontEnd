@@ -1,5 +1,4 @@
 import ApiClient from "../../infrastructure/api/apiClient";
-import { API_ENDPOINTS } from "../../constants/apiEndpoints";
 
 export interface ShippingConfigData {
   enabled: boolean;

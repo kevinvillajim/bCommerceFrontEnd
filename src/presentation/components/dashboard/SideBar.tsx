@@ -57,6 +57,7 @@ const SidebarLink: React.FC<SidebarLinkProps> = ({
 	return (
 		<NavLink
 			to={path}
+			end={true}
 			className={({isActive}) =>
 				`flex items-center px-4 py-2 mt-2 text-sm transition-colors duration-200 rounded-lg ${
 					isActive

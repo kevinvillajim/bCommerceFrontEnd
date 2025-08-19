@@ -395,10 +395,22 @@ export default class SellerOrderServiceAdapter {
 					product_id: item.product_id,
 					product_name: item.product_name || `Producto ${item.product_id}`,
 					quantity: Number(item.quantity) || 1,
-					price: Number(item.price) || 0,
-					subtotal: Number(item.subtotal) || 0,
+					unit_price: Number(item.unit_price) || 0,
+					total_price: Number(item.total_price) || 0,
+					original_unit_price: Number(item.original_unit_price) || 0,
+					price: Number(item.unit_price) || 0, // Para compatibilidad
+					subtotal: Number(item.total_price) || 0, // Para compatibilidad
 					product_image: item.product_image || '/placeholder-product.jpg',
-					product_slug: item.product_slug || null
+					product_slug: item.product_slug || null,
+					
+					// ✅ DATOS ESPECÍFICOS DEL SELLER
+					seller_discount_percentage: Number(item.seller_discount_percentage) || 0,
+					seller_discount_amount: Number(item.seller_discount_amount) || 0,
+					platform_commission_rate: Number(item.platform_commission_rate) || 0,
+					platform_commission_amount: Number(item.platform_commission_amount) || 0,
+					seller_net_earning_from_products: Number(item.seller_net_earning_from_products) || 0,
+					volume_discount_percentage: Number(item.volume_discount_percentage) || 0,
+					has_volume_discount: Boolean(item.has_volume_discount) || false
 				})) : [],
 
 				// Datos del cliente
@@ -429,7 +441,10 @@ export default class SellerOrderServiceAdapter {
 				updatedAt: orderData.updated_at || orderData.orderDate,
 
 				// Dirección de envío formateada
-				shippingAddress: this.formatShippingAddress(orderData)
+				shippingAddress: this.formatShippingAddress(orderData),
+
+				// ✅ DATOS CRÍTICOS DEL SELLER - order_summary del backend
+				orderSummary: orderData.order_summary || {}
 			};
 
 			console.log("Orden adaptada para UI de vendedor:", orderDetail);
@@ -538,6 +553,45 @@ export default class SellerOrderServiceAdapter {
 		} catch (error) {
 			console.error(
 				`SellerOrderServiceAdapter: Error al actualizar información de envío para orden ${orderId}:`,
+				error
+			);
+			return false;
+		}
+	}
+
+	/**
+	 * Crea información de envío para una orden
+	 */
+	async createShipping(
+		orderId: string | number,
+		shippingData: {
+			tracking_number: string;
+			shipping_company?: string;
+			estimated_delivery?: string;
+			notes?: string;
+		}
+	): Promise<boolean> {
+		try {
+			const id = typeof orderId === "string" ? parseInt(orderId) : orderId;
+
+			console.log(
+				`SellerOrderServiceAdapter: Creando información de envío para orden ${id}`
+			);
+
+			const response = await ApiClient.post<any>(
+				API_ENDPOINTS.ORDERS.UPDATE_SHIPPING(id),
+				{
+					...shippingData,
+					status: 'shipped'
+				}
+			);
+
+			console.log(`Respuesta al crear información de envío:`, response);
+
+			return response && response.success === true;
+		} catch (error) {
+			console.error(
+				`SellerOrderServiceAdapter: Error al crear información de envío para orden ${orderId}:`,
 				error
 			);
 			return false;

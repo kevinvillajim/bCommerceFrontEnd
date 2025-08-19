@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Truck, Save, AlertTriangle, Info, RefreshCw, DollarSign, Package } from "lucide-react";
 import ConfigurationService, { type ShippingConfig } from "../../../core/services/ConfigurationService";
-import { useShippingConfig } from "../../contexts/ShippingConfigContext";
 
 const ShippingConfiguration: React.FC = () => {
   const [loading, setLoading] = useState(true);

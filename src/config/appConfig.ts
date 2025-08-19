@@ -45,7 +45,7 @@ const appConfig = {
   },
   // Límites de carga de archivos (en bytes)
   fileUpload: {
-    maxImageSize: 5242880, // 5MB
+    maxImageSize: 2097152, // 2MB (debe coincidir con backend)
     allowedImageTypes: ['image/jpeg', 'image/png', 'image/webp'],
     maxProductImages: 5
   },

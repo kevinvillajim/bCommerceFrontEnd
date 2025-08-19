@@ -122,7 +122,7 @@ const OrderDetailClientPage: React.FC = () => {
 			total: orderTotals.total,
 			items: (order.items || []).map((item) => ({
 				id: item.id || 0,
-				productId: item.product_id || item.productId || 0,
+				productId: (item as any).product_id || item.productId || 0,
 				name: item.product_name || "Producto",
 				quantity: item.quantity || 1,
 				price: item.price || 0, // Este es el precio total del item (quantity * precio_por_unidad)

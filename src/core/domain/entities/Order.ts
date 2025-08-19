@@ -74,6 +74,27 @@ export interface OrderDetail extends Order {
 	payment: any;
 	payment_status: string | null | undefined;
 	created_at: any;
+	createdAt: string;
+	customerName?: string;
+	customerEmail?: string;
+	paymentMethod?: string;
+	shippingAddress?: {
+		address: string;
+		city: string;
+		state: string;
+		country: string;
+	};
+	orderSummary?: {
+		total_quantity: number;
+		total_seller_earnings_from_products: number;
+		total_platform_commission: number;
+		shipping_distribution?: {
+			seller_amount: number;
+		};
+	};
+	seller_id?: number;
+	sellerId?: number;
+	shippingData?: ShippingData;
 	items: (OrderItem & {
 		product_name?: string;
 		product_sku?: string;

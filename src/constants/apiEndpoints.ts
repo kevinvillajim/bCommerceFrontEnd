@@ -349,6 +349,7 @@ export const API_ENDPOINTS = {
       MAIL_TEST: "/admin/configurations/mail/test",
       MAIL_SEND_CUSTOM: "/admin/configurations/mail/send-custom",
       PASSWORD_VALIDATION_RULES: "/admin/configurations/password-validation-rules",
+      FINANCIAL: "/admin/configurations/financial", // ⚠️ Configuraciones financieras críticas
     },
     CATEGORIES: {
       LIST: "/categories", // Admin usa la misma lista pública

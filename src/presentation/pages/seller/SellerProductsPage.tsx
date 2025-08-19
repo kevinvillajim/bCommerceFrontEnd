@@ -1,5 +1,5 @@
 import React, {useState, useEffect} from "react";
-import {Link, useNavigate} from "react-router-dom";
+import {Link, useNavigate, useLocation} from "react-router-dom";
 import {
 	Package,
 	Edit,
@@ -30,6 +30,7 @@ interface ProductTableItem {
 const SellerProductsPage: React.FC = () => {
 	// Estado y hooks
 	const navigate = useNavigate();
+	const location = useLocation();
 	const {
 		products,
 		loading,
@@ -52,6 +53,30 @@ const SellerProductsPage: React.FC = () => {
 	useEffect(() => {
 		fetchCategories();
 	}, [fetchCategories]);
+	
+	// 🔄 SOLUCIÓN: Detectar cuando viene de una edición y forzar refresh
+	useEffect(() => {
+		const state = location.state as { 
+			updatedProduct?: boolean;
+			productId?: number;
+			timestamp?: number;
+		} | null;
+		
+		if (state?.updatedProduct) {
+			console.log("🔄 Detectado regreso desde edición, forzando refresh...", {
+				productId: state.productId,
+				timestamp: state.timestamp
+			});
+			
+			// Force refresh inmediato
+			setTimeout(() => {
+				fetchSellerProducts(1, 10, true); // forceRefresh = true
+			}, 100);
+			
+			// Limpiar el state para evitar refetch en futuras navegaciones
+			navigate(location.pathname, { replace: true, state: null });
+		}
+	}, [location.state, fetchSellerProducts, navigate, location.pathname]);
 
 	// Adaptar productos de la API al formato de la tabla
 	useEffect(() => {

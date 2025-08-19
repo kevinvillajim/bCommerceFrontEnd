@@ -33,21 +33,18 @@ export const useSellerProducts = () => {
 	 * Obtiene los productos del vendedor actual
 	 */
 	const fetchSellerProducts = useCallback(
-		async (page = 1, limit = 10) => {
+		async (page = 1, limit = 10, forceRefresh = false) => {
 			setLoading(true);
 			setError(null);
 
 			try {
-				console.log("Usuario actual:", user);
-
 				const sellerId = user?.id;
 				if (!sellerId) {
 					throw new Error("No se pudo obtener el ID del vendedor");
 				}
 
-				// Crear parámetros de filtro para productos del vendedor
+
 				const filterParams: ExtendedProductFilterParams = {
-					// CORREGIDO: usar ExtendedProductFilterParams
 					limit,
 					offset: (page - 1) * limit,
 					page,
@@ -56,7 +53,13 @@ export const useSellerProducts = () => {
 					sortDir: "desc",
 					featured: undefined,
 					status: undefined,
+					// Añadir timestamp para evitar cache cuando se fuerza refresh
+					...(forceRefresh && { _t: Date.now() })
 				};
+				
+				if (forceRefresh) {
+					console.log("🔥 FORCE REFRESH - timestamp:", Date.now());
+				}
 
 				const response = await productService.getProducts(filterParams);
 
@@ -234,8 +237,21 @@ export const useSellerProducts = () => {
 
 				// Actualizar la lista de productos si se creó correctamente
 				if (newProduct) {
-					console.log("Producto creado exitosamente:", newProduct);
-					fetchSellerProducts(page, itemsPerPage);
+					console.log("✅ Producto creado exitosamente:", newProduct);
+					console.log("🔄 Iniciando refetch en 500ms...");
+					
+					// SOLUCIÓN 1: Refresh inmediato sin cache
+					setTimeout(async () => {
+						console.log("🔄 Ejecutando fetchSellerProducts después de crear...");
+						await fetchSellerProducts(page, itemsPerPage, true); // forceRefresh = true
+						console.log("✅ fetchSellerProducts completado");
+					}, 100); // Reducir delay inicial
+					
+					// SOLUCIÓN 2: Refresh backup con más tiempo
+					setTimeout(async () => {
+						console.log("🔄 Refetch backup después de 1s...");
+						await fetchSellerProducts(page, itemsPerPage, true);
+					}, 1000);
 				} else {
 					console.error(
 						"Respuesta de creación de producto no válida:",
@@ -247,13 +263,34 @@ export const useSellerProducts = () => {
 				}
 
 				return newProduct;
-			} catch (err) {
-				const errorMessage =
-					err instanceof Error
-						? `Error al crear producto: ${err.message}`
-						: "Error desconocido al crear producto";
-				setError(errorMessage);
+			} catch (err: any) {
+				let userMessage = "Error desconocido al crear producto";
+				
+				// Extraer mensaje de error específico del servidor
+				if (err && typeof err === 'object') {
+					// Si es un AxiosError con response
+					if (err.response && err.response.data) {
+						const responseData = err.response.data;
+						// Extraer mensaje específico del backend
+						if (responseData.message) {
+							userMessage = responseData.message;
+						} else if (responseData.error) {
+							userMessage = responseData.error;
+						} else if (err.message) {
+							userMessage = err.message;
+						}
+					} else if (err.message) {
+						userMessage = err.message;
+					}
+				}
+				
+				const fullErrorMessage = `Error al crear producto: ${userMessage}`;
+				setError(fullErrorMessage);
 				console.error("Error al crear producto:", err);
+				
+				// Mostrar mensaje específico y claro al usuario
+				alert(userMessage);
+				
 				return null;
 			} finally {
 				setLoading(false);
@@ -379,17 +416,54 @@ export const useSellerProducts = () => {
 
 				// Actualizar la lista de productos si se actualizó correctamente
 				if (updatedProduct) {
-					fetchSellerProducts(page, itemsPerPage);
+					console.log("✅ Producto actualizado exitosamente:", updatedProduct);
+					console.log("🔄 Iniciando refetch después de actualizar...");
+					
+					// SOLUCIÓN 1: Refresh inmediato sin cache
+					setTimeout(async () => {
+						console.log("🔄 Ejecutando fetchSellerProducts después de actualizar...");
+						await fetchSellerProducts(page, itemsPerPage, true); // forceRefresh = true
+						console.log("✅ fetchSellerProducts completado");
+					}, 100); // Reducir delay inicial
+					
+					// SOLUCIÓN 2: Refresh backup con más tiempo
+					setTimeout(async () => {
+						console.log("🔄 Refetch backup después de 1s...");
+						await fetchSellerProducts(page, itemsPerPage, true);
+					}, 1000);
 				} else {
 					throw new Error("No se pudo actualizar el producto");
 				}
 
 				return updatedProduct;
-			} catch (err) {
-				const errorMessage =
-					err instanceof Error ? err.message : "Error al actualizar producto";
-				setError(errorMessage);
+			} catch (err: any) {
+				let userMessage = "Error desconocido al actualizar producto";
+				
+				// Extraer mensaje de error específico del servidor
+				if (err && typeof err === 'object') {
+					// Si es un AxiosError con response
+					if (err.response && err.response.data) {
+						const responseData = err.response.data;
+						// Extraer mensaje específico del backend
+						if (responseData.message) {
+							userMessage = responseData.message;
+						} else if (responseData.error) {
+							userMessage = responseData.error;
+						} else if (err.message) {
+							userMessage = err.message;
+						}
+					} else if (err.message) {
+						userMessage = err.message;
+					}
+				}
+				
+				const fullErrorMessage = `Error al actualizar producto: ${userMessage}`;
+				setError(fullErrorMessage);
 				console.error("Error al actualizar producto:", err);
+				
+				// Mostrar mensaje específico y claro al usuario
+				alert(userMessage);
+				
 				return null;
 			} finally {
 				setLoading(false);
@@ -412,7 +486,11 @@ export const useSellerProducts = () => {
 
 				// Actualizar la lista de productos si se eliminó correctamente
 				if (result) {
-					fetchSellerProducts(page, itemsPerPage);
+					console.log("✅ Producto eliminado exitosamente");
+					// Refresh inmediato después de eliminar
+					setTimeout(async () => {
+						await fetchSellerProducts(page, itemsPerPage, true);
+					}, 100);
 				}
 
 				return result;
@@ -452,7 +530,11 @@ export const useSellerProducts = () => {
 
 				// Actualizar la lista de productos si se actualizó correctamente
 				if (response) {
-					fetchSellerProducts(page, itemsPerPage);
+					console.log("✅ Estado del producto cambiado exitosamente");
+					// Refresh inmediato después de cambiar estado
+					setTimeout(async () => {
+						await fetchSellerProducts(page, itemsPerPage, true);
+					}, 100);
 					return true;
 				} else {
 					throw new Error("Error al cambiar estado del producto");

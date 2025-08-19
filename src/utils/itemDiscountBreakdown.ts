@@ -135,7 +135,7 @@ function calculateSellerDiscountFromItem(item: any, originalPricePerUnit: number
   // Si tenemos volume discount, necesitamos calcular qué parte era del seller
   if (item.volumeDiscountPercentage && item.originalPrice && item.price) {
     const finalPricePerUnit = item.price / item.quantity;
-    const totalDiscountPerUnit = originalPricePerUnit - finalPricePerUnit;
+    // const totalDiscountPerUnit = originalPricePerUnit - finalPricePerUnit;
     
     // Calcular el descuento por volumen
     const priceBeforeVolume = finalPricePerUnit / (1 - item.volumeDiscountPercentage / 100);

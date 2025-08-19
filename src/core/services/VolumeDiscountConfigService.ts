@@ -36,8 +36,9 @@ class VolumeDiscountConfigService {
   private async checkVersion(): Promise<boolean> {
     try {
       const response = await ApiClient.get('/config/version/volume_discounts');
-      if (response?.success && response.data?.version) {
-        const serverVersion = response.data.version;
+      const responseData = response as any;
+      if (responseData?.success && responseData.data?.version) {
+        const serverVersion = responseData.data.version;
         if (serverVersion > this.cachedVersion) {
           console.log('🔄 Nueva versión de configuración detectada:', {
             cached: this.cachedVersion,
@@ -137,8 +138,9 @@ class VolumeDiscountConfigService {
         // Obtener nueva versión del servidor
         try {
           const versionResponse = await ApiClient.get('/config/version/volume_discounts');
-          if (versionResponse?.success && versionResponse.data?.version) {
-            this.cachedVersion = versionResponse.data.version;
+          const versionData = versionResponse as any;
+          if (versionData?.success && versionData.data?.version) {
+            this.cachedVersion = versionData.data.version;
           }
         } catch (e) {
           console.warn('Error obteniendo versión:', e);

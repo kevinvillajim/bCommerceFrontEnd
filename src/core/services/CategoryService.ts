@@ -81,7 +81,7 @@ export class CategoryService {
 		try {
 			console.log("📤 CategoryService: Obteniendo categorías principales");
 
-			const response = await ApiClient.get<Category[]>(
+			const response = await ApiClient.get<{data: Category[]}>(
 				API_ENDPOINTS.CATEGORIES.MAIN,
 				{with_counts: withCounts}
 			);
@@ -90,7 +90,7 @@ export class CategoryService {
 				"✅ CategoryService: Categorías principales obtenidas:",
 				response
 			);
-			return response || [];
+			return response?.data || [];
 		} catch (error) {
 			console.error("❌ Error en CategoryService.getMainCategories:", error);
 			return [];
@@ -104,7 +104,7 @@ export class CategoryService {
 		try {
 			console.log("📤 CategoryService: Obteniendo categorías destacadas");
 
-			const response = await ApiClient.get<Category[]>(
+			const response = await ApiClient.get<{data: Category[]}>(
 				API_ENDPOINTS.CATEGORIES.FEATURED, {limit}
 			);
 
@@ -112,7 +112,7 @@ export class CategoryService {
 				"✅ CategoryService: Categorías destacadas obtenidas:",
 				response
 			);
-			return response || [];
+			return response?.data || [];
 		} catch (error) {
 			console.error(
 				"❌ Error en CategoryService.getFeaturedCategories:",
@@ -131,12 +131,12 @@ export class CategoryService {
 				`📤 CategoryService: Obteniendo subcategorías de ${parentId}`
 			);
 
-			const response = await ApiClient.get<Category[]>(
+			const response = await ApiClient.get<{data: Category[]}>(
 				API_ENDPOINTS.CATEGORIES.SUBCATEGORIES(parentId)
 			);
 
 			console.log("✅ CategoryService: Subcategorías obtenidas:", response);
-			return response || [];
+			return response?.data || [];
 		} catch (error) {
 			console.error("❌ Error en CategoryService.getSubcategories:", error);
 			return [];

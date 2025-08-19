@@ -58,8 +58,8 @@ const SellerProductEditPage = lazy(
 const SellerOrdersPage = lazy(
 	() => import("../presentation/pages/seller/SellerOrdersPage")
 );
-const OrderDetailPage = lazy(
-	() => import("../presentation/pages/seller/OrderDetailPage")
+const SellerOrderDetailPage = lazy(
+	() => import("../presentation/pages/seller/SellerOrderDetailPage")
 );
 const SellerRatingsPage = lazy(
 	() => import("../presentation/pages/seller/SellerRatingsPage")
@@ -457,7 +457,7 @@ const appRoutes: RouteObject[] = [
 			},
 			{
 				path: "orders/:id",
-				element: <OrderDetailPage />,
+				element: <SellerOrderDetailPage />,
 			},
 			{
 				path: "shipping/:orderId",

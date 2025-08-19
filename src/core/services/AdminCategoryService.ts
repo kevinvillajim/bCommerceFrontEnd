@@ -265,7 +265,7 @@ export class AdminCategoryService {
 				"📤 AdminCategoryService: Obteniendo categorías principales como admin"
 			);
 
-			const response = await ApiClient.get<Category[]>(
+			const response = await ApiClient.get<{data: Category[]}>(
 				API_ENDPOINTS.CATEGORIES.MAIN,
 				{with_counts: withCounts}
 			);
@@ -274,7 +274,7 @@ export class AdminCategoryService {
 				"✅ AdminCategoryService: Categorías principales obtenidas:",
 				response
 			);
-			return response || [];
+			return response?.data || [];
 		} catch (error) {
 			console.error(
 				"❌ Error en AdminCategoryService.getMainCategories:",
@@ -293,7 +293,7 @@ export class AdminCategoryService {
 				`📤 AdminCategoryService: Obteniendo subcategorías de ${parentId} como admin`
 			);
 
-			const response = await ApiClient.get<Category[]>(
+			const response = await ApiClient.get<{data: Category[]}>(
 				API_ENDPOINTS.CATEGORIES.SUBCATEGORIES(parentId)
 			);
 
@@ -301,7 +301,7 @@ export class AdminCategoryService {
 				"✅ AdminCategoryService: Subcategorías obtenidas:",
 				response
 			);
-			return response || [];
+			return response?.data || [];
 		} catch (error) {
 			console.error(
 				"❌ Error en AdminCategoryService.getSubcategories:",

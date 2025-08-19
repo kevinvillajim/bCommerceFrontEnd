@@ -140,10 +140,11 @@ export class EcommerceCalculator {
       try {
         const response = await ApiClient.get('/configurations/volume-discounts-public');
         
-        if (response.status === 'success' && response.data?.volume_discounts?.default_tiers) {
-          const tiersData = typeof response.data.volume_discounts.default_tiers === 'string' 
-            ? JSON.parse(response.data.volume_discounts.default_tiers)
-            : response.data.volume_discounts.default_tiers;
+        const responseData = response as any;
+        if (responseData.status === 'success' && responseData.data?.volume_discounts?.default_tiers) {
+          const tiersData = typeof responseData.data.volume_discounts.default_tiers === 'string' 
+            ? JSON.parse(responseData.data.volume_discounts.default_tiers)
+            : responseData.data.volume_discounts.default_tiers;
           
           volumeTiers = tiersData.map((tier: any) => ({
             quantity: tier.quantity,

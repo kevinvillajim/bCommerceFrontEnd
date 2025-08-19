@@ -32,7 +32,7 @@ interface ProductDiscountResult {
 /**
  * Hook principal para manejar descuentos por volumen
  */
-export const useVolumeDiscountFixed = (productId?: number) => {
+export const useVolumeDiscountFixed = () => {
 	const [discountInfo, setDiscountInfo] = useState<DiscountInfo>({ enabled: false, tiers: [] });
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
@@ -235,7 +235,7 @@ export const useVolumeDiscountFixed = (productId?: number) => {
  */
 export const useProductVolumeDiscount = (product: Product | null, initialQuantity: number = 1) => {
 	const [quantity, setQuantity] = useState(initialQuantity);
-	const { discountInfo, loading, error, calculateDiscount } = useVolumeDiscountFixed(product?.id);
+	const { discountInfo, loading, error, calculateDiscount } = useVolumeDiscountFixed();
 
 	// Actualizar cantidad cuando cambia la prop
 	useEffect(() => {
@@ -286,8 +286,9 @@ export const useVolumeDiscountsAdmin = () => {
 			// 🔧 CORREGIDO: Obtener configuración desde ruta pública
 			const response = await ApiClient.get('/configurations/volume-discounts-public');
 			
-			if (response.status === 'success' && response.data) {
-				const config = response.data;
+			const responseData = response as any;
+			if (responseData.status === 'success' && responseData.data) {
+				const config = responseData.data;
 				
 				// Procesar los tiers dinámicos desde la BD
 				let default_tiers = [];

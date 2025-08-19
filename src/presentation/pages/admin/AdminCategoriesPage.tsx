@@ -318,7 +318,7 @@ const AdminCategoriesPage: React.FC = () => {
 			header: "Subcategorías",
 			render: (category: Category) => (
 				<div>
-					{category.has_children ? (
+					{(category as any).has_children ? (
 						<button
 							onClick={() => setParentFilter(category.id || null)}
 							className="text-primary-600 hover:text-primary-800 underline flex items-center"

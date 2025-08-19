@@ -700,12 +700,24 @@ const SellerProductEditPage: React.FC = () => {
 					"Respuesta del servidor después de la actualización:",
 					result
 				);
-				navigate("/seller/products");
+				
+				// 🔄 SOLUCIÓN: Delay antes de navegar para permitir que la DB se actualice
+				console.log("✅ Producto actualizado, navegando en 1 segundo...");
+				setTimeout(() => {
+					// Navegar con estado que indique que se actualizó un producto
+					navigate("/seller/products", { 
+						state: { 
+							updatedProduct: true,
+							productId: productId,
+							timestamp: Date.now()
+						} 
+					});
+				}, 1000);
 			} else {
 				throw new Error("No se pudo actualizar el producto");
 			}
 		} catch (error) {
-			console.error("Error al actualizar producto:", error);
+			console.error("❌ Error al actualizar producto:", error);
 			alert(
 				error instanceof Error ? error.message : "Error al actualizar producto"
 			);
@@ -1513,7 +1525,7 @@ const SellerProductEditPage: React.FC = () => {
 										Arrastra y suelta imágenes aquí o haz clic para subir
 									</p>
 									<p className="text-xs text-gray-500">
-										JPEG, PNG, WebP hasta 5MB
+										JPEG, PNG, WebP hasta 2MB
 									</p>
 								</label>
 							</div>

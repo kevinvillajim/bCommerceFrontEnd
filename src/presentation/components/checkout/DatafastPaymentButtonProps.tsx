@@ -538,7 +538,7 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 						shipping: calculatedTotals.shipping,     // shipping_cost
 						total: calculatedTotals.total,           // total final (subtotal + shipping + tax)
 						total_discounts: calculatedTotals.totalDiscounts // total_discounts
-					} : {}
+					} : undefined
 				};
 
 				const checkoutResponse = await checkoutService.processCheckout(checkoutRequestData, user?.email);

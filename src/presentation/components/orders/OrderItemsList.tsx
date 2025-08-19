@@ -1,6 +1,6 @@
 // src/presentation/components/orders/OrderItemsList.tsx
 import React, { useEffect, useState } from 'react';
-import { Package, Tag, TrendingDown, Calculator } from 'lucide-react';
+import { Package } from 'lucide-react';
 import { formatCurrency } from '../../../utils/formatters/formatCurrency';
 import { useImageCache } from '../../hooks/useImageCache';
 import OrderBreakdownService, { type OrderItemBreakdown } from '../../../core/services/OrderBreakdownService';
@@ -36,8 +36,9 @@ const OrderItemsList: React.FC<OrderItemsListProps> = ({
         setLoadingBreakdown(true);
         try {
           const breakdownService = OrderBreakdownService.getInstance();
-          const response = await breakdownService.getOrderItemsBreakdown(order.id);
-          console.log('📊 Desglose recibido en componente:', response);
+          // ✅ PASAR EL viewType AL SERVICIO
+          const response = await breakdownService.getOrderItemsBreakdown(order.id, viewType);
+          console.log('📊 Desglose recibido en componente (viewType: ' + viewType + '):', response);
           console.log('📦 Items del orden:', order.items);
           setItemsBreakdown(response.items);
         } catch (error) {
@@ -127,7 +128,7 @@ const OrderItemsList: React.FC<OrderItemsListProps> = ({
                 {(() => {
                   // Buscar el breakdown correspondiente a este item
                   // item.productId puede venir como productId o product_id según la fuente
-                  const itemProductId = item.productId || item.product_id || (item as any).product_id;
+                  const itemProductId = item.productId || (item as any).product_id;
                   console.log('🔍 Buscando breakdown para producto:', {
                     itemProductId,
                     item,
@@ -153,13 +154,60 @@ const OrderItemsList: React.FC<OrderItemsListProps> = ({
                   
                   return (
                     <div className="mt-4 bg-gray-50 p-4 rounded-lg">
-                      
-                      
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-600">Cantidad:</span>
-                          <span className="text-sm font-medium text-gray-900">{itemBreakdown.quantity}</span>
+                      <div className="space-y-3">
+                        {/* ✅ INFORMACIÓN CRÍTICA PARA EL SELLER */}
+                        <div className="flex justify-between items-center border-b border-gray-200 pb-2">
+                          <span className="text-sm font-semibold text-gray-700">📦 Cantidad a enviar:</span>
+                          <span className="text-lg font-bold text-primary-600">{itemBreakdown.quantity}</span>
                         </div>
+                        
+                        {/* Precios */}
+                        <div className="space-y-1">
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-gray-600">Precio unitario original:</span>
+                            <span className="text-sm text-gray-900">{formatCurrency(itemBreakdown.original_price_per_unit)}</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm text-gray-600">Precio unitario final:</span>
+                            <span className="text-sm font-medium text-gray-900">{formatCurrency(itemBreakdown.final_price_per_unit)}</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm font-semibold text-gray-700">Subtotal del producto:</span>
+                            <span className="text-sm font-bold text-gray-900">{formatCurrency(itemBreakdown.subtotal)}</span>
+                          </div>
+                        </div>
+
+                        {/* Descuentos aplicados */}
+                        {itemBreakdown.breakdown_steps && itemBreakdown.breakdown_steps.length > 1 && (
+                          <div className="border-t border-gray-200 pt-2">
+                            <span className="text-sm font-semibold text-gray-700 mb-2 block">Descuentos aplicados:</span>
+                            {itemBreakdown.breakdown_steps
+                              .filter(step => step.is_discount)
+                              .map((step, stepIndex) => (
+                                <div key={stepIndex} className="flex justify-between items-center text-sm">
+                                  <span className="text-green-600">• {step.label}</span>
+                                  <span className="text-green-600 font-medium">-{step.percentage}%</span>
+                                </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Información específica para Seller */}
+                        {viewType === 'seller' && (
+                          <div className="border-t border-gray-200 pt-2 bg-blue-50 p-3 rounded -m-3 mt-3">
+                            <span className="text-sm font-semibold text-blue-800 mb-2 block">💰 Información de ganancias:</span>
+                            <div className="space-y-1 text-sm">
+                              <div className="flex justify-between">
+                                <span className="text-blue-700">Comisión de plataforma:</span>
+                                <span className="text-blue-900 font-medium">10%</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-blue-700">Tu ganancia (productos):</span>
+                                <span className="text-blue-900 font-bold">{formatCurrency(itemBreakdown.subtotal * 0.9)}</span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   );

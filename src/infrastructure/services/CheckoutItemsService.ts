@@ -156,10 +156,11 @@ export class CheckoutItemsService {
   /**
    * ✅ SIMPLIFICADO: Debug helper usando calculadora centralizada
    */
-  static debugItemPricing(cartItems: any[], checkoutItems: CheckoutItem[]): void {
+  static async debugItemPricing(cartItems: any[], checkoutItems: CheckoutItem[]): Promise<void> {
   console.log("🔍 DEBUG: Comparación usando calculadora centralizada");
 
-  const { items: calculatedItems } = EcommerceCalculator.prepareCheckoutData(cartItems);
+  const checkoutData = await EcommerceCalculator.prepareCheckoutData(cartItems);
+  const calculatedItems = checkoutData.items;
 
   cartItems.forEach((cartItem, index) => {
     const checkoutItem = checkoutItems[index];

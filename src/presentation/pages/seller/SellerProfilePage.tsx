@@ -143,9 +143,9 @@ const SellerProfilePage: React.FC = () => {
 				return;
 			}
 
-			// Validar tamaño (máximo 5MB)
-			if (file.size > 5 * 1024 * 1024) {
-				alert('La imagen debe ser menor a 5MB.');
+			// Validar tamaño (máximo 2MB)
+			if (file.size > 2 * 1024 * 1024) {
+				alert('La imagen debe ser menor a 2MB.');
 				return;
 			}
 

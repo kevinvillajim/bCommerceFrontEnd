@@ -1,7 +1,7 @@
 // Update your src/core/domain/entities/Category.ts file
 
 /**
- * Category entity
+ * Category entity - Consistente con el backend
  */
 export interface Category {
 	id?: number;
@@ -9,7 +9,6 @@ export interface Category {
 	slug: string;
 	description?: string;
 	parent_id?: number;
-	parentId?: number; // AGREGADO para compatibilidad
 	icon?: string;
 	image?: string;
 	order?: number;
@@ -21,12 +20,8 @@ export interface Category {
 	// API response specific fields
 	subcategories?: Category[];
 	product_count?: number;
-	full_path?: string;
-	has_children?: boolean;
-	url?: string;
+	parent_name?: string;
 	parent?: Category;
-	image_url?: string;
-	icon_url?: string;
 }
 
 /**

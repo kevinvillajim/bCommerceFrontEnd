@@ -43,8 +43,8 @@ const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({
 			}
 
 			// Ejecutar diagnóstico en desarrollo (solo una vez)
-			if (process.env.NODE_ENV === 'development' && !window.__googleAuthDiagnosed) {
-				window.__googleAuthDiagnosed = true;
+			if (process.env.NODE_ENV === 'development' && !(window as any).__googleAuthDiagnosed) {
+				(window as any).__googleAuthDiagnosed = true;
 				await googleService.diagnose();
 			}
 		};

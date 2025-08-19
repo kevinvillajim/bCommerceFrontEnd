@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import type { ReactNode } from 'react';
 import ShippingConfigService from '../../core/services/ShippingConfigService';
 import type { ShippingConfigData } from '../../core/services/ShippingConfigService';
 

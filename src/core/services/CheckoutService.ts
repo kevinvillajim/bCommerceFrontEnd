@@ -6,7 +6,6 @@ import type {Address} from "../domain/valueObjects/Address";
 import type {ShoppingCart} from "../domain/entities/ShoppingCart";
 import {CheckoutItemsService} from "../../infrastructure/services/CheckoutItemsService";
 import type {CheckoutItem} from "../../infrastructure/services/CheckoutItemsService";
-import {EcommerceCalculator} from "../../utils/ecommerceCalculator";
 
 export type PaymentMethod = "credit_card" | "paypal" | "transfer" | "qr" | "datafast" | "debit_card" | "de_una";
 
@@ -345,14 +344,14 @@ export class CheckoutService {
 	/**
 	 * ✅ CORREGIDO: Preparar items del carrito con descuentos para checkout
 	 */
-	static prepareCartItemsForCheckout(cartItems: any[], appliedDiscount: any = null): CheckoutItem[] {
+	static async prepareCartItemsForCheckout(cartItems: any[], appliedDiscount: any = null): Promise<CheckoutItem[]> {
 		console.log("🛒 Preparando items del carrito con descuentos");
 		console.log("🎫 Cupón aplicado:", appliedDiscount?.discountCode?.code || "NINGUNO");
 		
-		const checkoutItems = CheckoutItemsService.prepareItemsForCheckout(cartItems, appliedDiscount);
+		const checkoutItems = await CheckoutItemsService.prepareItemsForCheckout(cartItems, appliedDiscount);
 		
 		// ✅ Debug para verificar consistencia
-		CheckoutItemsService.debugItemPricing(cartItems, checkoutItems);
+		await CheckoutItemsService.debugItemPricing(cartItems, checkoutItems);
 		
 		console.log("✅ Items preparados para checkout:", checkoutItems);
 		

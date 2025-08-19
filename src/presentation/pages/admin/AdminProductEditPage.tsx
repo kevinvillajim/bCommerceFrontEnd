@@ -1645,7 +1645,7 @@ const AdminProductEditPage: React.FC = () => {
 										Arrastra y suelta imágenes aquí o haz clic para subir
 									</p>
 									<p className="text-xs text-gray-500">
-										JPEG, PNG, WebP hasta 5MB
+										JPEG, PNG, WebP hasta 2MB
 									</p>
 								</label>
 							</div>

@@ -310,7 +310,7 @@ export class OrderServiceAdapter {
 					userId: response.userId,
 					sellerId: response.sellerId,
 					paymentId: response.paymentId,
-					paymentMethod: response.payment_method,
+					paymentMethod: response.payment_method as string,
 					paymentStatus: response.paymentStatus,
 					createdAt: response.createdAt,
 					updatedAt: response.updatedAt,

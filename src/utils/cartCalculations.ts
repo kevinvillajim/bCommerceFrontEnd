@@ -16,11 +16,11 @@ export function roundToPrecision(value: number, decimals: number = 2): number {
  * ✅ FUNCIÓN PRINCIPAL MIGRADA
  * Ahora usa EcommerceCalculator para garantizar consistencia total
  */
-export function calculateTotals(cartItems: any[], appliedDiscount: any = null): CalculationResult {
+export async function calculateTotals(cartItems: any[], appliedDiscount: any = null): Promise<CalculationResult> {
   console.log("⚠️ USANDO FUNCIÓN LEGACY - MIGRAR A EcommerceCalculator.calculateTotals()");
   
   // ✅ DELEGAR A CALCULADORA CENTRALIZADA
-  return EcommerceCalculator.calculateTotals(cartItems, appliedDiscount);
+  return await EcommerceCalculator.calculateTotals(cartItems, appliedDiscount);
 }
 
 // Exportar tipos para compatibilidad

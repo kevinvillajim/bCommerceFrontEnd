@@ -19,17 +19,10 @@ export class ProductService {
 		filterParams?: ExtendedProductFilterParams
 	): Promise<ProductListResponse | null> {
 		try {
-			console.log(
-				"📤 ProductService: Enviando petición con parámetros:",
-				filterParams
-			);
-
 			const response = await ApiClient.get<ProductListResponse>(
 				API_ENDPOINTS.PRODUCTS.LIST,
 				filterParams
 			);
-
-			console.log("📥 ProductService: Respuesta del servidor:", response);
 
 			return response;
 		} catch (error) {

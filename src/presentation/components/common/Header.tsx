@@ -72,7 +72,7 @@ const Header: React.FC<HeaderProps> = ({
 
 	const {cartItemCount, favoriteCount, notificationCount} = counters;
 
-	// Cerrar los menús al hacer clic fuera de ellos
+	// Cerrar los menús al hacer clic fuera de ellos y prevenir scroll de fondo
 	useEffect(() => {
 		const handleClickOutside = (event: MouseEvent) => {
 			if (
@@ -95,6 +95,20 @@ const Header: React.FC<HeaderProps> = ({
 			document.removeEventListener("mousedown", handleClickOutside);
 		};
 	}, []);
+
+	// Prevenir scroll de fondo cuando el menú móvil está abierto
+	useEffect(() => {
+		if (mobileMenuOpen) {
+			document.body.style.overflow = 'hidden';
+		} else {
+			document.body.style.overflow = 'unset';
+		}
+
+		// Cleanup al desmontar
+		return () => {
+			document.body.style.overflow = 'unset';
+		};
+	}, [mobileMenuOpen]);
 
 	const toggleMobileMenu = () => {
 		setMobileMenuOpen(!mobileMenuOpen);
@@ -408,21 +422,6 @@ const Header: React.FC<HeaderProps> = ({
 					</Link>
 					)}
 					
-					{/* 📱 NOTIFICACIONES MÓVIL - Solo si NO es seller/admin */}
-					{isAuthenticated && !(user?.role === 'seller' || user?.role === 'admin') && (
-					<Link 
-					 to="/notifications" 
-					  data-notification-button="true"
-							className="text-gray-700 relative"
-					 >
-					  <Bell size={22} />
-					 {notificationCount > 0 && (
-					  <span className="absolute -top-2 -right-2 bg-primary-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-					  {notificationCountSanitized}
-					</span>
-					)}
-					</Link>
-					)}
 
 					{/* 🎨 THEME TOGGLE MÓVIL - Solo cuando NO hay sesión iniciada */}
 					{!isAuthenticated && (
@@ -469,8 +468,8 @@ const Header: React.FC<HeaderProps> = ({
 				</div>
 			</div>
 
-			{/* Navigation - Desktop */}
-			<nav className="hidden md:block border-t border-gray-100">
+			{/* Navigation - Desktop and Tablet */}
+			<nav className="hidden sm:block border-t border-gray-100">
 				<div className="container mx-auto px-4">
 					<div className="flex justify-center items-center py-1">
 						<ul className="flex space-x-8">
@@ -489,22 +488,22 @@ const Header: React.FC<HeaderProps> = ({
 				</div>
 			</nav>
 
-			{/* Mobile Menu */}
+			{/* Mobile Menu - Pantalla completa con estructura fija y scroll solo en navegación */}
 			{mobileMenuOpen && (
-				<div className="sm:hidden bg-white border-t border-gray-200 py-4 px-4 shadow-lg max-h-[80vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
-					{/* Mobile Search */}
-					{/* Mobile Search Bar */}
-						<div className="px-4 py-3 border-b border-gray-100">
-							<SearchAutocomplete 
-								placeholder="Buscar productos..."
-								className="w-full"
-								onNavigate={() => setMobileMenuOpen(false)} // Cerrar menú móvil al navegar
-							/>
-						</div>
+				<div className="sm:hidden fixed inset-0 top-[105px] bg-white z-50 flex flex-col h-[calc(100vh-105px)] overflow-hidden">
+					
+					{/* SECCIÓN FIJA: Búsqueda */}
+					<div className="flex-shrink-0 px-6 py-4 border-b border-gray-100">
+						<SearchAutocomplete 
+							placeholder="Buscar productos..."
+							className="w-full"
+							onNavigate={() => setMobileMenuOpen(false)}
+						/>
+					</div>
 
-					{/* Mobile User Info (if authenticated) */}
+					{/* SECCIÓN FIJA: Información del usuario y accesos rápidos */}
 					{isAuthenticated && (
-						<div className="mb-6 pb-4 border-b border-gray-200">
+						<div className="flex-shrink-0 px-6 py-5 border-b border-gray-200">
 							<div className="flex items-center space-x-3 mb-3">
 								<div className="h-10 w-10 bg-primary-100 text-primary-600 rounded-full flex items-center justify-center font-medium">
 									{getUserInitial()}
@@ -514,7 +513,7 @@ const Header: React.FC<HeaderProps> = ({
 									<p className="text-xs text-gray-500 truncate">
 										{user?.email}
 									</p>
-									{/* 🎆 INDICADOR DE ROL */}
+									{/* INDICADOR DE ROL */}
 									{(user?.role === 'seller' || user?.role === 'admin') && (
 										<span className="inline-block px-2 py-1 bg-primary-100 text-primary-700 text-xs rounded-full mt-1">
 											{user?.role === 'admin' ? 'Administrador' : 'Vendedor'}
@@ -523,24 +522,8 @@ const Header: React.FC<HeaderProps> = ({
 								</div>
 							</div>
 							
-							{/* 🎆 ACCESOS RÁPIDOS MEJORADOS */}
-							<div className="grid grid-cols-4 gap-2 mb-2">
-								{/* Notificaciones */}
-								<Link
-									to="/notifications"
-									data-notification-button="true"
-									className="flex flex-col items-center p-2 rounded-lg hover:bg-gray-50 relative"
-									onClick={toggleMobileMenu}
-								>
-									<Bell size={20} className="mb-1 text-gray-700" />
-									<span className="text-xs">Avisos</span>
-									{notificationCount > 0 && (
-										<span className="absolute -top-1 -right-1 bg-primary-600 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-											{notificationCountSanitized}
-										</span>
-									)}
-								</Link>
-								
+							{/* ACCESOS RÁPIDOS EN GRID */}
+							<div className="grid grid-cols-3 gap-2">
 								<Link
 									to="/profile"
 									className="flex flex-col items-center p-2 rounded-lg hover:bg-gray-50"
@@ -577,51 +560,55 @@ const Header: React.FC<HeaderProps> = ({
 						</div>
 					)}
 
-					{/* Mobile Navigation */}
-					<ul className="space-y-3 mb-4">
-						{navLinks.map((link, index) => (
-							<li key={index}>
+					{/* SECCIÓN CON SCROLL: Solo la navegación */}
+					<div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100 px-6 py-4">
+						<ul className="space-y-2">
+							{navLinks.map((link, index) => (
+								<li key={index}>
+									<Link
+										to={link.to}
+										className="block text-gray-700 font-medium hover:text-primary-600 hover:bg-gray-50 py-1 px-4 rounded-lg transition-colors text-md"
+										onClick={toggleMobileMenu}
+									>
+										{link.text}
+									</Link>
+								</li>
+							))}
+						</ul>
+					</div>
+
+					{/* SECCIÓN FIJA: Botones de autenticación o logout */}
+					<div className="flex-shrink-0 px-3 py-3 border-t border-gray-200 bg-gray-50">
+						{isAuthenticated ? (
+							<button
+								onClick={() => {
+									handleLogout();
+									toggleMobileMenu();
+								}}
+								className="w-full flex items-center justify-center py-2 text-red-600 font-medium border border-red-200 rounded-lg hover:bg-red-50 transition-colors text-md bg-white shadow-sm"
+							>
+								<LogOut size={20} className="mr-3" />
+								Cerrar sesión
+							</button>
+						) : (
+							<div className="space-y-4">
 								<Link
-									to={link.to}
-									className="text-gray-700 font-medium hover:text-primary-600 py-2 block"
+									to="/login"
+									className="block text-center py-4 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors font-medium text-lg bg-white shadow-sm"
 									onClick={toggleMobileMenu}
 								>
-									{link.text}
+									Iniciar sesión
 								</Link>
-							</li>
-						))}
-					</ul>
-
-					{/* Mobile Auth Buttons or Logout */}
-					{isAuthenticated ? (
-						<button
-							onClick={() => {
-								handleLogout();
-								toggleMobileMenu();
-							}}
-							className="w-full text-center py-2 text-red-600 font-medium border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
-						>
-							<LogOut size={16} className="inline-block mr-2" />
-							Cerrar sesión
-						</button>
-					) : (
-						<div className="space-y-2">
-							<Link
-								to="/login"
-								className="block text-center py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
-								onClick={toggleMobileMenu}
-							>
-								Iniciar sesión
-							</Link>
-							<Link
-								to="/register"
-								className="block text-center py-2 bg-primary-600 rounded-lg text-white hover:bg-primary-700 transition-colors"
-								onClick={toggleMobileMenu}
-							>
-								Registrarse
-							</Link>
-						</div>
-					)}
+								<Link
+									to="/register"
+									className="block text-center py-4 bg-primary-600 rounded-lg text-white hover:bg-primary-700 transition-colors font-medium text-lg shadow-sm"
+									onClick={toggleMobileMenu}
+								>
+									Registrarse
+								</Link>
+							</div>
+						)}
+					</div>
 				</div>
 			)}
 

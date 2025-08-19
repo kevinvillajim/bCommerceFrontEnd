@@ -87,14 +87,14 @@ export const useAdminCategories = () => {
 				? apiCategory.subcategories.map((sub: any) => adaptCategory(sub))
 				: undefined,
 			product_count: apiCategory.product_count || 0,
-			full_path: apiCategory.full_path,
-			has_children: Boolean(apiCategory.has_children),
-			url: apiCategory.url,
+			// full_path: apiCategory.full_path, // Commented out as not in Category type
+			// has_children: Boolean(apiCategory.has_children), // Commented out as not in Category type
+			// url: apiCategory.url, // Commented out as not in Category type
 			parent: apiCategory.parent
 				? adaptCategory(apiCategory.parent)
 				: undefined,
-			image_url: apiCategory.image_url,
-			icon_url: apiCategory.icon_url,
+			// image_url: apiCategory.image_url, // Commented out as not in Category type
+			// icon_url: apiCategory.icon_url, // Commented out as not in Category type
 		};
 	}, []);
 
