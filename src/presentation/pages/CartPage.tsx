@@ -152,46 +152,63 @@ const CartPage: React.FC = () => {
 		});
 	}, [cart?.items, getProductImage]);
 
-	// ✅ USAR CALCULADORA CENTRALIZADA DIRECTAMENTE
-	const cartTotals = useMemo(() => {
-		if (!cartItemsWithDiscounts.length) {
-			return {
-				subtotal: 0,
-				tax: 0,
-				couponAmount: 0,
-				total: 0,
-				totalVolumeSavings: 0,
-				totalSellerSavings: 0,
-				totalSavings: 0,
-				volumeDiscountsApplied: false,
-				shipping: 0,
-			};
-		}
+	// ✅ ESTADO PARA TOTALES CALCULADOS ASÍNCRONAMENTE
+	const [cartTotals, setCartTotals] = useState({
+		subtotal: 0,
+		tax: 0,
+		couponAmount: 0,
+		total: 0,
+		totalVolumeSavings: 0,
+		totalSellerSavings: 0,
+		totalSavings: 0,
+		volumeDiscountsApplied: false,
+		shipping: 0,
+	});
 
-		// ✅ USAR CALCULADORA CENTRALIZADA DIRECTAMENTE
-		console.log("🔍 FLUJO CART - Usando calculadora centralizada directamente");
-		const result = EcommerceCalculator.calculateTotals(cartItemsWithDiscounts, appliedDiscount);
-		
-		console.log("🔍 FLUJO CART - Totales finales calculados:");
-		console.log("   💰 Subtotal después de cupón:", result.subtotalAfterCoupon);
-		console.log("   💰 + Envío:", result.shipping, "=", result.subtotalWithShipping);
-		console.log("   💰 + IVA 15%:", result.tax);
-		console.log("   🎯 TOTAL CART:", result.total);
-		console.log("   📊 Descuentos: seller=", result.sellerDiscounts, 
-		         "volume=", result.volumeDiscounts, "cupón=", result.couponDiscount);
+	// ✅ CALCULAR TOTALES DE FORMA ASÍNCRONA
+	useEffect(() => {
+		const calculateCartTotals = async () => {
+			if (!cartItemsWithDiscounts.length) {
+				setCartTotals({
+					subtotal: 0,
+					tax: 0,
+					couponAmount: 0,
+					total: 0,
+					totalVolumeSavings: 0,
+					totalSellerSavings: 0,
+					totalSavings: 0,
+					volumeDiscountsApplied: false,
+					shipping: 0,
+				});
+				return;
+			}
 
-		return {
-			subtotal: result.subtotalAfterCoupon,
-			tax: result.tax,
-			couponAmount: result.couponDiscount,
-			total: result.total,
-			totalVolumeSavings: result.volumeDiscounts,
-			totalSellerSavings: result.sellerDiscounts,
-			totalSavings: result.totalDiscounts,
-			volumeDiscountsApplied: result.volumeDiscountsApplied,
-			shipping: result.shipping,
+			console.log("🔍 FLUJO CART - Usando calculadora centralizada asíncrona");
+			const result = await EcommerceCalculator.calculateTotals(cartItemsWithDiscounts, appliedDiscount);
+			
+			console.log("🔍 FLUJO CART - Totales finales calculados:");
+			console.log("   💰 Subtotal después de cupón:", result.subtotalAfterCoupon);
+			console.log("   💰 + Envío:", result.shipping, "=", result.subtotalWithShipping);
+			console.log("   💰 + IVA 15%:", result.tax);
+			console.log("   🎯 TOTAL CART:", result.total);
+			console.log("   📊 Descuentos: seller=", result.sellerDiscounts, 
+					 "volume=", result.volumeDiscounts, "cupón=", result.couponDiscount);
+
+			setCartTotals({
+				subtotal: result.subtotalAfterCoupon,
+				tax: result.tax,
+				couponAmount: result.couponDiscount,
+				total: result.total,
+				totalVolumeSavings: result.volumeDiscounts,
+				totalSellerSavings: result.sellerDiscounts,
+				totalSavings: result.totalDiscounts,
+				volumeDiscountsApplied: result.volumeDiscountsApplied,
+				shipping: result.shipping,
+			});
 		};
-	}, [cartItemsWithDiscounts, appliedDiscount, cart?.total, cart?.subtotal]);
+
+		calculateCartTotals();
+	}, [cartItemsWithDiscounts, appliedDiscount]);
 
 	// Cargar carrito simple - Solo al montar componente
 	useEffect(() => {

@@ -61,31 +61,52 @@ const CheckoutPage: React.FC = () => {
 	const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 	const [orderComplete, setOrderComplete] = useState(false);
 	const [orderDetails, setOrderDetails] = useState<any>(null);
-	const [countdown, setCountdown] = useState(5);
+	const [countdown, setCountdown] = useState(8);
 
 	const checkoutService = new CheckoutService();
 
-	// ✅ USAR TOTALES DEL BACKEND DIRECTAMENTE
-	const checkoutCalculations = useMemo(() => {
-		if (!cart?.items?.length) {
-			return {
-				items: [],
-				totals: {
-					subtotal: 0,
-					originalSubtotal: 0,
-					sellerDiscounts: 0,
-					volumeDiscounts: 0,
-					totalDiscounts: 0,
-					couponDiscount: 0,
-					tax: 0,
-					shipping: 0,
-					total: 0,
-					freeShipping: false
-				},
-				stockIssues: [],
-				checkoutItems: []
-			};
-		}
+	// ✅ ESTADO PARA CÁLCULOS DE CHECKOUT ASÍNCRONOS
+	const [checkoutCalculations, setCheckoutCalculations] = useState({
+		items: [],
+		totals: {
+			subtotal: 0,
+			originalSubtotal: 0,
+			sellerDiscounts: 0,
+			volumeDiscounts: 0,
+			totalDiscounts: 0,
+			couponDiscount: 0,
+			tax: 0,
+			shipping: 0,
+			total: 0,
+			freeShipping: false
+		},
+		stockIssues: [],
+		checkoutItems: []
+	});
+
+	// ✅ CALCULAR TOTALES DE FORMA ASÍNCRONA
+	useEffect(() => {
+		const calculateCheckout = async () => {
+			if (!cart?.items?.length) {
+				setCheckoutCalculations({
+					items: [],
+					totals: {
+						subtotal: 0,
+						originalSubtotal: 0,
+						sellerDiscounts: 0,
+						volumeDiscounts: 0,
+						totalDiscounts: 0,
+						couponDiscount: 0,
+						tax: 0,
+						shipping: 0,
+						total: 0,
+						freeShipping: false
+					},
+					stockIssues: [],
+					checkoutItems: []
+				});
+				return;
+			}
 
 		// ✅ Calcular items con descuentos
 		const itemsWithDiscounts = cart.items.map((item) => {
@@ -112,26 +133,25 @@ const CheckoutPage: React.FC = () => {
 				isOutOfStock: !item.product?.is_in_stock,
 			}));
 
-		// ✅ USAR TOTALES DEL BACKEND DIRECTAMENTE (CART YA TIENE LOS CÁLCULOS CORRECTOS)
+			// ✅ CALCULAR TOTALES DE FORMA ASÍNCRONA
+			console.log("🔍 FLUJO CHECKOUT - Calculando totales");
+			console.log("📊 Items en checkout:", cart.items.length);
+			console.log("📊 Cupón en checkout:", appliedDiscount?.discountCode?.code || "NINGUNO");
+			const totals = await CheckoutItemsService.calculateCheckoutTotals(cart.items, appliedDiscount);
+			console.log("🎯 TOTAL CHECKOUT:", totals.total);
 
-		let totals;
-		
-		// ✅ SIEMPRE USAR SECUENCIA EXACTA - MISMO CÁLCULO QUE CART
-		console.log("🔍 FLUJO CHECKOUT - Calculando totales");
-		console.log("📊 Items en checkout:", cart.items.length);
-		console.log("📊 Cupón en checkout:", appliedDiscount?.discountCode?.code || "NINGUNO");
-		totals = CheckoutItemsService.calculateCheckoutTotals(cart.items, appliedDiscount);
-		console.log("🎯 TOTAL CHECKOUT:", totals.total);
+			// ✅ Preparar items para envío al backend CON CUPÓN
+			const checkoutItems = CheckoutItemsService.prepareItemsForCheckout(cart.items, appliedDiscount);
 
-		// ✅ Preparar items para envío al backend CON CUPÓN
-		const checkoutItems = CheckoutItemsService.prepareItemsForCheckout(cart.items, appliedDiscount);
-
-		return {
-			items: itemsWithDiscounts,
-			totals,
-			stockIssues,
-			checkoutItems
+			setCheckoutCalculations({
+				items: itemsWithDiscounts,
+				totals,
+				stockIssues,
+				checkoutItems
+			});
 		};
+
+		calculateCheckout();
 	}, [cart?.items, cart?.total, cart?.subtotal, appliedDiscount]);
 
 	// Funciones helper
@@ -193,6 +213,12 @@ const CheckoutPage: React.FC = () => {
 	};
 
 	useEffect(() => {
+		// 🔧 CRITICAL FIX: Don't redirect when order is complete (allows receipt display)
+		if (orderComplete && orderDetails) {
+			console.log('✅ Order complete - skipping cart validation to show receipt');
+			return;
+		}
+
 		if (!cart || cart.items.length === 0) {
 			showNotification(NotificationType.ERROR, "El carrito está vacío");
 			navigate("/cart");
@@ -210,20 +236,20 @@ const CheckoutPage: React.FC = () => {
 				);
 			}
 		}
-	}, [cart, navigate, showNotification]);
+	}, [cart, navigate, showNotification, orderComplete, orderDetails]);
 
 	// ✅ NUEVO: Redirect automático después de completar orden - mostrar recibo por 5 segundos
 	useEffect(() => {
 		if (orderComplete) {
 			// Reset countdown when order completes
-			setCountdown(5);
+			setCountdown(8);
 			
 			// Update countdown every second
 			const countdownTimer = setInterval(() => {
 				setCountdown(prev => {
 					if (prev <= 1) {
 						clearInterval(countdownTimer);
-						console.log('🔄 Auto-redirecting to orders page after 5 seconds');
+						console.log('🔄 Auto-redirecting to orders page after 8 seconds');
 						navigate("/orders");
 						return 0;
 					}
@@ -682,7 +708,7 @@ const CheckoutPage: React.FC = () => {
 						<div className="flex justify-between py-2">
 							<span className="text-gray-600">Total:</span>
 							<span className="font-medium">
-								{formatCurrency(checkoutCalculations.totals.total)}
+								{formatCurrency(orderDetails.total || checkoutCalculations.totals.total)}
 							</span>
 						</div>
 						{checkoutCalculations.totals.totalDiscounts > 0 && (

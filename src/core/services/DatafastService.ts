@@ -20,10 +20,10 @@ export interface DatafastCheckoutRequest {
 		quantity: number;
 		price: number;
 	}[];
-	total?: number;
-	subtotal?: number;
-	shipping_cost?: number;
-	tax?: number;
+	total: number;
+	subtotal: number;
+	shipping_cost: number;
+	tax: number;
 	discount_code?: string | null;
 	discount_info?: any;
 }

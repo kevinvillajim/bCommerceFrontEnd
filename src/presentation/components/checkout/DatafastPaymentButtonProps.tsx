@@ -113,7 +113,7 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 		try {
 			// ✅ USAR MISMA LÓGICA QUE EL BOTÓN "PRUEBA COMPLETA" QUE FUNCIONA PERFECTO
 			const checkoutItems = CheckoutItemsService.prepareItemsForCheckout(cart.items); // SIN appliedDiscount
-			const totals = CheckoutItemsService.calculateCheckoutTotals(cart.items, appliedDiscount);
+			const totals = await CheckoutItemsService.calculateCheckoutTotals(cart.items, appliedDiscount);
 			
 			// Almacenar totales para usar en el widget
 			setCalculatedTotals(totals);
@@ -368,6 +368,16 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 			const checkoutItems = CheckoutItemsService.prepareItemsForCheckout(cart.items);
 			console.log("🛒 Items formateados con descuentos aplicados (DATAFAST):", JSON.stringify(checkoutItems, null, 2));
 
+			// ✅ CALCULAR TOTALES CORRECTOS PARA EL BACKEND
+			console.log("🔍 DEBUG: cart.items antes de calcular:", cart.items);
+			console.log("🔍 DEBUG: appliedDiscount antes de calcular:", appliedDiscount);
+			
+			const calculatedTotals = await CheckoutItemsService.calculateCheckoutTotals(cart.items, appliedDiscount);
+			console.log("💰 Totales calculados para backend (DATAFAST):", calculatedTotals);
+			console.log("🔍 DEBUG: calculatedTotals es null?", calculatedTotals === null);
+			console.log("🔍 DEBUG: calculatedTotals es undefined?", calculatedTotals === undefined);
+			console.log("🔍 DEBUG: tipo de calculatedTotals:", typeof calculatedTotals);
+
 			console.log("🛒 Items formateados para backend (DATAFAST):", JSON.stringify(checkoutItems, null, 2));
 
 			const testCheckoutData = {
@@ -385,12 +395,27 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 				},
 				seller_id: sellerId || undefined,
 				items: checkoutItems, // ✅ USAR ITEMS CON DESCUENTOS CALCULADOS
+				// ✅ CRÍTICO: Incluir totales calculados requeridos por el backend
+				calculated_totals: {
+					subtotal: calculatedTotals?.subtotal || 0,     // subtotal_products (después de descuentos)
+					tax: calculatedTotals?.tax || 0,               // iva_amount
+					shipping: calculatedTotals?.shipping || 0,     // shipping_cost  
+					total: calculatedTotals?.total || 0,           // total final (subtotal + shipping + tax)
+					total_discounts: calculatedTotals?.totalDiscounts || 0 // total_discounts
+				},
 				// ✅ NUEVO: Incluir código de descuento aplicado y su información
 				discount_code: appliedDiscount?.discountCode.code || null,
 				discount_info: appliedDiscount || null // ✅ Pasar información completa del descuento
 			};
 
 			console.log("📦 Datos completos de checkout (DATAFAST):", JSON.stringify(testCheckoutData, null, 2));
+			console.log("🔍 DEBUG: testCheckoutData.calculated_totals:", testCheckoutData.calculated_totals);
+			console.log("🔍 DEBUG: Estructura del objeto calculated_totals:");
+			console.log("   - subtotal:", testCheckoutData.calculated_totals.subtotal);
+			console.log("   - tax:", testCheckoutData.calculated_totals.tax);  
+			console.log("   - shipping:", testCheckoutData.calculated_totals.shipping);
+			console.log("   - total:", testCheckoutData.calculated_totals.total);
+			console.log("   - total_discounts:", testCheckoutData.calculated_totals.total_discounts);
 			console.log("🚀 Enviando checkout al backend (DATAFAST)...");
 
 			const response = await checkoutService.processCheckout(testCheckoutData, user?.email);
@@ -462,7 +487,7 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 			console.log("Simulando pago exitoso completo...");
 
 			// ✅ ENVIAR EL TOTAL CALCULADO CORRECTO PARA SIMULACIÓN
-			const totals = cart ? CheckoutItemsService.calculateCheckoutTotals(cart.items, appliedDiscount) : null;
+			const totals = cart ? await CheckoutItemsService.calculateCheckoutTotals(cart.items, appliedDiscount) : null;
 			
 			const verifyResponse = await datafastService.simulateSuccessfulPayment(
 				checkoutData.checkout_id,
@@ -482,6 +507,15 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 				// ✅ USAR MISMA LÓGICA DE CÁLCULO QUE CHECKOUT PAGE
 				const items = cart ? CheckoutItemsService.prepareItemsForCheckout(cart.items) : [];
 				
+				// ✅ CALCULAR TOTALES CORRECTOS PARA EL BACKEND
+				console.log("🔍 DEBUG SIMULATE: cart.items antes de calcular:", cart?.items);
+				console.log("🔍 DEBUG SIMULATE: appliedDiscount antes de calcular:", appliedDiscount);
+				
+				const calculatedTotals = cart ? await CheckoutItemsService.calculateCheckoutTotals(cart.items, appliedDiscount) : null;
+				console.log("💰 DEBUG SIMULATE: Totales calculados:", calculatedTotals);
+				console.log("🔍 DEBUG SIMULATE: calculatedTotals es null?", calculatedTotals === null);
+				console.log("🔍 DEBUG SIMULATE: calculatedTotals es undefined?", calculatedTotals === undefined);
+				
 				const checkoutRequestData = {
 					payment: {
 						method: "datafast" as PaymentMethod,
@@ -496,7 +530,15 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 						phone: formData.phone,
 					},
 					seller_id: sellerId || undefined,
-					items: items
+					items: items,
+					// ✅ CRÍTICO: Incluir totales calculados requeridos por el backend
+					calculated_totals: calculatedTotals ? {
+						subtotal: calculatedTotals.subtotal,     // subtotal_products (después de descuentos)
+						tax: calculatedTotals.tax,               // iva_amount
+						shipping: calculatedTotals.shipping,     // shipping_cost
+						total: calculatedTotals.total,           // total final (subtotal + shipping + tax)
+						total_discounts: calculatedTotals.totalDiscounts // total_discounts
+					} : {}
 				};
 
 				const checkoutResponse = await checkoutService.processCheckout(checkoutRequestData, user?.email);
@@ -536,9 +578,9 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 		}
 	};
 
-	const handleRealPayment = () => {
+	const handleRealPayment = async () => {
 		// ✅ GUARDAR EL TOTAL CALCULADO EN LOCALSTORAGE PARA LA PÁGINA DE RESULTADO
-		const totals = cart ? CheckoutItemsService.calculateCheckoutTotals(cart.items, appliedDiscount) : null;
+		const totals = cart ? await CheckoutItemsService.calculateCheckoutTotals(cart.items, appliedDiscount) : null;
 		if (totals) {
 			localStorage.setItem("datafast_calculated_total", totals.total.toString());
 			console.log("💰 Total calculado guardado para verificación:", totals.total);

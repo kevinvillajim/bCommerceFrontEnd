@@ -27,6 +27,13 @@ export interface CheckoutRequest {
 	items?: CheckoutItem[]; // ✅ Usar CheckoutItem con precios finales
 	discount_code?: string | null; // ✅ NUEVO: Código de descuento
 	discount_info?: any; // ✅ NUEVO: Información completa del descuento aplicado
+	calculated_totals?: { // ✅ CRÍTICO: Agregar totales calculados
+		subtotal: number;
+		tax: number;
+		shipping: number;
+		total: number;
+		total_discounts: number;
+	};
 }
 
 export interface BackendCheckoutRequest {
@@ -192,34 +199,16 @@ export class CheckoutService {
 					}
 				} : null);
 			
-			// ✅ CRÍTICO: Usar calculadora centralizada directamente
-			const exactCalculation = EcommerceCalculator.calculateTotals(
-				checkoutData.items || [], 
-				appliedDiscount
-			);
-			
-			console.log("🧮 USANDO CALCULADORA CENTRALIZADA - TOTALES EXACTOS:");
-			console.log("   📊 Total calculado:", exactCalculation.total);
-			console.log("   📊 Subtotal después cupón:", exactCalculation.subtotalAfterCoupon);
-			console.log("   📊 Envío:", exactCalculation.shipping);
-			console.log("   📊 IVA:", exactCalculation.tax);
-			console.log("   📊 Descuentos totales:", exactCalculation.totalDiscounts);
-			
-			// Mapear a formato esperado por backend
-			const calculatedTotals = {
-				subtotal: exactCalculation.subtotalWithShipping, // Subtotal + shipping para backend
-				tax: exactCalculation.tax,
-				shipping: exactCalculation.shipping,
-				total: exactCalculation.total, // ✅ ESTE DEBE SER $8.87
-				totalDiscounts: exactCalculation.totalDiscounts
-			};
+			// ✅ CRÍTICO: NO RECALCULAR - Usar totales ya calculados que se pasaron como parámetro
+			console.log("🔍 USANDO TOTALES PRECALCULADOS (NO SE RECALCULA):");
+			console.log("   📊 calculated_totals recibidos:", checkoutData.calculated_totals);
 
 			console.log("🔍 FLUJO COMPLETO DE CHECKOUT CORREGIDO:");
 			console.log("1️⃣ Items del carrito:", checkoutData.items?.length || 0);
 			console.log("2️⃣ Código de descuento:", checkoutData.discount_code || "NINGUNO");
 			console.log("3️⃣ appliedDiscount:", appliedDiscount);
-			console.log("4️⃣ TOTALES EXACTOS CALCULADOS (CALCULADORA CENTRALIZADA):", calculatedTotals);
-			console.log("5️⃣ Total final CORRECTO que debe guardarse en DB:", calculatedTotals.total, "✅ DEBE SER $8.87");
+			console.log("4️⃣ TOTALES EXACTOS CALCULADOS (CALCULADORA CENTRALIZADA):", checkoutData.calculated_totals);
+			console.log("5️⃣ Total final CORRECTO que debe guardarse en DB:", checkoutData.calculated_totals?.total, "✅ DEBE SER $8.87");
 
 			const nameParts = (checkoutData.shippingAddress.name || '').split(' ');
 			
@@ -243,12 +232,12 @@ export class CheckoutService {
 				seller_id: checkoutData.seller_id,
 				items: items, // ✅ Usar items con precios finales calculados
 				// ✅ CRÍTICO: Enviar totales exactos de calculadora centralizada para que backend los use SIN RECALCULAR
-				calculated_totals: {
-					subtotal: calculatedTotals.subtotal,
-					tax: calculatedTotals.tax,
-					shipping: calculatedTotals.shipping,
-					total: calculatedTotals.total,
-					total_discounts: calculatedTotals.totalDiscounts
+				calculated_totals: checkoutData.calculated_totals || {
+					subtotal: 0,
+					tax: 0,
+					shipping: 0,
+					total: 0,
+					total_discounts: 0
 				}
 			};
 			
@@ -264,13 +253,13 @@ export class CheckoutService {
 			
 			// ✅ LOGS CRÍTICOS PARA TOTALES CORREGIDOS
 			console.log("💰 TOTALES CRÍTICOS CORREGIDOS QUE DEBE USAR EL BACKEND:");
-			console.log("   📊 Subtotal:", calculatedTotals.subtotal);
-			console.log("   📊 IVA:", calculatedTotals.tax);
-			console.log("   📊 Envío:", calculatedTotals.shipping);
-			console.log("   📊 TOTAL FINAL:", calculatedTotals.total, "✅ DEBE SER $8.87");
-			console.log("   📊 Total descuentos:", calculatedTotals.totalDiscounts);
+			console.log("   📊 Subtotal:", checkoutData.calculated_totals?.subtotal);
+			console.log("   📊 IVA:", checkoutData.calculated_totals?.tax);
+			console.log("   📊 Envío:", checkoutData.calculated_totals?.shipping);
+			console.log("   📊 TOTAL FINAL:", checkoutData.calculated_totals?.total, "✅ DEBE SER $8.87");
+			console.log("   📊 Total descuentos:", checkoutData.calculated_totals?.total_discounts);
 			console.log("🚨 EL BACKEND NO DEBE RECALCULAR - USAR ESTOS TOTALES EXACTOS");
-			console.log("🚨 TOTAL ESPERADO EN RESPUESTA:", calculatedTotals.total);
+			console.log("🚨 TOTAL ESPERADO EN RESPUESTA:", checkoutData.calculated_totals?.total);
 
 			// ✅ VALIDACIÓN FINAL antes de enviar
 			if (backendData.items && backendData.items.length > 0) {

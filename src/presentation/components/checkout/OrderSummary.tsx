@@ -2,6 +2,7 @@ import React from "react";
 import type {ShoppingCart} from "../../../core/domain/entities/ShoppingCart";
 import {formatCurrency} from "../../../utils/formatters/formatCurrency";
 import {useCart} from "../../hooks/useCart";
+import { useShippingConfig } from "../../contexts/ShippingConfigContext";
 
 interface OrderSummaryProps {
 	cart: ShoppingCart | null;
@@ -10,6 +11,9 @@ interface OrderSummaryProps {
 const OrderSummary: React.FC<OrderSummaryProps> = ({cart}) => {
 	// ✅ INTEGRACIÓN con códigos de descuento de feedback
 	const { appliedDiscount } = useCart();
+	
+	// ✅ OBTENER CONFIGURACIÓN DINÁMICA DE ENVÍO
+	const { freeThreshold, defaultCost, isEnabled: shippingEnabled } = useShippingConfig();
 	
 	// Si no hay carrito o está vacío
 	if (!cart || cart.items.length === 0) {
@@ -37,7 +41,8 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({cart}) => {
 	
 	const subtotalAfterFeedbackDiscount = baseSubtotal - feedbackDiscountAmount;
 	const taxRate = 0.15; // 15% IVA
-	const shipping = subtotalAfterFeedbackDiscount > 50 ? 0 : 5.99; // Envío gratis para compras superiores a $50
+	// ✅ CALCULAR ENVÍO CON CONFIGURACIÓN DINÁMICA
+	const shipping = !shippingEnabled ? 0 : (subtotalAfterFeedbackDiscount >= freeThreshold ? 0 : defaultCost);
 	const tax = subtotalAfterFeedbackDiscount * taxRate;
 	const total = subtotalAfterFeedbackDiscount + tax + shipping;
 

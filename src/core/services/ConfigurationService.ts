@@ -276,10 +276,12 @@ class ConfigurationService {
 	 */
 	async updateConfigurationsByCategory(category: string, configs: Record<string, any>): Promise<ApiResponse> {
 		try {
+			console.log('🔄 ConfigurationService - Enviando:', { category, configurations: configs });
 			const response = await ApiClient.post<ApiResponse>(
 				`${API_ENDPOINTS.ADMIN.CONFIGURATIONS.BASE}/category`,
 				{ category, configurations: configs }
 			);
+			console.log('✅ ConfigurationService - Respuesta:', response);
 			return response;
 		} catch (error) {
 			console.error(`Error al actualizar configuraciones de ${category}:`, error);
@@ -371,7 +373,23 @@ class ConfigurationService {
 	 * Actualiza configuraciones de envío
 	 */
 	async updateShippingConfigs(configs: Partial<ShippingConfig>): Promise<ApiResponse> {
-		return this.updateConfigurationsByCategory('shipping', configs);
+		try {
+			console.log('🔄 updateShippingConfigs - Enviando directamente:', configs);
+			
+			// Usar endpoint específico de shipping que funciona correctamente
+			const response = await ApiClient.post<ApiResponse>(
+				API_ENDPOINTS.ADMIN.CONFIGURATIONS.SHIPPING,
+				configs
+			);
+			console.log('✅ updateShippingConfigs - Respuesta:', response);
+			return response;
+		} catch (error) {
+			console.error('Error al actualizar configuraciones de envío:', error);
+			return {
+				status: "error",
+				message: error instanceof Error ? error.message : "Error desconocido",
+			};
+		}
 	}
 
 	/**

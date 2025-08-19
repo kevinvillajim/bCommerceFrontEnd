@@ -24,7 +24,7 @@ export class DeunaService {
         payload_json: JSON.stringify(paymentData),
         items_in_payload: paymentData.items,
         items_count: paymentData.items?.length || 0,
-        first_item_keys: paymentData.items?.length > 0 ? Object.keys(paymentData.items[0]) : 'no_items'
+        first_item_keys: paymentData.items && paymentData.items.length > 0 ? Object.keys(paymentData.items[0]) : 'no_items'
       });
 
       const response = await ApiClient.post<DeunaPaymentResponse>(

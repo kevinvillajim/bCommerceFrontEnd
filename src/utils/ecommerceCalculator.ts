@@ -4,6 +4,8 @@
  * Esta es la ÚNICA fuente de verdad para todos los cálculos
  */
 
+import ShippingConfigService from '../core/services/ShippingConfigService';
+
 export interface CartItem {
   id?: number;
   product?: {
@@ -69,18 +71,57 @@ export interface CalculationResult {
 }
 
 export class EcommerceCalculator {
-  private static readonly SHIPPING_COST = 5.00;
-  private static readonly FREE_SHIPPING_THRESHOLD = 50.00;
   private static readonly TAX_RATE = 0.15; // 15%
+  private static shippingConfig: { cost: number; threshold: number; enabled: boolean } | null = null;
+  private static configCacheTime = 0;
+  private static readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
+
+  /**
+   * 🔧 OBTENER CONFIGURACIÓN DE ENVÍO DINÁMICA
+   */
+  private static async getShippingConfig() {
+    const now = Date.now();
+    
+    // Si tenemos cache válido, lo devolvemos
+    if (this.shippingConfig && (now - this.configCacheTime) < this.CACHE_DURATION) {
+      return this.shippingConfig;
+    }
+
+    try {
+      const service = ShippingConfigService.getInstance();
+      const config = await service.getShippingConfig();
+      
+      this.shippingConfig = {
+        cost: config.defaultCost,
+        threshold: config.freeThreshold,
+        enabled: config.enabled
+      };
+      this.configCacheTime = now;
+      
+      return this.shippingConfig;
+    } catch (error) {
+      console.warn('Error al obtener configuración de envío, usando valores por defecto:', error);
+      
+      // Valores por defecto si falla (deben coincidir con BD actual)
+      this.shippingConfig = {
+        cost: 8.00,    // Valor actual en BD
+        threshold: 60.00, // Valor actual en BD
+        enabled: true
+      };
+      this.configCacheTime = now;
+      
+      return this.shippingConfig;
+    }
+  }
 
   /**
    * 🎯 FUNCIÓN PRINCIPAL - CALCULADORA MAESTRA
    * Esta función implementa la SECUENCIA EXACTA especificada en el problema
    */
-  static calculateTotals(
+  static async calculateTotals(
     items: CartItem[], 
     appliedDiscountCode?: any
-  ): CalculationResult {
+  ): Promise<CalculationResult> {
     console.log('🧮 CALCULADORA CENTRALIZADA - INICIANDO');
     console.log('📊 Items a procesar:', items.length);
     console.log('🎫 Cupón aplicado:', appliedDiscountCode?.discountCode?.code || 'NINGUNO');
@@ -105,7 +146,8 @@ export class EcommerceCalculator {
     console.log(`4️⃣ Después cupón: $${step4_afterCoupon.toFixed(2)} (descuento: $${couponDiscount.toFixed(2)})`);
 
     // PASO 5: Agregar Envío ($5) = $7.71
-    const shipping = this.calculateShipping(step4_afterCoupon);
+    const shippingConfig = await this.getShippingConfig();
+    const shipping = this.calculateShippingWithConfig(step4_afterCoupon, shippingConfig);
     const step5_withShipping = step4_afterCoupon + shipping;
     console.log(`5️⃣ Con envío: $${step5_withShipping.toFixed(2)} (envío: $${shipping.toFixed(2)})`);
 
@@ -276,8 +318,14 @@ export class EcommerceCalculator {
   /**
    * PASO 5: Calcular costo de envío
    */
-  private static calculateShipping(subtotal: number): number {
-    return subtotal >= this.FREE_SHIPPING_THRESHOLD ? 0 : this.SHIPPING_COST;
+  private static calculateShippingWithConfig(
+    subtotal: number, 
+    config: { cost: number; threshold: number; enabled: boolean }
+  ): number {
+    if (!config.enabled) {
+      return 0;
+    }
+    return subtotal >= config.threshold ? 0 : config.cost;
   }
 
   /**

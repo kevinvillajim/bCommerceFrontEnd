@@ -343,6 +343,7 @@ export const API_ENDPOINTS = {
       SHOW: (key: string) => `/admin/configurations/${key}`,
       UPDATE: "/admin/configurations/update",
       RATINGS: "/admin/configurations/ratings",
+      SHIPPING: "/admin/configurations/shipping",
       DEVELOPMENT: "/admin/configurations/development",
       MAIL: "/admin/configurations/mail",
       MAIL_TEST: "/admin/configurations/mail/test",

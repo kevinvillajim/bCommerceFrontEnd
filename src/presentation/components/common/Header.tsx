@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import {useAuth} from "../../hooks/useAuth";
 import {useHeaderCounters} from "../../hooks/useHeaderCounters";
+import { useShippingConfig } from "../../contexts/ShippingConfigContext";
 import ThemeToggle from "./ThemeToggle";
 import SearchAutocomplete from "./SearchAutocomplete";
 import { useTheme } from '../../hooks/useTheme';
@@ -65,6 +66,9 @@ const Header: React.FC<HeaderProps> = ({
 		counters,
 		error: countersError,
 	} = useHeaderCounters();
+
+	// ✅ OBTENER CONFIGURACIÓN DINÁMICA DE ENVÍO
+	const { freeThreshold, isEnabled: shippingEnabled, loading: shippingLoading } = useShippingConfig();
 
 	const {cartItemCount, favoriteCount, notificationCount} = counters;
 
@@ -141,8 +145,14 @@ const Header: React.FC<HeaderProps> = ({
 			<div className="bg-gray-900 text-white text-sm py-2 top-bar">
 				<div className="container mx-auto px-4">
 					<div className="flex justify-between items-center">
-						<div className="hidden md:block">
-							<span>Envío gratis en pedidos superiores a $50</span>
+						<div className="text-center w-full md:text-left md:w-auto">
+							{!shippingLoading && (
+								shippingEnabled ? (
+									<span className="text-sm md:text-base">Envío gratis en pedidos superiores a ${freeThreshold}</span>
+								) : (
+									<span className="text-yellow-300 font-semibold text-sm md:text-base">🎉 ¡Envío GRATIS por tiempo limitado!</span>
+								)
+							)}
 						</div>
 						<div className="flex space-x-4 text-xs md:text-sm">
 							<a href="faq" className="hover:underline">
@@ -181,7 +191,7 @@ const Header: React.FC<HeaderProps> = ({
 					</div>
 
 					{/* Icons - Desktop */}
-					<div className="hidden md:flex items-center space-x-6">
+					<div className="hidden sm:flex items-center space-x-6">
 						<ThemeToggle />
 
 						{/* 🎆 BOTÓN CONDICIONAL SELLER/ADMIN */}
@@ -387,9 +397,7 @@ const Header: React.FC<HeaderProps> = ({
 					</div>
 
 					{/* Mobile Menu Button */}
-					<div className="md:hidden flex items-center space-x-4">
-					<ThemeToggle />
-					
+					<div className="sm:hidden flex items-center space-x-4">
 					{/* 🎆 BOTÓN DASHBOARD MÓVIL - Solo para seller/admin */}
 					{isAuthenticated && (user?.role === 'seller' || user?.role === 'admin') && (
 					<Link
@@ -414,6 +422,11 @@ const Header: React.FC<HeaderProps> = ({
 					</span>
 					)}
 					</Link>
+					)}
+
+					{/* 🎨 THEME TOGGLE MÓVIL - Solo cuando NO hay sesión iniciada */}
+					{!isAuthenticated && (
+						<ThemeToggle />
 					)}
 
 					{/* Cart Icon for Mobile */}
@@ -478,7 +491,7 @@ const Header: React.FC<HeaderProps> = ({
 
 			{/* Mobile Menu */}
 			{mobileMenuOpen && (
-				<div className="md:hidden bg-white border-t border-gray-200 py-4 px-4 shadow-lg">
+				<div className="sm:hidden bg-white border-t border-gray-200 py-4 px-4 shadow-lg max-h-[80vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
 					{/* Mobile Search */}
 					{/* Mobile Search Bar */}
 						<div className="px-4 py-3 border-b border-gray-100">
@@ -554,6 +567,12 @@ const Header: React.FC<HeaderProps> = ({
 									<Heart size={20} className="mb-1 text-gray-700" />
 									<span className="text-xs">Favoritos</span>
 								</Link>
+								
+								{/* Theme Toggle */}
+								<div className="flex flex-col items-center p-2 rounded-lg hover:bg-gray-50">
+									<ThemeToggle />
+									<span className="text-xs mt-1">Tema</span>
+								</div>
 							</div>
 						</div>
 					)}

@@ -62,17 +62,17 @@ export class CheckoutItemsService {
    * ✅ CORREGIDO: Calcula totales usando calculadora centralizada  
    * GARANTIZA EXACTAMENTE EL MISMO RESULTADO QUE CARTPAGE
    */
-  static calculateCheckoutTotals(cartItems: any[], appliedDiscount: any = null): CheckoutTotals {
+  static async calculateCheckoutTotals(cartItems: any[], appliedDiscount: any = null): Promise<CheckoutTotals> {
     console.log("🔍 FLUJO CHECKOUT CORREGIDO - USANDO CALCULADORA CENTRALIZADA:");
     
-    // ✅ USAR CALCULADORA CENTRALIZADA - MISMA LÓGICA QUE CARTPAGE
-    const result = EcommerceCalculator.calculateTotals(cartItems, appliedDiscount);
+    // ✅ USAR CALCULADORA CENTRALIZADA - MISMA LÓGICA QUE CARTPAGE (AHORA ASÍNCRONA)
+    const result = await EcommerceCalculator.calculateTotals(cartItems, appliedDiscount);
     
     console.log("📊 PASO A PASO:");
     console.log(`   1️⃣ Subtotal original (sin descuentos): ${result.step1_originalSubtotal}`);
     console.log(`   2️⃣ Después de seller + volume: ${result.step3_afterVolumeDiscount} ✅ DEBE SER $2.85`);
     console.log(`   3️⃣ - Cupón 5% sobre subtotal: ${result.couponDiscount} -> Subtotal: ${result.step4_afterCoupon}`);
-    console.log(`   4️⃣ + Envío $5.00: ${result.step5_withShipping}`);
+    console.log(`   4️⃣ + Envío: ${result.step5_withShipping}`);
     console.log(`   5️⃣ + IVA 15% sobre ${result.step5_withShipping} : ${result.step6_tax}`);
     console.log(`   6️⃣ TOTAL FINAL: ${result.step7_finalTotal} ✅ DEBE SER $8.87`);
     
@@ -86,7 +86,7 @@ export class CheckoutItemsService {
     console.log(`🎯 VALOR CORRECTO PARA BACKEND: ${result.total}`);
 
     return {
-      subtotal: result.subtotalWithShipping, // Para compatibilidad con backend
+      subtotal: result.subtotalAfterCoupon, // ✅ CORREGIDO: subtotal_products (SIN envío, SIN IVA)
       originalSubtotal: result.originalSubtotal,
       sellerDiscounts: result.sellerDiscounts,
       volumeDiscounts: result.volumeDiscounts,

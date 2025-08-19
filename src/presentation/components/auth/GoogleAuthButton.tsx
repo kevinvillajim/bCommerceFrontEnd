@@ -25,7 +25,7 @@ const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({
 		warnings: string[];
 	}>({isConfigured: false, errors: [], warnings: []});
 
-	// Verificar configuración al montar
+	// Verificar configuración al montar (solo una vez)
 	useEffect(() => {
 		const checkConfig = async () => {
 			const googleService = GoogleAuthService.getInstance();
@@ -42,14 +42,15 @@ const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({
 				googleService.setAuthMethod(preferredMethod);
 			}
 
-			// Ejecutar diagnóstico en desarrollo
-			if (process.env.NODE_ENV === 'development') {
+			// Ejecutar diagnóstico en desarrollo (solo una vez)
+			if (process.env.NODE_ENV === 'development' && !window.__googleAuthDiagnosed) {
+				window.__googleAuthDiagnosed = true;
 				await googleService.diagnose();
 			}
 		};
 
 		checkConfig();
-	}, [preferredMethod]);
+	}, []); // Eliminado preferredMethod de dependencias
 
 	const handleGoogleAuth = async () => {
 		if (isProcessing || disabled) return;

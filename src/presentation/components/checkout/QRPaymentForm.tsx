@@ -53,7 +53,7 @@ const QRPaymentForm: React.FC<QRPaymentFormProps> = ({
     }
   };
 
-  // Timer countdown effect
+  // Timer countdown effect with automatic cancellation
   useEffect(() => {
     let interval: NodeJS.Timeout;
     
@@ -62,7 +62,31 @@ const QRPaymentForm: React.FC<QRPaymentFormProps> = ({
         setTimeRemaining(prev => {
           if (prev <= 1) {
             setIsPolling(false);
-            setError("El tiempo de pago ha expirado. Por favor, genera un nuevo código QR.");
+            setError("El tiempo de pago ha expirado. El pago ha sido cancelado automáticamente.");
+            
+            // Automatically cancel the payment when timer reaches 0
+            if (paymentData?.payment_id) {
+              console.log('⏰ Timer expired - automatically cancelling payment:', paymentData.payment_id);
+              
+              // Cancel the payment immediately (don't wait for async)
+              DeunaService.cancelPayment(paymentData.payment_id, 'Timer expired - automatic cancellation')
+                .then(() => {
+                  console.log('✅ Payment automatically cancelled due to timer expiration');
+                  setCurrentStatus('cancelled');
+                  
+                  // Stop any active polling
+                  if (pollingRef.current?.cancel) {
+                    pollingRef.current.cancel();
+                    pollingRef.current = null;
+                  }
+                })
+                .catch((error) => {
+                  console.error('❌ Error automatically cancelling expired payment:', error);
+                  // Still set as cancelled in UI even if API call fails
+                  setCurrentStatus('cancelled');
+                });
+            }
+            
             return 0;
           }
           return prev - 1;
@@ -152,18 +176,36 @@ const QRPaymentForm: React.FC<QRPaymentFormProps> = ({
           phone: user.phone || undefined,
         },
         items: cart.items.map((item, index) => {
+          // 🔧 CRITICAL FIX: Ensure product_id is always present and valid
+          const productId = item.productId || item.product?.id || (item.product as any)?.product_id;
+          
+          if (!productId) {
+            console.error(`❌ CRITICAL: Missing product_id for cart item ${index}:`, {
+              item_keys: Object.keys(item),
+              item_productId: item.productId,
+              product_id_alternatives: {
+                'item.product?.id': item.product?.id,
+                'item.product?.product_id': (item.product as any)?.product_id,
+                'item.id': item.id
+              },
+              full_item: item
+            });
+            throw new Error(`Cart item ${index} is missing product_id. Cannot proceed with payment.`);
+          }
+
           const mappedItem = {
             name: item.product?.name || 'Producto',
             quantity: item.quantity,
             price: item.final_price || item.price || item.subtotal || 0,
             description: (item.product as any)?.description || '',
-            product_id: item.productId, // Include product_id as separate field
+            product_id: productId, // 🔧 FIXED: Use the validated product_id
           };
           
           // Debug: Log each item transformation
-          console.log(`🔍 ITEM ${index} TRANSFORMATION:`, {
+          console.log(`✅ ITEM ${index} TRANSFORMATION SUCCESS:`, {
             original_productId: item.productId,
             mapped_product_id: mappedItem.product_id,
+            product_id_source: item.productId ? 'item.productId' : item.product?.id ? 'item.product.id' : 'other',
             mapped_item_keys: Object.keys(mappedItem),
             mapped_item: mappedItem
           });
@@ -184,9 +226,9 @@ const QRPaymentForm: React.FC<QRPaymentFormProps> = ({
       console.log('🚀 FINAL PAYMENT REQUEST TO SEND:', {
         order_id: paymentRequest.order_id,
         amount: paymentRequest.amount,
-        items_count: paymentRequest.items.length,
+        items_count: paymentRequest.items?.length || 0,
         items: paymentRequest.items,
-        first_item_keys: paymentRequest.items.length > 0 ? Object.keys(paymentRequest.items[0]) : 'no_items'
+        first_item_keys: paymentRequest.items && paymentRequest.items.length > 0 ? Object.keys(paymentRequest.items[0]) : 'no_items'
       });
 
       console.log('Creating DeUna payment:', paymentRequest);

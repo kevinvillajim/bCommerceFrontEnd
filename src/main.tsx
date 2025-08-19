@@ -10,6 +10,7 @@ import {ThemeProvider} from "./presentation/contexts/ThemeContext";
 import NotificationWrapper from "./presentation/components/layout/NotificationWrapper";
 import PrefetchService from "./infrastructure/services/PrefetchService";
 import { VolumeDiscountProvider } from './presentation/contexts/VolumeDiscountContext';
+import { ShippingConfigProvider } from './presentation/contexts/ShippingConfigContext';
 
 // Import main styles
 import "./styles/main.css";
@@ -33,17 +34,19 @@ if (root) {
 			<BrowserRouter>
 				<ThemeProvider>
 					<AuthProvider>
-						<NotificationProvider>
-							<CartProvider>
-								<FavoriteProvider>
-									<NotificationWrapper>
-									<VolumeDiscountProvider>
-										<App />
-									</VolumeDiscountProvider>
-									</NotificationWrapper>
-								</FavoriteProvider>
-							</CartProvider>
-						</NotificationProvider>
+						<ShippingConfigProvider>
+							<NotificationProvider>
+								<CartProvider>
+									<FavoriteProvider>
+										<NotificationWrapper>
+										<VolumeDiscountProvider>
+											<App />
+										</VolumeDiscountProvider>
+										</NotificationWrapper>
+									</FavoriteProvider>
+								</CartProvider>
+							</NotificationProvider>
+						</ShippingConfigProvider>
 					</AuthProvider>
 				</ThemeProvider>
 			</BrowserRouter>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Truck, Save, AlertTriangle, Info, RefreshCw, DollarSign, Package } from "lucide-react";
 import ConfigurationService, { type ShippingConfig } from "../../../core/services/ConfigurationService";
+import { useShippingConfig } from "../../contexts/ShippingConfigContext";
 
 const ShippingConfiguration: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -15,6 +16,8 @@ const ShippingConfiguration: React.FC = () => {
   });
 
   const configService = new ConfigurationService();
+  
+  // No necesitamos contexto complicado
 
   useEffect(() => {
     loadConfiguration();
@@ -40,10 +43,30 @@ const ShippingConfiguration: React.FC = () => {
   };
 
   const handleConfigChange = (field: keyof ShippingConfig, value: string | number | boolean) => {
-    setConfig(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    setConfig(prev => {
+      // Si se está deshabilitando el envío, poner valores en 0
+      if (field === 'enabled' && value === false) {
+        return {
+          enabled: false,
+          freeThreshold: 0,
+          defaultCost: 0
+        };
+      }
+      
+      // Si se está habilitando el envío, poner valores por defecto
+      if (field === 'enabled' && value === true) {
+        return {
+          enabled: true,
+          freeThreshold: 50.00,
+          defaultCost: 5.00
+        };
+      }
+      
+      return {
+        ...prev,
+        [field]: value
+      };
+    });
   };
 
   const saveConfiguration = async () => {
@@ -51,10 +74,15 @@ const ShippingConfiguration: React.FC = () => {
     setError(null);
     setSuccess(null);
 
+    
     try {
       const response = await configService.updateShippingConfigs(config);
       if (response?.status === "success") {
         setSuccess("Configuración de envío guardada correctamente");
+        
+        // ✅ NOTIFICAR A TODAS LAS PESTAÑAS/VENTANAS DEL CAMBIO
+        localStorage.setItem('shipping_config_updated', Date.now().toString());
+        
         setTimeout(() => setSuccess(null), 3000);
       } else {
         setError(response?.message || "Error al guardar la configuración");
@@ -154,7 +182,7 @@ const ShippingConfiguration: React.FC = () => {
               </label>
             </div>
             <p className="text-xs text-gray-500">
-              Cuando está deshabilitado, no se aplicarán costos de envío a las compras
+              Cuando está deshabilitado, el envío será GRATIS para todas las compras (promoción temporal)
             </p>
           </div>
         </div>
@@ -171,12 +199,22 @@ const ShippingConfiguration: React.FC = () => {
                 Umbral para envío gratis (USD)
               </label>
               <input
-                type="number"
-                value={config.freeThreshold}
-                onChange={(e) => handleConfigChange('freeThreshold', parseFloat(e.target.value))}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-primary-500 focus:border-primary-500"
-                min="0"
-                step="0.01"
+                type="text"
+                value={config.freeThreshold === 0 || config.freeThreshold === null || config.freeThreshold === undefined ? '' : config.freeThreshold}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  // Solo permitir números y punto decimal
+                  if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                    handleConfigChange('freeThreshold', value === '' ? 0 : parseFloat(value) || 0);
+                  }
+                }}
+                disabled={!config.enabled}
+                className={`w-full border rounded-md px-3 py-2 ${
+                  config.enabled 
+                    ? 'border-gray-300 focus:ring-primary-500 focus:border-primary-500' 
+                    : 'border-gray-200 bg-gray-100 cursor-not-allowed'
+                }`}
+                placeholder="50.00"
               />
               <p className="text-xs text-gray-500 mt-1">
                 Monto mínimo de compra para obtener envío gratuito
@@ -188,12 +226,22 @@ const ShippingConfiguration: React.FC = () => {
                 Costo de envío por defecto (USD)
               </label>
               <input
-                type="number"
-                value={config.defaultCost}
-                onChange={(e) => handleConfigChange('defaultCost', parseFloat(e.target.value))}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-primary-500 focus:border-primary-500"
-                min="0"
-                step="0.01"
+                type="text"
+                value={config.defaultCost === 0 || config.defaultCost === null || config.defaultCost === undefined ? '' : config.defaultCost}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  // Solo permitir números y punto decimal
+                  if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                    handleConfigChange('defaultCost', value === '' ? 0 : parseFloat(value) || 0);
+                  }
+                }}
+                disabled={!config.enabled}
+                className={`w-full border rounded-md px-3 py-2 ${
+                  config.enabled 
+                    ? 'border-gray-300 focus:ring-primary-500 focus:border-primary-500' 
+                    : 'border-gray-200 bg-gray-100 cursor-not-allowed'
+                }`}
+                placeholder="5.00"
               />
               <p className="text-xs text-gray-500 mt-1">
                 Costo aplicado cuando no se alcanza el umbral de envío gratis

@@ -1,6 +1,7 @@
 // src/utils/orderCalculations.ts - Unified order calculation utilities
 
 import { calculateCartItemDiscounts } from './volumeDiscountCalculator';
+import ShippingConfigService from '../core/services/ShippingConfigService';
 
 // Helper function for precise decimal calculations
 function roundToPrecision(value: number, decimals: number = 2): number {
@@ -36,10 +37,10 @@ export interface OrderItemCalculated {
  * Calculate order totals with exact same logic as cart and checkout
  * SECUENCIA: Precio Normal → Descuento Seller → Descuento Volumen → Descuento Cupón → IVA + Envío
  */
-export function calculateOrderTotals(
+export async function calculateOrderTotals(
   items: any[], 
   appliedDiscountCode?: { code: string; discount_percentage: number }
-): OrderTotals {
+): Promise<OrderTotals> {
   let originalSubtotal = 0;
   let subtotal = 0;
   let sellerDiscounts = 0;
@@ -67,9 +68,12 @@ export function calculateOrderTotals(
     subtotal = roundToPrecision(subtotal - couponDiscount);
   }
 
-  // 3. Calculate shipping
-  const freeShippingThreshold = 50.00;
-  const shipping = subtotal >= freeShippingThreshold ? 0 : 5.00;
+  // 3. Calculate shipping with dynamic configuration
+  const shippingService = ShippingConfigService.getInstance();
+  const shippingConfig = await shippingService.getShippingConfig();
+  
+  const shipping = !shippingConfig.enabled ? 0 : 
+    (subtotal >= shippingConfig.freeThreshold ? 0 : shippingConfig.defaultCost);
   const freeShipping = shipping === 0;
 
   // 4. Calculate tax on subtotal + shipping
