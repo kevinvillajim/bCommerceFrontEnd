@@ -334,18 +334,6 @@ const SecurityConfiguration: React.FC = () => {
               <label className="flex items-center">
                 <input
                   type="checkbox"
-                  checked={config.enableTwoFactor}
-                  onChange={(e) => handleConfigChange('enableTwoFactor', e.target.checked)}
-                  className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-                />
-                <span className="ml-2 text-sm text-gray-700">
-                  Habilitar autenticación de dos factores
-                </span>
-              </label>
-              
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
                   checked={config.requireEmailVerification}
                   onChange={(e) => handleConfigChange('requireEmailVerification', e.target.checked)}
                   className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
