@@ -1,12 +1,13 @@
 // src/presentation/pages/CheckoutPage.tsx - ACTUALIZADO CON DESCUENTOS POR VOLUMEN
-import {useState, useEffect, useMemo} from "react";
+import {useState, useEffect} from "react";
 import {useNavigate} from "react-router-dom";
 import {useCart} from "../hooks/useCart";
 import {useAuth} from "../hooks/useAuth";
 import {useErrorHandler} from "../hooks/useErrorHandler";
 import {CheckoutService} from "../../core/services/CheckoutService";
 import {CheckoutItemsService} from "../../infrastructure/services/CheckoutItemsService";
-import {calculateCartItemDiscounts} from "../../utils/volumeDiscountCalculator";
+import {calculateCartItemDiscountsAsync} from "../../utils/volumeDiscountCalculator";
+import {useCartVolumeDiscounts} from "../contexts/VolumeDiscountContext";
 import type {
 	PaymentInfo,
 	PaymentMethod,
@@ -26,6 +27,9 @@ const CheckoutPage: React.FC = () => {
 	const {cart, clearCart, showNotification, appliedDiscount} = useCart();
 	const {user} = useAuth();
 	const [isLoading, setIsLoading] = useState(false);
+
+	// ✅ Hook para descuentos por volumen dinámicos desde BD
+	const {isEnabled: volumeDiscountsEnabled, config: volumeDiscountConfig} = useCartVolumeDiscounts();
 
 	const initialAddress: Address = {
 		name: "",
@@ -66,7 +70,28 @@ const CheckoutPage: React.FC = () => {
 	const checkoutService = new CheckoutService();
 
 	// ✅ ESTADO PARA CÁLCULOS DE CHECKOUT ASÍNCRONOS
-	const [checkoutCalculations, setCheckoutCalculations] = useState({
+	const [checkoutCalculations, setCheckoutCalculations] = useState<{
+		items: any[];
+		totals: {
+			subtotal: number;
+			originalSubtotal: number;
+			sellerDiscounts: number;
+			volumeDiscounts: number;
+			totalDiscounts: number;
+			couponDiscount: number;
+			tax: number;
+			shipping: number;
+			total: number;
+			freeShipping: boolean;
+		};
+		stockIssues: Array<{
+			productName: string;
+			requested: number;
+			available: number;
+			isOutOfStock: boolean;
+		}>;
+		checkoutItems: any[];
+	}>({
 		items: [],
 		totals: {
 			subtotal: 0,
@@ -108,20 +133,28 @@ const CheckoutPage: React.FC = () => {
 				return;
 			}
 
-		// ✅ Calcular items con descuentos
-		const itemsWithDiscounts = cart.items.map((item) => {
-			const discount = calculateCartItemDiscounts(item);
-			const availableStock = item.product?.stockAvailable || item.product?.stock || 0;
-			const hasStockIssue = item.quantity > availableStock || !item.product?.is_in_stock;
+			// ✅ Calcular items con descuentos asíncronamente usando BD config
+			console.log("🔄 CheckoutPage: Calculando descuentos con configuración BD:", volumeDiscountConfig);
+			const itemsWithDiscounts = await Promise.all(
+				cart.items.map(async (item) => {
+					// Usar calculadora asíncrona con tiers dinámicos de BD
+					const discount = await calculateCartItemDiscountsAsync(
+						item,
+						volumeDiscountsEnabled ? volumeDiscountConfig?.default_tiers : []
+					);
+					const availableStock = item.product?.stockAvailable || item.product?.stock || 0;
+					const hasStockIssue = item.quantity > availableStock || !item.product?.is_in_stock;
 
-			return {
-				...item,
-				discount,
-				itemTotal: discount.finalPricePerUnit * item.quantity,
-				availableStock,
-				hasStockIssue,
-			};
-		});
+					return {
+						...item,
+						discount,
+						itemTotal: discount.finalPricePerUnit * item.quantity,
+						availableStock,
+						hasStockIssue,
+					};
+				})
+			);
+			console.log("✅ CheckoutPage: Descuentos calculados para", itemsWithDiscounts.length, "items");
 
 		// ✅ Identificar problemas de stock
 		const stockIssues = itemsWithDiscounts
@@ -137,11 +170,14 @@ const CheckoutPage: React.FC = () => {
 			console.log("🔍 FLUJO CHECKOUT - Calculando totales");
 			console.log("📊 Items en checkout:", cart.items.length);
 			console.log("📊 Cupón en checkout:", appliedDiscount?.discountCode?.code || "NINGUNO");
-			const totals = await CheckoutItemsService.calculateCheckoutTotals(cart.items, appliedDiscount);
+			
+			// CORREGIDO: Pasar tiers dinámicos para cálculos consistentes con cart
+			const dynamicTiers = volumeDiscountConfig?.default_tiers || [];
+			const totals = await CheckoutItemsService.calculateCheckoutTotals(cart.items, appliedDiscount, dynamicTiers);
 			console.log("🎯 TOTAL CHECKOUT:", totals.total);
 
-			// ✅ Preparar items para envío al backend CON CUPÓN
-			const checkoutItems = CheckoutItemsService.prepareItemsForCheckout(cart.items, appliedDiscount);
+			// ✅ Preparar items para envío al backend CON CUPÓN Y TIERS DINÁMICOS
+			const checkoutItems = await CheckoutItemsService.prepareItemsForCheckout(cart.items, appliedDiscount, dynamicTiers);
 
 			setCheckoutCalculations({
 				items: itemsWithDiscounts,
@@ -152,7 +188,7 @@ const CheckoutPage: React.FC = () => {
 		};
 
 		calculateCheckout();
-	}, [cart?.items, cart?.total, cart?.subtotal, appliedDiscount]);
+	}, [cart?.items, cart?.total, cart?.subtotal, appliedDiscount, volumeDiscountConfig, volumeDiscountsEnabled]);
 
 	// Funciones helper
 	const getAvailableStock = (product: any): number => {
@@ -865,7 +901,7 @@ const CheckoutPage: React.FC = () => {
 								setOrderDetails({
 									order_id: paymentData.order_id,
 									order_number: paymentData.order_id || `DEUNA-${Date.now()}`,
-									total: paymentData.amount || checkoutCalculations.totals.total,
+									total: checkoutCalculations.totals.total,
 									payment_status: 'paid',
 									payment_method: 'deuna',
 									payment_id: paymentData.payment_id,
@@ -879,16 +915,13 @@ const CheckoutPage: React.FC = () => {
 								// Clear cart after setting state
 								clearCart();
 
-								let successMessage = "¡Pago con DeUna completado con éxito!";
-								if (checkoutCalculations.totals.totalDiscounts > 0) {
-									successMessage += ` Has ahorrado ${formatCurrency(checkoutCalculations.totals.totalDiscounts)} con descuentos aplicados.`;
-								}
-								
-								handleSuccess(successMessage);
+								// 🔧 CORREGIDO: Remover toast notification para evitar confusión con valores
+								// Toast removed as per user request: "si no funciona solo quita el toast por que no es importante"
+								// handleSuccess(successMessage);
 								console.log('✅ DeUna payment completion processed successfully - should show receipt now');
 								console.log('📊 Order details set:', {
 									order_id: paymentData.order_id,
-									total: paymentData.amount || checkoutCalculations.totals.total
+									total: checkoutCalculations.totals.total
 								});
 								
 							} catch (error) {

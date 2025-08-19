@@ -1,6 +1,7 @@
-// src/presentation/contexts/VolumeDiscountContext.tsx - ACTUALIZADO
+// src/presentation/contexts/VolumeDiscountContext.tsx - ACTUALIZADO CON BD
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import type { CartItem } from '../../core/domain/entities/ShoppingCart';
+import VolumeDiscountConfigService from '../../core/services/VolumeDiscountConfigService';
 
 // Tipos para el contexto
 interface VolumeDiscountTier {
@@ -47,15 +48,18 @@ interface VolumeDiscountContextType {
 // Contexto
 const VolumeDiscountContext = createContext<VolumeDiscountContextType | undefined>(undefined);
 
-// Configuración por defecto
+// Servicio para obtener configuración desde BD
+const volumeDiscountService = VolumeDiscountConfigService.getInstance();
+
+// Configuración por defecto (solo como fallback si BD falla)
 const DEFAULT_CONFIG: VolumeDiscountConfig = {
   enabled: true,
-  stackable: false,
+  stackable: true,
   show_savings_message: true,
   default_tiers: [
-    { quantity: 3, discount: 5, label: "Descuento 3+" },
-    { quantity: 6, discount: 10, label: "Descuento 6+" },
-    { quantity: 12, discount: 15, label: "Descuento 12+" }
+    { quantity: 5, discount: 5, label: "Descuento 5+" },
+    { quantity: 6, discount: 10, label: "Descuento 10+" },
+    { quantity: 19, discount: 15, label: "Descuento 15+" }
   ]
 };
 
@@ -65,31 +69,28 @@ export const VolumeDiscountProvider: React.FC<{ children: React.ReactNode }> = (
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // ✅ CARGAR CONFIGURACIÓN DESDE LOCALSTORAGE O USAR DEFAULTS
+  // ✅ CARGAR CONFIGURACIÓN DESDE BD (con cache en sessionStorage)
   const loadConfig = useCallback(async (): Promise<void> => {
     try {
       setLoading(true);
       setError(null);
 
-      // Intentar cargar desde localStorage
-      const stored = localStorage.getItem('volume_discount_config');
-      if (stored) {
-        try {
-          const parsedConfig = JSON.parse(stored);
-          setConfig(parsedConfig);
-          console.log('✅ VolumeDiscountContext: Configuración cargada desde localStorage:', parsedConfig);
-          return;
-        } catch (parseError) {
-          console.warn('⚠️ Error parsing stored config, using defaults');
-        }
-      }
-
-      // Usar configuración por defecto
-      setConfig(DEFAULT_CONFIG);
-      console.log('✅ VolumeDiscountContext: Usando configuración por defecto:', DEFAULT_CONFIG);
+      // Cargar configuración desde el servicio (que consulta BD con cache)
+      const bdConfig = await volumeDiscountService.getVolumeDiscountConfig();
+      
+      // Transformar el formato de la BD al formato del contexto
+      const formattedConfig: VolumeDiscountConfig = {
+        enabled: bdConfig.enabled,
+        stackable: bdConfig.stackable,
+        show_savings_message: bdConfig.show_savings_message,
+        default_tiers: bdConfig.default_tiers || []
+      };
+      
+      setConfig(formattedConfig);
+      console.log('✅ VolumeDiscountContext: Configuración cargada desde BD:', formattedConfig);
       
     } catch (err) {
-      console.error('❌ Error cargando configuración de descuentos por volumen:', err);
+      console.error('❌ Error cargando configuración de descuentos por volumen desde BD:', err);
       setError('Error al cargar configuración de descuentos');
       setConfig(DEFAULT_CONFIG); // Fallback a configuración por defecto
     } finally {
@@ -97,14 +98,19 @@ export const VolumeDiscountProvider: React.FC<{ children: React.ReactNode }> = (
     }
   }, []);
 
-  // ✅ ACTUALIZAR CONFIGURACIÓN
+  // ✅ ACTUALIZAR CONFIGURACIÓN (solo actualiza cache local, admin debe actualizar BD)
   const updateConfig = useCallback(async (newConfig: VolumeDiscountConfig): Promise<boolean> => {
     try {
       setLoading(true);
       setError(null);
 
-      // Guardar en localStorage
-      localStorage.setItem('volume_discount_config', JSON.stringify(newConfig));
+      // Actualizar cache del servicio
+      volumeDiscountService.updateCache({
+        enabled: newConfig.enabled,
+        stackable: newConfig.stackable,
+        default_tiers: newConfig.default_tiers,
+        show_savings_message: newConfig.show_savings_message
+      });
       
       // Actualizar estado
       setConfig(newConfig);
@@ -112,7 +118,7 @@ export const VolumeDiscountProvider: React.FC<{ children: React.ReactNode }> = (
       // Disparar evento personalizado para notificar a otros componentes
       window.dispatchEvent(new CustomEvent('volumeDiscountConfigUpdated', { detail: newConfig }));
       
-      console.log('✅ VolumeDiscountContext: Configuración actualizada:', newConfig);
+      console.log('✅ VolumeDiscountContext: Configuración actualizada en cache:', newConfig);
       return true;
     } catch (err) {
       console.error('❌ Error actualizando configuración:', err);
@@ -207,19 +213,27 @@ export const VolumeDiscountProvider: React.FC<{ children: React.ReactNode }> = (
     loadConfig();
   }, [loadConfig]);
 
-  // ✅ ESCUCHAR CAMBIOS DE CONFIGURACIÓN
+  // ✅ ESCUCHAR CAMBIOS DE CONFIGURACIÓN Y RECARGAR DESDE BD
   useEffect(() => {
     const handleConfigUpdate = (event: CustomEvent) => {
       console.log('🔄 VolumeDiscountContext: Configuración actualizada por evento externo');
       setConfig(event.detail);
     };
 
+    const handleAdminConfigUpdate = () => {
+      console.log('🔄 VolumeDiscountContext: Admin actualizó configuración, recargando desde BD...');
+      volumeDiscountService.clearCache(); // Limpiar cache para forzar recarga desde BD
+      loadConfig(); // Recargar desde BD
+    };
+
     window.addEventListener('volumeDiscountConfigUpdated', handleConfigUpdate as EventListener);
+    window.addEventListener('adminVolumeDiscountConfigUpdated', handleAdminConfigUpdate);
 
     return () => {
       window.removeEventListener('volumeDiscountConfigUpdated', handleConfigUpdate as EventListener);
+      window.removeEventListener('adminVolumeDiscountConfigUpdated', handleAdminConfigUpdate);
     };
-  }, []);
+  }, [loadConfig]);
 
   // ✅ MEMOIZAR VALOR DEL CONTEXTO
   const contextValue = useMemo(() => ({

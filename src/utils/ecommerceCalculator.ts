@@ -5,6 +5,7 @@
  */
 
 import ShippingConfigService from '../core/services/ShippingConfigService';
+import ApiClient from '../infrastructure/api/apiClient';
 
 export interface CartItem {
   id?: number;
@@ -104,8 +105,8 @@ export class EcommerceCalculator {
       
       // Valores por defecto si falla (deben coincidir con BD actual)
       this.shippingConfig = {
-        cost: 8.00,    // Valor actual en BD
-        threshold: 60.00, // Valor actual en BD
+        cost: 3.00,    // Valor actual en BD
+        threshold: 20.00, // Valor actual en BD
         enabled: true
       };
       this.configCacheTime = now;
@@ -120,11 +121,41 @@ export class EcommerceCalculator {
    */
   static async calculateTotals(
     items: CartItem[], 
-    appliedDiscountCode?: any
+    appliedDiscountCode?: any,
+    dynamicVolumeTiers?: Array<{quantity: number, discount: number}>
   ): Promise<CalculationResult> {
     console.log('🧮 CALCULADORA CENTRALIZADA - INICIANDO');
     console.log('📊 Items a procesar:', items.length);
     console.log('🎫 Cupón aplicado:', appliedDiscountCode?.discountCode?.code || 'NINGUNO');
+
+    // 🔧 NUEVO: Cargar tiers dinámicos de descuentos por volumen
+    let volumeTiers: Array<{quantity: number, discount: number}> = [];
+    
+    if (dynamicVolumeTiers && dynamicVolumeTiers.length > 0) {
+      // Usar tiers pasados como parámetro (prioritario)
+      volumeTiers = dynamicVolumeTiers;
+      console.log('✅ Usando tiers dinámicos pasados como parámetro:', volumeTiers);
+    } else {
+      // Fallback: cargar desde ruta pública
+      try {
+        const response = await ApiClient.get('/configurations/volume-discounts-public');
+        
+        if (response.status === 'success' && response.data?.volume_discounts?.default_tiers) {
+          const tiersData = typeof response.data.volume_discounts.default_tiers === 'string' 
+            ? JSON.parse(response.data.volume_discounts.default_tiers)
+            : response.data.volume_discounts.default_tiers;
+          
+          volumeTiers = tiersData.map((tier: any) => ({
+            quantity: tier.quantity,
+            discount: tier.discount
+          }));
+          
+          console.log('✅ Tiers dinámicos cargados desde BD (fallback):', volumeTiers);
+        }
+      } catch (error) {
+        console.warn('⚠️ Error cargando tiers dinámicos, usando fallback hardcodeado:', error);
+      }
+    }
 
     // PASO 1: Precio Base × Cantidad = $6.00
     const step1_originalSubtotal = this.calculateStep1_OriginalSubtotal(items);
@@ -135,9 +166,9 @@ export class EcommerceCalculator {
       this.calculateStep2_SellerDiscounts(items, step1_originalSubtotal);
     console.log(`2️⃣ Después descuento vendedor: $${step2_afterSellerDiscount.toFixed(2)} (descuento: $${sellerDiscounts.toFixed(2)})`);
 
-    // PASO 3: Aplicar Descuento Volumen (5%) = $2.85
+    // PASO 3: Aplicar Descuento Volumen (dinámico desde BD) = $2.85
     const { subtotal: step3_afterVolumeDiscount, totalDiscount: volumeDiscounts } = 
-      this.calculateStep3_VolumeDiscounts(items, step2_afterSellerDiscount);
+      this.calculateStep3_VolumeDiscounts(items, step2_afterSellerDiscount, volumeTiers);
     console.log(`3️⃣ Después descuento volumen: $${step3_afterVolumeDiscount.toFixed(2)} (descuento: $${volumeDiscounts.toFixed(2)})`);
 
     // PASO 4: Aplicar Cupón (5% sobre $2.85) = $2.71
@@ -254,15 +285,19 @@ export class EcommerceCalculator {
   }
 
   /**
-   * PASO 3: Aplicar descuentos por volumen
+   * PASO 3: Aplicar descuentos por volumen con configuración dinámica
    */
-  private static calculateStep3_VolumeDiscounts(items: CartItem[], _currentSubtotal: number): { subtotal: number; totalDiscount: number } {
+  private static calculateStep3_VolumeDiscounts(
+    items: CartItem[], 
+    _currentSubtotal: number, 
+    dynamicTiers?: Array<{quantity: number, discount: number}>
+  ): { subtotal: number; totalDiscount: number } {
     let totalDiscount = 0;
     let subtotalAfterDiscount = 0;
 
     items.forEach(item => {
       const quantity = item.quantity || 0;
-      const volumeDiscountPercentage = this.getVolumeDiscountPercentage(quantity);
+      const volumeDiscountPercentage = this.getVolumeDiscountPercentage(quantity, dynamicTiers);
       
       if (volumeDiscountPercentage > 0) {
         const sellerDiscountedPrice = this.getPriceAfterSellerDiscount(item);
@@ -356,13 +391,28 @@ export class EcommerceCalculator {
   }
 
   /**
-   * Obtiene el porcentaje de descuento por volumen
+   * 🔧 CORREGIDO: Usa configuración dinámica desde BD cuando esté disponible
+   * Mantiene compatibilidad síncrona pero necesita ser migrado a versión async
    */
-  private static getVolumeDiscountPercentage(quantity: number): number {
-    if (quantity >= 10) return 15.0;
-    if (quantity >= 6) return 10.0;
-    if (quantity >= 5) return 8.0;
-    if (quantity >= 3) return 5.0;
+  private static getVolumeDiscountPercentage(quantity: number, dynamicTiers?: Array<{quantity: number, discount: number}>): number {
+    // Si se proveen tiers dinámicos, usarlos
+    if (dynamicTiers && dynamicTiers.length > 0) {
+      // Ordenar tiers por cantidad descendente para encontrar el mayor aplicable
+      const sortedTiers = [...dynamicTiers].sort((a, b) => b.quantity - a.quantity);
+      
+      for (const tier of sortedTiers) {
+        if (quantity >= tier.quantity) {
+          return tier.discount;
+        }
+      }
+      return 0.0;
+    }
+    
+    // ⚠️ FALLBACK: Solo para compatibilidad cuando no hay tiers dinámicos
+    // 🔧 CORREGIDO: Debe coincidir con configuración actual del backend
+    // TODO: Migrar todos los llamadores a versión async con ConfigurationService
+    console.warn('⚠️ EcommerceCalculator: Usando descuentos por volumen hardcodeados como fallback');
+    if (quantity >= 6) return 50.0; // CORREGIDO: 6+ items = 50% OFF según configuración actual
     return 0.0;
   }
 
@@ -374,18 +424,22 @@ export class EcommerceCalculator {
   }
 
   /**
-   * 🎯 HELPER PARA CHECKOUT - Prepara datos para backend
+   * 🎯 HELPER PARA CHECKOUT - Prepara datos para backend (con configuración dinámica)
    */
-  static prepareCheckoutData(items: CartItem[], appliedDiscount?: any): {
+  static async prepareCheckoutData(
+    items: CartItem[], 
+    appliedDiscount?: any,
+    dynamicVolumeTiers?: Array<{quantity: number, discount: number}>
+  ): Promise<{
     items: any[];
     totals: CalculationResult;
-  } {
-    const totals = this.calculateTotals(items, appliedDiscount);
+  }> {
+    const totals = await this.calculateTotals(items, appliedDiscount, dynamicVolumeTiers);
     
     const preparedItems = items.map(item => {
       const basePrice = this.getBasePrice(item);
       const sellerDiscountPercentage = this.getSellerDiscountPercentage(item);
-      const volumeDiscountPercentage = this.getVolumeDiscountPercentage(item.quantity || 0);
+      const volumeDiscountPercentage = this.getVolumeDiscountPercentage(item.quantity || 0, dynamicVolumeTiers);
       
       // Calcular precio final por unidad
       const priceAfterSeller = basePrice * (1 - sellerDiscountPercentage / 100);

@@ -153,6 +153,7 @@ const ModerationConfiguration: React.FC = () => {
               </label>
               <input
                 type="number"
+											onWheel={(e) => e.currentTarget.blur()}
                 value={config.userStrikesThreshold}
                 onChange={(e) => handleConfigChange('userStrikesThreshold', parseInt(e.target.value))}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-primary-500 focus:border-primary-500"
@@ -170,6 +171,7 @@ const ModerationConfiguration: React.FC = () => {
               </label>
               <input
                 type="number"
+											onWheel={(e) => e.currentTarget.blur()}
                 value={config.lowStockThreshold}
                 onChange={(e) => handleConfigChange('lowStockThreshold', parseInt(e.target.value))}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-primary-500 focus:border-primary-500"
@@ -196,6 +198,7 @@ const ModerationConfiguration: React.FC = () => {
               </label>
               <input
                 type="number"
+											onWheel={(e) => e.currentTarget.blur()}
                 value={config.contactScorePenalty}
                 onChange={(e) => handleConfigChange('contactScorePenalty', parseInt(e.target.value))}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-primary-500 focus:border-primary-500"
@@ -213,6 +216,7 @@ const ModerationConfiguration: React.FC = () => {
               </label>
               <input
                 type="number"
+											onWheel={(e) => e.currentTarget.blur()}
                 value={config.businessScoreBonus}
                 onChange={(e) => handleConfigChange('businessScoreBonus', parseInt(e.target.value))}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-primary-500 focus:border-primary-500"
@@ -230,6 +234,7 @@ const ModerationConfiguration: React.FC = () => {
               </label>
               <input
                 type="number"
+											onWheel={(e) => e.currentTarget.blur()}
                 value={config.contactPenaltyHeavy}
                 onChange={(e) => handleConfigChange('contactPenaltyHeavy', parseInt(e.target.value))}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-primary-500 focus:border-primary-500"
@@ -255,6 +260,7 @@ const ModerationConfiguration: React.FC = () => {
               </label>
               <input
                 type="number"
+											onWheel={(e) => e.currentTarget.blur()}
                 value={config.minimumContactScore}
                 onChange={(e) => handleConfigChange('minimumContactScore', parseInt(e.target.value))}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-primary-500 focus:border-primary-500"
@@ -272,6 +278,7 @@ const ModerationConfiguration: React.FC = () => {
               </label>
               <input
                 type="number"
+											onWheel={(e) => e.currentTarget.blur()}
                 value={config.scoreDifferenceThreshold}
                 onChange={(e) => handleConfigChange('scoreDifferenceThreshold', parseInt(e.target.value))}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-primary-500 focus:border-primary-500"
@@ -297,6 +304,7 @@ const ModerationConfiguration: React.FC = () => {
               </label>
               <input
                 type="number"
+											onWheel={(e) => e.currentTarget.blur()}
                 value={config.consecutiveNumbersLimit}
                 onChange={(e) => handleConfigChange('consecutiveNumbersLimit', parseInt(e.target.value))}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-primary-500 focus:border-primary-500"
@@ -314,6 +322,7 @@ const ModerationConfiguration: React.FC = () => {
               </label>
               <input
                 type="number"
+											onWheel={(e) => e.currentTarget.blur()}
                 value={config.numbersWithContextLimit}
                 onChange={(e) => handleConfigChange('numbersWithContextLimit', parseInt(e.target.value))}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-primary-500 focus:border-primary-500"

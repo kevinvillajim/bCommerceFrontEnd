@@ -222,6 +222,7 @@ const DevelopmentConfiguration: React.FC = () => {
               </label>
               <input
                 type="number"
+											onWheel={(e) => e.currentTarget.blur()}
                 value={config.emailVerificationTimeout}
                 onChange={(e) => handleConfigChange('emailVerificationTimeout', parseInt(e.target.value))}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-primary-500 focus:border-primary-500"

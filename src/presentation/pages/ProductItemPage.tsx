@@ -95,6 +95,7 @@ const ProductItemPage: React.FC = () => {
 		totalSavings
 	} = useProductVolumeDiscount(product, 1);
 
+
 	// ❌ YA NO necesitamos ProductService directo
 	// Initialize services - mantener solo para compatibilidad con chat si es necesario
 

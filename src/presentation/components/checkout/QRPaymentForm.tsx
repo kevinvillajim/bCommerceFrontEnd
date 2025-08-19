@@ -489,7 +489,7 @@ const QRPaymentForm: React.FC<QRPaymentFormProps> = ({
 
               <h3 className="text-xl font-bold mb-2">Pago con Deuna</h3>
               <p className="text-purple-100 mb-4">
-                Monto a pagar: {formatCurrency(paymentData.amount)}
+                Monto a pagar: {formatCurrency(total)}
               </p>
 
               <div className="bg-white rounded-lg p-4 mb-4">
@@ -581,7 +581,7 @@ const QRPaymentForm: React.FC<QRPaymentFormProps> = ({
         {/* Payment Amount */}
         <div className="text-center">
           <p className="text-lg font-semibold text-gray-900">
-            Monto a pagar: {formatCurrency(paymentData.amount)}
+            Monto a pagar: {formatCurrency(total)}
           </p>
           <p className="text-sm text-gray-500">
             ID de Pago: {paymentData.payment_id}

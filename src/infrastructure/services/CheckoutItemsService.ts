@@ -34,14 +34,18 @@ export interface CheckoutTotals {
 export class CheckoutItemsService {
   
   /**
-   * ✅ CORREGIDO: Prepara items usando calculadora centralizada
+   * ✅ CORREGIDO: Prepara items usando calculadora centralizada con configuración dinámica
    */
-  static prepareItemsForCheckout(cartItems: any[], appliedDiscount: any = null): CheckoutItem[] {
+  static async prepareItemsForCheckout(
+    cartItems: any[], 
+    appliedDiscount: any = null, 
+    dynamicVolumeTiers?: Array<{quantity: number, discount: number}>
+  ): Promise<CheckoutItem[]> {
     console.log("🛒 CheckoutItemsService - Preparando items con calculadora centralizada");
     console.log("🎫 Cupón para items:", appliedDiscount?.discountCode?.code || "NINGUNO");
     
-    // ✅ USAR CALCULADORA CENTRALIZADA CON CUPÓN
-    const { items } = EcommerceCalculator.prepareCheckoutData(cartItems, appliedDiscount);
+    // ✅ USAR CALCULADORA CENTRALIZADA CON CUPÓN Y TIERS DINÁMICOS
+    const { items } = await EcommerceCalculator.prepareCheckoutData(cartItems, appliedDiscount, dynamicVolumeTiers);
     
     const checkoutItems = items.map((item, index) => {
       console.log(`✅ Item ${index + 1} preparado para checkout:`, {
@@ -62,11 +66,15 @@ export class CheckoutItemsService {
    * ✅ CORREGIDO: Calcula totales usando calculadora centralizada  
    * GARANTIZA EXACTAMENTE EL MISMO RESULTADO QUE CARTPAGE
    */
-  static async calculateCheckoutTotals(cartItems: any[], appliedDiscount: any = null): Promise<CheckoutTotals> {
+  static async calculateCheckoutTotals(
+    cartItems: any[], 
+    appliedDiscount: any = null, 
+    dynamicVolumeTiers?: Array<{quantity: number, discount: number}>
+  ): Promise<CheckoutTotals> {
     console.log("🔍 FLUJO CHECKOUT CORREGIDO - USANDO CALCULADORA CENTRALIZADA:");
     
-    // ✅ USAR CALCULADORA CENTRALIZADA - MISMA LÓGICA QUE CARTPAGE (AHORA ASÍNCRONA)
-    const result = await EcommerceCalculator.calculateTotals(cartItems, appliedDiscount);
+    // ✅ USAR CALCULADORA CENTRALIZADA CON TIERS DINÁMICOS - MISMA LÓGICA QUE CARTPAGE
+    const result = await EcommerceCalculator.calculateTotals(cartItems, appliedDiscount, dynamicVolumeTiers);
     
     console.log("📊 PASO A PASO:");
     console.log(`   1️⃣ Subtotal original (sin descuentos): ${result.step1_originalSubtotal}`);
@@ -86,7 +94,7 @@ export class CheckoutItemsService {
     console.log(`🎯 VALOR CORRECTO PARA BACKEND: ${result.total}`);
 
     return {
-      subtotal: result.subtotalAfterCoupon, // ✅ CORREGIDO: subtotal_products (SIN envío, SIN IVA)
+      subtotal: result.step3_afterVolumeDiscount, // CORREGIDO: Subtotal después de descuentos por volumen (antes del cupón)
       originalSubtotal: result.originalSubtotal,
       sellerDiscounts: result.sellerDiscounts,
       volumeDiscounts: result.volumeDiscounts,

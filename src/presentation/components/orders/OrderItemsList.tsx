@@ -1,8 +1,9 @@
 // src/presentation/components/orders/OrderItemsList.tsx
-import React from 'react';
-import { Package, Tag, TrendingDown } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Package, Tag, TrendingDown, Calculator } from 'lucide-react';
 import { formatCurrency } from '../../../utils/formatters/formatCurrency';
 import { useImageCache } from '../../hooks/useImageCache';
+import OrderBreakdownService, { type OrderItemBreakdown } from '../../../core/services/OrderBreakdownService';
 import type { OrderUI } from '../../../core/adapters/OrderServiceAdapter';
 
 interface OrderItemsListProps {
@@ -23,6 +24,32 @@ const OrderItemsList: React.FC<OrderItemsListProps> = ({
   
   // ✅ HOOK PARA GESTIÓN OPTIMIZADA DE IMÁGENES
   const { getOptimizedImageUrl } = useImageCache();
+  
+  // Estado para el desglose de items
+  const [itemsBreakdown, setItemsBreakdown] = useState<OrderItemBreakdown[]>([]);
+  const [loadingBreakdown, setLoadingBreakdown] = useState(false);
+  
+  // Cargar desglose de items cuando se monta el componente
+  useEffect(() => {
+    const loadBreakdown = async () => {
+      if (order.id) {
+        setLoadingBreakdown(true);
+        try {
+          const breakdownService = OrderBreakdownService.getInstance();
+          const response = await breakdownService.getOrderItemsBreakdown(order.id);
+          console.log('📊 Desglose recibido en componente:', response);
+          console.log('📦 Items del orden:', order.items);
+          setItemsBreakdown(response.items);
+        } catch (error) {
+          console.error('Error cargando desglose:', error);
+        } finally {
+          setLoadingBreakdown(false);
+        }
+      }
+    };
+    
+    loadBreakdown();
+  }, [order.id]);
   
   // ✅ FILTRAR ITEMS RELEVANTES
   const relevantItems = viewType === 'seller' && sellerId 
@@ -96,83 +123,47 @@ const OrderItemsList: React.FC<OrderItemsListProps> = ({
                   {item.name}
                 </h4>
                 
-                <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Columna Izquierda: Precios */}
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-600">Cantidad:</span>
-                      <span className="text-sm font-medium">{item.quantity}</span>
+                {/* ✅ DESGLOSE DETALLADO DE DESCUENTOS DESDE API */}
+                {(() => {
+                  // Buscar el breakdown correspondiente a este item
+                  // item.productId puede venir como productId o product_id según la fuente
+                  const itemProductId = item.productId || item.product_id || (item as any).product_id;
+                  console.log('🔍 Buscando breakdown para producto:', {
+                    itemProductId,
+                    item,
+                    itemsBreakdown,
+                    breakdownProductIds: itemsBreakdown.map(b => b.product_id)
+                  });
+                  const itemBreakdown = itemsBreakdown.find(b => b.product_id === itemProductId || b.product_id === Number(itemProductId));
+                  
+                  if (loadingBreakdown) {
+                    return (
+                      <div className="mt-4 bg-gray-50 p-4 rounded-lg">
+                        <div className="animate-pulse">
+                          <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
+                          <div className="h-3 bg-gray-200 rounded w-3/4"></div>
+                        </div>
+                      </div>
+                    );
+                  }
+                  
+                  if (!itemBreakdown) {
+                    return null;
+                  }
+                  
+                  return (
+                    <div className="mt-4 bg-gray-50 p-4 rounded-lg">
+                      
+                      
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-gray-600">Cantidad:</span>
+                          <span className="text-sm font-medium text-gray-900">{itemBreakdown.quantity}</span>
+                        </div>
+                      </div>
                     </div>
-                    
-                    {/* Precio Original */}
-                    {item.originalPrice && item.originalPrice !== item.price && (
-                      <div className="flex justify-between">
-                        <span className="text-sm text-gray-600">Precio original:</span>
-                        <span className="text-sm text-gray-500 line-through">
-                          {formatCurrency(item.originalPrice)}
-                        </span>
-                      </div>
-                    )}
-                    
-                    {/* Precio Final */}
-                    <div className="flex justify-between">
-                      <span className="text-sm font-medium text-gray-900">Precio final:</span>
-                      <span className="text-sm font-bold text-green-600">
-                        {formatCurrency(item.price)}
-                      </span>
-                    </div>
-                    
-                    {/* Subtotal */}
-                    <div className="flex justify-between border-t pt-2">
-                      <span className="font-medium text-gray-900">Subtotal:</span>
-                      <span className="font-bold text-gray-900">
-                        {formatCurrency(item.subtotal)}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Columna Derecha: Descuentos */}
-                  <div className="space-y-2">
-                    {/* Descuentos por Volumen */}
-                    {item.hasVolumeDiscount && item.volumeDiscountPercentage && (
-                      <div className="bg-green-50 p-2 rounded">
-                        <div className="flex items-center text-green-700 text-sm">
-                          <TrendingDown className="w-4 h-4 mr-1" />
-                          <span className="font-medium">
-                            {item.volumeDiscountPercentage}% OFF por volumen
-                          </span>
-                        </div>
-                        {item.volumeSavings && (
-                          <div className="text-xs text-green-600 mt-1">
-                            Ahorro: {formatCurrency(item.volumeSavings)}
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Etiqueta de Descuento */}
-                    {item.discountLabel && (
-                      <div className="bg-blue-50 p-2 rounded">
-                        <div className="flex items-center text-blue-700 text-sm">
-                          <Tag className="w-4 h-4 mr-1" />
-                          <span>{item.discountLabel}</span>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Ahorro Total por Item */}
-                    {item.originalPrice && item.originalPrice > item.price && (
-                      <div className="bg-red-50 p-2 rounded">
-                        <div className="text-xs text-red-600">
-                          Ahorro total por unidad:
-                        </div>
-                        <div className="text-sm font-medium text-red-700">
-                          {formatCurrency(item.originalPrice - item.price)}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
+                  );
+                })()}
               </div>
             </div>
           </div>

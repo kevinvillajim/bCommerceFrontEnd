@@ -199,6 +199,7 @@ const VolumeDiscountManager: React.FC = () => {
 												type="number"
 												value={tier.quantity}
 												onChange={(e) => handleDefaultTierChange(index, 'quantity', parseInt(e.target.value))}
+												onWheel={(e) => e.currentTarget.blur()}
 												className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-primary-500 focus:border-primary-500"
 												min="1"
 											/>
@@ -211,6 +212,7 @@ const VolumeDiscountManager: React.FC = () => {
 												type="number"
 												value={tier.discount}
 												onChange={(e) => handleDefaultTierChange(index, 'discount', parseFloat(e.target.value))}
+												onWheel={(e) => e.currentTarget.blur()}
 												className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-primary-500 focus:border-primary-500"
 												min="0"
 												max="100"

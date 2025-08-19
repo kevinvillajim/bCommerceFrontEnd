@@ -122,11 +122,11 @@ const OrderDetailClientPage: React.FC = () => {
 			total: orderTotals.total,
 			items: (order.items || []).map((item) => ({
 				id: item.id || 0,
-				productId: item.productId || 0,
+				productId: item.product_id || item.productId || 0,
 				name: item.product_name || "Producto",
 				quantity: item.quantity || 1,
-				price: item.price || 0,
-				subtotal: (item.price || 0) * (item.quantity || 1),
+				price: item.price || 0, // Este es el precio total del item (quantity * precio_por_unidad)
+				subtotal: item.price || 0, // CORREGIDO: item.price ya es el subtotal correcto
 				image: item.product_image,
 				originalPrice: item.original_price || item.price,
 				volumeDiscountPercentage: item.volume_discount_percentage || 0,

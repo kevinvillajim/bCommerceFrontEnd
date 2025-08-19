@@ -1,6 +1,8 @@
 // src/presentation/hooks/useVolumeDiscount.ts - CORREGIDO ERRORES TYPESCRIPT
 import { useState, useEffect, useCallback, useMemo } from "react";
 import type { Product } from "../../core/domain/entities/Product";
+import ConfigurationService from "../../core/services/ConfigurationService";
+import ApiClient from "../../infrastructure/api/apiClient";
 
 // Tipos corregidos
 interface VolumeDiscountTier {
@@ -35,60 +37,110 @@ export const useVolumeDiscountFixed = (productId?: number) => {
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
-	// Cargar información de descuentos cuando cambia el productId
-	useEffect(() => {
-		if (!productId) return;
-
-		loadDiscountInfo();
-	}, [productId]);
-
-	const loadDiscountInfo = useCallback(async () => {
-		try {
-			setLoading(true);
-			setError(null);
-
-			// Usar configuración por defecto desde localStorage o API
-			const defaultConfig = getDefaultDiscountConfig();
-			
-			setDiscountInfo({
-				enabled: defaultConfig.enabled,
-				tiers: defaultConfig.default_tiers.map((tier: VolumeDiscountTier) => ({
-					quantity: tier.quantity,
-					discount: tier.discount,
-					label: tier.label
-				}))
-			});
-
-		} catch (err) {
-			console.error("Error cargando descuentos:", err);
-			setError("Error al cargar descuentos por volumen");
-		} finally {
-			setLoading(false);
-		}
-	}, []);
-
-	// Obtener configuración por defecto (simulada o desde localStorage)
+	// Obtener configuración por defecto (fallback)
 	const getDefaultDiscountConfig = useCallback(() => {
-		// Intentar obtener desde localStorage primero
-		const stored = localStorage.getItem('volume_discount_config');
+		// CORREGIDO: Intentar obtener desde sessionStorage primero con la key correcta
+		const stored = sessionStorage.getItem('bcommerce_volume_discount_config');
 		if (stored) {
 			try {
 				return JSON.parse(stored);
 			} catch (e) {
-				console.warn("Error parsing stored config");
+				console.warn("Error parsing stored config from sessionStorage");
+			}
+		}
+		
+		// Fallback a localStorage con key anterior por compatibilidad
+		const localStored = localStorage.getItem('volume_discount_config');
+		if (localStored) {
+			try {
+				return JSON.parse(localStored);
+			} catch (e) {
+				console.warn("Error parsing stored config from localStorage");
 			}
 		}
 
-		// Configuración por defecto
+		// CORREGIDO: Configuración por defecto hardcodeada coincidente con backend actual
 		return {
 			enabled: true,
 			default_tiers: [
-				{ quantity: 3, discount: 5, label: "Descuento 3+" },
-				{ quantity: 6, discount: 10, label: "Descuento 6+" },
-				{ quantity: 12, discount: 15, label: "Descuento 12+" }
+				{ quantity: 3, discount: 50, label: "Nuevo descuento" }
 			]
 		};
 	}, []);
+
+	// Leer directamente de sessionStorage
+	const loadDiscountInfo = useCallback(() => {
+		try {
+			setLoading(true);
+			setError(null);
+			
+			const sessionConfig = sessionStorage.getItem('bcommerce_volume_discount_config');
+			
+			if (sessionConfig) {
+				try {
+					const parsed = JSON.parse(sessionConfig);
+					const config = parsed.config || parsed; // Manejar estructura {config: {...}, timestamp: ...}
+					
+					let tiers: VolumeDiscountTier[] = [];
+					if (config.default_tiers && Array.isArray(config.default_tiers)) {
+						tiers = config.default_tiers.map((tier: any) => ({
+							quantity: tier.quantity,
+							discount: tier.discount,
+							label: tier.label
+						}));
+					}
+					
+					setDiscountInfo({
+						enabled: config.enabled !== false,
+						tiers
+					});
+					
+					setLoading(false);
+					return;
+				} catch (parseError) {
+					// Ignorar error de parsing, usar fallback
+				}
+			}
+			
+			// Fallback si no hay sessionStorage
+			const defaultConfig = getDefaultDiscountConfig();
+			setDiscountInfo({
+				enabled: defaultConfig.enabled,
+				tiers: defaultConfig.default_tiers
+			});
+
+		} catch (err) {
+			const defaultConfig = getDefaultDiscountConfig();
+			setDiscountInfo({
+				enabled: defaultConfig.enabled,
+				tiers: defaultConfig.default_tiers
+			});
+			setError("Error al cargar descuentos por volumen");
+		} finally {
+			setLoading(false);
+		}
+	}, [getDefaultDiscountConfig]);
+
+	// Cargar información de descuentos al inicializar y cuando cambia el productId
+	useEffect(() => {
+		// Cargar siempre la configuración para tener las etiquetas dinámicas disponibles
+		loadDiscountInfo();
+	}, [loadDiscountInfo]);
+
+	// Escuchar eventos de actualización de configuración
+	useEffect(() => {
+		const handleConfigUpdate = () => {
+			console.log('🔄 Configuración de descuentos por volumen actualizada, recargando...');
+			loadDiscountInfo();
+		};
+
+		window.addEventListener('volumeDiscountConfigUpdated', handleConfigUpdate);
+		
+		return () => {
+			window.removeEventListener('volumeDiscountConfigUpdated', handleConfigUpdate);
+		};
+	}, [loadDiscountInfo]);
+
 
 	// Calcular descuentos para una cantidad específica
 	const calculateDiscount = useCallback((price: number, quantity: number): ProductDiscountResult => {
@@ -229,10 +281,43 @@ export const useVolumeDiscountsAdmin = () => {
 	const getAdminConfiguration = useCallback(async () => {
 		try {
 			setLoading(true);
-			// Obtener desde localStorage o valores por defecto
-			const stored = localStorage.getItem('volume_discount_config');
-			if (stored) {
-				return JSON.parse(stored);
+			setError(null);
+			
+			// 🔧 CORREGIDO: Obtener configuración desde ruta pública
+			const response = await ApiClient.get('/configurations/volume-discounts-public');
+			
+			if (response.status === 'success' && response.data) {
+				const config = response.data;
+				
+				// Procesar los tiers dinámicos desde la BD
+				let default_tiers = [];
+				
+				if (config.volume_discounts?.default_tiers) {
+					// Los tiers vienen como string JSON desde la BD
+					const tiersData = typeof config.volume_discounts.default_tiers === 'string' 
+						? JSON.parse(config.volume_discounts.default_tiers)
+						: config.volume_discounts.default_tiers;
+					
+					default_tiers = tiersData;
+				}
+				
+				return {
+					enabled: config.volume_discounts?.enabled !== false,
+					stackable: config.volume_discounts?.stackable || false,
+					show_savings_message: config.volume_discounts?.show_savings_message !== false,
+					default_tiers
+				};
+			}
+			
+			// Fallback a sessionStorage o localStorage antes de valores por defecto
+			const sessionStored = sessionStorage.getItem('bcommerce_volume_discount_config');
+			if (sessionStored) {
+				return JSON.parse(sessionStored);
+			}
+			
+			const localStored = localStorage.getItem('volume_discount_config');
+			if (localStored) {
+				return JSON.parse(localStored);
 			}
 			
 			return {
@@ -240,12 +325,11 @@ export const useVolumeDiscountsAdmin = () => {
 				stackable: false,
 				show_savings_message: true,
 				default_tiers: [
-					{ quantity: 3, discount: 5, label: "Descuento 3+" },
-					{ quantity: 6, discount: 10, label: "Descuento 6+" },
-					{ quantity: 12, discount: 15, label: "Descuento 12+" }
+					{ quantity: 3, discount: 50, label: "Nuevo descuento" }
 				]
 			};
 		} catch (err) {
+			console.error("❌ Error al obtener configuración desde backend:", err);
 			setError("Error al obtener configuración");
 			return null;
 		} finally {
@@ -258,14 +342,28 @@ export const useVolumeDiscountsAdmin = () => {
 			setLoading(true);
 			setError(null);
 			
-			// Guardar en localStorage
-			localStorage.setItem('volume_discount_config', JSON.stringify(config));
+			// 🔧 CORREGIDO: Usar la API del backend
+			const configService = new ConfigurationService();
+			const response = await configService.updateVolumeDiscountConfigs(config);
 			
-			// Disparar evento personalizado para que otros componentes se actualicen
-			window.dispatchEvent(new CustomEvent('volumeDiscountConfigUpdated', { detail: config }));
-			
-			return true;
+			if (response.status === 'success') {
+				// CORREGIDO: Guardar en sessionStorage con la key correcta como cache principal
+				sessionStorage.setItem('bcommerce_volume_discount_config', JSON.stringify(config));
+				
+				// También guardar en localStorage como backup por compatibilidad
+				localStorage.setItem('volume_discount_config', JSON.stringify(config));
+				
+				// Disparar evento personalizado para que otros componentes se actualicen
+				window.dispatchEvent(new CustomEvent('volumeDiscountConfigUpdated', { detail: config }));
+				
+				console.log('✅ Configuración de descuentos por volumen actualizada en BD');
+				return true;
+			} else {
+				setError("Error al guardar en base de datos: " + response.message);
+				return false;
+			}
 		} catch (err) {
+			console.error("❌ Error al guardar configuración en backend:", err);
 			setError("Error al guardar configuración");
 			return false;
 		} finally {

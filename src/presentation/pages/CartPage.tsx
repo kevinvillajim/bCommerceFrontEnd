@@ -1,5 +1,5 @@
 // src/presentation/pages/CartPage.tsx - ACTUALIZADO CON DESCUENTOS Y CUPONES
-import React, {useState, useEffect, useMemo, useCallback} from "react";
+import React, {useState, useEffect, useCallback} from "react";
 import {Link, useNavigate} from "react-router-dom";
 import {
 	ShoppingCart,
@@ -22,9 +22,10 @@ import CacheService from "../../infrastructure/services/CacheService";
 import {formatCurrency} from "../../utils/formatters/formatCurrency";
 
 // ✅ NUEVO: Importar calculadora centralizada y funciones necesarias
-import {calculateCartItemDiscounts} from "../../utils/volumeDiscountCalculator";
+import {calculateCartItemDiscountsAsync, calculateCartItemDiscounts} from "../../utils/volumeDiscountCalculator";
 import {EcommerceCalculator} from "../../utils/ecommerceCalculator";
 import type {CartItemWithDiscounts} from "../../utils/volumeDiscountCalculator";
+import {useCartVolumeDiscounts} from "../contexts/VolumeDiscountContext";
 
 // Importar hooks optimizados
 import {useImageCache} from "../hooks/useImageCache";
@@ -65,6 +66,9 @@ const CartPage: React.FC = () => {
 	} = useCart();
 
 	const {toggleFavorite} = useFavorites();
+
+	// ✅ NUEVO: Hook para descuentos por volumen dinámicos desde BD
+	const {isEnabled: volumeDiscountsEnabled, config: volumeDiscountConfig} = useCartVolumeDiscounts();
 
 	// Hook para manejo de errores mejorado
 	const {handleError, handleSuccess, handleStockError} = useErrorHandler({
@@ -134,23 +138,59 @@ const CartPage: React.FC = () => {
 		[getOptimizedImageUrl]
 	);
 
-	// ✅ ACTUALIZADO: Calcular descuentos por volumen para cada item
-	const cartItemsWithDiscounts = useMemo(() => {
-		if (!cart?.items) {
-			return [];
-		}
+	// ✅ ESTADO PARA ITEMS CON DESCUENTOS CALCULADOS ASÍNCRONAMENTE
+	const [cartItemsWithDiscounts, setCartItemsWithDiscounts] = useState<CartItemWithDiscounts[]>([]);
+	const [loadingDiscounts, setLoadingDiscounts] = useState(false);
 
-		return cart.items.map(item => {
-			// ✅ Usar nueva calculadora de descuentos
-			const discount = calculateCartItemDiscounts(item);
-			
-			return {
-				...item,
-				discount,
-				imageUrl: getProductImage(item.product)
-			} as CartItemWithDiscounts;
-		});
-	}, [cart?.items, getProductImage]);
+	// ✅ CALCULAR DESCUENTOS ASÍNCRONAMENTE USANDO BD CONFIG
+	useEffect(() => {
+		const calculateDiscountsAsync = async () => {
+			if (!cart?.items || !volumeDiscountConfig) {
+				setCartItemsWithDiscounts([]);
+				return;
+			}
+
+			setLoadingDiscounts(true);
+			console.log("🔄 CartPage: Calculando descuentos con configuración BD:", volumeDiscountConfig);
+
+			try {
+				const itemsWithDiscounts = await Promise.all(
+					cart.items.map(async (item) => {
+						// ✅ Usar calculadora asíncrona con tiers dinámicos de BD
+						const discount = await calculateCartItemDiscountsAsync(
+							item, 
+							volumeDiscountsEnabled ? volumeDiscountConfig?.default_tiers : []
+						);
+						
+						return {
+							...item,
+							discount,
+							imageUrl: getProductImage(item.product)
+						} as CartItemWithDiscounts;
+					})
+				);
+
+				console.log("✅ CartPage: Descuentos calculados para", itemsWithDiscounts.length, "items");
+				setCartItemsWithDiscounts(itemsWithDiscounts);
+			} catch (error) {
+				console.error("❌ Error calculando descuentos:", error);
+				// Fallback: usar calculadora síncrona
+				const fallbackItems = cart.items.map(item => {
+					const discount = calculateCartItemDiscounts(item);
+					return {
+						...item,
+						discount,
+						imageUrl: getProductImage(item.product)
+					} as CartItemWithDiscounts;
+				});
+				setCartItemsWithDiscounts(fallbackItems);
+			} finally {
+				setLoadingDiscounts(false);
+			}
+		};
+
+		calculateDiscountsAsync();
+	}, [cart?.items, volumeDiscountConfig, volumeDiscountsEnabled, getProductImage]);
 
 	// ✅ ESTADO PARA TOTALES CALCULADOS ASÍNCRONAMENTE
 	const [cartTotals, setCartTotals] = useState({
@@ -168,7 +208,7 @@ const CartPage: React.FC = () => {
 	// ✅ CALCULAR TOTALES DE FORMA ASÍNCRONA
 	useEffect(() => {
 		const calculateCartTotals = async () => {
-			if (!cartItemsWithDiscounts.length) {
+			if (!cart?.items?.length) {
 				setCartTotals({
 					subtotal: 0,
 					tax: 0,
@@ -184,7 +224,10 @@ const CartPage: React.FC = () => {
 			}
 
 			console.log("🔍 FLUJO CART - Usando calculadora centralizada asíncrona");
-			const result = await EcommerceCalculator.calculateTotals(cartItemsWithDiscounts, appliedDiscount);
+			// CORREGIDO: Pasar items originales del carrito (sin descuentos), no cartItemsWithDiscounts
+			// Y pasar también los tiers dinámicos desde BD para garantizar sincronización
+			const dynamicTiers = volumeDiscountConfig?.default_tiers || [];
+			const result = await EcommerceCalculator.calculateTotals(cart.items, appliedDiscount, dynamicTiers);
 			
 			console.log("🔍 FLUJO CART - Totales finales calculados:");
 			console.log("   💰 Subtotal después de cupón:", result.subtotalAfterCoupon);
@@ -195,7 +238,7 @@ const CartPage: React.FC = () => {
 					 "volume=", result.volumeDiscounts, "cupón=", result.couponDiscount);
 
 			setCartTotals({
-				subtotal: result.subtotalAfterCoupon,
+				subtotal: result.step3_afterVolumeDiscount, // CORREGIDO: Mostrar subtotal después de descuentos por volumen (antes del cupón)
 				tax: result.tax,
 				couponAmount: result.couponDiscount,
 				total: result.total,
@@ -208,7 +251,7 @@ const CartPage: React.FC = () => {
 		};
 
 		calculateCartTotals();
-	}, [cartItemsWithDiscounts, appliedDiscount]);
+	}, [cart?.items, appliedDiscount, volumeDiscountConfig]);
 
 	// Cargar carrito simple - Solo al montar componente
 	useEffect(() => {
@@ -680,7 +723,7 @@ const CartPage: React.FC = () => {
 		<div className="container mx-auto px-4 lg:px-8 py-10">
 			<h1 className="text-3xl font-bold mb-8">Mi Carrito</h1>
 
-			{isLoading ? (
+			{isLoading || loadingDiscounts ? (
 				<div className="flex justify-center items-center h-64">
 					<div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
 				</div>

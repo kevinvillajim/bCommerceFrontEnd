@@ -112,7 +112,7 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 
 		try {
 			// ✅ USAR MISMA LÓGICA QUE EL BOTÓN "PRUEBA COMPLETA" QUE FUNCIONA PERFECTO
-			const checkoutItems = CheckoutItemsService.prepareItemsForCheckout(cart.items); // SIN appliedDiscount
+			const checkoutItems = await CheckoutItemsService.prepareItemsForCheckout(cart.items); // SIN appliedDiscount
 			const totals = await CheckoutItemsService.calculateCheckoutTotals(cart.items, appliedDiscount);
 			
 			// Almacenar totales para usar en el widget
@@ -365,7 +365,7 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 			console.log("🏪 Seller ID obtenido (DATAFAST):", sellerId);
 
 			// ✅ USAR MISMA LÓGICA DE CÁLCULO QUE CHECKOUT PAGE
-			const checkoutItems = CheckoutItemsService.prepareItemsForCheckout(cart.items);
+			const checkoutItems = await CheckoutItemsService.prepareItemsForCheckout(cart.items);
 			console.log("🛒 Items formateados con descuentos aplicados (DATAFAST):", JSON.stringify(checkoutItems, null, 2));
 
 			// ✅ CALCULAR TOTALES CORRECTOS PARA EL BACKEND
@@ -505,7 +505,7 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 				console.log("Seller ID obtenido:", sellerId);
 				
 				// ✅ USAR MISMA LÓGICA DE CÁLCULO QUE CHECKOUT PAGE
-				const items = cart ? CheckoutItemsService.prepareItemsForCheckout(cart.items) : [];
+				const items = cart ? await CheckoutItemsService.prepareItemsForCheckout(cart.items) : [];
 				
 				// ✅ CALCULAR TOTALES CORRECTOS PARA EL BACKEND
 				console.log("🔍 DEBUG SIMULATE: cart.items antes de calcular:", cart?.items);

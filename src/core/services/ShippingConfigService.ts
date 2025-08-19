@@ -99,8 +99,8 @@ class ShippingConfigService {
     // Valores por defecto si falla la API
     const defaultConfig: ShippingConfigData = {
       enabled: true,
-      freeThreshold: 60,
-      defaultCost: 8
+      freeThreshold: 20,
+      defaultCost: 3
     };
 
     this.cachedConfig = defaultConfig;
