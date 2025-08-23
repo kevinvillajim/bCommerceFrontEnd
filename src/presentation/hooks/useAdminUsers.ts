@@ -259,6 +259,88 @@ export const useAdminUsers = () => {
 		[]
 	);
 
+	/**
+	 * Elimina un usuario del sistema
+	 */
+	const deleteUser = useCallback(async (userId: number) => {
+		setLoading(true);
+		setError(null);
+
+		try {
+			const success = await adminUserService.deleteUser(userId);
+
+			if (success) {
+				console.log('User deleted successfully, determining optimal page to reload...');
+				
+				// Contar cuántos usuarios quedan en la página actual después de eliminar
+				const currentUsersInPage = users.length;
+				const isLastUserInPage = currentUsersInPage === 1;
+				const isNotFirstPage = pagination.currentPage > 1;
+				
+				// Determinar a qué página ir después de la eliminación
+				let targetPage = pagination.currentPage;
+				if (isLastUserInPage && isNotFirstPage) {
+					targetPage = pagination.currentPage - 1;
+					console.log(`Last user in page ${pagination.currentPage}, moving to page ${targetPage}`);
+				}
+				
+				// Recargar los datos desde el servidor con la página objetivo
+				try {
+					await fetchUsers(targetPage, pagination.itemsPerPage);
+					console.log(`Data successfully reloaded from server after deletion on page ${targetPage}`);
+				} catch (refreshError) {
+					console.error('Error reloading data after deletion:', refreshError);
+					
+					// Como fallback, intentar la página 1 si falló
+					if (targetPage > 1) {
+						console.log('Fallback: trying to load page 1');
+						try {
+							await fetchUsers(1, pagination.itemsPerPage);
+						} catch (fallbackError) {
+							console.error('Fallback failed, updating locally:', fallbackError);
+							// Último recurso: actualizar solo localmente
+							setUsers((prevUsers) => prevUsers.filter((user) => user.id !== userId));
+							setPagination((prevPagination) => ({
+								...prevPagination,
+								totalItems: Math.max(0, prevPagination.totalItems - 1),
+								currentPage: Math.min(prevPagination.currentPage, Math.ceil((prevPagination.totalItems - 1) / prevPagination.itemsPerPage) || 1),
+							}));
+						}
+					} else {
+						// Si ya estamos en página 1, actualizar localmente
+						setUsers((prevUsers) => prevUsers.filter((user) => user.id !== userId));
+						setPagination((prevPagination) => ({
+							...prevPagination,
+							totalItems: Math.max(0, prevPagination.totalItems - 1),
+						}));
+					}
+				}
+
+				return true;
+			} else {
+				setError("No se pudo eliminar al usuario");
+				return false;
+			}
+		} catch (err) {
+			const errorMsg = extractErrorMessage(
+				err,
+				"Error al eliminar usuario"
+			);
+			console.error("Error deleting user:", errorMsg);
+			setError(errorMsg);
+			return false;
+		} finally {
+			setLoading(false);
+		}
+	}, [fetchUsers, pagination.currentPage, pagination.itemsPerPage, users.length]);
+
+	/**
+	 * Función para recargar manualmente los datos
+	 */
+	const refreshData = useCallback(async () => {
+		await fetchUsers(pagination.currentPage, pagination.itemsPerPage);
+	}, [fetchUsers, pagination.currentPage, pagination.itemsPerPage]);
+
 	// Filtrar usuarios según criterios
 	const filterUsers = useCallback(
 		(options: FilterOptions) => {
@@ -294,6 +376,8 @@ export const useAdminUsers = () => {
 		sendPasswordReset,
 		makeUserAdmin,
 		makeUserSeller,
+		deleteUser,
+		refreshData,
 		filterUsers,
 	};
 };

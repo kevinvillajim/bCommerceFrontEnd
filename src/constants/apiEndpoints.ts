@@ -289,6 +289,7 @@ export const API_ENDPOINTS = {
     RESET_PASSWORD: (id: number) => `/admin/users/${id}/reset-password`,
     MAKE_ADMIN: (id: number) => `/admin/users/${id}/make-admin`,
     MAKE_SELLER: (id: number) => `/admin/users/${id}/make-seller`,
+    DELETE_USER: (id: number) => `/admin/users/${id}`,
 
     DASHBOARD: "/admin/dashboard",
     // Sellers management

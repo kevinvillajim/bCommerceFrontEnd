@@ -27,8 +27,11 @@ const ForgotPasswordPage = lazy(
 const ResetPasswordPage = lazy(
 	() => import("@/presentation/pages/ResetPasswordPage")
 );
-const VerifyEmailPage = lazy(
-	() => import("@/presentation/pages/VerifyEmailPage")
+const EmailVerificationSuccessPage = lazy(
+	() => import("../presentation/pages/EmailVerificationSuccessPage")
+);
+const EmailVerificationPendingPage = lazy(
+	() => import("../presentation/pages/EmailVerificationPendingPage")
 );
 
 // User Pages
@@ -396,7 +399,23 @@ const appRoutes: RouteObject[] = [
 				path: "verify-email",
 				element: (
 					<PublicRoute>
-						<VerifyEmailPage />
+						<EmailVerificationPendingPage />
+					</PublicRoute>
+				),
+			},
+			{
+				path: "email-verification-success",
+				element: (
+					<PublicRoute>
+						<EmailVerificationSuccessPage />
+					</PublicRoute>
+				),
+			},
+			{
+				path: "email-verification-pending",
+				element: (
+					<PublicRoute>
+						<EmailVerificationPendingPage />
 					</PublicRoute>
 				),
 			},

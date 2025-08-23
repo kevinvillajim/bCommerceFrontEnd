@@ -110,6 +110,38 @@ export class AuthService {
 	}
 
 	/**
+	 * Generate default password validation rules dynamically
+	 */
+	private getDefaultPasswordRules(minLength = 8, requireUppercase = true, requireNumbers = true, requireSpecial = true) {
+		const requirements: string[] = [];
+		let message = `La contraseña debe tener al menos ${minLength} caracteres`;
+		
+		if (requireUppercase) {
+			requirements.push('al menos una letra mayúscula');
+		}
+		if (requireNumbers) {
+			requirements.push('al menos un número');
+		}
+		if (requireSpecial) {
+			requirements.push('al menos un carácter especial (!@#$%^&*)');
+		}
+		
+		if (requirements.length > 0) {
+			message += ' y debe incluir ' + requirements.join(', ');
+		}
+		message += '.';
+		
+		return {
+			minLength,
+			requireSpecial,
+			requireUppercase,
+			requireNumbers,
+			validationMessage: message,
+			requirements
+		};
+	}
+
+	/**
 	 * Obtiene las reglas de validación de contraseñas dinámicas
 	 */
 	async getPasswordValidationRules(): Promise<{
@@ -130,25 +162,11 @@ export class AuthService {
 			}
 
 			// Valores por defecto si hay error
-			return {
-				minLength: 8,
-				requireSpecial: true,
-				requireUppercase: true,
-				requireNumbers: true,
-				validationMessage: "La contraseña debe tener al menos 8 caracteres y debe incluir al menos una letra mayúscula, al menos un número, al menos un carácter especial (!@#$%^&*).",
-				requirements: ['al menos una letra mayúscula', 'al menos un número', 'al menos un carácter especial (!@#$%^&*)']
-			};
+			return this.getDefaultPasswordRules();
 		} catch (error) {
 			console.error("Error al obtener reglas de validación:", error);
 			// Valores por defecto si hay error
-			return {
-				minLength: 8,
-				requireSpecial: true,
-				requireUppercase: true,
-				requireNumbers: true,
-				validationMessage: "La contraseña debe tener al menos 8 caracteres y debe incluir al menos una letra mayúscula, al menos un número, al menos un carácter especial (!@#$%^&*).",
-				requirements: ['al menos una letra mayúscula', 'al menos un número', 'al menos un carácter especial (!@#$%^&*)']
-			};
+			return this.getDefaultPasswordRules();
 		}
 	}
 

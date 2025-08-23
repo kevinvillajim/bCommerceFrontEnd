@@ -127,20 +127,23 @@ const AdminSellersPage: React.FC = () => {
 		let message = "";
 		let buttonText = "";
 
+		// Obtener el nombre de la tienda correctamente
+		const sellerName = seller.store_name || seller.storeName || seller.userName || seller.name || `ID: ${seller.id}`;
+		
 		if (seller.status === "active") {
 			status = "suspend";
 			title = "Suspender vendedor";
-			message = `¿Estás seguro de que deseas suspender al vendedor "${seller.storeName}"? Esta acción limitará temporalmente su capacidad para vender.`;
+			message = `¿Estás seguro de que deseas suspender al vendedor "${sellerName}"? Esta acción limitará temporalmente su capacidad para vender y no podrá acceder a su cuenta.`;
 			buttonText = "Suspender";
 		} else if (seller.status === "suspended") {
 			status = "deactivate";
 			title = "Desactivar vendedor";
-			message = `¿Estás seguro de que deseas desactivar al vendedor "${seller.storeName}"? Esta acción lo desactivará completamente.`;
+			message = `¿Estás seguro de que deseas desactivar al vendedor "${sellerName}"? Esta acción lo desactivará completamente.`;
 			buttonText = "Desactivar";
 		} else {
 			status = "activate";
 			title = "Activar vendedor";
-			message = `¿Estás seguro de que deseas activar al vendedor "${seller.storeName}"? Esta acción permitirá que vuelva a vender en la plataforma.`;
+			message = `¿Estás seguro de que deseas activar al vendedor "${sellerName}"? Esta acción permitirá que vuelva a vender en la plataforma.`;
 			buttonText = "Activar";
 		}
 
@@ -279,7 +282,7 @@ const AdminSellersPage: React.FC = () => {
 			isOpen: true,
 			seller,
 			isCreate: false,
-			title: `Editar vendedor: ${seller.storeName}`,
+			title: `Editar vendedor: ${seller.store_name || seller.storeName || seller.userName || seller.name}`,
 		});
 	};
 

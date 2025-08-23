@@ -77,9 +77,18 @@ export const useAuth = () => {
 				} else {
 					throw new Error("No se recibió información de usuario válida");
 				}
-			} catch (err) {
-				const errorMessage =
-					err instanceof Error ? err.message : "Error al iniciar sesión";
+			} catch (err: any) {
+				let errorMessage = "Error al iniciar sesión";
+				
+				// Check if it's an email verification error
+				if (err.response?.status === 409 && err.response?.data?.error_code === 'EMAIL_NOT_VERIFIED') {
+					errorMessage = err.response.data.message || "Debes verificar tu email antes de iniciar sesión";
+				} else if (err instanceof Error) {
+					errorMessage = err.message;
+				} else if (err.response?.data?.message) {
+					errorMessage = err.response.data.message;
+				}
+				
 				console.error("❌ Login error:", errorMessage);
 				setError(errorMessage);
 				return null;
@@ -103,16 +112,10 @@ export const useAuth = () => {
 				const response = await registerUseCase.execute(userData);
 
 				if (response && response.user) {
-					console.log("✅ Registro exitoso");
-					setUser(response.user);
-					setIsAuthenticated(true);
-
-					// Limpiar cache antes del refresh para obtener datos frescos
-					CacheService.removeItem(CACHE_KEYS.ROLE_INFO);
-
-					// Refrescar información de rol después del registro
-					await refreshRoleInfo();
-
+					console.log("✅ Registro exitoso - Usuario creado sin iniciar sesión automáticamente");
+					
+					// NO iniciar sesión automáticamente
+					// El usuario debe verificar su email primero
 					return response;
 				} else {
 					throw new Error("No se recibió información de usuario válida");

@@ -2,6 +2,7 @@
 
 import React, {useState} from "react";
 import {Link, useNavigate} from "react-router-dom";
+import {Eye, EyeOff} from "lucide-react";
 import {useAuth} from "../hooks/useAuth";
 import {usePasswordValidation} from "../hooks/usePasswordValidation";
 import GoogleAuthButton from "../components/auth/GoogleAuthButton";
@@ -18,6 +19,8 @@ const RegisterPage: React.FC = () => {
 		confirmPassword: "",
 	});
 	const [errors, setErrors] = useState<Record<string, string>>({});
+	const [showPassword, setShowPassword] = useState(false);
+	const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
 	const navigate = useNavigate();
 	const {register, loading, error} = useAuth();
@@ -97,15 +100,14 @@ const RegisterPage: React.FC = () => {
 		// Intentar registrar al usuario
 		const result = await register(userData);
 
-		// Si el registro fue exitoso, verificar si requiere verificación de email
+		// Si el registro fue exitoso, mostrar página de verificación pendiente
 		if (result) {
 			// Verificar si el usuario necesita verificar el email
 			if (result.user && !result.user.emailVerifiedAt) {
-				// Redirigir a la página de verificación de email
-				navigate("/verify-email", {
+				// Redirigir a la página de verificación pendiente
+				navigate("/email-verification-pending", {
 					state: {
-						email: result.user.email,
-						message: "Registro completado. Revisa tu correo para verificar tu cuenta."
+						email: result.user.email
 					}
 				});
 			} else {
@@ -235,17 +237,30 @@ const RegisterPage: React.FC = () => {
 							>
 								Contraseña
 							</label>
-							<input
-								id="password"
-								name="password"
-								type="password"
-								autoComplete="new-password"
-								required
-								minLength={passwordRules.minLength}
-								className={`mt-1 block w-full border ${errors.password ? "border-red-500" : "border-gray-300"} rounded-md shadow-sm p-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500`}
-								value={formData.password}
-								onChange={handleChange}
-							/>
+							<div className="relative">
+								<input
+									id="password"
+									name="password"
+									type={showPassword ? "text" : "password"}
+									autoComplete="new-password"
+									required
+									minLength={passwordRules.minLength}
+									className={`mt-1 block w-full border ${errors.password ? "border-red-500" : "border-gray-300"} rounded-md shadow-sm p-3 pr-12 focus:outline-none focus:ring-primary-500 focus:border-primary-500`}
+									value={formData.password}
+									onChange={handleChange}
+								/>
+								<button
+									type="button"
+									onClick={() => setShowPassword(!showPassword)}
+									className="absolute inset-y-0 right-0 flex items-center pr-3 mt-1"
+								>
+									{showPassword ? (
+										<EyeOff size={20} className="text-gray-400 hover:text-gray-600" />
+									) : (
+										<Eye size={20} className="text-gray-400 hover:text-gray-600" />
+									)}
+								</button>
+							</div>
 							{errors.password && (
 								<p className="mt-1 text-sm text-red-600">{errors.password}</p>
 							)}
@@ -272,16 +287,29 @@ const RegisterPage: React.FC = () => {
 							>
 								Confirmar contraseña
 							</label>
-							<input
-								id="confirmPassword"
-								name="confirmPassword"
-								type="password"
-								autoComplete="new-password"
-								required
-								className={`mt-1 block w-full border ${errors.confirmPassword ? "border-red-500" : "border-gray-300"} rounded-md shadow-sm p-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500`}
-								value={formData.confirmPassword}
-								onChange={handleChange}
-							/>
+							<div className="relative">
+								<input
+									id="confirmPassword"
+									name="confirmPassword"
+									type={showConfirmPassword ? "text" : "password"}
+									autoComplete="new-password"
+									required
+									className={`mt-1 block w-full border ${errors.confirmPassword ? "border-red-500" : "border-gray-300"} rounded-md shadow-sm p-3 pr-12 focus:outline-none focus:ring-primary-500 focus:border-primary-500`}
+									value={formData.confirmPassword}
+									onChange={handleChange}
+								/>
+								<button
+									type="button"
+									onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+									className="absolute inset-y-0 right-0 flex items-center pr-3 mt-1"
+								>
+									{showConfirmPassword ? (
+										<EyeOff size={20} className="text-gray-400 hover:text-gray-600" />
+									) : (
+										<Eye size={20} className="text-gray-400 hover:text-gray-600" />
+									)}
+								</button>
+							</div>
 							{errors.confirmPassword && (
 								<p className="mt-1 text-sm text-red-600">
 									{errors.confirmPassword}

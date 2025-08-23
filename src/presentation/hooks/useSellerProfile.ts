@@ -2,6 +2,7 @@ import { useState, useCallback, useMemo, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import ApiClient from "../../infrastructure/api/apiClient";
 import { API_ENDPOINTS } from "../../constants/apiEndpoints";
+import { usePasswordValidation } from "./usePasswordValidation";
 
 interface SellerProfileData {
 	name: string;
@@ -37,6 +38,9 @@ export const useSellerProfile = () => {
 	const [error, setError] = useState<string | null>(null);
 	const [success, setSuccess] = useState<string | null>(null);
 	const [sellerInfo, setSellerInfo] = useState<SellerInfo | null>(null);
+	
+	// Hook para validación dinámica de contraseñas
+	const { validatePassword } = usePasswordValidation();
 	const [sellerInfoLoaded, setSellerInfoLoaded] = useState(false);
 
 	// ✅ NUEVO: Obtener información del seller al cargar el hook
@@ -397,9 +401,10 @@ export const useSellerProfile = () => {
 				throw new Error("Las contraseñas no coinciden");
 			}
 
-			// Validar longitud mínima
-			if (passwordData.newPassword.length < 6) {
-				throw new Error("La contraseña debe tener al menos 6 caracteres");
+			// Usar validación dinámica basada en configuración del admin
+			const passwordValidation = validatePassword(passwordData.newPassword);
+			if (!passwordValidation.isValid) {
+				throw new Error(passwordValidation.errors[0]); // Mostrar el primer error
 			}
 
 			console.log('📤 Cambiando contraseña...');

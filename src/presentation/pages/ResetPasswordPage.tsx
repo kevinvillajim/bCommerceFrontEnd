@@ -127,31 +127,17 @@ const ResetPasswordPage: React.FC = () => {
       
       // Verificar si la solicitud fue exitosa
       if (response.data?.status === 'success') {
-        setSuccess('Contraseña actualizada correctamente. Serás redirigido para iniciar sesión.');
+        setSuccess('¡Contraseña cambiada exitosamente! Serás redirigido al login para iniciar sesión con tu nueva contraseña.');
         
-        // Si la API devuelve un token de autenticación, iniciar sesión automáticamente
-        if (response.data?.token || response.data?.auth_token) {
-          // Iniciar sesión automáticamente si es posible
-          const credentials = { email, password };
-          const loginResult = await login(credentials);
-          
-          if (loginResult) {
-            // Si el login fue exitoso, redirigir a la página principal
-            setTimeout(() => {
-              navigate('/');
-            }, 1500);
-          } else {
-            // Si el login falló, redirigir a la página de login
-            setTimeout(() => {
-              navigate('/login');
-            }, 2000);
-          }
-        } else {
-          // Si no hay token, redirigir a la página de login
-          setTimeout(() => {
-            navigate('/login');
-          }, 2000);
-        }
+        // Siempre redirigir al login para que el usuario inicie sesión con las nuevas credenciales
+        setTimeout(() => {
+          navigate('/login', { 
+            state: { 
+              message: 'Contraseña actualizada. Ahora puedes iniciar sesión con tu nueva contraseña.',
+              type: 'success' 
+            } 
+          });
+        }, 3000);
       } else {
         setError('No se pudo restablecer la contraseña. Inténtalo de nuevo.');
       }

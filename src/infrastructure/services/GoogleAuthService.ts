@@ -112,7 +112,7 @@ export class GoogleAuthService {
           return;
         }
 
-        // Configuración simplificada sin métodos deprecados
+        // Configuración con prompt para forzar selector de cuentas
         window.google.accounts.id.initialize({
           client_id: this.clientId,
           callback: async (response: any) => {
@@ -129,6 +129,8 @@ export class GoogleAuthService {
           },
           auto_select: false,
           cancel_on_tap_outside: true,
+          context: 'signin',
+          ux_mode: 'popup',
           // Configuración básica sin opciones experimentales
           itp_support: true,
         });
@@ -141,6 +143,11 @@ export class GoogleAuthService {
           });
         }, 30000); // 30 segundos
 
+        // Limpiar cualquier selección automática previa
+        if (window.google?.accounts?.id) {
+          window.google.accounts.id.disableAutoSelect();
+        }
+        
         // Mostrar prompt con manejo simplificado
         if (window.google?.accounts?.id) {
           window.google.accounts.id.prompt((notification: any) => {

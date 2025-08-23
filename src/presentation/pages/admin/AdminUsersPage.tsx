@@ -14,6 +14,7 @@ import {
 	X,
 	AtSign,
 	Send,
+	Trash2,
 } from "lucide-react";
 import useAdminUsers from "../../hooks/useAdminUsers";
 import type {AdminUserData} from "../../hooks/useAdminUsers";
@@ -32,6 +33,8 @@ const AdminUsersPage: React.FC = () => {
 		sendPasswordReset,
 		makeUserAdmin,
 		makeUserSeller,
+		deleteUser,
+		refreshData,
 		filterUsers,
 	} = useAdminUsers();
 
@@ -61,6 +64,11 @@ const AdminUsersPage: React.FC = () => {
 		[key: string]: string;
 	}>({});
 
+	// Estados para el modal de confirmación de eliminación
+	const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
+	const [selectedUserForDelete, setSelectedUserForDelete] = useState<AdminUserData | null>(null);
+	const [deleting, setDeleting] = useState<boolean>(false);
+
 	// Obtener datos de usuarios al iniciar
 	useEffect(() => {
 		fetchUsers(pagination.currentPage, pagination.itemsPerPage);
@@ -72,6 +80,11 @@ const AdminUsersPage: React.FC = () => {
 		status: statusFilter,
 		searchTerm: searchTerm,
 	});
+
+	// Debug logging
+	React.useEffect(() => {
+		console.log('AdminUsersPage - Users changed:', filteredUsers.length);
+	}, [filteredUsers]);
 
 	// Manejar cambio de estado de usuario (bloquear/desbloquear)
 	const handleToggleUserStatus = async (
@@ -175,8 +188,8 @@ const AdminUsersPage: React.FC = () => {
 		fetchUsers(page, pagination.itemsPerPage);
 	};
 
-	// Refrescar datos
-	const refreshData = () => {
+	// Manejar refrescado manual
+	const handleRefreshData = () => {
 		fetchUsers(pagination.currentPage, pagination.itemsPerPage);
 	};
 
@@ -254,6 +267,46 @@ const AdminUsersPage: React.FC = () => {
 			} finally {
 				setEmailSending(false);
 			}
+		}
+	};
+
+	// Funciones para el modal de eliminación
+	const handleShowDeleteModal = (user: AdminUserData) => {
+		setSelectedUserForDelete(user);
+		setShowDeleteModal(true);
+	};
+
+	const handleCloseDeleteModal = () => {
+		setShowDeleteModal(false);
+		setSelectedUserForDelete(null);
+	};
+
+	// Eliminar usuario
+	const handleDeleteUser = async () => {
+		if (!selectedUserForDelete) return;
+
+		setDeleting(true);
+
+		try {
+			console.log('Attempting to delete user:', selectedUserForDelete.id);
+			const success = await deleteUser(selectedUserForDelete.id);
+
+			if (success) {
+				console.log('User deleted successfully, hook will handle refresh automatically');
+				setSuccessMessage("Usuario eliminado correctamente.");
+				handleCloseDeleteModal();
+
+				// Limpiar mensaje después de 3 segundos
+				setTimeout(() => setSuccessMessage(null), 3000);
+			} else {
+				console.error('Delete operation failed');
+				setSuccessMessage("Error al eliminar el usuario.");
+			}
+		} catch (error) {
+			console.error('Error deleting user:', error);
+			setSuccessMessage("Error al eliminar el usuario.");
+		} finally {
+			setDeleting(false);
 		}
 	};
 
@@ -381,6 +434,13 @@ const AdminUsersPage: React.FC = () => {
 							<Shield size={18} />
 						</button>
 					)}
+					<button
+						onClick={() => handleShowDeleteModal(user)}
+						className="p-1 text-red-600 hover:bg-red-100 rounded-md"
+						title="Eliminar Usuario"
+					>
+						<Trash2 size={18} />
+					</button>
 				</div>
 			),
 		},
@@ -394,7 +454,7 @@ const AdminUsersPage: React.FC = () => {
 				</h1>
 				<div className="flex space-x-2">
 					<button
-						onClick={refreshData}
+						onClick={handleRefreshData}
 						className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
 						disabled={loading}
 					>
@@ -424,7 +484,7 @@ const AdminUsersPage: React.FC = () => {
 			)}
 
 			{/* Filtros */}
-			<div className="bg-white0 rounded-lg shadow-sm p-4">
+			<div className="bg-white rounded-lg shadow-sm p-4">
 				<div className="flex flex-col md:flex-row gap-4">
 					{/* Filtro de Rol */}
 					<div className="flex items-center space-x-2">
@@ -469,6 +529,7 @@ const AdminUsersPage: React.FC = () => {
 
 			{/* Tabla de Usuarios */}
 			<Table
+				key={`users-table-${filteredUsers.length}`} // Forzar re-render cuando cambia la data
 				data={filteredUsers}
 				columns={columns}
 				searchFields={["name", "email"]}
@@ -490,7 +551,7 @@ const AdminUsersPage: React.FC = () => {
 						className="fixed inset-0 bg-black bg-opacity-50"
 						onClick={handleCloseSellerModal}
 					></div>
-					<div className="bg-white0 rounded-lg p-6 w-full max-w-md relative z-10">
+					<div className="bg-white rounded-lg p-6 w-full max-w-md relative z-10">
 						<div className="flex justify-between items-center mb-4">
 							<h2 className="text-xl font-bold text-gray-900">
 								Convertir en Vendedor
@@ -718,6 +779,87 @@ const AdminUsersPage: React.FC = () => {
 									)}
 								</button>
 							</div>
+						</div>
+					</div>
+				</div>
+			)}
+
+			{/* Modal de confirmación de eliminación */}
+			{showDeleteModal && selectedUserForDelete && (
+				<div className="fixed inset-0 flex items-center justify-center z-50">
+					<div
+						className="fixed inset-0 bg-black bg-opacity-50"
+						onClick={handleCloseDeleteModal}
+					></div>
+					<div className="bg-white rounded-lg p-6 w-full max-w-md relative z-10">
+						<div className="flex justify-between items-center mb-4">
+							<h2 className="text-xl font-bold text-gray-900 flex items-center">
+								<Trash2 className="mr-2 text-red-600" size={24} />
+								Confirmar Eliminación
+							</h2>
+							<button
+								onClick={handleCloseDeleteModal}
+								className="text-gray-500 hover:text-gray-700"
+								disabled={deleting}
+							>
+								<X size={20} />
+							</button>
+						</div>
+
+						<div className="mb-6">
+							<p className="text-gray-700 mb-3">
+								¿Está seguro de que desea eliminar al usuario{" "}
+								<strong>{selectedUserForDelete.name}</strong>?
+							</p>
+							<div className="bg-yellow-50 border border-yellow-200 rounded p-3">
+								<p className="text-yellow-800 text-sm flex items-center">
+									<AlertCircle className="mr-2" size={16} />
+									Esta acción no se puede deshacer. El usuario será eliminado permanentemente del sistema.
+								</p>
+							</div>
+							
+							{/* Información del usuario */}
+							<div className="mt-3 p-3 bg-gray-50 rounded">
+								<p className="text-sm text-gray-600">
+									<strong>Email:</strong> {selectedUserForDelete.email}
+								</p>
+								<p className="text-sm text-gray-600">
+									<strong>Rol:</strong> {
+										selectedUserForDelete.role === "admin" ? "Administrador" :
+										selectedUserForDelete.role === "seller" ? "Vendedor" : "Cliente"
+									}
+								</p>
+								<p className="text-sm text-gray-600">
+									<strong>Pedidos:</strong> {selectedUserForDelete.ordersCount}
+								</p>
+							</div>
+						</div>
+
+						<div className="flex justify-end space-x-3">
+							<button
+								onClick={handleCloseDeleteModal}
+								className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100"
+								disabled={deleting}
+							>
+								Cancelar
+							</button>
+							<button
+								onClick={handleDeleteUser}
+								className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center"
+								disabled={deleting}
+							>
+								{deleting ? (
+									<>
+										<RefreshCw className="animate-spin -ml-1 mr-2 h-4 w-4" />
+										Eliminando...
+									</>
+								) : (
+									<>
+										<Trash2 className="-ml-1 mr-2 h-4 w-4" />
+										Eliminar Usuario
+									</>
+								)}
+							</button>
 						</div>
 					</div>
 				</div>

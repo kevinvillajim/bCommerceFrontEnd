@@ -97,6 +97,18 @@ export class AdminUserService {
 		);
 		return response.data.success;
 	}
+
+	/**
+	 * Elimina un usuario del sistema
+	 * @param userId ID del usuario a eliminar
+	 * @returns true si se eliminó correctamente
+	 */
+	async deleteUser(userId: number): Promise<boolean> {
+		const response = await axiosInstance.delete(
+			API_ENDPOINTS.ADMIN.DELETE_USER(userId)
+		);
+		return response.data.success;
+	}
 }
 
 export default AdminUserService;

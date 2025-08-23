@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { API_ENDPOINTS } from '../../../constants/apiEndpoints';
 import ApiClient from '../../../infrastructure/api/apiClient';
+import { usePasswordValidation } from '../../hooks/usePasswordValidation';
 
 /**
  * Componente de pestaña de seguridad
@@ -10,6 +11,9 @@ const SecurityTab: React.FC = () => {
   const [isUpdating, setIsUpdating] = useState(false);
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
+  
+  // Hook para validación dinámica de contraseñas
+  const { rules: passwordRules, validatePassword } = usePasswordValidation();
   
   // Estado de formulario para contraseñas
   const [formData, setFormData] = useState({
@@ -41,15 +45,17 @@ const SecurityTab: React.FC = () => {
     setPasswordSuccess(null);
     setIsUpdating(true);
     
-    // Validación básica
+    // Validación dinámica
     if (formData.newPassword !== formData.confirmPassword) {
       setPasswordError('Las contraseñas no coinciden');
       setIsUpdating(false);
       return;
     }
     
-    if (formData.newPassword.length < 8) {
-      setPasswordError('La contraseña debe tener al menos 8 caracteres');
+    // Usar validación dinámica basada en configuración del admin
+    const passwordValidation = validatePassword(formData.newPassword);
+    if (!passwordValidation.isValid) {
+      setPasswordError(passwordValidation.errors[0]); // Mostrar el primer error
       setIsUpdating(false);
       return;
     }
@@ -163,7 +169,7 @@ const SecurityTab: React.FC = () => {
                 </button>
               </div>
               <p className="mt-1 text-xs text-gray-500">
-                La contraseña debe tener al menos 8 caracteres e incluir letras y números.
+                {passwordRules.validationMessage}
               </p>
             </div>
             

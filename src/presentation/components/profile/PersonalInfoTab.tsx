@@ -105,6 +105,9 @@ const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({
             location: updatedUser.location ?? userProfile.location
           };
           
+          // ✅ ACTUALIZAR TAMBIÉN EL CONTEXTO DE AUTH PARA REFRESCAR HEADER
+          updateProfile(profileData);
+          
           onProfileUpdate(updatedProfile);
           setProfileSuccess('Perfil actualizado correctamente');
           setIsEditing(false);
@@ -112,7 +115,7 @@ const PersonalInfoTab: React.FC<PersonalInfoTabProps> = ({
       } catch (error) {
         console.error("Error con ApiClient:", error);
         
-        // Fallback con hook de auth
+        // Fallback con hook de auth (ya actualiza automáticamente el contexto)
         const updatedUser = await updateProfile(profileData);
         
         if (updatedUser && onProfileUpdate && userProfile) {

@@ -10,15 +10,38 @@ interface PasswordValidationRules {
   requirements: string[];
 }
 
+// Helper function to generate default rules
+const generateDefaultRules = (minLength = 8, requireUppercase = true, requireNumbers = true, requireSpecial = true): PasswordValidationRules => {
+  const requirements: string[] = [];
+  let message = `La contraseña debe tener al menos ${minLength} caracteres`;
+  
+  if (requireUppercase) {
+    requirements.push('al menos una letra mayúscula');
+  }
+  if (requireNumbers) {
+    requirements.push('al menos un número');
+  }
+  if (requireSpecial) {
+    requirements.push('al menos un carácter especial (!@#$%^&*)');
+  }
+  
+  if (requirements.length > 0) {
+    message += ' y debe incluir ' + requirements.join(', ');
+  }
+  message += '.';
+  
+  return {
+    minLength,
+    requireSpecial,
+    requireUppercase,
+    requireNumbers,
+    validationMessage: message,
+    requirements
+  };
+};
+
 export const usePasswordValidation = () => {
-  const [rules, setRules] = useState<PasswordValidationRules>({
-    minLength: 8,
-    requireSpecial: true,
-    requireUppercase: true,
-    requireNumbers: true,
-    validationMessage: "La contraseña debe tener al menos 8 caracteres y debe incluir al menos una letra mayúscula, al menos un número, al menos un carácter especial (!@#$%^&*).",
-    requirements: ['al menos una letra mayúscula', 'al menos un número', 'al menos un carácter especial (!@#$%^&*)']
-  });
+  const [rules, setRules] = useState<PasswordValidationRules>(generateDefaultRules());
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
