@@ -157,7 +157,7 @@ const OrderItemsList: React.FC<OrderItemsListProps> = ({
                       <div className="space-y-3">
                         {/* ✅ INFORMACIÓN CRÍTICA PARA EL SELLER */}
                         <div className="flex justify-between items-center border-b border-gray-200 pb-2">
-                          <span className="text-sm font-semibold text-gray-700">📦 Cantidad a enviar:</span>
+                          <span className="text-sm font-semibold text-gray-700"> Cantidad a enviar:</span>
                           <span className="text-lg font-bold text-primary-600">{itemBreakdown.quantity}</span>
                         </div>
                         

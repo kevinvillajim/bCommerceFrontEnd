@@ -12,6 +12,7 @@ import ApiClient from "../../infrastructure/api/apiClient";
 import {API_ENDPOINTS} from "../../constants/apiEndpoints";
 import type {Notification} from "../../core/domain/entities/Notification";
 import {useAuth} from "../hooks/useAuth";
+import {useInvalidateCounters} from "../hooks/useHeaderCounters";
 import {CacheService} from "../../infrastructure/services/CacheService";
 
 // ✅ Cache keys UNIFICADOS Y SIMPLES
@@ -90,6 +91,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 	const [totalNotifications, setTotalNotifications] = useState<number>(0);
 
 	const {isAuthenticated} = useAuth();
+	const {optimisticNotificationRead, forceRefresh} = useInvalidateCounters();
 	const isInitialized = useRef(false);
 	const fetchPromiseRef = useRef<Promise<any> | null>(null);
 
@@ -243,6 +245,9 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 
 					setUnreadCount(newCount);
 
+					// 🔥 TIEMPO REAL: Actualizar contador del header 
+					optimisticNotificationRead();
+
 					// Limpiar cache específico
 					clearNotificationCache();
 
@@ -255,7 +260,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 				return false;
 			}
 		},
-		[isAuthenticated, unreadCount, clearNotificationCache]
+		[isAuthenticated, unreadCount, clearNotificationCache, optimisticNotificationRead]
 	);
 
 	// Marcar todas como leídas (SIMPLIFICADO)
@@ -281,6 +286,10 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 				);
 
 				setUnreadCount(0);
+
+				// 🔥 TIEMPO REAL: Refrescar contadores del header (pondrá en 0)
+				await forceRefresh();
+
 				clearNotificationCache();
 				return true;
 			}
@@ -292,7 +301,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 		} finally {
 			setLoading(false);
 		}
-	}, [isAuthenticated, clearNotificationCache]);
+	}, [isAuthenticated, clearNotificationCache, forceRefresh]);
 
 	// Eliminar notificación (SIMPLIFICADO)
 	const deleteNotification = useCallback(
@@ -316,6 +325,9 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 							? response.data.unread_count
 							: Math.max(0, unreadCount - 1);
 						setUnreadCount(newCount);
+						
+						// 🔥 TIEMPO REAL: Actualizar contador del header si era no leída
+						optimisticNotificationRead();
 					}
 
 					setTotalNotifications((prev) => Math.max(0, prev - 1));
@@ -329,7 +341,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 				return false;
 			}
 		},
-		[isAuthenticated, notifications, unreadCount, clearNotificationCache]
+		[isAuthenticated, notifications, unreadCount, clearNotificationCache, optimisticNotificationRead]
 	);
 
 	// ✅ INICIALIZACIÓN SIMPLE - SOLO LIMPIAR AL DESAUTENTICARSE

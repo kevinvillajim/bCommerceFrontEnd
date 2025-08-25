@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { useNotifications } from "../../hooks/useNotifications";
 import { useAuth } from "../../hooks/useAuth";
+import { useInvalidateCounters } from "../../hooks/useHeaderCounters";
 import type { Notification } from "../../../core/domain/entities/Notification";
 import { formatRelativeTime } from "../../../utils/dateUtils";
 
@@ -57,6 +58,10 @@ const getNotificationIcon = (type: string) => {
       return <Shield className="text-orange-500" size={16} />;
     case "account_blocked":
       return <Ban className="text-red-500" size={16} />;
+    case "seller_suspended":
+      return <AlertTriangle className="text-yellow-600" size={16} />;
+    case "seller_inactive":
+      return <Ban className="text-red-600" size={16} />;
     default:
       return <Bell className="text-gray-500" size={16} />;
   }
@@ -100,6 +105,10 @@ const getNotificationUrl = (notification: Notification, isSeller: boolean): stri
       }
       return isSeller ? "/seller/orders" : null;
 
+    case "seller_suspended":
+    case "seller_inactive":
+      return isSeller ? "/seller/dashboard" : null;
+
     default:
       return null;
   }
@@ -112,6 +121,9 @@ const NotificationModal: React.FC<NotificationModalProps> = ({
 }) => {
   const [activeMenu, setActiveMenu] = useState<number | null>(null);
   const { roleInfo } = useAuth();
+  
+  // Hook para actualizar contadores del header en tiempo real
+  const { optimisticNotificationRead, forceRefresh } = useInvalidateCounters();
 
   const {
     notifications,
@@ -138,7 +150,12 @@ const NotificationModal: React.FC<NotificationModalProps> = ({
 
       // Marcar como leída si no lo está
       if (!notification.read) {
-        await markAsRead(notification.id!);
+        const success = await markAsRead(notification.id!);
+        if (success) {
+          // 🔥 TIEMPO REAL: Actualizar contador del header inmediatamente
+          optimisticNotificationRead();
+          console.log("🔔 Contador del header actualizado por clic en notificación");
+        }
       }
 
       // Cerrar modal
@@ -150,13 +167,18 @@ const NotificationModal: React.FC<NotificationModalProps> = ({
         window.location.href = url;
       }
     },
-    [markAsRead, onClose, roleInfo.isSeller]
+    [markAsRead, onClose, roleInfo.isSeller, optimisticNotificationRead]
   );
 
   // Manejar marcar todas como leídas
   const handleMarkAllAsRead = useCallback(async () => {
-    await markAllAsRead();
-  }, [markAllAsRead]);
+    const success = await markAllAsRead();
+    if (success) {
+      // 🔥 TIEMPO REAL: Refrescar contadores del header (pondrá en 0)
+      await forceRefresh();
+      console.log("🔔 Contadores del header actualizados - marcar todas como leídas");
+    }
+  }, [markAllAsRead, forceRefresh]);
 
   // Manejar eliminación
   const handleDelete = useCallback(
@@ -170,10 +192,15 @@ const NotificationModal: React.FC<NotificationModalProps> = ({
   // Manejar marcar como leída individual
   const handleMarkAsRead = useCallback(
     async (id: number) => {
-      await markAsRead(id);
+      const success = await markAsRead(id);
+      if (success) {
+        // 🔥 TIEMPO REAL: Actualizar contador del header inmediatamente
+        optimisticNotificationRead();
+        console.log("🔔 Contador del header actualizado por marcar como leída individual");
+      }
       setActiveMenu(null);
     },
-    [markAsRead]
+    [markAsRead, optimisticNotificationRead]
   );
 
   if (!isOpen) return null;

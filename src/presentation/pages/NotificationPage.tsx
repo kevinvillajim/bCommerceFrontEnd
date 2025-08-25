@@ -53,6 +53,12 @@ const getNotificationIcon = (type: string) => {
 			return <Shield className="text-orange-500" size={20} />;
 		case "account_blocked":
 			return <Ban className="text-red-500" size={20} />;
+		case "seller_status_warning":
+			return <AlertTriangle className="text-orange-600" size={20} />;
+		case "seller_suspended":
+			return <AlertTriangle className="text-yellow-600" size={20} />;
+		case "seller_inactive":
+			return <Ban className="text-red-600" size={20} />;
 		default:
 			return <Bell className="text-gray-500" size={20} />;
 	}
@@ -85,6 +91,12 @@ const getNotificationColor = (type: string) => {
 			return "bg-orange-50 border-orange-200";
 		case "account_blocked":
 			return "bg-red-50 border-red-200";
+		case "seller_status_warning":
+			return "bg-orange-50 border-orange-300";
+		case "seller_suspended":
+			return "bg-yellow-50 border-yellow-300";
+		case "seller_inactive":
+			return "bg-red-50 border-red-300";
 		default:
 			return "bg-gray-50 border-gray-200/50";
 	}

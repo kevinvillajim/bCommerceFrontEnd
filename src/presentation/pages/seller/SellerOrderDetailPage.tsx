@@ -182,11 +182,6 @@ const SellerOrderDetailPage: React.FC = () => {
 									Cancelar pedido
 								</button>
 							)}
-
-							<button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
-								<FileText className="w-4 h-4 mr-2 inline" />
-								Generar factura
-							</button>
 						</div>
 					</div>
 				</div>
@@ -360,7 +355,7 @@ const SellerOrderDetailPage: React.FC = () => {
 													{/* ✅ SOLO LA CANTIDAD - SIMPLIFICADO COMO PIDIÓ EL USUARIO */}
 													<div className="mt-3 bg-blue-50 p-4 rounded-lg border border-blue-200">
 														<div className="flex items-center justify-between">
-															<span className="text-sm font-semibold text-gray-700">📦 Cantidad a enviar:</span>
+															<span className="text-sm font-semibold text-gray-700">Cantidad a enviar:</span>
 															<p className="text-2xl font-bold text-primary-600">{item.quantity || 0}</p>
 														</div>
 													</div>
@@ -393,10 +388,13 @@ const SellerOrderDetailPage: React.FC = () => {
 
 							{/* Componente dinámico de ganancias con configuraciones reales */}
 							<OrderEarningsInfo
-								subtotal={sellerData.subtotalVendido || 0}
-								shippingCost={order.shipping_cost || 0}
-								sellerIds={[order.seller_id || order.sellerId || 0]}
-								currentSellerId={order.seller_id || order.sellerId}
+								grossEarnings={sellerData.subtotalVendido || 0}
+								platformCommission={sellerData.platformCommission || 0}
+								netEarnings={sellerData.sellerEarningsFromProducts || 0}
+								shippingEarnings={sellerData.shippingIncome || 0}
+								totalEarnings={sellerData.totalToReceive || 0}
+								commissionRate={(sellerData.platformCommission ?? 0) > 0 && (sellerData.subtotalVendido ?? 0) > 0 ? ((sellerData.platformCommission ?? 0) / (sellerData.subtotalVendido ?? 1)) * 100 : 10.0}
+								sellerCount={1}
 								showBreakdown={true}
 								className="mb-4"
 							/>
@@ -414,10 +412,13 @@ const SellerOrderDetailPage: React.FC = () => {
 						<div className="bg-white rounded-lg shadow-md p-6">
 							{/* Componente dinámico compacto para vista lateral */}
 							<OrderEarningsInfo
-								subtotal={sellerData.subtotalVendido || 0}
-								shippingCost={order.shipping_cost || 0}
-								sellerIds={[order.seller_id || order.sellerId || 0]}
-								currentSellerId={order.seller_id || order.sellerId}
+								grossEarnings={sellerData.subtotalVendido || 0}
+								platformCommission={sellerData.platformCommission || 0}
+								netEarnings={sellerData.sellerEarningsFromProducts || 0}
+								shippingEarnings={sellerData.shippingIncome || 0}
+								totalEarnings={sellerData.totalToReceive || 0}
+								commissionRate={(sellerData.platformCommission ?? 0) > 0 && (sellerData.subtotalVendido ?? 0) > 0 ? ((sellerData.platformCommission ?? 0) / (sellerData.subtotalVendido ?? 1)) * 100 : 10.0}
+								sellerCount={1}
 								showBreakdown={true}
 							/>
 						</div>

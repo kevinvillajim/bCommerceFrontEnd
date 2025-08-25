@@ -48,6 +48,7 @@ const AdminSellersPage: React.FC = () => {
 		title: "Crear nuevo vendedor",
 	});
 
+
 	const [error, setError] = useState<string | null>(null);
 
 	// Inicializar el servicio
@@ -158,28 +159,19 @@ const AdminSellersPage: React.FC = () => {
 	};
 
 	// Procesar cambio de estado
-	const handleStatusUpdate = async (reason: string) => {
+	const handleStatusUpdate = async (newStatus: string, reason: string) => {
 		setLoading(true);
 		setError(null);
 		try {
-			const {sellerId, status} = statusModal;
-			let newStatus: "active" | "suspended" | "inactive";
+			const {sellerId} = statusModal;
 
-			if (status === "activate") {
-				newStatus = "active";
-			} else if (status === "suspend") {
-				newStatus = "suspended";
-			} else {
-				newStatus = "inactive";
-			}
-
-			await adminSellerService.updateSellerStatus(sellerId, newStatus, reason);
+			await adminSellerService.updateSellerStatus(sellerId, newStatus as "active" | "suspended" | "inactive", reason);
 
 			// Actualizar el estado local para reflejar el cambio inmediatamente
 			setSellers((prevSellers) =>
 				prevSellers.map((seller) => {
 					if (seller.id === sellerId) {
-						return {...seller, status: newStatus};
+						return {...seller, status: newStatus as "active" | "suspended" | "inactive"};
 					}
 					return seller;
 				})
@@ -632,10 +624,7 @@ const AdminSellersPage: React.FC = () => {
 				isOpen={statusModal.isOpen}
 				onClose={() => setStatusModal((prev) => ({...prev, isOpen: false}))}
 				onConfirm={handleStatusUpdate}
-				title={statusModal.title}
-				message={statusModal.message}
-				confirmButtonText={statusModal.buttonText}
-				status={statusModal.status}
+				sellerName={sellers.find(s => s.id === statusModal.sellerId)?.store_name || sellers.find(s => s.id === statusModal.sellerId)?.userName || "Vendedor"}
 			/>
 
 			{/* Modal de creación/edición de vendedor */}
@@ -648,6 +637,7 @@ const AdminSellersPage: React.FC = () => {
 				isCreate={sellerFormModal.isCreate}
 				users={[]}
 			/>
+
 		</div>
 	);
 };

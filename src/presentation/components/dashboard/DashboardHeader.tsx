@@ -10,10 +10,11 @@ import {
 	AlertTriangle,
 } from "lucide-react";
 import {AuthContext} from "../../contexts/AuthContext";
-import {useHeaderCounters} from "../../hooks/useHeaderCounters";
+import {useHeaderCounters, useInvalidateCounters} from "../../hooks/useHeaderCounters";
 import ThemeToggle from "../common/ThemeToggle";
 import {useDashboard} from "./DashboardContext";
 import NotificationModal from "./NotificationModal";
+import {useNotifications} from "../../hooks/useNotifications";
 
 /**
  * Tipos de notificaciones para mostrar en el panel
@@ -63,6 +64,8 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
 
 	// ✅ USAR EL HOOK UNIFICADO OPTIMIZADO - CORRECCIÓN PRINCIPAL
 	const {counters, loading: countersLoading} = useHeaderCounters();
+	const {forceRefresh} = useInvalidateCounters();
+	const {markAllAsRead} = useNotifications();
 
 	// ✅ USAR EL CONTADOR DE NOTIFICACIONES DEL HOOK OPTIMIZADO
 	// Ya no usar props, solo del hook que se conecta al backend
@@ -87,6 +90,18 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
 
 	const toggleNotificationModal = () => {
 		setIsNotificationModalOpen(!isNotificationModalOpen);
+	};
+
+	// Función mejorada para marcar todas las notificaciones como leídas
+	const handleMarkAllAsRead = async () => {
+		const success = await markAllAsRead();
+		if (success) {
+			// 🔥 TIEMPO REAL: Refrescar contadores del header
+			await forceRefresh();
+			console.log("🔔 Header - Contadores actualizados después de marcar todas");
+		}
+		// También ejecutar callback del prop si existe
+		onReadAllNotifications();
 	};
 
 	// Obtener la inicial del nombre del usuario para el avatar
@@ -171,7 +186,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({
 						{/* Botón directo marcar todas como leídas */}
 						{finalUnreadNotifications > 0 && (
 							<button
-								onClick={onReadAllNotifications}
+								onClick={handleMarkAllAsRead}
 								className="text-xs text-primary-600 hover:text-primary-700 px-2 py-1 rounded-md hover:bg-primary-50 transition-colors"
 								title="Marcar todas como leídas"
 							>
