@@ -1,11 +1,11 @@
 /**
- * 🧮 CALCULADORA CENTRALIZADA DE E-COMMERCE
+ * 🎯 JORDAN - CALCULADORA CENTRALIZADA DE E-COMMERCE
  * Garantiza consistencia total entre todo el sistema
- * Esta es la ÚNICA fuente de verdad para todos los cálculos
+ * ÚNICA fuente de verdad para todos los cálculos
+ * MIGRADO: Ahora usa ConfigurationManager unificado
  */
 
-import ShippingConfigService from '../core/services/ShippingConfigService';
-import ApiClient from '../infrastructure/api/apiClient';
+import ConfigurationManager from '../core/services/ConfigurationManager';
 
 export interface CartItem {
   id?: number;
@@ -61,6 +61,14 @@ export interface CalculationResult {
   freeShipping: boolean;                 // false
   volumeDiscountsApplied: boolean;       // true
 
+  // 🎯 JORDAN: Metadatos de configuración usada
+  configMetadata: {
+    source: 'cache' | 'api' | 'fallback';
+    version: string;
+    isStale: boolean;
+    warnings: string[];
+  };
+
   // Aliases para compatibilidad
   originalSubtotal: number;
   subtotalAfterSellerDiscount: number;
@@ -71,123 +79,72 @@ export interface CalculationResult {
   total: number;
 }
 
+/**
+ * 🎯 JORDAN FASE 1: CALCULADORA MIGRADA CON CONFIGURACIÓN UNIFICADA
+ * ELIMINA: Todas las configuraciones hardcoded
+ * AÑADE: ConfigurationManager como única fuente de verdad
+ * CORRIGE: Inconsistencias entre frontend/backend
+ */
 export class EcommerceCalculator {
-  private static readonly TAX_RATE = 0.15; // 15%
-  private static shippingConfig: { cost: number; threshold: number; enabled: boolean } | null = null;
-  private static configCacheTime = 0;
-  private static readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
+  private static configManager = ConfigurationManager.getInstance();
 
   /**
-   * 🔧 OBTENER CONFIGURACIÓN DE ENVÍO DINÁMICA
-   */
-  private static async getShippingConfig() {
-    const now = Date.now();
-    
-    // Si tenemos cache válido, lo devolvemos
-    if (this.shippingConfig && (now - this.configCacheTime) < this.CACHE_DURATION) {
-      return this.shippingConfig;
-    }
-
-    try {
-      const service = ShippingConfigService.getInstance();
-      const config = await service.getShippingConfig();
-      
-      this.shippingConfig = {
-        cost: config.defaultCost,
-        threshold: config.freeThreshold,
-        enabled: config.enabled
-      };
-      this.configCacheTime = now;
-      
-      return this.shippingConfig;
-    } catch (error) {
-      console.warn('Error al obtener configuración de envío, usando valores por defecto:', error);
-      
-      // Valores por defecto si falla (deben coincidir con BD actual)
-      this.shippingConfig = {
-        cost: 3.00,    // Valor actual en BD
-        threshold: 20.00, // Valor actual en BD
-        enabled: true
-      };
-      this.configCacheTime = now;
-      
-      return this.shippingConfig;
-    }
-  }
-
-  /**
-   * 🎯 FUNCIÓN PRINCIPAL - CALCULADORA MAESTRA
-   * Esta función implementa la SECUENCIA EXACTA especificada en el problema
+   * 🎯 JORDAN - FUNCIÓN PRINCIPAL MIGRADA
+   * Ahora usa ConfigurationManager unificado - ELIMINA TODAS LAS CONFIGURACIONES HARDCODED
    */
   static async calculateTotals(
     items: CartItem[], 
     appliedDiscountCode?: any,
-    dynamicVolumeTiers?: Array<{quantity: number, discount: number}>
+    forceRefresh: boolean = false
   ): Promise<CalculationResult> {
-    console.log('🧮 CALCULADORA CENTRALIZADA - INICIANDO');
-    console.log('📊 Items a procesar:', items.length);
-    console.log('🎫 Cupón aplicado:', appliedDiscountCode?.discountCode?.code || 'NINGUNO');
-
-    // 🔧 NUEVO: Cargar tiers dinámicos de descuentos por volumen
-    let volumeTiers: Array<{quantity: number, discount: number}> = [];
+    console.log('🧮 JORDAN CALCULADORA - INICIANDO CON CONFIGURACIÓN UNIFICADA', {
+      forceRefresh,
+      itemsCount: items.length
+    });
     
-    if (dynamicVolumeTiers && dynamicVolumeTiers.length > 0) {
-      // Usar tiers pasados como parámetro (prioritario)
-      volumeTiers = dynamicVolumeTiers;
-      console.log('✅ Usando tiers dinámicos pasados como parámetro:', volumeTiers);
-    } else {
-      // Fallback: cargar desde ruta pública
-      try {
-        const response = await ApiClient.get('/configurations/volume-discounts-public');
-        
-        const responseData = response as any;
-        if (responseData.status === 'success' && responseData.data?.volume_discounts?.default_tiers) {
-          const tiersData = typeof responseData.data.volume_discounts.default_tiers === 'string' 
-            ? JSON.parse(responseData.data.volume_discounts.default_tiers)
-            : responseData.data.volume_discounts.default_tiers;
-          
-          volumeTiers = tiersData.map((tier: any) => ({
-            quantity: tier.quantity,
-            discount: tier.discount
-          }));
-          
-          console.log('✅ Tiers dinámicos cargados desde BD (fallback):', volumeTiers);
-        }
-      } catch (error) {
-        console.warn('⚠️ Error cargando tiers dinámicos, usando fallback hardcodeado:', error);
-      }
-    }
+    // 🔧 OBTENER CONFIGURACIÓN SINCRONIZADA - Con reintentos automáticos
+    // 🎯 CRITICAL: forceRefresh en puntos críticos (Cart/Checkout)
+    const configResult = await this.configManager.getUnifiedConfig(forceRefresh);
+    const config = configResult.config;
+    
+    console.log('✅ JORDAN - Configuración obtenida:', {
+      source: configResult.source,
+      isStale: configResult.is_stale,
+      taxRate: config.tax_rate,
+      commissionRate: config.platform_commission_rate,
+      shippingCost: config.shipping.default_cost,
+      volumeTiers: config.volume_discounts.length
+    });
 
-    // PASO 1: Precio Base × Cantidad = $6.00
-    const step1_originalSubtotal = this.calculateStep1_OriginalSubtotal(items);
+    // PASO 1: Precio Base × Cantidad
+    const step1_originalSubtotal = this.calculateOriginalSubtotal(items);
     console.log(`1️⃣ Subtotal original: $${step1_originalSubtotal.toFixed(2)}`);
 
-    // PASO 2: Aplicar Descuento Vendedor (50%) = $3.00
+    // PASO 2: Aplicar Descuento Vendedor
     const { subtotal: step2_afterSellerDiscount, totalDiscount: sellerDiscounts } = 
-      this.calculateStep2_SellerDiscounts(items, step1_originalSubtotal);
-    console.log(`2️⃣ Después descuento vendedor: $${step2_afterSellerDiscount.toFixed(2)} (descuento: $${sellerDiscounts.toFixed(2)})`);
+      this.calculateSellerDiscounts(items, step1_originalSubtotal);
+    console.log(`2️⃣ Después descuento vendedor: $${step2_afterSellerDiscount.toFixed(2)}`);
 
-    // PASO 3: Aplicar Descuento Volumen (dinámico desde BD) = $2.85
+    // PASO 3: Aplicar Descuento Volumen (usando configuración unificada)
     const { subtotal: step3_afterVolumeDiscount, totalDiscount: volumeDiscounts } = 
-      this.calculateStep3_VolumeDiscounts(items, step2_afterSellerDiscount, volumeTiers);
-    console.log(`3️⃣ Después descuento volumen: $${step3_afterVolumeDiscount.toFixed(2)} (descuento: $${volumeDiscounts.toFixed(2)})`);
+      this.calculateVolumeDiscounts(items, step2_afterSellerDiscount, config.volume_discounts);
+    console.log(`3️⃣ Después descuento volumen: $${step3_afterVolumeDiscount.toFixed(2)}`);
 
-    // PASO 4: Aplicar Cupón (5% sobre $2.85) = $2.71
+    // PASO 4: Aplicar Cupón
     const { subtotal: step4_afterCoupon, discount: couponDiscount } = 
-      this.calculateStep4_CouponDiscount(step3_afterVolumeDiscount, appliedDiscountCode);
-    console.log(`4️⃣ Después cupón: $${step4_afterCoupon.toFixed(2)} (descuento: $${couponDiscount.toFixed(2)})`);
+      this.calculateCouponDiscount(step3_afterVolumeDiscount, appliedDiscountCode);
+    console.log(`4️⃣ Después cupón: $${step4_afterCoupon.toFixed(2)}`);
 
-    // PASO 5: Agregar Envío ($5) = $7.71
-    const shippingConfig = await this.getShippingConfig();
-    const shipping = this.calculateShippingWithConfig(step4_afterCoupon, shippingConfig);
+    // PASO 5: Agregar Envío (usando configuración unificada)
+    const shipping = this.calculateShipping(step4_afterCoupon, config.shipping);
     const step5_withShipping = step4_afterCoupon + shipping;
     console.log(`5️⃣ Con envío: $${step5_withShipping.toFixed(2)} (envío: $${shipping.toFixed(2)})`);
 
-    // PASO 6: Calcular IVA (15% sobre $7.71) = $1.16
-    const step6_tax = step5_withShipping * this.TAX_RATE;
-    console.log(`6️⃣ IVA calculado: $${step6_tax.toFixed(2)} (15% sobre $${step5_withShipping.toFixed(2)})`);
+    // PASO 6: Calcular IVA (usando configuración unificada)
+    const step6_tax = step5_withShipping * config.tax_rate;
+    console.log(`6️⃣ IVA calculado: $${step6_tax.toFixed(2)} (${(config.tax_rate * 100).toFixed(1)}%)`);
 
-    // PASO 7: Total Final = $8.87
+    // PASO 7: Total Final
     const step7_finalTotal = step5_withShipping + step6_tax;
     console.log(`7️⃣ TOTAL FINAL: $${step7_finalTotal.toFixed(2)}`);
 
@@ -195,14 +152,11 @@ export class EcommerceCalculator {
     const volumeDiscountsApplied = volumeDiscounts > 0;
     const freeShipping = shipping === 0;
 
-    console.log('📊 RESUMEN FINAL:');
-    console.log(`   💰 Descuentos vendedor: $${sellerDiscounts.toFixed(2)}`);
-    console.log(`   💰 Descuentos volumen: $${volumeDiscounts.toFixed(2)}`);
-    console.log(`   💰 Descuento cupón: $${couponDiscount.toFixed(2)}`);
-    console.log(`   💰 TOTAL AHORRADO: $${totalDiscounts.toFixed(2)}`);
-    console.log(`   🚚 Envío: $${shipping.toFixed(2)} ${freeShipping ? '(GRATIS)' : ''}`);
-    console.log(`   🏷️ IVA: $${step6_tax.toFixed(2)}`);
-    console.log(`   🎯 TOTAL A PAGAR: $${step7_finalTotal.toFixed(2)}`);
+    console.log('📊 JORDAN - RESUMEN CON CONFIGURACIÓN UNIFICADA:');
+    console.log(`   💰 Configuración: ${configResult.source} (${config.version})`);
+    console.log(`   💰 Tax rate: ${(config.tax_rate * 100).toFixed(1)}% (dinámico)`);
+    console.log(`   💰 Volume tiers: ${config.volume_discounts.length} configurados`);
+    console.log(`   💰 Shipping: $${config.shipping.default_cost} (umbral: $${config.shipping.free_threshold})`);
 
     const result: CalculationResult = {
       // Flujo secuencial EXACTO
@@ -225,7 +179,15 @@ export class EcommerceCalculator {
       freeShipping,
       volumeDiscountsApplied,
 
-      // Aliases para compatibilidad con código existente
+      // 🎯 JORDAN: Metadatos de configuración
+      configMetadata: {
+        source: configResult.source,
+        version: config.version,
+        isStale: configResult.is_stale,
+        warnings: configResult.warnings
+      },
+
+      // Aliases para compatibilidad
       originalSubtotal: step1_originalSubtotal,
       subtotalAfterSellerDiscount: step2_afterSellerDiscount,
       subtotalAfterVolumeDiscount: step3_afterVolumeDiscount,
@@ -241,7 +203,7 @@ export class EcommerceCalculator {
   /**
    * PASO 1: Calcular subtotal original (precio base × cantidad)
    */
-  private static calculateStep1_OriginalSubtotal(items: CartItem[]): number {
+  private static calculateOriginalSubtotal(items: CartItem[]): number {
     let total = 0;
     
     items.forEach(item => {
@@ -253,13 +215,13 @@ export class EcommerceCalculator {
       total += itemSubtotal;
     });
 
-    return this.round(total);
+    return total; // Sin redondeo intermedio - frontend manejará
   }
 
   /**
    * PASO 2: Aplicar descuentos del vendedor
    */
-  private static calculateStep2_SellerDiscounts(items: CartItem[], _originalSubtotal: number): { subtotal: number; totalDiscount: number } {
+  private static calculateSellerDiscounts(items: CartItem[], _originalSubtotal: number): { subtotal: number; totalDiscount: number } {
     let totalDiscount = 0;
     let subtotalAfterDiscount = 0;
 
@@ -280,29 +242,29 @@ export class EcommerceCalculator {
     });
 
     return { 
-      subtotal: this.round(subtotalAfterDiscount), 
-      totalDiscount: this.round(totalDiscount) 
+      subtotal: subtotalAfterDiscount, // Sin redondeo intermedio - frontend manejará
+      totalDiscount: totalDiscount // Sin redondeo intermedio - frontend manejará
     };
   }
 
   /**
    * PASO 3: Aplicar descuentos por volumen con configuración dinámica
    */
-  private static calculateStep3_VolumeDiscounts(
+  private static calculateVolumeDiscounts(
     items: CartItem[], 
     _currentSubtotal: number, 
-    dynamicTiers?: Array<{quantity: number, discount: number}>
+    volumeDiscounts: Array<{quantity: number, discount: number}>
   ): { subtotal: number; totalDiscount: number } {
     let totalDiscount = 0;
     let subtotalAfterDiscount = 0;
 
     items.forEach(item => {
       const quantity = item.quantity || 0;
-      const volumeDiscountPercentage = this.getVolumeDiscountPercentage(quantity, dynamicTiers);
+      const volumeDiscountPercentage = this.getVolumeDiscountPercentage(quantity, volumeDiscounts);
       
       if (volumeDiscountPercentage > 0) {
         const sellerDiscountedPrice = this.getPriceAfterSellerDiscount(item);
-        const volumeDiscountPerUnit = sellerDiscountedPrice * (volumeDiscountPercentage / 100);
+        const volumeDiscountPerUnit = sellerDiscountedPrice * volumeDiscountPercentage;
         const priceAfterVolumeDiscount = sellerDiscountedPrice - volumeDiscountPerUnit;
         const itemVolumeDiscount = volumeDiscountPerUnit * quantity;
         const itemSubtotal = priceAfterVolumeDiscount * quantity;
@@ -310,7 +272,7 @@ export class EcommerceCalculator {
         totalDiscount += itemVolumeDiscount;
         subtotalAfterDiscount += itemSubtotal;
 
-        console.log(`📦 Volume discount: ${volumeDiscountPercentage}% sobre $${sellerDiscountedPrice} = descuento $${volumeDiscountPerUnit}/unidad`);
+        console.log(`📦 Volume discount: ${(volumeDiscountPercentage * 100).toFixed(1)}% sobre $${sellerDiscountedPrice} = descuento $${volumeDiscountPerUnit}/unidad`);
       } else {
         const sellerDiscountedPrice = this.getPriceAfterSellerDiscount(item);
         subtotalAfterDiscount += sellerDiscountedPrice * quantity;
@@ -318,15 +280,15 @@ export class EcommerceCalculator {
     });
 
     return { 
-      subtotal: this.round(subtotalAfterDiscount), 
-      totalDiscount: this.round(totalDiscount) 
+      subtotal: subtotalAfterDiscount, // Sin redondeo intermedio - frontend manejará
+      totalDiscount: totalDiscount // Sin redondeo intermedio - frontend manejará
     };
   }
 
   /**
    * PASO 4: Aplicar cupón de descuento
    */
-  private static calculateStep4_CouponDiscount(subtotal: number, discountCode?: any): { subtotal: number; discount: number } {
+  private static calculateCouponDiscount(subtotal: number, discountCode?: any): { subtotal: number; discount: number } {
     if (!discountCode?.discountCode) {
       return { subtotal, discount: 0 };
     }
@@ -346,22 +308,22 @@ export class EcommerceCalculator {
     console.log(`🎫 Cupón ${discountData.code}: ${discountData.discount_percentage || discountData.percentage || discountData.value}% = descuento $${discount.toFixed(2)}`);
 
     return { 
-      subtotal: this.round(subtotal - discount), 
-      discount: this.round(discount) 
+      subtotal: subtotal - discount, // Sin redondeo intermedio - frontend manejará
+      discount: discount // Sin redondeo intermedio - frontend manejará
     };
   }
 
   /**
    * PASO 5: Calcular costo de envío
    */
-  private static calculateShippingWithConfig(
+  private static calculateShipping(
     subtotal: number, 
-    config: { cost: number; threshold: number; enabled: boolean }
+    shippingConfig: { enabled: boolean; default_cost: number; free_threshold: number }
   ): number {
-    if (!config.enabled) {
+    if (!shippingConfig.enabled) {
       return 0;
     }
-    return subtotal >= config.threshold ? 0 : config.cost;
+    return subtotal >= shippingConfig.free_threshold ? 0 : shippingConfig.default_cost;
   }
 
   /**
@@ -392,71 +354,66 @@ export class EcommerceCalculator {
   }
 
   /**
-   * 🔧 CORREGIDO: Usa configuración dinámica desde BD cuando esté disponible
-   * Mantiene compatibilidad síncrona pero necesita ser migrado a versión async
+   * 🔧 JORDAN: Obtener porcentaje de descuento por volumen usando configuración dinámica
    */
-  private static getVolumeDiscountPercentage(quantity: number, dynamicTiers?: Array<{quantity: number, discount: number}>): number {
-    // Si se proveen tiers dinámicos, usarlos
-    if (dynamicTiers && dynamicTiers.length > 0) {
-      // Ordenar tiers por cantidad descendente para encontrar el mayor aplicable
-      const sortedTiers = [...dynamicTiers].sort((a, b) => b.quantity - a.quantity);
-      
-      for (const tier of sortedTiers) {
-        if (quantity >= tier.quantity) {
-          return tier.discount;
-        }
-      }
-      return 0.0;
-    }
+  private static getVolumeDiscountPercentage(quantity: number, volumeDiscounts: Array<{quantity: number, discount: number}>): number {
+    // Ordenar tiers por cantidad descendente para encontrar el mayor aplicable
+    const sortedTiers = [...volumeDiscounts].sort((a, b) => b.quantity - a.quantity);
     
-    // ⚠️ FALLBACK: Solo para compatibilidad cuando no hay tiers dinámicos
-    // 🔧 CORREGIDO: Debe coincidir con configuración actual del backend
-    // TODO: Migrar todos los llamadores a versión async con ConfigurationService
-    console.warn('⚠️ EcommerceCalculator: Usando descuentos por volumen hardcodeados como fallback');
-    if (quantity >= 6) return 50.0; // CORREGIDO: 6+ items = 50% OFF según configuración actual
+    for (const tier of sortedTiers) {
+      if (quantity >= tier.quantity) {
+        return tier.discount / 100; // ✅ CORREGIDO: Convertir porcentaje a decimal (15 -> 0.15)
+      }
+    }
     return 0.0;
   }
 
   /**
-   * Redondeo consistente a 2 decimales (MEJORADO)
+   * Redondeo para DISPLAY ÚNICAMENTE - NO usar en cálculos intermedios
+   * Solo para mostrar valores al usuario en la interfaz
    */
-  private static round(value: number): number {
+  static roundForDisplay(value: number): number {
     return parseFloat(value.toFixed(2));
   }
 
   /**
-   * 🎯 HELPER PARA CHECKOUT - Prepara datos para backend (con configuración dinámica)
+   * 🎯 JORDAN - HELPER PARA CHECKOUT migrado con configuración unificada
    */
   static async prepareCheckoutData(
     items: CartItem[], 
     appliedDiscount?: any,
-    dynamicVolumeTiers?: Array<{quantity: number, discount: number}>
+    forceRefresh: boolean = false
   ): Promise<{
     items: any[];
     totals: CalculationResult;
   }> {
-    const totals = await this.calculateTotals(items, appliedDiscount, dynamicVolumeTiers);
+    const totals = await this.calculateTotals(items, appliedDiscount, forceRefresh);
+    
+    // 🔧 OBTENER CONFIGURACIÓN SINCRONIZADA para preparar items
+    // 🎯 CRITICAL: usar forceRefresh si fue solicitado
+    const configResult = await this.configManager.getUnifiedConfig(forceRefresh);
+    const config = configResult.config;
     
     const preparedItems = items.map(item => {
       const basePrice = this.getBasePrice(item);
       const sellerDiscountPercentage = this.getSellerDiscountPercentage(item);
-      const volumeDiscountPercentage = this.getVolumeDiscountPercentage(item.quantity || 0, dynamicVolumeTiers);
+      const volumeDiscountPercentage = this.getVolumeDiscountPercentage(item.quantity || 0, config.volume_discounts);
       
       // Calcular precio final por unidad
       const priceAfterSeller = basePrice * (1 - sellerDiscountPercentage / 100);
       const finalPricePerUnit = volumeDiscountPercentage > 0 ? 
-        priceAfterSeller * (1 - volumeDiscountPercentage / 100) : priceAfterSeller;
+        priceAfterSeller * (1 - volumeDiscountPercentage) : priceAfterSeller;
 
       return {
         product_id: item.product_id || item.product?.id || item.productId,
         quantity: item.quantity,
-        price: this.round(finalPricePerUnit), // Precio final con todos los descuentos
+        price: finalPricePerUnit, // Sin redondeo - frontend manejará en vista
         base_price: basePrice,
         original_price: basePrice,
-        final_price: this.round(finalPricePerUnit),
-        volume_discount_percentage: volumeDiscountPercentage,
-        volume_savings: this.round((priceAfterSeller - finalPricePerUnit) * (item.quantity || 0)),
-        seller_discount_amount: this.round((basePrice - priceAfterSeller) * (item.quantity || 0))
+        final_price: finalPricePerUnit, // Sin redondeo - frontend manejará en vista
+        volume_discount_percentage: volumeDiscountPercentage * 100, // Para compatibilidad con backend (como porcentaje)
+        volume_savings: (priceAfterSeller - finalPricePerUnit) * (item.quantity || 0), // Sin redondeo - frontend manejará
+        seller_discount_amount: (basePrice - priceAfterSeller) * (item.quantity || 0) // Sin redondeo - frontend manejará
       };
     });
 

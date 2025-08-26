@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Moon, Sun } from 'lucide-react';
 import { useTheme } from '../../hooks/useTheme';
 
@@ -9,7 +9,7 @@ interface ThemeToggleProps {
 /**
  * Componente para cambiar entre modo claro y oscuro
  */
-const ThemeToggle: React.FC<ThemeToggleProps> = ({ className = '' }) => {
+const ThemeToggle: React.FC<ThemeToggleProps> = memo(({ className = '' }) => {
   const { theme, toggleTheme } = useTheme();
   
   return (
@@ -26,6 +26,6 @@ const ThemeToggle: React.FC<ThemeToggleProps> = ({ className = '' }) => {
       )}
     </button>
   );
-};
+});
 
 export default ThemeToggle;

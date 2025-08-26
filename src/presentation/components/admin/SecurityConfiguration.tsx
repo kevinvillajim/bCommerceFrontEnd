@@ -9,6 +9,16 @@ const SecurityConfiguration: React.FC = () => {
   const [success, setSuccess] = useState<string | null>(null);
 
   const [config, setConfig] = useState<SecurityConfig>({
+    password_rules: {
+      min_length: 8,
+      require_uppercase: true,
+      require_lowercase: true,
+      require_numbers: true,
+      require_special_chars: true,
+    },
+    session_timeout: 3600,
+    max_login_attempts: 5,
+    lockout_duration: 900,
     passwordMinLength: 8,
     passwordRequireSpecial: true,
     passwordRequireUppercase: true,
@@ -17,8 +27,7 @@ const SecurityConfiguration: React.FC = () => {
     sessionTimeout: 120,
     enableTwoFactor: false,
     requireEmailVerification: true,
-    adminIpRestriction: "",
-    enableCaptcha: false,
+    adminIpRestriction: false,
   });
 
   const configService = new ConfigurationService();

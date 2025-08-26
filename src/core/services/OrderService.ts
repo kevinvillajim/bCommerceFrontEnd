@@ -1,5 +1,7 @@
 import {API_ENDPOINTS} from "../../constants/apiEndpoints";
 import ApiClient from "../../infrastructure/api/apiClient";
+import ConfigurationManager from './ConfigurationManager';
+import { isNumberEqual } from "../../constants/calculationConfig";
 import type {
 	Order,
 	OrderDetail,
@@ -100,15 +102,18 @@ export class OrderService {
 					0
 				);
 
-				// Calcular el IVA (15%)
-				const taxRate = 0.15;
+				// 🎯 JORDAN: Calcular IVA con tax rate dinámico
+				const configManager = ConfigurationManager.getInstance();
+				const configResult = await configManager.getUnifiedConfig();
+				const taxRate = configResult.config.tax_rate;
 				const taxAmount = subtotal * taxRate;
 
 				// Calcular el total correcto (subtotal + IVA)
 				const correctTotal = subtotal + taxAmount;
 
-				// Si el total en la respuesta es incorrecto, actualizarlo
-				if (Math.abs(orderData.total - correctTotal) > 0.01) {
+				// Si el total en la respuesta es incorrecto, actualizarlo usando tolerancia configurada
+				if (!isNumberEqual(orderData.total, correctTotal)) {
+					console.warn(`🔧 OrderService: Corrigiendo total de orden ${orderId}: ${orderData.total} → ${correctTotal}`);
 					orderData.total = correctTotal;
 				}
 			}
@@ -407,6 +412,11 @@ export class OrderService {
 				itemsPerPage: 10,
 			};
 
+			// 🎯 JORDAN: Obtener configuración dinámica una vez
+			const configManager = ConfigurationManager.getInstance();
+			const configResult = await configManager.getUnifiedConfig();
+			const taxRate = configResult.config.tax_rate;
+
 			// Corregir los cálculos de precio si es necesario
 			const processedOrders = orders.map((order: any) => {
 				// Si tenemos los items, verificar los totales
@@ -416,15 +426,14 @@ export class OrderService {
 						0
 					);
 
-					// IVA del 15%
-					const taxRate = 0.15;
 					const taxAmount = subtotal * taxRate;
 
 					// Total correcto
 					const correctTotal = subtotal + taxAmount;
 
-					// Actualizar el total si es incorrecto
-					if (Math.abs(order.total - correctTotal) > 0.01) {
+					// Actualizar el total si es incorrecto usando tolerancia configurada
+					if (!isNumberEqual(order.total, correctTotal)) {
+						console.warn(`🔧 OrderService: Corrigiendo total de orden: ${order.total} → ${correctTotal}`);
 						order.total = correctTotal;
 					}
 				}

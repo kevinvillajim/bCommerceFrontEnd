@@ -2,7 +2,7 @@ import React from "react";
 import type {ShoppingCart} from "../../../core/domain/entities/ShoppingCart";
 import {formatCurrency} from "../../../utils/formatters/formatCurrency";
 import {useCart} from "../../hooks/useCart";
-import { useShippingConfig } from "../../contexts/ShippingConfigContext";
+import { useShippingConfig, useFinancialConfig } from "../../hooks/useUnifiedConfig";
 
 interface OrderSummaryProps {
 	cart: ShoppingCart | null;
@@ -12,8 +12,11 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({cart}) => {
 	// ✅ INTEGRACIÓN con códigos de descuento de feedback
 	const { appliedDiscount } = useCart();
 	
-	// ✅ OBTENER CONFIGURACIÓN DINÁMICA DE ENVÍO
-	const { freeThreshold, defaultCost, isEnabled: shippingEnabled } = useShippingConfig();
+	// ✅ OBTENER CONFIGURACIÓN DINÁMICA DE ENVÍO (Sistema Unificado)
+	const { config: shippingConfig } = useShippingConfig();
+	const freeThreshold = shippingConfig?.free_threshold || 50;
+	const defaultCost = shippingConfig?.default_cost || 5;
+	const shippingEnabled = shippingConfig?.enabled || true;
 	
 	// Si no hay carrito o está vacío
 	if (!cart || cart.items.length === 0) {
@@ -40,7 +43,10 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({cart}) => {
 		(baseSubtotal * appliedDiscount.discountCode.discount_percentage / 100) : 0;
 	
 	const subtotalAfterFeedbackDiscount = baseSubtotal - feedbackDiscountAmount;
-	const taxRate = 0.15; // 15% IVA
+	
+	// 🎯 JORDAN: Tax rate dinámico desde configuración unificada
+	const { taxRate } = useFinancialConfig();
+	
 	// ✅ CALCULAR ENVÍO CON CONFIGURACIÓN DINÁMICA
 	const shipping = !shippingEnabled ? 0 : (subtotalAfterFeedbackDiscount >= freeThreshold ? 0 : defaultCost);
 	const tax = subtotalAfterFeedbackDiscount * taxRate;

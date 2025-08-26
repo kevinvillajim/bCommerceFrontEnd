@@ -6,6 +6,7 @@ import type {Address} from "../domain/valueObjects/Address";
 import type {ShoppingCart} from "../domain/entities/ShoppingCart";
 import {CheckoutItemsService} from "../../infrastructure/services/CheckoutItemsService";
 import type {CheckoutItem} from "../../infrastructure/services/CheckoutItemsService";
+import { validateTotalsEquality } from "../../constants/calculationConfig";
 
 export type PaymentMethod = "credit_card" | "paypal" | "transfer" | "qr" | "datafast" | "debit_card" | "de_una";
 
@@ -368,18 +369,12 @@ export class CheckoutService {
 	/**
 	 * ✅ ACTUALIZADO: Validar totales considerando descuentos por volumen
 	 */
-	static validateCheckoutTotals(cartTotal: number, checkoutTotal: number, tolerance: number = 0.01): boolean {
-		const difference = Math.abs(cartTotal - checkoutTotal);
-		const isValid = difference <= tolerance;
-		
-		console.log("🔍 Validación de totales:", {
-			cartTotal,
-			checkoutTotal,
-			difference,
-			tolerance,
-			isValid
-		});
-		
-		return isValid;
+	static validateCheckoutTotals(cartTotal: number, checkoutTotal: number, customTolerance?: number): boolean {
+		return validateTotalsEquality(
+			cartTotal, 
+			checkoutTotal, 
+			'Validación CheckoutService',
+			customTolerance
+		);
 	}
 }

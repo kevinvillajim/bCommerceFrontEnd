@@ -53,7 +53,7 @@ export function calculateItemDiscountBreakdown(
   // PASO 1: Precio Normal
   steps.push({
     label: "Precio Normal",
-    value: round(originalPricePerUnit),
+    value: roundForDisplay(originalPricePerUnit),
     isDiscount: false
   });
 
@@ -65,7 +65,7 @@ export function calculateItemDiscountBreakdown(
     
     steps.push({
       label: `Descuento Vendedor ${sellerDiscountPercentage}%`,
-      value: round(currentPricePerUnit),
+      value: roundForDisplay(currentPricePerUnit),
       percentage: sellerDiscountPercentage,
       isDiscount: true
     });
@@ -79,7 +79,7 @@ export function calculateItemDiscountBreakdown(
     
     steps.push({
       label: `Descuento por Volumen ${volumeDiscountPercentage}%`,
-      value: round(currentPricePerUnit),
+      value: roundForDisplay(currentPricePerUnit),
       percentage: volumeDiscountPercentage,
       isDiscount: true
     });
@@ -93,30 +93,30 @@ export function calculateItemDiscountBreakdown(
     
     steps.push({
       label: `Descuento Cupón ${couponDiscount.percentage}%`,
-      value: round(currentPricePerUnit),
+      value: roundForDisplay(currentPricePerUnit),
       percentage: couponDiscount.percentage,
       isDiscount: true
     });
   }
 
   // Cálculos finales
-  const finalTotal = round(currentPricePerUnit * quantity);
-  const totalDiscounts = round((originalPricePerUnit - currentPricePerUnit) * quantity);
+  const finalTotal = roundForDisplay(currentPricePerUnit * quantity);
+  const totalDiscounts = roundForDisplay((originalPricePerUnit - currentPricePerUnit) * quantity);
   const hasDiscounts = steps.some(step => step.isDiscount);
 
   console.log(`✅ Desglose calculado:`, {
-    originalPricePerUnit: round(originalPricePerUnit),
-    finalPricePerUnit: round(currentPricePerUnit),
+    originalPricePerUnit: roundForDisplay(originalPricePerUnit),
+    finalPricePerUnit: roundForDisplay(currentPricePerUnit),
     finalTotal,
     totalDiscounts,
     stepsCount: steps.length
   });
 
   return {
-    originalPricePerUnit: round(originalPricePerUnit),
+    originalPricePerUnit: roundForDisplay(originalPricePerUnit),
     quantity,
     steps,
-    finalPricePerUnit: round(currentPricePerUnit),
+    finalPricePerUnit: roundForDisplay(currentPricePerUnit),
     finalTotal,
     totalDiscounts,
     hasDiscounts
@@ -142,7 +142,7 @@ function calculateSellerDiscountFromItem(item: any, originalPricePerUnit: number
     const sellerDiscountAmount = originalPricePerUnit - priceBeforeVolume;
     
     if (sellerDiscountAmount > 0) {
-      return round((sellerDiscountAmount / originalPricePerUnit) * 100);
+      return roundForDisplay((sellerDiscountAmount / originalPricePerUnit) * 100);
     }
   }
 
@@ -150,7 +150,7 @@ function calculateSellerDiscountFromItem(item: any, originalPricePerUnit: number
   if (originalPricePerUnit > (item.price / item.quantity)) {
     const discountAmount = originalPricePerUnit - (item.price / item.quantity);
     if (!item.volumeDiscountPercentage) {
-      return round((discountAmount / originalPricePerUnit) * 100);
+      return roundForDisplay((discountAmount / originalPricePerUnit) * 100);
     }
   }
 
@@ -187,7 +187,7 @@ function calculateCouponDiscountFromOrder(
       const estimatedPercentage = 5; // Valor común para cupones de feedback
       return { 
         percentage: estimatedPercentage, 
-        amount: round(currentPrice * (estimatedPercentage / 100)) 
+        amount: roundForDisplay(currentPrice * (estimatedPercentage / 100)) 
       };
     }
   }
@@ -196,7 +196,7 @@ function calculateCouponDiscountFromOrder(
   if (orderData.appliedCouponPercentage && orderData.appliedCouponPercentage > 0) {
     return { 
       percentage: orderData.appliedCouponPercentage,
-      amount: round(currentPrice * (orderData.appliedCouponPercentage / 100))
+      amount: roundForDisplay(currentPrice * (orderData.appliedCouponPercentage / 100))
     };
   }
 
@@ -204,8 +204,8 @@ function calculateCouponDiscountFromOrder(
 }
 
 /**
- * Redondeo consistente a 2 decimales
+ * Redondeo para DISPLAY ÚNICAMENTE - Este archivo es para presentación
  */
-function round(value: number): number {
+function roundForDisplayForDisplay(value: number): number {
   return parseFloat(value.toFixed(2));
 }

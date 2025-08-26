@@ -1,18 +1,20 @@
 // src/presentation/pages/admin/AdminSettingsPage.tsx - COMPLETO
 import React, { useState } from "react";
+// Imports de íconos para todos los tabs
 import {
+  Lock,
+  Shield,
   Star,
   TrendingDown,
-  Shield,
-  Lock,
   Truck,
   Code,
   DollarSign,
 } from "lucide-react";
+// Imports de todos los componentes de configuración
+import SecurityConfiguration from "../../components/admin/SecurityConfiguration";
+import ModerationConfiguration from "../../components/admin/ModerationConfiguration";
 import RatingConfiguration from "../../components/admin/RatingConfiguration";
 import VolumeDiscountManager from "../../components/admin/VolumeDiscountManager";
-import ModerationConfiguration from "../../components/admin/ModerationConfiguration";
-import SecurityConfiguration from "../../components/admin/SecurityConfiguration";
 import ShippingConfiguration from "../../components/admin/ShippingConfiguration";
 import DevelopmentConfiguration from "../../components/admin/DevelopmentConfiguration";
 import FinancialConfiguration from "../../components/admin/FinancialConfiguration";
@@ -21,7 +23,7 @@ import FinancialConfiguration from "../../components/admin/FinancialConfiguratio
  * Página de configuración del sistema para el panel de administración
  */
 const AdminSettingsPage: React.FC = () => {
-	// Estado para el tab activo - empezamos con Security ahora
+	// 🎯 JORDAN: Solo tabs críticos disponibles temporalmente
 	const [activeTab, setActiveTab] = useState<string>("security");
 	
 	// Estados para mensajes globales (comentados porque no se usan actualmente)
@@ -80,26 +82,26 @@ const AdminSettingsPage: React.FC = () => {
 							Moderación
 						</button>
 						<button
-							onClick={() => setActiveTab("ratings")}
+							onClick={() => setActiveTab("rating")}
 							className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
-								activeTab === "ratings"
+								activeTab === "rating"
 									? "border-primary-500 text-primary-600"
 									: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
 							}`}
 						>
 							<Star className="w-5 h-5 inline-block mr-1" />
-							Valoraciones
+							Calificaciones
 						</button>
 						<button
-							onClick={() => setActiveTab("volume-discounts")}
+							onClick={() => setActiveTab("volume_discount")}
 							className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
-								activeTab === "volume-discounts"
+								activeTab === "volume_discount"
 									? "border-primary-500 text-primary-600"
 									: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
 							}`}
 						>
 							<TrendingDown className="w-5 h-5 inline-block mr-1" />
-							Descuentos
+							Descuentos por Volumen
 						</button>
 						<button
 							onClick={() => setActiveTab("shipping")}
@@ -155,15 +157,15 @@ const AdminSettingsPage: React.FC = () => {
 					</div>
 				)}
 
-				{/* Configuración de Valoraciones */}
-				{activeTab === "ratings" && (
+				{/* Configuración de Calificaciones */}
+				{activeTab === "rating" && (
 					<div className="p-6">
 						<RatingConfiguration />
 					</div>
 				)}
 
-				{/* Descuentos por Volumen */}
-				{activeTab === "volume-discounts" && (
+				{/* Configuración de Descuentos por Volumen */}
+				{activeTab === "volume_discount" && (
 					<div className="p-6">
 						<VolumeDiscountManager />
 					</div>

@@ -1,12 +1,15 @@
-import React, {useState, useEffect} from "react";
+import React, {useState, useEffect, useCallback} from "react";
 import {useParams, Link} from "react-router-dom";
-import {ArrowLeft, Truck, Package, Check, X, FileText, Calculator} from "lucide-react";
+import {ArrowLeft, Truck, Package, Check, X, Calculator} from "lucide-react";
 import {formatDate} from "../../../utils/formatters/formatDate";
 import SellerOrderServiceAdapter from "../../../core/adapters/SellerOrderServiceAdapter";
+import {useAuth} from "../../contexts/AuthContext";
 import ShippingFormModal from "../../components/shipping/ShippingFormModal";
 import OrderEarningsInfo from "../../components/seller/OrderEarningsInfo";
+import OrderBreakdownService from "../../../core/services/OrderBreakdownService";
 import type {ShippingFormData} from "../../components/shipping/ShippingFormModal";
 import type {OrderDetail} from "../../../core/domain/entities/Order";
+import type {OrderBreakdownResponse} from "../../../core/services/OrderBreakdownService";
 import {
 	canTransitionTo,
 	type OrderStatus,
@@ -14,18 +17,58 @@ import {
 
 const SellerOrderDetailPage: React.FC = () => {
 	const {id} = useParams<{id: string}>();
+	const {user} = useAuth();
 	const [order, setOrder] = useState<OrderDetail | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 	const [isUpdating, setIsUpdating] = useState(false);
 	const [successMessage, setSuccessMessage] = useState<string | null>(null);
 	const [isShippingModalOpen, setIsShippingModalOpen] = useState(false);
+	const [itemsBreakdown, setItemsBreakdown] = useState<OrderBreakdownResponse | null>(null);
+	const [breakdownLoading, setBreakdownLoading] = useState(false);
 
 	const sellerOrderAdapter = new SellerOrderServiceAdapter();
+	const breakdownService = OrderBreakdownService.getInstance();
 
 	useEffect(() => {
 		fetchOrderDetails();
 	}, [id]);
+
+	// ✅ FUNCIÓN para cargar breakdown de productos
+	const loadItemsBreakdown = useCallback(async () => {
+		console.log('🔍 loadItemsBreakdown ejecutándose con order:', order?.id, 'sellerId:', order?.sellerId, 'user.id:', user?.id);
+		if (!order?.id) {
+			console.log('❌ No se puede cargar breakdown - falta order.id:', {id: order?.id});
+			return;
+		}
+		
+		// ✅ USAR sellerId del order o del usuario autenticado como fallback
+		const effectiveSellerId = order?.sellerId || user?.id;
+		console.log('🔍 effectiveSellerId calculado:', effectiveSellerId);
+
+		console.log('✅ Iniciando carga de breakdown para orden:', order.id);
+		setBreakdownLoading(true);
+		try {
+			const breakdown = await breakdownService.getOrderItemsBreakdown(
+				order.id,
+				'seller' // viewType específico para seller
+			);
+			setItemsBreakdown(breakdown);
+		} catch (error) {
+			console.error('❌ ERROR DETALLADO al cargar breakdown para orden', order.id, ':', error);
+			console.error('❌ URL del endpoint usado:', `/seller/orders/${order.id}`);
+			console.error('❌ Detalles del error:', error instanceof Error ? error.message : error);
+			// En caso de error, mantener el estado actual
+		} finally {
+			setBreakdownLoading(false);
+		}
+	}, [order?.id, order?.sellerId, user?.id, breakdownService]);
+
+	// ✅ CARGAR breakdown cuando cambie la orden
+	useEffect(() => {
+		console.log('🔍 useEffect para loadItemsBreakdown ejecutándose, order cambió:', order?.id);
+		loadItemsBreakdown();
+	}, [loadItemsBreakdown]);
 
 	const fetchOrderDetails = async () => {
 		if (!id) return;
@@ -34,6 +77,9 @@ const SellerOrderDetailPage: React.FC = () => {
 		try {
 			const orderDetail = await sellerOrderAdapter.getOrderDetails(id);
 			console.log("🛍️ Detalles de la orden del seller:", orderDetail);
+			console.log("🔍 VERIFICAR: order.sellerId =", orderDetail?.sellerId);
+			console.log("🔍 VERIFICAR: order.id =", orderDetail?.id);
+			console.log("🔍 VERIFICAR: user.id del contexto =", user?.id);
 			setOrder(orderDetail);
 		} catch (error) {
 			console.error("Error al cargar detalles de la orden:", error);
@@ -352,13 +398,70 @@ const SellerOrderDetailPage: React.FC = () => {
 														{item.product_name || 'Producto'}
 													</h4>
 													
-													{/* ✅ SOLO LA CANTIDAD - SIMPLIFICADO COMO PIDIÓ EL USUARIO */}
-													<div className="mt-3 bg-blue-50 p-4 rounded-lg border border-blue-200">
-														<div className="flex items-center justify-between">
-															<span className="text-sm font-semibold text-gray-700">Cantidad a enviar:</span>
-															<p className="text-2xl font-bold text-primary-600">{item.quantity || 0}</p>
+													{/* ✅ GANANCIAS POR PRODUCTO usando breakdown centralizado */}
+													{breakdownLoading ? (
+														<div className="mt-3 bg-gray-50 p-4 rounded-lg border border-gray-200">
+															<div className="flex items-center justify-center">
+																<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-600"></div>
+																<span className="ml-2 text-sm text-gray-500">Calculando ganancias...</span>
+															</div>
 														</div>
-													</div>
+													) : (
+														<div className="mt-3 space-y-2">
+															{/* Cantidad a enviar */}
+															<div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+																<div className="flex items-center justify-between">
+																	<span className="text-sm font-medium text-gray-700">Cantidad a enviar:</span>
+																	<span className="text-xl font-bold text-primary-600">{item.quantity || 0}</span>
+																</div>
+															</div>
+															
+															{/* Ganancias por producto */}
+															<div className="bg-green-50 p-3 rounded-lg border border-green-200">
+																<div className="flex items-center justify-between">
+																	<span className="text-sm font-medium text-gray-700">Ganancia por este producto:</span>
+																	<span className="text-xl font-bold text-green-600">
+																		{itemsBreakdown ? (
+																			(() => {
+																				const breakdownItem = itemsBreakdown.items.find(bi => bi.product_id === item.productId);
+																				if (breakdownItem) {
+																					// ✅ USAR DIRECTAMENTE LA GANANCIA CALCULADA POR EL BACKEND SI ESTÁ DISPONIBLE
+																					if (breakdownItem.seller_net_earning_per_unit && breakdownItem.seller_net_earning_per_unit > 0) {
+																						return `$${(breakdownItem.seller_net_earning_per_unit * item.quantity).toFixed(2)}`;
+																					}
+																					// ✅ FALLBACK: calcular ganancia = final_price - comision_plataforma 
+																					else if (itemsBreakdown.summary?.seller_commission_info) {
+																						const commissionRate = itemsBreakdown.summary.seller_commission_info.platform_commission_rate / 100;
+																						const sellerEarningPerUnit = breakdownItem.final_price_per_unit * (1 - commissionRate);
+																						return `$${(sellerEarningPerUnit * item.quantity).toFixed(2)}`;
+																					}
+																				}
+																				return '$0.00';
+																			})()
+																		) : '$0.00'}
+																	</span>
+																</div>
+																<div className="text-xs text-gray-500 mt-1">
+																	({item.quantity} x ${itemsBreakdown ? (() => {
+																		const breakdownItem = itemsBreakdown.items.find(bi => bi.product_id === item.productId);
+																		if (breakdownItem) {
+																			// ✅ USAR DIRECTAMENTE LA GANANCIA POR UNIDAD SI ESTÁ DISPONIBLE
+																			if (breakdownItem.seller_net_earning_per_unit && breakdownItem.seller_net_earning_per_unit > 0) {
+																				return breakdownItem.seller_net_earning_per_unit.toFixed(2);
+																			}
+																			// ✅ FALLBACK: calcular ganancia por unidad
+																			else if (itemsBreakdown.summary?.seller_commission_info) {
+																				const commissionRate = itemsBreakdown.summary.seller_commission_info.platform_commission_rate / 100;
+																				const sellerEarningPerUnit = breakdownItem.final_price_per_unit * (1 - commissionRate);
+																				return sellerEarningPerUnit.toFixed(2);
+																			}
+																		}
+																		return '0.00';
+																	})() : '0.00'} c/u)
+																</div>
+															</div>
+														</div>
+													)}
 												</div>
 											</div>
 										</div>
@@ -386,18 +489,45 @@ const SellerOrderDetailPage: React.FC = () => {
 								<h3 className="text-lg font-semibold text-gray-900">Resumen de Venta</h3>
 							</div>
 
-							{/* Componente dinámico de ganancias con configuraciones reales */}
-							<OrderEarningsInfo
-								grossEarnings={sellerData.subtotalVendido || 0}
-								platformCommission={sellerData.platformCommission || 0}
-								netEarnings={sellerData.sellerEarningsFromProducts || 0}
-								shippingEarnings={sellerData.shippingIncome || 0}
-								totalEarnings={sellerData.totalToReceive || 0}
-								commissionRate={(sellerData.platformCommission ?? 0) > 0 && (sellerData.subtotalVendido ?? 0) > 0 ? ((sellerData.platformCommission ?? 0) / (sellerData.subtotalVendido ?? 1)) * 100 : 10.0}
-								sellerCount={1}
-								showBreakdown={true}
-								className="mb-4"
-							/>
+							{/* ✅ RESUMEN usando breakdown centralizado */}
+							{breakdownLoading ? (
+								<div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+									<div className="flex items-center justify-center">
+										<div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-600"></div>
+										<span className="ml-2 text-sm text-gray-500">Calculando resumen...</span>
+									</div>
+								</div>
+							) : itemsBreakdown && itemsBreakdown.summary?.seller_commission_info ? (
+								<OrderEarningsInfo
+									grossEarnings={itemsBreakdown.summary.total_final_amount}
+									platformCommission={itemsBreakdown.summary.seller_commission_info.total_commission}
+									netEarnings={itemsBreakdown.summary.seller_commission_info.seller_earnings_from_products}
+									shippingEarnings={itemsBreakdown.summary.seller_commission_info.shipping_distribution?.seller_amount || 0}
+									totalEarnings={itemsBreakdown.summary.seller_commission_info.seller_earnings_from_products + (itemsBreakdown.summary.seller_commission_info.shipping_distribution?.seller_amount || 0)}
+									commissionRate={itemsBreakdown.summary.seller_commission_info.platform_commission_rate}
+									sellerCount={1}
+									showBreakdown={true}
+									className="mb-4"
+								/>
+							) : (
+								<div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+									<p className="text-sm text-yellow-800">
+										<strong>Nota:</strong> No se pudieron cargar los cálculos centralizados. 
+										Usando datos del backend como respaldo.
+									</p>
+									<OrderEarningsInfo
+										grossEarnings={sellerData.subtotalVendido || 0}
+										platformCommission={sellerData.platformCommission || 0}
+										netEarnings={sellerData.sellerEarningsFromProducts || 0}
+										shippingEarnings={sellerData.shippingIncome || 0}
+										totalEarnings={sellerData.totalToReceive || 0}
+										commissionRate={(sellerData.platformCommission ?? 0) > 0 && (sellerData.subtotalVendido ?? 0) > 0 ? ((sellerData.platformCommission ?? 0) / (sellerData.subtotalVendido ?? 1)) * 100 : 10.0}
+										sellerCount={1}
+										showBreakdown={true}
+										className="mt-2"
+									/>
+								</div>
+							)}
 
 
 							<div className="mt-4 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
@@ -408,20 +538,6 @@ const SellerOrderDetailPage: React.FC = () => {
 							</div>
 						</div>
 
-						{/* ✅ DESGLOSE DE GANANCIAS */}
-						<div className="bg-white rounded-lg shadow-md p-6">
-							{/* Componente dinámico compacto para vista lateral */}
-							<OrderEarningsInfo
-								grossEarnings={sellerData.subtotalVendido || 0}
-								platformCommission={sellerData.platformCommission || 0}
-								netEarnings={sellerData.sellerEarningsFromProducts || 0}
-								shippingEarnings={sellerData.shippingIncome || 0}
-								totalEarnings={sellerData.totalToReceive || 0}
-								commissionRate={(sellerData.platformCommission ?? 0) > 0 && (sellerData.subtotalVendido ?? 0) > 0 ? ((sellerData.platformCommission ?? 0) / (sellerData.subtotalVendido ?? 1)) * 100 : 10.0}
-								sellerCount={1}
-								showBreakdown={true}
-							/>
-						</div>
 					</div>
 				</div>
 			</div>

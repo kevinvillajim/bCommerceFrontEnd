@@ -1,4 +1,4 @@
-import React, {useState, useRef, useEffect} from "react";
+import React, {useState, useRef, useEffect, memo} from "react";
 import {ChevronLeft, ChevronRight} from "lucide-react";
 import ProductCardCompact from "./ProductCardCompact";
 
@@ -27,7 +27,7 @@ interface CarouselProps {
 }
 
 // Componente de carrusel
-const ProductCarousel: React.FC<CarouselProps> = ({
+const ProductCarousel: React.FC<CarouselProps> = memo(({
 	personalizedProducts,
 	trendingProducts,
 	onAddToCart,
@@ -290,6 +290,6 @@ const ProductCarousel: React.FC<CarouselProps> = ({
       `}</style>
 		</div>
 	);
-};
+});
 
 export default ProductCarousel;

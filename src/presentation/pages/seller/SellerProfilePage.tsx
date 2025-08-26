@@ -468,7 +468,8 @@ const SellerProfilePage: React.FC = () => {
 						<Lock size={20} className="mr-3 text-red-600" />
 						Cambiar Contraseña
 					</h3>
-					<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+					<form onSubmit={(e) => { e.preventDefault(); handleChangePassword(); }} className="space-y-4">
+						<div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 						<div className="space-y-2">
 							<label className="text-sm text-gray-500">
 								Contraseña actual
@@ -529,16 +530,17 @@ const SellerProfilePage: React.FC = () => {
 								</button>
 							</div>
 						</div>
-					</div>
-					<div className="flex justify-end">
-						<button 
-							onClick={handleChangePassword}
-							disabled={loading || !passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword}
-							className="px-4 py-2 bg-red-600 rounded-lg text-white hover:bg-red-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-						>
-							{loading ? "Cambiando..." : "Cambiar Contraseña"}
-						</button>
-					</div>
+						</div>
+						<div className="flex justify-end">
+							<button 
+								type="submit"
+								disabled={loading || !passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword}
+								className="px-4 py-2 bg-red-600 rounded-lg text-white hover:bg-red-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+							>
+								{loading ? "Cambiando..." : "Cambiar Contraseña"}
+							</button>
+						</div>
+					</form>
 				</div>
 
 				

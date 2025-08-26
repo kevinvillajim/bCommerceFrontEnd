@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useRef, useMemo} from "react";
+import React, {useState, useEffect, useRef, useMemo, memo} from "react";
 import {
 	ShoppingCart,
 	User,
@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import {useAuth} from "../../hooks/useAuth";
 import {useHeaderCounters} from "../../hooks/useHeaderCounters";
-import { useShippingConfig } from "../../contexts/ShippingConfigContext";
+import { useShippingConfig } from "../../hooks/useUnifiedConfig";
 import ThemeToggle from "./ThemeToggle";
 import SearchAutocomplete from "./SearchAutocomplete";
 import { useTheme } from '../../hooks/useTheme';
@@ -31,7 +31,7 @@ interface HeaderProps {
 	}>;
 }
 
-const Header: React.FC<HeaderProps> = ({
+const Header: React.FC<HeaderProps> = memo(({
 	logo = {
 		img: "/logo.png",
 		imgdark: "/logowhite.png",
@@ -67,8 +67,10 @@ const Header: React.FC<HeaderProps> = ({
 		error: countersError,
 	} = useHeaderCounters();
 
-	// ✅ OBTENER CONFIGURACIÓN DINÁMICA DE ENVÍO
-	const { freeThreshold, isEnabled: shippingEnabled, loading: shippingLoading } = useShippingConfig();
+	// ✅ OBTENER CONFIGURACIÓN DINÁMICA DE ENVÍO (Sistema Unificado)
+	const { config: shippingConfig, loading: shippingLoading } = useShippingConfig();
+	const freeThreshold = shippingConfig?.free_threshold || 50;
+	const shippingEnabled = shippingConfig?.enabled || true;
 
 	const {cartItemCount, favoriteCount, notificationCount} = counters;
 
@@ -620,6 +622,6 @@ const Header: React.FC<HeaderProps> = ({
 			)}
 		</header>
 	);
-};
+});
 
 export default Header;

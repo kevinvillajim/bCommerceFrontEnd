@@ -378,12 +378,22 @@ export default class SellerOrderServiceAdapter {
 			}
 
 			const orderData = response.data;
+			
+			// 🔍 INVESTIGACIÓN DETALLADA DE CAMPOS
+			console.log('🔍 TODOS LOS CAMPOS EN orderData:', Object.keys(orderData));
+			console.log('🔍 orderData.seller_id:', orderData.seller_id);
+			console.log('🔍 orderData.sellerId:', orderData.sellerId);
+			console.log('🔍 orderData.user_id:', orderData.user_id);
+			console.log('🔍 orderData.userId:', orderData.userId);
+			console.log('🔍 orderData.seller:', orderData.seller);
+			console.log('🔍 orderData completo:', orderData);
 
 			// SIMPLIFICADO: Usar los datos tal como vienen del backend
 			// Mapear solo los campos necesarios sin cambiar la estructura
 			const orderDetail = {
 				// Datos básicos de la orden
 				id: orderData.id,
+				sellerId: orderData.seller_id || orderData.sellerId, // ✅ AGREGAR SELLER ID
 				orderNumber: orderData.orderNumber || orderData.order_number || `#${orderData.id}`,
 				orderDate: orderData.orderDate || orderData.order_date || orderData.date,
 				status: orderData.status,
@@ -419,6 +429,10 @@ export default class SellerOrderServiceAdapter {
 					name: "Cliente",
 					email: "sin@email.com"
 				},
+				
+				// ✅ CAMPOS ADICIONALES PARA COMPATIBILIDAD CON LA UI
+				customerName: orderData.customer?.name || "Cliente",
+				customerEmail: orderData.customer?.email || "sin@email.com",
 
 				// Datos de envío
 				shippingData: orderData.shippingData || orderData.shipping_data || {},

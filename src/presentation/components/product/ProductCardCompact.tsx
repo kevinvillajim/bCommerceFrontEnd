@@ -1,4 +1,4 @@
-import React, {useState} from "react";
+import React, {useState, memo} from "react";
 import {Heart, ShoppingCart, Check} from "lucide-react";
 import {Link} from "react-router-dom";
 import RatingStars from "../common/RatingStars";
@@ -26,7 +26,7 @@ interface ProductCardProps {
 	onAddToWishlist?: (id: number) => void | Promise<void>;
 }
 
-const ProductCardCompact: React.FC<ProductCardProps> = ({
+const ProductCardCompact: React.FC<ProductCardProps> = memo(({
 	id,
 	name,
 	price,
@@ -518,6 +518,6 @@ const ProductCardCompact: React.FC<ProductCardProps> = ({
 			</div>
 		</div>
 	);
-};
+});
 
 export default ProductCardCompact;

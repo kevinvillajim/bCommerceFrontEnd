@@ -197,7 +197,7 @@ export class DatafastService {
 			});
 
 			// Si es el error típico de Fase 1, devolver un mensaje más claro
-			if (!response.success && response.result_code === "800.900.300") {
+			if (response.status !== "success" && response.result_code === "800.900.300") { // ✅ CORREGIDO: Cambiar response.success por response.status
 				return {
 					success: false,
 					message:

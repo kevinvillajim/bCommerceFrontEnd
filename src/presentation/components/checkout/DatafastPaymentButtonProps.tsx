@@ -150,7 +150,7 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 			const response = await datafastService.createCheckout(requestData);
 			console.log("Respuesta del checkout:", response);
 
-			if (response.success && response.data) {
+			if (response.status === "success" && response.data) { // ✅ CORREGIDO: Cambiar response.success por response.status
 				setCheckoutData(response.data);
 				setShowForm(false);
 				setShowWidget(true);
@@ -159,6 +159,12 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 				localStorage.setItem(
 					"datafast_transaction_id",
 					response.data.transaction_id
+				);
+				
+				// ✅ GUARDAR CHECKOUT_ID PARA SIMULACIÓN
+				localStorage.setItem(
+					"datafast_checkout_id",
+					response.data.checkout_id
 				);
 				
 				// ✅ GUARDAR TOTAL CALCULADO PARA PAGOS REALES
@@ -416,51 +422,83 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 			console.log("   - shipping:", testCheckoutData.calculated_totals.shipping);
 			console.log("   - total:", testCheckoutData.calculated_totals.total);
 			console.log("   - total_discounts:", testCheckoutData.calculated_totals.total_discounts);
-			console.log("🚀 Enviando checkout al backend (DATAFAST)...");
+			// 🔧 SOLUCIÓN SIMPLE: USAR EL FLUJO NORMAL handleStartPayment EN LUGAR DE CREAR NUEVA LÓGICA
+			console.log("🔄 PRUEBA COMPLETA DATAFAST: Usando handleStartPayment + simulación automática");
 
-			const response = await checkoutService.processCheckout(testCheckoutData, user?.email);
+			// Usar el flujo normal de handleStartPayment que ya funciona
+			await handleStartPayment();
 
-			console.log("✅ Respuesta del checkout recibida (DATAFAST):", response);
-
-			if (response.status === "success") {
-				console.log("🎉 Checkout exitoso (DATAFAST), limpiando carrito...");
-				clearCart();
-				setShowWidget(false);
-				setShowForm(false);
-
-				showNotification(
-					NotificationType.SUCCESS,
-					"¡Pedido de prueba completado con éxito!"
-				);
-
-				console.log("📊 Detalles COMPLETOS de la orden (DATAFAST):", JSON.stringify(response.data, null, 2));
-
-				if (response.data && typeof response.data === 'object') {
-					const orderData = response.data as any;
-					console.log("🔍 ANÁLISIS DE LA ORDEN CREADA (DATAFAST):");
-					console.log("📊 Order ID:", orderData.order_id);
-					console.log("📊 Order Number:", orderData.order_number);
-					console.log("📊 Total:", orderData.total);
+			// Esperar un momento para que el checkout se complete
+			setTimeout(async () => {
+				try {
+					// Obtener transaction_id y checkout_id del localStorage (guardado por handleStartPayment)
+					const transactionId = localStorage.getItem("datafast_transaction_id");
+					const checkoutId = localStorage.getItem("datafast_checkout_id");
 					
-					if (orderData.items) {
-						console.log("📊 Items en la orden creada:", orderData.items.length);
-						orderData.items.forEach((item: any, index: number) => {
-							console.log(`📋 Order Item ${index + 1}:`, {
-								id: item.id,
-								product_id: item.product_id,
-								product_name: item.product_name,
-								quantity: item.quantity,
-								price: item.price
-							});
-						});
+					if (!transactionId) {
+						throw new Error("No se encontró transaction_id para simular pago");
 					}
-				}
+					
+					if (!checkoutId) {
+						throw new Error("No se encontró checkout_id para simular pago");
+					}
 
-				onSuccess?.(response.data);
-				navigate("/orders");
-			} else {
-				throw new Error(response.message || "Error en el checkout de prueba");
-			}
+					console.log("🎯 Simulando pago exitoso automáticamente con:", { checkoutId, transactionId, total: calculatedTotals.total });
+					const simulationResponse = await datafastService.simulateSuccessfulPayment(
+						checkoutId,
+						transactionId,
+						calculatedTotals.total
+					);
+
+					console.log("✅ Respuesta de simulación DATAFAST:", simulationResponse);
+
+					if (simulationResponse.status === "success") {
+						console.log("🎉 Simulación exitosa - orden DATAFAST creada, limpiando carrito...");
+						clearCart();
+						setShowWidget(false);
+						setShowForm(false);
+
+						showNotification(
+							NotificationType.SUCCESS,
+							"¡Pedido de prueba DATAFAST completado con éxito!"
+						);
+
+						console.log("📊 Detalles COMPLETOS de la orden DATAFAST:", JSON.stringify(simulationResponse.data, null, 2));
+
+						if (simulationResponse.data && typeof simulationResponse.data === 'object') {
+							const orderData = simulationResponse.data as any;
+							console.log("🔍 ANÁLISIS DE LA ORDEN CREADA (DATAFAST):");
+							console.log("📊 Order ID:", orderData.order_id);
+							console.log("📊 Order Number:", orderData.order_number);
+							console.log("📊 Total:", orderData.total);
+							
+							if (orderData.items) {
+								console.log("📊 Items en la orden creada:", orderData.items?.length);
+								orderData.items?.forEach((item: any, index: number) => {
+									console.log(`📋 Order Item ${index + 1}:`, {
+										id: item.id,
+										product_id: item.product_id,
+										product_name: item.product_name,
+										quantity: item.quantity,
+										price: item.price
+									});
+								});
+							}
+						}
+
+						onSuccess?.(simulationResponse.data);
+						navigate("/orders");
+					} else {
+						throw new Error(simulationResponse.message || "Error en simulación de pago DATAFAST");
+					}
+				} catch (simulationError) {
+					console.error("❌ Error en simulación automática:", simulationError);
+					showNotification(NotificationType.ERROR, "Error en simulación automática de pago");
+				}
+			}, 2000); // Esperar 2 segundos para que se complete el checkout
+
+			// Salir de la función aquí para que no continúe con el código de error
+			return;
 		} catch (error) {
 			console.error("❌ Error COMPLETO en el checkout de prueba (DATAFAST):");
 			console.error("📊 Error object:", error);
@@ -579,17 +617,58 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 	};
 
 	const handleRealPayment = async () => {
-		// ✅ GUARDAR EL TOTAL CALCULADO EN LOCALSTORAGE PARA LA PÁGINA DE RESULTADO
-		const totals = cart ? await CheckoutItemsService.calculateCheckoutTotals(cart.items, appliedDiscount) : null;
-		if (totals) {
-			localStorage.setItem("datafast_calculated_total", totals.total.toString());
-			console.log("💰 Total calculado guardado para verificación:", totals.total);
+		if (!checkoutData) {
+			showNotification(NotificationType.ERROR, "No hay datos de checkout disponibles");
+			return;
 		}
-		
-		showNotification(
-			NotificationType.INFO,
-			"Complete los datos de su tarjeta en el formulario y haga clic en 'Pagar'."
-		);
+
+		try {
+			setIsLoading(true);
+			
+			// ✅ GUARDAR EL TOTAL CALCULADO EN LOCALSTORAGE PARA LA PÁGINA DE RESULTADO
+			const totals = cart ? await CheckoutItemsService.calculateCheckoutTotals(cart.items, appliedDiscount) : null;
+			if (totals) {
+				localStorage.setItem("datafast_calculated_total", totals.total.toString());
+				console.log("💰 Total calculado guardado para verificación:", totals.total);
+			}
+
+			// ✅ GUARDAR DATOS DEL CARRITO PARA RECUPERACIÓN EN CASO DE ERROR
+			localStorage.setItem("datafast_cart_backup", JSON.stringify(cart));
+			
+			// ✅ CONFIGURAR EL CALLBACK PARA MANEJAR EL RESULTADO DEL PAGO REAL
+			(window as any).wpwlOptions = {
+				onReady: function() {
+					console.log("🎯 Widget Datafast listo para pago real");
+					showNotification(
+						NotificationType.INFO,
+						"Complete los datos de su tarjeta en el formulario y haga clic en 'Pagar'."
+					);
+				},
+				onSuccess: function(result: any) {
+					console.log("🎉 Pago real exitoso:", result);
+					// Redirigir a página de resultado
+					window.location.href = `/datafast-result?resourcePath=${encodeURIComponent(result.resourcePath)}`;
+				},
+				onError: function(error: any) {
+					console.error("❌ Error en pago real:", error);
+					setIsLoading(false);
+					showNotification(
+						NotificationType.ERROR,
+						"Error al procesar el pago. Inténtelo nuevamente."
+					);
+				}
+			};
+
+			console.log("🔄 Configuración lista para pago real con Datafast");
+			
+		} catch (error) {
+			console.error("❌ Error configurando pago real:", error);
+			setIsLoading(false);
+			showNotification(
+				NotificationType.ERROR,
+				"Error al configurar el pago real"
+			);
+		}
 	};
 
 	if (showWidget) {

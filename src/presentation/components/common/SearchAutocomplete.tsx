@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, memo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, X } from "lucide-react";
 import { ProductService } from "../../../core/services/ProductService";
@@ -26,7 +26,7 @@ interface SearchAutocompleteProps {
 	onNavigate?: () => void; // Callback para cuando navega a resultados
 }
 
-const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
+const SearchAutocomplete: React.FC<SearchAutocompleteProps> = memo(({
 	placeholder = "Buscar productos...",
 	className = "",
 	onNavigate, // Recibir el callback
@@ -387,6 +387,6 @@ const SearchAutocomplete: React.FC<SearchAutocompleteProps> = ({
 			)}
 		</div>
 	);
-};
+});
 
 export default SearchAutocomplete;

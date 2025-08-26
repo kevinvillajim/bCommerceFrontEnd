@@ -8,6 +8,7 @@ import type {
 } from "../../core/domain/entities/Product";
 import {useAuth} from "../contexts/AuthContext";
 import ApiClient from "../../infrastructure/api/apiClient";
+import CacheService from "../../infrastructure/services/CacheService";
 import { API_ENDPOINTS } from "../../constants/apiEndpoints";
 import type {ExtendedProductFilterParams} from "../types/ProductFilterParams";
 
@@ -238,7 +239,20 @@ export const useSellerProducts = () => {
 				// Actualizar la lista de productos si se creó correctamente
 				if (newProduct) {
 					console.log("✅ Producto creado exitosamente:", newProduct);
-					console.log("🔄 Iniciando refetch en 500ms...");
+					console.log("🔄 Iniciando invalidación de cache y refetch...");
+					
+					// ✅ INVALIDAR CACHE: Mismo patrón que updateProduct
+					try {
+						CacheService.removeItem('seller_products_list');
+						CacheService.removeItem('seller_products_page_1');
+						CacheService.removeItem('seller_products_page_2');
+						CacheService.removeItem('seller_products_page_3');
+						CacheService.removeItem('products_list');
+						CacheService.removeItem('header_counters');
+						console.log("🗑️ Cache de productos invalidado correctamente");
+					} catch (error) {
+						console.warn("⚠️ Error invalidando cache:", error);
+					}
 					
 					// SOLUCIÓN 1: Refresh inmediato sin cache
 					setTimeout(async () => {
@@ -417,7 +431,23 @@ export const useSellerProducts = () => {
 				// Actualizar la lista de productos si se actualizó correctamente
 				if (updatedProduct) {
 					console.log("✅ Producto actualizado exitosamente:", updatedProduct);
-					console.log("🔄 Iniciando refetch después de actualizar...");
+					console.log("🔄 Iniciando invalidación de cache y refetch después de actualizar...");
+					
+					// ✅ NUEVA SOLUCIÓN: Invalidar cache explícitamente
+					
+					// Invalidar caches relacionados con productos del seller
+					try {
+						CacheService.removeItem('seller_products_list');
+						CacheService.removeItem('seller_products_page_1');
+						CacheService.removeItem('seller_products_page_2');
+						CacheService.removeItem('seller_products_page_3');
+						CacheService.removeItem('products_list');
+						CacheService.removeItem('header_counters');
+						CacheService.removeItem('product_' + data.id); // Cache del producto específico
+						console.log("🗑️ Cache de productos invalidado correctamente");
+					} catch (error) {
+						console.warn("⚠️ Error invalidando cache:", error);
+					}
 					
 					// SOLUCIÓN 1: Refresh inmediato sin cache
 					setTimeout(async () => {
@@ -487,6 +517,21 @@ export const useSellerProducts = () => {
 				// Actualizar la lista de productos si se eliminó correctamente
 				if (result) {
 					console.log("✅ Producto eliminado exitosamente");
+					
+					// ✅ INVALIDAR CACHE: Mismo patrón que create/update
+					try {
+						CacheService.removeItem('seller_products_list');
+						CacheService.removeItem('seller_products_page_1');
+						CacheService.removeItem('seller_products_page_2');
+						CacheService.removeItem('seller_products_page_3');
+						CacheService.removeItem('products_list');
+						CacheService.removeItem('header_counters');
+						CacheService.removeItem('product_' + id); // Cache del producto específico
+						console.log("🗑️ Cache de productos invalidado correctamente");
+					} catch (error) {
+						console.warn("⚠️ Error invalidando cache:", error);
+					}
+					
 					// Refresh inmediato después de eliminar
 					setTimeout(async () => {
 						await fetchSellerProducts(page, itemsPerPage, true);

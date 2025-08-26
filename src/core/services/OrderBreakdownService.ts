@@ -25,6 +25,10 @@ export interface OrderItemBreakdown {
   has_seller_discount: boolean;
   has_volume_discount: boolean;
   has_coupon_discount: boolean;
+  // ✅ CAMPOS ESPECÍFICOS DEL SELLER
+  seller_net_earning_per_unit?: number;
+  platform_commission_rate?: number;
+  platform_commission_amount?: number;
 }
 
 export interface OrderBreakdownResponse {
@@ -100,7 +104,7 @@ class OrderBreakdownService {
           });
         }
 
-        items.push({
+        const itemResult = {
           id: item.id,
           product_id: item.product_id,
           product_name: item.product_name || 'Producto',
@@ -114,7 +118,13 @@ class OrderBreakdownService {
           has_seller_discount: (item.seller_discount_percentage || 0) > 0,
           has_volume_discount: (item.volume_discount_percentage || 0) > 0,
           has_coupon_discount: false, // Por implementar si es necesario
-        });
+          // ✅ AGREGAR CAMPOS ESPECÍFICOS DEL SELLER PARA CÁLCULOS
+          seller_net_earning_per_unit: item.seller_net_earning_from_products || 0,
+          platform_commission_rate: item.platform_commission_rate || 0,
+          platform_commission_amount: item.platform_commission_amount || 0,
+        };
+        
+        items.push(itemResult);
       });
     }
 
@@ -127,13 +137,16 @@ class OrderBreakdownService {
         total_original_amount: items.reduce((sum, item) => sum + (item.original_price_per_unit * item.quantity), 0),
         total_final_amount: items.reduce((sum, item) => sum + item.subtotal, 0),
         total_savings: items.reduce((sum, item) => sum + item.total_savings, 0),
-        // ✅ AGREGAR INFORMACIÓN ESPECÍFICA DEL SELLER
-        seller_commission_info: {
-          platform_commission_rate: sellerData.order_summary?.shipping_distribution?.platform_commission_rate || 10,
-          total_commission: sellerData.order_summary?.total_platform_commission || 0,
-          seller_earnings_from_products: sellerData.order_summary?.total_seller_earnings_from_products || 0,
-          shipping_distribution: sellerData.order_summary?.shipping_distribution
-        }
+        // ✅ AGREGAR INFORMACIÓN ESPECÍFICA DEL SELLER - MANEJAR AMBOS FORMATOS
+        seller_commission_info: (() => {
+          const orderSummary = sellerData.order_summary || sellerData.orderSummary || {};
+          return {
+            platform_commission_rate: orderSummary.shipping_distribution?.platform_commission_rate || 10,
+            total_commission: orderSummary.total_platform_commission || 0,
+            seller_earnings_from_products: orderSummary.total_seller_earnings_from_products || 0,
+            shipping_distribution: orderSummary.shipping_distribution || { seller_amount: 0 }
+          };
+        })()
       }
     };
   }
@@ -144,31 +157,92 @@ class OrderBreakdownService {
   async getOrderItemsBreakdown(orderId: string | number, viewType: 'customer' | 'seller' = 'customer'): Promise<OrderBreakdownResponse> {
     try {
       console.log(`📊 Obteniendo desglose de items para orden ${orderId} (vista: ${viewType})`);
+      console.log('🔍 OrderBreakdownService.getOrderItemsBreakdown llamado');
       
       // ✅ USAR ENDPOINT CORRECTO SEGÚN EL TIPO DE VISTA
       const endpoint = viewType === 'seller' 
         ? `/seller/orders/${orderId}`  // Usar el endpoint de seller que ya corregimos
         : `/user/orders/${orderId}/items-breakdown`; // Endpoint para customers
       
+      console.log('🔍 Endpoint a usar:', endpoint);
+      console.log('🔍 OrderID que se está usando:', orderId);
+      console.log('🔍 ViewType:', viewType);
+      
       const response = await ApiClient.get(endpoint);
       
       const responseData = response as any;
+      
+      // ✅ MANEJAR DIFERENTES FORMATOS DE RESPUESTA
+      let orderData = null;
+      
       if (responseData.success && responseData.data) {
-        console.log('✅ Desglose recibido:', responseData.data);
+        orderData = responseData.data;
+      } else if (responseData.data) {
+        orderData = responseData.data;
+      } else if (responseData.id && responseData.items) {
+        orderData = responseData;
+      }
+      
+      if (orderData) {
         
-        // ✅ ADAPTAR LA ESTRUCTURA DE DATOS DEL SELLER AL FORMATO ESPERADO
+        // ✅ ADAPTAR LA ESTRUCTURA DE DATOS SEGÚN EL TIPO DE VISTA
         if (viewType === 'seller') {
-          return this.adaptSellerDataToBreakdownFormat(responseData.data);
+          return this.adaptSellerDataToBreakdownFormat(orderData);
+        } else {
+          // ✅ NUEVO: Adaptar datos del endpoint de customer
+          return this.adaptCustomerDataToBreakdownFormat(orderData);
         }
-        
-        return responseData.data as OrderBreakdownResponse;
       }
       
       throw new Error('No se pudo obtener el desglose de items');
     } catch (error) {
       console.error('❌ Error al obtener desglose:', error);
+      console.error('❌ Error específico:', error);
+      console.error('❌ Error mensaje:', error instanceof Error ? error.message : 'Error desconocido');
+      console.error('❌ Error status:', (error as any)?.response?.status);
+      console.error('❌ Error data:', (error as any)?.response?.data);
       throw error;
     }
+  }
+
+  /**
+   * ✅ NUEVO: Adapta los datos del endpoint /user/orders/{id}/items-breakdown al formato esperado
+   */
+  private adaptCustomerDataToBreakdownFormat(customerData: any): OrderBreakdownResponse {
+    const items: OrderItemBreakdown[] = [];
+
+    if (customerData.items && Array.isArray(customerData.items)) {
+      customerData.items.forEach((item: any) => {
+        items.push({
+          id: item.id,
+          product_id: item.product_id,
+          product_name: item.product_name || 'Producto',
+          product_image: item.product_image,
+          quantity: item.quantity || 1,
+          // ✅ MAPEAR CORRECTAMENTE LOS NOMBRES DE CAMPOS
+          original_price_per_unit: item.original_unit_price || 0,
+          final_price_per_unit: item.unit_price || 0,
+          subtotal: item.total_price || 0,
+          total_savings: item.total_savings || 0,
+          breakdown_steps: item.breakdown_steps || [],
+          has_seller_discount: (item.seller_discount_percentage || 0) > 0,
+          has_volume_discount: (item.volume_discount_percentage || 0) > 0,
+          has_coupon_discount: false, // Por ahora sin cupones en customer breakdown
+        });
+      });
+    }
+
+    return {
+      order_id: customerData.order_id || 0,
+      items,
+      summary: {
+        total_items: items.length,
+        total_quantity: items.reduce((sum, item) => sum + item.quantity, 0),
+        total_original_amount: items.reduce((sum, item) => sum + (item.original_price_per_unit * item.quantity), 0),
+        total_final_amount: items.reduce((sum, item) => sum + item.subtotal, 0),
+        total_savings: items.reduce((sum, item) => sum + item.total_savings, 0),
+      }
+    };
   }
 }
 

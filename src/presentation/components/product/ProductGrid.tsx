@@ -1,4 +1,4 @@
-import React from "react";
+import React, {memo} from "react";
 import ProductCardCompact from "./ProductCardCompact";
 import type {Product} from "../../../core/domain/entities/Product";
 import type {Category} from "../../../core/domain/entities/Category";
@@ -21,7 +21,7 @@ interface ProductGridProps {
 	onResetFilters: () => void;
 }
 
-const ProductGrid: React.FC<ProductGridProps> = ({
+const ProductGrid: React.FC<ProductGridProps> = memo(({
 	products,
 	categories,
 	isLoading,
@@ -139,6 +139,6 @@ const ProductGrid: React.FC<ProductGridProps> = ({
 			</div>
 		</div>
 	);
-};
+});
 
 export default ProductGrid;

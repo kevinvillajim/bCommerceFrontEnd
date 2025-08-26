@@ -1,623 +1,430 @@
-import ApiClient from "../../infrastructure/api/apiClient";
-import {API_ENDPOINTS} from "../../constants/apiEndpoints";
-import type {ApiResponse} from "../../presentation/types/admin/ratingConfigTypes";
-import type {
-	RatingConfigs,
-	RatingStats,
-} from "../../presentation/types/admin/ratingConfigTypes";
+/**
+ * 🚨 RESCUE ADAPTER - ConfigurationService
+ * Adaptador inteligente que rescata los componentes admin existentes
+ * Usa ConfigurationManager internamente + endpoints directos para datos específicos
+ */
 
-// Tipos para todas las configuraciones
-export interface GeneralConfig {
-	siteName: string;
-	siteDescription: string;
-	contactEmail: string;
-	adminEmail: string;
-	itemsPerPage: number;
-	maintenanceMode: boolean;
-	enableRegistration: boolean;
-	defaultLanguage: string;
-	defaultCurrency: string;
-	timeZone: string;
-}
+import ConfigurationManager from './ConfigurationManager';
+import ApiClient from '../../infrastructure/api/apiClient';
+import { API_ENDPOINTS } from '../../constants/apiEndpoints';
 
-export interface SecurityConfig {
-	passwordMinLength: number | string;
-	passwordRequireSpecial: boolean;
-	passwordRequireUppercase: boolean;
-	passwordRequireNumbers: boolean;
-	accountLockAttempts: number | string;
-	sessionTimeout: number | string;
-	enableTwoFactor: boolean;
-	requireEmailVerification: boolean;
-	adminIpRestriction: string;
-	enableCaptcha: boolean;
-}
+// ===============================================
+// 🎯 INTERFACES DE CONFIGURACIÓN ESPECÍFICAS
+// ===============================================
 
-export interface PaymentConfig {
-	currencySymbol: string;
-	currencyCode: string;
-	enablePayPal: boolean;
-	payPalClientId: string;
-	payPalClientSecret: string;
-	payPalSandboxMode: boolean;
-	enableCreditCard: boolean;
-	stripePublicKey: string;
-	stripeSecretKey: string;
-	stripeSandboxMode: boolean;
-	enableLocalPayments: boolean;
-	taxRate: number;
-}
-
-export interface EmailConfig {
-	smtpHost: string;
-	smtpPort: number;
-	smtpUsername: string;
-	smtpPassword: string;
-	smtpEncryption: string;
-	senderName: string;
-	senderEmail: string;
-	notificationEmails: boolean;
-	welcomeEmail: boolean;
-	orderConfirmationEmail: boolean;
-	passwordResetEmail: boolean;
+export interface DevelopmentConfig {
+  mode: boolean;
+  allowAdminOnlyAccess: boolean;
+  bypassEmailVerification: boolean;
+  requireEmailVerification: boolean;
+  emailVerificationTimeout: number;
 }
 
 export interface ModerationConfig {
-	userStrikesThreshold: number;
-	contactScorePenalty: number;
-	businessScoreBonus: number;
-	contactPenaltyHeavy: number;
-	minimumContactScore: number;
-	scoreDifferenceThreshold: number;
-	consecutiveNumbersLimit: number;
-	numbersWithContextLimit: number;
-	lowStockThreshold: number;
+  auto_approval: boolean;
+  review_threshold: number;
+  enable_user_reports: boolean;
+  auto_suspend_threshold: number;
+  manual_review_required: boolean;
+  userStrikesThreshold: number;
+  lowStockThreshold: number;
+  contactScorePenalty: number;
+  businessScoreBonus: number;
+  contactPenaltyHeavy: number;
+  minimumContactScore: number;
+  scoreDifferenceThreshold: number;
+  consecutiveNumbersLimit: number;
+  numbersWithContextLimit: number;
 }
 
-export interface ShippingConfig {
-	enabled: boolean;
-	freeThreshold: number;
-	defaultCost: number;
+export interface SecurityConfig {
+  password_rules: {
+    min_length: number;
+    require_uppercase: boolean;
+    require_lowercase: boolean;
+    require_numbers: boolean;
+    require_special_chars: boolean;
+  };
+  session_timeout: number;
+  max_login_attempts: number;
+  lockout_duration: number;
+  passwordMinLength: number;
+  passwordRequireSpecial: boolean;
+  passwordRequireUppercase: boolean;
+  passwordRequireNumbers: boolean;
+  accountLockAttempts: number;
+  sessionTimeout: number;
+  requireEmailVerification: boolean;
+  enableTwoFactor: boolean;
+  adminIpRestriction: boolean;
 }
 
-export interface DevelopmentConfig {
-	mode: boolean;
-	allowAdminOnlyAccess: boolean;
-	bypassEmailVerification: boolean;
-	requireEmailVerification: boolean;
-	emailVerificationTimeout: number;
+export interface RatingConfig {
+  min_rating: number;
+  max_rating: number;
+  allow_anonymous: boolean;
+  require_purchase: boolean;
+  enable_reviews: boolean;
+  auto_publish_reviews: boolean;
+  auto_approve_all: boolean;
+  auto_approve_threshold: number;
+  'ratings.auto_approve_all': boolean;
+  'ratings.auto_approve_threshold': number;
 }
 
-export interface NotificationConfig {
-	adminNewOrder: boolean;
-	adminNewUser: boolean;
-	adminLowStock: boolean;
-	adminNewReview: boolean;
-	adminFailedPayment: boolean;
-	sellerNewOrder: boolean;
-	sellerLowStock: boolean;
-	sellerProductReview: boolean;
-	sellerMessageReceived: boolean;
-	sellerReturnRequest: boolean;
-	userOrderStatus: boolean;
-	userDeliveryUpdates: boolean;
-	userPromotions: boolean;
-	userAccountChanges: boolean;
-	userPasswordChanges: boolean;
+// ===============================================
+// 🎯 RESPONSE INTERFACES (API Compatible)
+// ===============================================
+
+interface ConfigurationResponse<T> {
+  status: 'success' | 'error';
+  data?: T;
+  message?: string;
 }
 
-export interface SystemLimitsConfig {
-	cartMaxItems: number;
-	cartMaxQuantityPerItem: number;
-	orderTimeout: number;
-	recommendationLimit: number;
-	maxRecommendationResults: number;
-	tokenRefreshThreshold: number;
+// ===============================================
+// 🚨 CONFIGURATION SERVICE ADAPTER
+// ===============================================
+
+// Interface para Volume Discount (requerido por VolumeDiscountManager)
+export interface VolumeDiscountConfig {
+  enabled: boolean;
+  stackable: boolean;
+  default_tiers: Array<{
+    quantity: number;
+    discount: number;
+    label: string;
+  }>;
 }
 
-export interface IntegrationConfig {
-	googleAnalyticsId: string;
-	enableGoogleAnalytics: boolean;
-	facebookPixelId: string;
-	enableFacebookPixel: boolean;
-	recaptchaSiteKey: string;
-	recaptchaSecretKey: string;
-	enableHotjar: boolean;
-	hotjarId: string;
-	enableChatbot: boolean;
-	chatbotScript: string;
-}
-
-export interface BackupConfig {
-	automaticBackups: boolean;
-	backupFrequency: string;
-	backupTime: string;
-	backupRetention: number;
-	includeMedia: boolean;
-	backupToCloud: boolean;
-	cloudProvider: string;
-	cloudApiKey: string;
-	cloudSecret: string;
-	cloudBucket: string;
-	lastBackupDate: string;
-}
-
-
-/**
- * Servicio para gestionar configuraciones del sistema
- */
 class ConfigurationService {
-	/**
-	 * Obtiene configuraciones de valoraciones
-	 */
-	async getRatingConfigs(): Promise<ApiResponse<RatingConfigs>> {
-		try {
-			const response = await ApiClient.get<ApiResponse<RatingConfigs>>(
-				API_ENDPOINTS.ADMIN.CONFIGURATIONS.RATINGS
-			);
-			return response;
-		} catch (error) {
-			console.error("Error al obtener configuraciones de valoraciones:", error);
-			return {
-				status: "error",
-				message: error instanceof Error ? error.message : "Error desconocido",
-				data: {},
-			};
-		}
-	}
+  constructor() {
+    // ConfigurationManager se usa a través del singleton cuando es necesario
+  }
 
-	/**
-	 * Actualiza configuraciones de valoraciones
-	 */
-	async updateRatingConfigs(configs: {
-		auto_approve_all: boolean;
-		auto_approve_threshold: number;
-	}): Promise<ApiResponse> {
-		try {
-			const response = await ApiClient.post<ApiResponse>(
-				API_ENDPOINTS.ADMIN.CONFIGURATIONS.RATINGS,
-				configs
-			);
-			return response;
-		} catch (error) {
-			console.error(
-				"Error al actualizar configuraciones de valoraciones:",
-				error
-			);
-			return {
-				status: "error",
-				message: error instanceof Error ? error.message : "Error desconocido",
-			};
-		}
-	}
+  // 🔧 DEVELOPMENT CONFIGURATIONS
+  async getDevelopmentConfigs(): Promise<ConfigurationResponse<DevelopmentConfig>> {
+    try {
+      const response: any = await ApiClient.get(API_ENDPOINTS.ADMIN.CONFIGURATIONS.DEVELOPMENT);
+      
+      if (response?.data) {
+        const config: DevelopmentConfig = {
+          mode: response.data.mode || false,
+          allowAdminOnlyAccess: response.data.allowAdminOnlyAccess || false,
+          bypassEmailVerification: response.data.bypassEmailVerification || true,
+          requireEmailVerification: response.data.requireEmailVerification || false,
+          emailVerificationTimeout: response.data.emailVerificationTimeout || 24,
+        };
 
-	/**
-	 * Obtiene estadísticas de valoraciones
-	 */
-	async getRatingStats(): Promise<ApiResponse<RatingStats>> {
-		try {
-			const response = await ApiClient.get<ApiResponse<RatingStats>>(
-				API_ENDPOINTS.ADMIN.RATINGS.STATS
-			);
-			return response;
-		} catch (error) {
-			console.error("Error al obtener estadísticas de valoraciones:", error);
-			return {
-				status: "error",
-				message: error instanceof Error ? error.message : "Error desconocido",
-				data: {
-					totalCount: 0,
-					approvedCount: 0,
-					pendingCount: 0,
-					rejectedCount: 0,
-				},
-			};
-		}
-	}
+        return {
+          status: 'success',
+          data: config
+        };
+      }
 
-	/**
-	 * Aprueba todas las valoraciones pendientes
-	 */
-	async approveAllPendingRatings(): Promise<ApiResponse> {
-		try {
-			const response = await ApiClient.post<ApiResponse>(
-				API_ENDPOINTS.ADMIN.RATINGS.APPROVE_ALL
-			);
-			return response;
-		} catch (error) {
-			console.error("Error al aprobar valoraciones pendientes:", error);
-			return {
-				status: "error",
-				message: error instanceof Error ? error.message : "Error desconocido",
-			};
-		}
-	}
+      // Fallback con valores por defecto
+      return {
+        status: 'success',
+        data: {
+          mode: false,
+          allowAdminOnlyAccess: false,
+          bypassEmailVerification: true,
+          requireEmailVerification: false,
+          emailVerificationTimeout: 24,
+        }
+      };
+    } catch (error) {
+      console.error('Error getting development configs:', error);
+      return {
+        status: 'error',
+        message: 'Error al obtener configuraciones de desarrollo'
+      };
+    }
+  }
 
-	/**
-	 * Obtiene todas las configuraciones del sistema
-	 */
-	async getAllConfigurations(): Promise<ApiResponse<Record<string, any>>> {
-		try {
-			const response = await ApiClient.get<ApiResponse<Record<string, any>>>(
-				`${API_ENDPOINTS.ADMIN.CONFIGURATIONS.BASE}`
-			);
-			return response;
-		} catch (error) {
-			console.error("Error al obtener configuraciones:", error);
-			return {
-				status: "error",
-				message: error instanceof Error ? error.message : "Error desconocido",
-				data: {},
-			};
-		}
-	}
+  async updateDevelopmentConfigs(config: DevelopmentConfig): Promise<ConfigurationResponse<DevelopmentConfig>> {
+    try {
+      await ApiClient.post(API_ENDPOINTS.ADMIN.CONFIGURATIONS.UPDATE, {
+        type: 'development',
+        config
+      });
 
-	/**
-	 * Obtiene configuraciones por categoría
-	 */
-	async getConfigurationsByCategory(category: string): Promise<ApiResponse<Record<string, any>>> {
-		try {
-			const response = await ApiClient.get<ApiResponse<Record<string, any>>>(
-				`${API_ENDPOINTS.ADMIN.CONFIGURATIONS.BASE}/category?category=${category}`
-			);
-			return response;
-		} catch (error) {
-			console.error(`Error al obtener configuraciones de ${category}:`, error);
-			return {
-				status: "error",
-				message: error instanceof Error ? error.message : "Error desconocido",
-				data: {},
-			};
-		}
-	}
+      // ✅ INVALIDAR CACHE para propagar cambios inmediatamente
+      ConfigurationManager.getInstance().invalidateCache();
 
-	/**
-	 * Actualiza configuraciones por categoría
-	 */
-	async updateConfigurationsByCategory(category: string, configs: Record<string, any>): Promise<ApiResponse> {
-		try {
-			console.log('🔄 ConfigurationService - Enviando:', { category, configurations: configs });
-			const response = await ApiClient.post<ApiResponse>(
-				`${API_ENDPOINTS.ADMIN.CONFIGURATIONS.BASE}/category`,
-				{ category, configurations: configs }
-			);
-			console.log('✅ ConfigurationService - Respuesta:', response);
-			return response;
-		} catch (error) {
-			console.error(`Error al actualizar configuraciones de ${category}:`, error);
-			return {
-				status: "error",
-				message: error instanceof Error ? error.message : "Error desconocido",
-			};
-		}
-	}
+      return {
+        status: 'success',
+        data: config,
+        message: 'Configuración actualizada correctamente'
+      };
+    } catch (error) {
+      console.error('Error updating development configs:', error);
+      return {
+        status: 'error',
+        message: 'Error al actualizar configuraciones'
+      };
+    }
+  }
 
-	/**
-	 * Obtiene configuraciones generales
-	 */
-	async getGeneralConfigs(): Promise<ApiResponse<GeneralConfig>> {
-		return this.getConfigurationsByCategory('general') as Promise<ApiResponse<GeneralConfig>>;
-	}
+  // 🔧 MODERATION CONFIGURATIONS  
+  async getModerationConfigs(): Promise<ConfigurationResponse<ModerationConfig>> {
+    try {
+      const response: any = await ApiClient.get(API_ENDPOINTS.ADMIN.CONFIGURATIONS.INDEX);
+      
+      // Extraer configuraciones de moderación desde la respuesta general
+      const moderationData = response?.data?.moderation;
 
-	/**
-	 * Actualiza configuraciones generales
-	 */
-	async updateGeneralConfigs(configs: Partial<GeneralConfig>): Promise<ApiResponse> {
-		return this.updateConfigurationsByCategory('general', configs);
-	}
+      const config: ModerationConfig = {
+        auto_approval: moderationData?.auto_approval || true,
+        review_threshold: moderationData?.review_threshold || 3,
+        enable_user_reports: moderationData?.enable_user_reports || true,
+        auto_suspend_threshold: moderationData?.auto_suspend_threshold || 5,
+        manual_review_required: moderationData?.manual_review_required || false,
+        userStrikesThreshold: moderationData?.userStrikesThreshold || 3,
+        lowStockThreshold: moderationData?.lowStockThreshold || 5,
+        contactScorePenalty: moderationData?.contactScorePenalty || 10,
+        businessScoreBonus: moderationData?.businessScoreBonus || 5,
+        contactPenaltyHeavy: moderationData?.contactPenaltyHeavy || 20,
+        minimumContactScore: moderationData?.minimumContactScore || 50,
+        scoreDifferenceThreshold: moderationData?.scoreDifferenceThreshold || 30,
+        consecutiveNumbersLimit: moderationData?.consecutiveNumbersLimit || 3,
+        numbersWithContextLimit: moderationData?.numbersWithContextLimit || 5,
+      };
 
-	/**
-	 * Obtiene configuraciones de seguridad
-	 */
-	async getSecurityConfigs(): Promise<ApiResponse<SecurityConfig>> {
-		return this.getConfigurationsByCategory('security') as Promise<ApiResponse<SecurityConfig>>;
-	}
+      return {
+        status: 'success',
+        data: config
+      };
+    } catch (error) {
+      console.error('Error getting moderation configs:', error);
+      return {
+        status: 'error',
+        message: 'Error al obtener configuraciones de moderación'
+      };
+    }
+  }
 
-	/**
-	 * Actualiza configuraciones de seguridad
-	 */
-	async updateSecurityConfigs(configs: Partial<SecurityConfig>): Promise<ApiResponse> {
-		return this.updateConfigurationsByCategory('security', configs);
-	}
+  async updateModerationConfigs(config: ModerationConfig): Promise<ConfigurationResponse<ModerationConfig>> {
+    try {
+      await ApiClient.post(API_ENDPOINTS.ADMIN.CONFIGURATIONS.UPDATE, {
+        type: 'moderation',
+        config
+      });
 
-	/**
-	 * Obtiene configuraciones de pagos
-	 */
-	async getPaymentConfigs(): Promise<ApiResponse<PaymentConfig>> {
-		return this.getConfigurationsByCategory('payment') as Promise<ApiResponse<PaymentConfig>>;
-	}
+      // ✅ INVALIDAR CACHE para propagar cambios inmediatamente
+      ConfigurationManager.getInstance().invalidateCache();
 
-	/**
-	 * Actualiza configuraciones de pagos
-	 */
-	async updatePaymentConfigs(configs: Partial<PaymentConfig>): Promise<ApiResponse> {
-		return this.updateConfigurationsByCategory('payment', configs);
-	}
+      return {
+        status: 'success',
+        data: config,
+        message: 'Configuración de moderación actualizada'
+      };
+    } catch (error) {
+      console.error('Error updating moderation configs:', error);
+      return {
+        status: 'error',
+        message: 'Error al actualizar configuraciones de moderación'
+      };
+    }
+  }
 
-	/**
-	 * Obtiene configuraciones de email
-	 */
-	async getEmailConfigs(): Promise<ApiResponse<EmailConfig>> {
-		return this.getConfigurationsByCategory('email') as Promise<ApiResponse<EmailConfig>>;
-	}
+  // 🔧 SECURITY CONFIGURATIONS
+  async getSecurityConfigs(): Promise<ConfigurationResponse<SecurityConfig>> {
+    try {
+      const response: any = await ApiClient.get(API_ENDPOINTS.ADMIN.CONFIGURATIONS.PASSWORD_VALIDATION_RULES);
+      
+      const config: SecurityConfig = {
+        password_rules: {
+          min_length: response?.data?.min_length || 8,
+          require_uppercase: response?.data?.require_uppercase || true,
+          require_lowercase: response?.data?.require_lowercase || true,
+          require_numbers: response?.data?.require_numbers || true,
+          require_special_chars: response?.data?.require_special_chars || false,
+        },
+        session_timeout: response?.data?.session_timeout || 3600, // 1 hora
+        max_login_attempts: response?.data?.max_login_attempts || 5,
+        lockout_duration: response?.data?.lockout_duration || 900, // 15 minutos
+        passwordMinLength: response?.data?.min_length || 8,
+        passwordRequireSpecial: response?.data?.require_special_chars || false,
+        passwordRequireUppercase: response?.data?.require_uppercase || true,
+        passwordRequireNumbers: response?.data?.require_numbers || true,
+        accountLockAttempts: response?.data?.max_login_attempts || 5,
+        sessionTimeout: response?.data?.session_timeout || 3600,
+        requireEmailVerification: response?.data?.require_email_verification || true,
+        enableTwoFactor: response?.data?.enable_two_factor || false,
+        adminIpRestriction: response?.data?.admin_ip_restriction || false,
+      };
 
-	/**
-	 * Actualiza configuraciones de email
-	 */
-	async updateEmailConfigs(configs: Partial<EmailConfig>): Promise<ApiResponse> {
-		return this.updateConfigurationsByCategory('email', configs);
-	}
+      return {
+        status: 'success',
+        data: config
+      };
+    } catch (error) {
+      console.error('Error getting security configs:', error);
+      return {
+        status: 'error',
+        message: 'Error al obtener configuraciones de seguridad'
+      };
+    }
+  }
 
-	/**
-	 * Obtiene configuraciones de moderación
-	 */
-	async getModerationConfigs(): Promise<ApiResponse<ModerationConfig>> {
-		return this.getConfigurationsByCategory('moderation') as Promise<ApiResponse<ModerationConfig>>;
-	}
+  async updateSecurityConfigs(config: SecurityConfig): Promise<ConfigurationResponse<SecurityConfig>> {
+    try {
+      await ApiClient.post(API_ENDPOINTS.ADMIN.CONFIGURATIONS.PASSWORD_VALIDATION_RULES, config.password_rules);
 
-	/**
-	 * Actualiza configuraciones de moderación
-	 */
-	async updateModerationConfigs(configs: Partial<ModerationConfig>): Promise<ApiResponse> {
-		return this.updateConfigurationsByCategory('moderation', configs);
-	}
+      // ✅ INVALIDAR CACHE para propagar cambios inmediatamente
+      ConfigurationManager.getInstance().invalidateCache();
 
-	/**
-	 * Obtiene configuraciones de envío
-	 */
-	async getShippingConfigs(): Promise<ApiResponse<ShippingConfig>> {
-		return this.getConfigurationsByCategory('shipping') as Promise<ApiResponse<ShippingConfig>>;
-	}
+      return {
+        status: 'success',
+        data: config,
+        message: 'Configuración de seguridad actualizada'
+      };
+    } catch (error) {
+      console.error('Error updating security configs:', error);
+      return {
+        status: 'error',
+        message: 'Error al actualizar configuraciones de seguridad'
+      };
+    }
+  }
 
-	/**
-	 * Actualiza configuraciones de envío
-	 */
-	async updateShippingConfigs(configs: Partial<ShippingConfig>): Promise<ApiResponse> {
-		try {
-			console.log('🔄 updateShippingConfigs - Enviando directamente:', configs);
-			
-			// Usar endpoint específico de shipping que funciona correctamente
-			const response = await ApiClient.post<ApiResponse>(
-				API_ENDPOINTS.ADMIN.CONFIGURATIONS.SHIPPING,
-				configs
-			);
-			console.log('✅ updateShippingConfigs - Respuesta:', response);
-			return response;
-		} catch (error) {
-			console.error('Error al actualizar configuraciones de envío:', error);
-			return {
-				status: "error",
-				message: error instanceof Error ? error.message : "Error desconocido",
-			};
-		}
-	}
+  // 🔧 RATING CONFIGURATIONS
+  async getRatingConfigs(): Promise<ConfigurationResponse<RatingConfig>> {
+    try {
+      const response: any = await ApiClient.get(API_ENDPOINTS.ADMIN.CONFIGURATIONS.RATINGS);
+      
+      const config: RatingConfig = {
+        min_rating: response?.data?.min_rating || 1,
+        max_rating: response?.data?.max_rating || 5,
+        allow_anonymous: response?.data?.allow_anonymous || false,
+        require_purchase: response?.data?.require_purchase || true,
+        enable_reviews: response?.data?.enable_reviews || true,
+        auto_publish_reviews: response?.data?.auto_publish_reviews || false,
+        auto_approve_all: response?.data?.auto_approve_all || false,
+        auto_approve_threshold: response?.data?.auto_approve_threshold || 4,
+        'ratings.auto_approve_all': response?.data?.auto_approve_all || false,
+        'ratings.auto_approve_threshold': response?.data?.auto_approve_threshold || 4,
+      };
 
-	/**
-	 * Obtiene configuraciones de desarrollo
-	 */
-	async getDevelopmentConfigs(): Promise<ApiResponse<DevelopmentConfig>> {
-		try {
-			const response = await ApiClient.get<ApiResponse<DevelopmentConfig>>(
-				API_ENDPOINTS.ADMIN.CONFIGURATIONS.DEVELOPMENT
-			);
-			return response;
-		} catch (error) {
-			console.error("Error al obtener configuraciones de desarrollo:", error);
-			return {
-				status: "error",
-				message: error instanceof Error ? error.message : "Error desconocido",
-				data: {
-					mode: false,
-					allowAdminOnlyAccess: false,
-					bypassEmailVerification: true,
-					requireEmailVerification: false,
-					emailVerificationTimeout: 24,
-				},
-			};
-		}
-	}
+      return {
+        status: 'success',
+        data: config
+      };
+    } catch (error) {
+      console.error('Error getting rating configs:', error);
+      return {
+        status: 'error',
+        message: 'Error al obtener configuraciones de calificaciones'
+      };
+    }
+  }
 
-	/**
-	 * Actualiza configuraciones de desarrollo
-	 */
-	async updateDevelopmentConfigs(configs: Partial<DevelopmentConfig>): Promise<ApiResponse> {
-		try {
-			const response = await ApiClient.post<ApiResponse>(
-				API_ENDPOINTS.ADMIN.CONFIGURATIONS.DEVELOPMENT,
-				configs
-			);
-			return response;
-		} catch (error) {
-			console.error("Error al actualizar configuraciones de desarrollo:", error);
-			return {
-				status: "error",
-				message: error instanceof Error ? error.message : "Error desconocido",
-			};
-		}
-	}
+  async updateRatingConfigs(config: RatingConfig): Promise<ConfigurationResponse<RatingConfig>> {
+    try {
+      await ApiClient.post(API_ENDPOINTS.ADMIN.CONFIGURATIONS.RATINGS, config);
 
-	/**
-	 * Obtiene configuraciones de notificaciones
-	 */
-	async getNotificationConfigs(): Promise<ApiResponse<NotificationConfig>> {
-		return this.getConfigurationsByCategory('notifications') as Promise<ApiResponse<NotificationConfig>>;
-	}
+      // ✅ INVALIDAR CACHE para propagar cambios inmediatamente
+      ConfigurationManager.getInstance().invalidateCache();
 
-	/**
-	 * Actualiza configuraciones de notificaciones
-	 */
-	async updateNotificationConfigs(configs: Partial<NotificationConfig>): Promise<ApiResponse> {
-		return this.updateConfigurationsByCategory('notifications', configs);
-	}
+      return {
+        status: 'success',
+        data: config,
+        message: 'Configuración de calificaciones actualizada'
+      };
+    } catch (error) {
+      console.error('Error updating rating configs:', error);
+      return {
+        status: 'error',
+        message: 'Error al actualizar configuraciones de calificaciones'
+      };
+    }
+  }
 
-	/**
-	 * Obtiene configuraciones de límites del sistema
-	 */
-	async getSystemLimitsConfigs(): Promise<ApiResponse<SystemLimitsConfig>> {
-		return this.getConfigurationsByCategory('limits') as Promise<ApiResponse<SystemLimitsConfig>>;
-	}
+  // 🔧 VOLUME DISCOUNT CONFIGURATIONS (requerido por VolumeDiscountManager)
+  async getVolumeDiscountConfigs(): Promise<ConfigurationResponse<VolumeDiscountConfig>> {
+    try {
+      const response: any = await ApiClient.get(API_ENDPOINTS.ADMIN.VOLUME_DISCOUNTS.CONFIGURATION);
+      
+      const config: VolumeDiscountConfig = {
+        enabled: response?.data?.enabled || true,
+        stackable: response?.data?.stackable || false,
+        default_tiers: response?.data?.default_tiers || [
+          { quantity: 3, discount: 5, label: "3+" },
+          { quantity: 5, discount: 8, label: "5+" },
+          { quantity: 10, discount: 15, label: "10+" }
+        ],
+      };
 
-	/**
-	 * Actualiza configuraciones de límites del sistema
-	 */
-	async updateSystemLimitsConfigs(configs: Partial<SystemLimitsConfig>): Promise<ApiResponse> {
-		return this.updateConfigurationsByCategory('limits', configs);
-	}
+      return {
+        status: 'success',
+        data: config
+      };
+    } catch (error) {
+      console.error('Error getting volume discount configs:', error);
+      return {
+        status: 'error',
+        message: 'Error al obtener configuraciones de descuentos por volumen'
+      };
+    }
+  }
 
-	/**
-	 * Obtiene configuraciones de integraciones
-	 */
-	async getIntegrationConfigs(): Promise<ApiResponse<IntegrationConfig>> {
-		return this.getConfigurationsByCategory('integrations') as Promise<ApiResponse<IntegrationConfig>>;
-	}
+  async updateVolumeDiscountConfigs(config: VolumeDiscountConfig): Promise<ConfigurationResponse<VolumeDiscountConfig>> {
+    try {
+      await ApiClient.post(API_ENDPOINTS.ADMIN.VOLUME_DISCOUNTS.CONFIGURATION, config);
 
-	/**
-	 * Actualiza configuraciones de integraciones
-	 */
-	async updateIntegrationConfigs(configs: Partial<IntegrationConfig>): Promise<ApiResponse> {
-		return this.updateConfigurationsByCategory('integrations', configs);
-	}
+      // ✅ INVALIDAR CACHE para propagar cambios inmediatamente
+      ConfigurationManager.getInstance().invalidateCache();
 
-	/**
-	 * Obtiene configuraciones de backup
-	 */
-	async getBackupConfigs(): Promise<ApiResponse<BackupConfig>> {
-		return this.getConfigurationsByCategory('backup') as Promise<ApiResponse<BackupConfig>>;
-	}
+      return {
+        status: 'success',
+        data: config,
+        message: 'Configuración de descuentos por volumen actualizada'
+      };
+    } catch (error) {
+      console.error('Error updating volume discount configs:', error);
+      return {
+        status: 'error',
+        message: 'Error al actualizar configuraciones de descuentos por volumen'
+      };
+    }
+  }
 
-	/**
-	 * Actualiza configuraciones de backup
-	 */
-	async updateBackupConfigs(configs: Partial<BackupConfig>): Promise<ApiResponse> {
-		return this.updateConfigurationsByCategory('backup', configs);
-	}
+  // 🔧 RATING STATS AND ADDITIONAL METHODS (requerido por RatingConfiguration)
+  async getRatingStats(): Promise<ConfigurationResponse<any>> {
+    try {
+      const response: any = await ApiClient.get(`${API_ENDPOINTS.ADMIN.CONFIGURATIONS.RATINGS}/stats`);
+      
+      return {
+        status: 'success',
+        data: response?.data || {}
+      };
+    } catch (error) {
+      console.error('Error getting rating stats:', error);
+      return {
+        status: 'error',
+        message: 'Error al obtener estadísticas de calificaciones'
+      };
+    }
+  }
 
-	/**
-	 * Obtiene configuraciones de descuentos por volumen
-	 */
-	async getVolumeDiscountConfigs(): Promise<ApiResponse<Record<string, any>>> {
-		try {
-			const response = await ApiClient.get<ApiResponse<Record<string, any>>>(
-				API_ENDPOINTS.ADMIN.VOLUME_DISCOUNTS.CONFIGURATION
-			);
-			return response;
-		} catch (error) {
-			console.error("Error al obtener configuraciones de descuentos por volumen:", error);
-			return {
-				status: "error",
-				message: error instanceof Error ? error.message : "Error desconocido",
-				data: {},
-			};
-		}
-	}
-
-	/**
-	 * Actualiza configuraciones de descuentos por volumen
-	 */
-	async updateVolumeDiscountConfigs(configs: {
-		enabled: boolean;
-		stackable: boolean;
-		show_savings_message: boolean;
-		default_tiers: Array<{
-			quantity: number;
-			discount: number;
-			label: string;
-		}>;
-	}): Promise<ApiResponse> {
-		try {
-			const response = await ApiClient.post<ApiResponse>(
-				API_ENDPOINTS.ADMIN.VOLUME_DISCOUNTS.CONFIGURATION,
-				configs
-			);
-			return response;
-		} catch (error) {
-			console.error("Error al actualizar configuraciones de descuentos por volumen:", error);
-			return {
-				status: "error",
-				message: error instanceof Error ? error.message : "Error desconocido",
-			};
-		}
-	}
-
-	/**
-	 * Envía un email personalizado a un usuario (solo admin)
-	 */
-	async sendCustomEmail(data: {
-		user_id: number;
-		subject: string;
-		message: string;
-		email_type?: string;
-	}): Promise<ApiResponse> {
-		try {
-			const response = await ApiClient.post<ApiResponse>(
-				API_ENDPOINTS.ADMIN.CONFIGURATIONS.MAIL_SEND_CUSTOM,
-				data
-			);
-			return response;
-		} catch (error) {
-			console.error("Error al enviar email personalizado:", error);
-			return {
-				status: "error",
-				message: error instanceof Error ? error.message : "Error desconocido",
-			};
-		}
-	}
-
-	/**
-	 * Prueba la configuración de correo
-	 */
-	async testMailConfiguration(): Promise<ApiResponse> {
-		try {
-			const response = await ApiClient.post<ApiResponse>(
-				API_ENDPOINTS.ADMIN.CONFIGURATIONS.MAIL_TEST
-			);
-			return response;
-		} catch (error) {
-			console.error("Error al probar configuración de correo:", error);
-			return {
-				status: "error",
-				message: error instanceof Error ? error.message : "Error desconocido",
-			};
-		}
-	}
-
-	/**
-	 * Obtiene la configuración de correo
-	 */
-	async getMailConfiguration(): Promise<ApiResponse<EmailConfig>> {
-		try {
-			const response = await ApiClient.get<ApiResponse<EmailConfig>>(
-				API_ENDPOINTS.ADMIN.CONFIGURATIONS.MAIL
-			);
-			return response;
-		} catch (error) {
-			console.error("Error al obtener configuración de correo:", error);
-			return {
-				status: "error",
-				message: error instanceof Error ? error.message : "Error desconocido",
-				data: {} as EmailConfig,
-			};
-		}
-	}
-
-	/**
-	 * Actualiza la configuración de correo
-	 */
-	async updateMailConfiguration(config: Partial<EmailConfig>): Promise<ApiResponse> {
-		try {
-			const response = await ApiClient.post<ApiResponse>(
-				API_ENDPOINTS.ADMIN.CONFIGURATIONS.MAIL,
-				config
-			);
-			return response;
-		} catch (error) {
-			console.error("Error al actualizar configuración de correo:", error);
-			return {
-				status: "error",
-				message: error instanceof Error ? error.message : "Error desconocido",
-			};
-		}
-	}
+  async approveAllPendingRatings(): Promise<ConfigurationResponse<any>> {
+    try {
+      const response: any = await ApiClient.post(`${API_ENDPOINTS.ADMIN.CONFIGURATIONS.RATINGS}/approve-all`);
+      
+      return {
+        status: 'success',
+        data: response?.data || {},
+        message: 'Todas las calificaciones pendientes han sido aprobadas'
+      };
+    } catch (error) {
+      console.error('Error approving pending ratings:', error);
+      return {
+        status: 'error',
+        message: 'Error al aprobar calificaciones pendientes'
+      };
+    }
+  }
 }
 
 export default ConfigurationService;

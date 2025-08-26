@@ -352,6 +352,17 @@ export const API_ENDPOINTS = {
       PASSWORD_VALIDATION_RULES: "/admin/configurations/password-validation-rules",
       FINANCIAL: "/admin/configurations/financial", // ⚠️ Configuraciones financieras críticas
     },
+    // 🔧 JORDAN FASE 1: Endpoints públicos de configuración (CORREGIDOS + TAX AGREGADO)
+    PUBLIC_CONFIGURATIONS: {
+      PLATFORM_COMMISSION: "/configurations/platform-commission-public", // ✅ Existe en backend
+      SHIPPING: "/configurations/shipping-public",          // ✅ Existe en backend (corregido)
+      VOLUME_DISCOUNTS: "/configurations/volume-discounts-public", // ✅ Existe en backend
+      SHIPPING_DISTRIBUTION: "/configurations/shipping-distribution-public", // ✅ Existe en backend
+      TAX: "/configurations/tax-public", // ✅ JORDAN: Tax rate dinámico agregado
+      
+      // 🎯 ENDPOINT UNIFICADO: Todas las configuraciones en una sola llamada (Optimización)
+      UNIFIED: "/configurations/unified", // ✅ NUEVO: Reemplaza 5 endpoints por 1
+    },
     CATEGORIES: {
       LIST: "/categories", // Admin usa la misma lista pública
       DETAILS: (id: string | number) => `/categories/${id}`,

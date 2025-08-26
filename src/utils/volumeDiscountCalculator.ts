@@ -1,6 +1,7 @@
 // src/utils/volumeDiscountCalculator.ts
 
-import VolumeDiscountConfigService from '../core/services/VolumeDiscountConfigService';
+// import VolumeDiscountConfigService from '../core/services/VolumeDiscountConfigService'; // 🎯 JORDAN: Migrado a ConfigurationManager
+import ConfigurationManager from '../core/services/ConfigurationManager';
 
 // ✅ TIPOS ACTUALIZADOS para compatibilidad con CartPage
 export interface VolumeDiscountTier {
@@ -42,16 +43,18 @@ export interface CartItemWithDiscounts {
 }
 
 /**
- * Servicio para obtener configuración dinámica desde BD
+ * 🎯 JORDAN: Servicio unificado para obtener configuración dinámica desde BD
  */
-const volumeDiscountService = VolumeDiscountConfigService.getInstance();
+const configManager = ConfigurationManager.getInstance();
 
 /**
  * 🔧 CORREGIDO: Configuración de descuentos por volumen por defecto actualizada
- * Debe coincidir con la configuración actual del backend: "3+ = 50% 'Nuevo descuento'"
+ * Coincide con ConfigurationManager: 3+ = 5%, 6+ = 10%, 12+ = 15%
  */
 const DEFAULT_VOLUME_DISCOUNTS: VolumeDiscountTier[] = [
-  { quantity: 3, discount: 50, label: "Nuevo descuento" }
+  { quantity: 3, discount: 5, label: "3+" },
+  { quantity: 6, discount: 10, label: "6+" },
+  { quantity: 12, discount: 15, label: "12+" }
 ];
 
 /**
@@ -81,8 +84,8 @@ export function calculateVolumeDiscount(
 
   if (!applicableTier) {
     return {
-      originalPrice: roundToPrecision(basePrice),
-      discountedPrice: roundToPrecision(basePrice),
+      originalPrice: basePrice, // Sin redondeo - frontend manejará en vista
+      discountedPrice: basePrice, // Sin redondeo - frontend manejará en vista
       discountPercentage: 0,
       savings: 0,
       savingsTotal: 0,
@@ -91,23 +94,23 @@ export function calculateVolumeDiscount(
     };
   }
 
-  const discountedPrice = roundToPrecision(basePrice * (1 - applicableTier.discount / 100));
-  const savings = roundToPrecision(basePrice - discountedPrice);
-  const savingsTotal = roundToPrecision(savings * quantity);
+  const discountedPrice = basePrice * (1 - applicableTier.discount / 100); // Sin redondeo - frontend manejará
+  const savings = basePrice - discountedPrice; // Sin redondeo - frontend manejará
+  const savingsTotal = savings * quantity; // Sin redondeo - frontend manejará
 
   return {
-    originalPrice: roundToPrecision(basePrice),
-    discountedPrice: discountedPrice,
+    originalPrice: basePrice, // Sin redondeo - frontend manejará en vista
+    discountedPrice: discountedPrice, // Sin redondeo - frontend manejará en vista
     discountPercentage: applicableTier.discount,
-    savings: savings,
-    savingsTotal: savingsTotal,
+    savings: savings, // Sin redondeo - frontend manejará en vista
+    savingsTotal: savingsTotal, // Sin redondeo - frontend manejará en vista
     hasDiscount: true,
     tierLabel: applicableTier.label
   };
 }
 
-// Helper function for precise decimal calculations
-function roundToPrecision(value: number, decimals: number = 2): number {
+// Helper function para DISPLAY ÚNICAMENTE - NO usar en cálculos intermedios
+function roundForDisplay(value: number, decimals: number = 2): number {
   return Math.round(value * Math.pow(10, decimals)) / Math.pow(10, decimals);
 }
 
@@ -122,12 +125,12 @@ export async function calculateVolumeDiscountAsync(
   
   let tiers = customTiers;
   
-  // Si no se proveen tiers personalizados, obtenerlos de la BD
+  // 🎯 JORDAN: Si no se proveen tiers personalizados, obtenerlos desde ConfigurationManager
   if (!tiers) {
     try {
-      const config = await volumeDiscountService.getVolumeDiscountConfig();
-      if (config.enabled) {
-        tiers = config.default_tiers;
+      const configResult = await configManager.getUnifiedConfig();
+      if (configResult.config.volume_discounts && Array.isArray(configResult.config.volume_discounts) && configResult.config.volume_discounts.length > 0) {
+        tiers = configResult.config.volume_discounts;
       }
     } catch (error) {
       console.warn('Error obteniendo configuración de descuentos, usando defaults:', error);
@@ -155,8 +158,8 @@ export async function calculateVolumeDiscountAsync(
 
   if (!applicableTier) {
     return {
-      originalPrice: roundToPrecision(basePrice),
-      discountedPrice: roundToPrecision(basePrice),
+      originalPrice: basePrice, // Sin redondeo - frontend manejará en vista
+      discountedPrice: basePrice, // Sin redondeo - frontend manejará en vista
       discountPercentage: 0,
       savings: 0,
       savingsTotal: 0,
@@ -165,16 +168,16 @@ export async function calculateVolumeDiscountAsync(
     };
   }
 
-  const discountedPrice = roundToPrecision(basePrice * (1 - applicableTier.discount / 100));
-  const savings = roundToPrecision(basePrice - discountedPrice);
-  const savingsTotal = roundToPrecision(savings * quantity);
+  const discountedPrice = basePrice * (1 - applicableTier.discount / 100); // Sin redondeo - frontend manejará
+  const savings = basePrice - discountedPrice; // Sin redondeo - frontend manejará
+  const savingsTotal = savings * quantity; // Sin redondeo - frontend manejará
 
   return {
-    originalPrice: roundToPrecision(basePrice),
-    discountedPrice: discountedPrice,
+    originalPrice: basePrice, // Sin redondeo - frontend manejará en vista
+    discountedPrice: discountedPrice, // Sin redondeo - frontend manejará en vista
     discountPercentage: applicableTier.discount,
-    savings: savings,
-    savingsTotal: savingsTotal,
+    savings: savings, // Sin redondeo - frontend manejará en vista
+    savingsTotal: savingsTotal, // Sin redondeo - frontend manejará en vista
     hasDiscount: true,
     tierLabel: applicableTier.label
   };
@@ -193,20 +196,20 @@ export function calculateCartItemDiscounts(cartItem: any): CartItemWithDiscounts
   const quantity = cartItem.quantity || 1;
   
   // 1. Calcular descuento del seller (sobre precio original)
-  const sellerDiscountAmount = roundToPrecision(originalPrice * (sellerDiscountPercentage / 100));
-  const priceAfterSellerDiscount = roundToPrecision(originalPrice - sellerDiscountAmount);
+  const sellerDiscountAmount = originalPrice * (sellerDiscountPercentage / 100); // Sin redondeo - frontend manejará
+  const priceAfterSellerDiscount = originalPrice - sellerDiscountAmount; // Sin redondeo - frontend manejará
   
   // 2. Calcular descuento por volumen (sobre precio ya con descuento del seller)
   // NOTA: Usando versión síncrona con defaults para compatibilidad
   const volumeDiscount = calculateVolumeDiscount(priceAfterSellerDiscount, quantity);
   
   // 3. Precio final por unidad (después de ambos descuentos)
-  const finalPricePerUnit = roundToPrecision(volumeDiscount.discountedPrice);
+  const finalPricePerUnit = volumeDiscount.discountedPrice; // Sin redondeo - frontend manejará
   
   // 4. Ahorros totales (precisos)
-  const totalSellerSavings = roundToPrecision(sellerDiscountAmount * quantity);
-  const totalVolumeSavings = roundToPrecision(volumeDiscount.savingsTotal);
-  const totalSavings = roundToPrecision(totalSellerSavings + totalVolumeSavings);
+  const totalSellerSavings = sellerDiscountAmount * quantity; // Sin redondeo - frontend manejará
+  const totalVolumeSavings = volumeDiscount.savingsTotal; // Sin redondeo - frontend manejará
+  const totalSavings = totalSellerSavings + totalVolumeSavings; // Sin redondeo - frontend manejará
   
   // 5. Determinar descuento principal a mostrar
   const hasVolumeDiscount = volumeDiscount.hasDiscount;
@@ -214,15 +217,15 @@ export function calculateCartItemDiscounts(cartItem: any): CartItemWithDiscounts
     volumeDiscount.discountPercentage : sellerDiscountPercentage;
   
   return {
-    originalPrice: roundToPrecision(originalPrice),
-    discountedPrice: finalPricePerUnit,
+    originalPrice: originalPrice, // Sin redondeo - frontend manejará en vista
+    discountedPrice: finalPricePerUnit, // Sin redondeo - frontend manejará en vista
     discountPercentage: displayDiscountPercentage,
-    savings: roundToPrecision(originalPrice - finalPricePerUnit),
-    savingsTotal: totalSavings,
+    savings: originalPrice - finalPricePerUnit, // Sin redondeo - frontend manejará en vista
+    savingsTotal: totalSavings, // Sin redondeo - frontend manejará en vista
     hasDiscount: sellerDiscountPercentage > 0 || hasVolumeDiscount,
-    sellerDiscountAmount: roundToPrecision(sellerDiscountAmount),
-    volumeDiscountAmount: roundToPrecision(volumeDiscount.savings),
-    finalPricePerUnit: finalPricePerUnit
+    sellerDiscountAmount: sellerDiscountAmount, // Sin redondeo - frontend manejará en vista
+    volumeDiscountAmount: volumeDiscount.savings, // Sin redondeo - frontend manejará en vista
+    finalPricePerUnit: finalPricePerUnit // Sin redondeo - frontend manejará en vista
   };
 }
 
@@ -238,20 +241,20 @@ export async function calculateCartItemDiscountsAsync(cartItem: any, customTiers
   const quantity = cartItem.quantity || 1;
   
   // 1. Calcular descuento del seller (sobre precio original)
-  const sellerDiscountAmount = roundToPrecision(originalPrice * (sellerDiscountPercentage / 100));
-  const priceAfterSellerDiscount = roundToPrecision(originalPrice - sellerDiscountAmount);
+  const sellerDiscountAmount = originalPrice * (sellerDiscountPercentage / 100); // Sin redondeo - frontend manejará
+  const priceAfterSellerDiscount = originalPrice - sellerDiscountAmount; // Sin redondeo - frontend manejará
   
   // 2. Calcular descuento por volumen (sobre precio ya con descuento del seller)
   // NOTA: Usando versión asíncrona que obtiene tiers de BD si no se proveen
   const volumeDiscount = await calculateVolumeDiscountAsync(priceAfterSellerDiscount, quantity, customTiers);
   
   // 3. Precio final por unidad (después de ambos descuentos)
-  const finalPricePerUnit = roundToPrecision(volumeDiscount.discountedPrice);
+  const finalPricePerUnit = volumeDiscount.discountedPrice; // Sin redondeo - frontend manejará
   
   // 4. Ahorros totales (precisos)
-  const totalSellerSavings = roundToPrecision(sellerDiscountAmount * quantity);
-  const totalVolumeSavings = roundToPrecision(volumeDiscount.savingsTotal);
-  const totalSavings = roundToPrecision(totalSellerSavings + totalVolumeSavings);
+  const totalSellerSavings = sellerDiscountAmount * quantity; // Sin redondeo - frontend manejará
+  const totalVolumeSavings = volumeDiscount.savingsTotal; // Sin redondeo - frontend manejará
+  const totalSavings = totalSellerSavings + totalVolumeSavings; // Sin redondeo - frontend manejará
   
   // 5. Determinar descuento principal a mostrar
   const hasVolumeDiscount = volumeDiscount.hasDiscount;
@@ -259,14 +262,14 @@ export async function calculateCartItemDiscountsAsync(cartItem: any, customTiers
     volumeDiscount.discountPercentage : sellerDiscountPercentage;
   
   return {
-    originalPrice: roundToPrecision(originalPrice),
-    discountedPrice: finalPricePerUnit,
+    originalPrice: originalPrice, // Sin redondeo - frontend manejará en vista
+    discountedPrice: finalPricePerUnit, // Sin redondeo - frontend manejará en vista
     discountPercentage: displayDiscountPercentage,
-    savings: roundToPrecision(originalPrice - finalPricePerUnit),
-    savingsTotal: totalSavings,
+    savings: originalPrice - finalPricePerUnit, // Sin redondeo - frontend manejará en vista
+    savingsTotal: totalSavings, // Sin redondeo - frontend manejará en vista
     hasDiscount: sellerDiscountPercentage > 0 || hasVolumeDiscount,
-    sellerDiscountAmount: roundToPrecision(sellerDiscountAmount),
-    volumeDiscountAmount: roundToPrecision(volumeDiscount.savings),
-    finalPricePerUnit: finalPricePerUnit
+    sellerDiscountAmount: sellerDiscountAmount, // Sin redondeo - frontend manejará en vista
+    volumeDiscountAmount: volumeDiscount.savings, // Sin redondeo - frontend manejará en vista
+    finalPricePerUnit: finalPricePerUnit // Sin redondeo - frontend manejará en vista
   };
 }

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import axiosInstance from '../../infrastructure/api/axiosConfig';
 import { API_ENDPOINTS } from '../../constants/apiEndpoints';
-import { useAuth } from '../hooks/useAuth';
 import { AuthService } from '../../core/services/AuthService';
 
 /**
@@ -12,7 +11,6 @@ import { AuthService } from '../../core/services/AuthService';
 const ResetPasswordPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login } = useAuth();
   
   // Obtener parámetros de la URL y el estado
   const queryParams = new URLSearchParams(location.search);

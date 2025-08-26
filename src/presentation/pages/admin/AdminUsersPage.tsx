@@ -18,7 +18,8 @@ import {
 } from "lucide-react";
 import useAdminUsers from "../../hooks/useAdminUsers";
 import type {AdminUserData} from "../../hooks/useAdminUsers";
-import ConfigurationService from "../../../core/services/ConfigurationService";
+import ApiClient from "../../../infrastructure/api/apiClient";
+import { API_ENDPOINTS } from "../../../constants/apiEndpoints";
 
 /**
  * Página de gestión de usuarios para administradores
@@ -34,7 +35,6 @@ const AdminUsersPage: React.FC = () => {
 		makeUserAdmin,
 		makeUserSeller,
 		deleteUser,
-		refreshData,
 		filterUsers,
 	} = useAdminUsers();
 
@@ -240,13 +240,15 @@ const AdminUsersPage: React.FC = () => {
 			setEmailSending(true);
 
 			try {
-				const configService = new ConfigurationService();
-				const result = await configService.sendCustomEmail({
-					user_id: selectedUserForEmail.id,
-					subject: emailSubject.trim(),
-					message: emailMessage.trim(),
-					email_type: emailType,
-				});
+				const result = await ApiClient.post<{status: string; message?: string}>(
+					API_ENDPOINTS.ADMIN.CONFIGURATIONS.MAIL_SEND_CUSTOM,
+					{
+						user_id: selectedUserForEmail.id,
+						subject: emailSubject.trim(),
+						message: emailMessage.trim(),
+						email_type: emailType,
+					}
+				);
 
 				if (result.status === 'success') {
 					setSuccessMessage("Email enviado correctamente.");

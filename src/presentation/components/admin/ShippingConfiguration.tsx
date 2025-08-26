@@ -1,6 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { Truck, Save, AlertTriangle, Info, RefreshCw, DollarSign, Package } from "lucide-react";
-import ConfigurationService, { type ShippingConfig } from "../../../core/services/ConfigurationService";
+import ConfigurationManager from "../../../core/services/ConfigurationManager";
+import ApiClient from "../../../infrastructure/api/apiClient";
+import { API_ENDPOINTS } from "../../../constants/apiEndpoints";
+
+// 🎯 JORDAN: Interface compatible mantenida
+interface ShippingConfig {
+  enabled: boolean;
+  freeThreshold: number;
+  defaultCost: number;
+}
 
 const ShippingConfiguration: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -14,7 +23,8 @@ const ShippingConfiguration: React.FC = () => {
     defaultCost: 5.00,
   });
 
-  const configService = new ConfigurationService();
+  // 🎯 JORDAN: Usar ConfigurationManager unificado
+  const configManager = ConfigurationManager.getInstance();
   
   // No necesitamos contexto complicado
 
@@ -27,12 +37,14 @@ const ShippingConfiguration: React.FC = () => {
     setError(null);
 
     try {
-      const response = await configService.getShippingConfigs();
-      if (response?.status === "success" && response.data) {
-        setConfig(response.data);
-      } else {
-        setError(response?.message || "No se pudieron cargar las configuraciones");
-      }
+      // 🎯 JORDAN: Usar ConfigurationManager para obtener configuración unificada
+      const configResult = await configManager.getUnifiedConfig();
+      const shippingConfig: ShippingConfig = {
+        enabled: configResult.config.shipping.enabled,
+        freeThreshold: configResult.config.shipping.free_threshold,
+        defaultCost: configResult.config.shipping.default_cost
+      };
+      setConfig(shippingConfig);
     } catch (err) {
       console.error("Error al cargar configuraciones de envío:", err);
       setError("No se pudieron cargar las configuraciones. Por favor, inténtalo de nuevo.");
@@ -73,11 +85,18 @@ const ShippingConfiguration: React.FC = () => {
     setError(null);
     setSuccess(null);
 
-    
     try {
-      const response = await configService.updateShippingConfigs(config);
+      // 🎯 JORDAN: Usar endpoint directo para actualizar configuraciones de shipping
+      const response = await ApiClient.post<{status: string; message?: string}>(
+        API_ENDPOINTS.ADMIN.CONFIGURATIONS.SHIPPING,
+        config
+      );
+      
       if (response?.status === "success") {
         setSuccess("Configuración de envío guardada correctamente");
+        
+        // ✅ INVALIDAR CACHE de ConfigurationManager para forzar actualización
+        configManager.invalidateCache();
         
         // ✅ NOTIFICAR A TODAS LAS PESTAÑAS/VENTANAS DEL CAMBIO
         localStorage.setItem('shipping_config_updated', Date.now().toString());

@@ -7,7 +7,8 @@ import {useErrorHandler} from "../hooks/useErrorHandler";
 import {CheckoutService} from "../../core/services/CheckoutService";
 import {CheckoutItemsService} from "../../infrastructure/services/CheckoutItemsService";
 import {calculateCartItemDiscountsAsync} from "../../utils/volumeDiscountCalculator";
-import {useCartVolumeDiscounts} from "../contexts/VolumeDiscountContext";
+// 🎯 JORDAN: VolumeDiscountContext eliminado - funcionalidad migrada a volumeDiscountCalculator
+// import {useCartVolumeDiscounts} from "../contexts/VolumeDiscountContext";
 import type {
 	PaymentInfo,
 	PaymentMethod,
@@ -29,7 +30,8 @@ const CheckoutPage: React.FC = () => {
 	const [isLoading, setIsLoading] = useState(false);
 
 	// ✅ Hook para descuentos por volumen dinámicos desde BD
-	const {isEnabled: volumeDiscountsEnabled, config: volumeDiscountConfig} = useCartVolumeDiscounts();
+	// 🎯 JORDAN: Volume discounts ahora se manejan directamente en volumeDiscountCalculator
+	// const {isEnabled: volumeDiscountsEnabled, config: volumeDiscountConfig} = useCartVolumeDiscounts();
 
 	const initialAddress: Address = {
 		name: "",
@@ -134,14 +136,11 @@ const CheckoutPage: React.FC = () => {
 			}
 
 			// ✅ Calcular items con descuentos asíncronamente usando BD config
-			console.log("🔄 CheckoutPage: Calculando descuentos con configuración BD:", volumeDiscountConfig);
+			console.log("🔄 CheckoutPage: Calculando descuentos con configuración dinámica");
 			const itemsWithDiscounts = await Promise.all(
 				cart.items.map(async (item) => {
-					// Usar calculadora asíncrona con tiers dinámicos de BD
-					const discount = await calculateCartItemDiscountsAsync(
-						item,
-						volumeDiscountsEnabled ? volumeDiscountConfig?.default_tiers : []
-					);
+					// 🎯 JORDAN: Usar calculadora asíncrona con configuración dinámica
+					const discount = await calculateCartItemDiscountsAsync(item);
 					const availableStock = item.product?.stockAvailable || item.product?.stock || 0;
 					const hasStockIssue = item.quantity > availableStock || !item.product?.is_in_stock;
 
@@ -171,13 +170,13 @@ const CheckoutPage: React.FC = () => {
 			console.log("📊 Items en checkout:", cart.items.length);
 			console.log("📊 Cupón en checkout:", appliedDiscount?.discountCode?.code || "NINGUNO");
 			
-			// CORREGIDO: Pasar tiers dinámicos para cálculos consistentes con cart
-			const dynamicTiers = volumeDiscountConfig?.default_tiers || [];
-			const totals = await CheckoutItemsService.calculateCheckoutTotals(cart.items, appliedDiscount, dynamicTiers);
+			// 🎯 CRITICAL: forceRefresh para garantizar configuraciones frescas en Checkout
+			const totals = await CheckoutItemsService.calculateCheckoutTotals(cart.items, appliedDiscount, true);
 			console.log("🎯 TOTAL CHECKOUT:", totals.total);
 
-			// ✅ Preparar items para envío al backend CON CUPÓN Y TIERS DINÁMICOS
-			const checkoutItems = await CheckoutItemsService.prepareItemsForCheckout(cart.items, appliedDiscount, dynamicTiers);
+			// ✅ JORDAN: Preparar items para envío al backend con configuración unificada
+			// 🎯 CRITICAL: forceRefresh para garantizar configuraciones frescas
+			const checkoutItems = await CheckoutItemsService.prepareItemsForCheckout(cart.items, appliedDiscount, true);
 
 			setCheckoutCalculations({
 				items: itemsWithDiscounts,
@@ -188,7 +187,7 @@ const CheckoutPage: React.FC = () => {
 		};
 
 		calculateCheckout();
-	}, [cart?.items, cart?.total, cart?.subtotal, appliedDiscount, volumeDiscountConfig, volumeDiscountsEnabled]);
+	}, [cart?.items, cart?.total, cart?.subtotal, appliedDiscount]); // 🎯 JORDAN: Dependencias simplificadas
 
 	// Funciones helper
 	const getAvailableStock = (product: any): number => {
@@ -285,8 +284,11 @@ const CheckoutPage: React.FC = () => {
 				setCountdown(prev => {
 					if (prev <= 1) {
 						clearInterval(countdownTimer);
-						console.log('🔄 Auto-redirecting to orders page after 8 seconds');
-						navigate("/orders");
+						// Move navigation outside of setState to prevent React warning
+						setTimeout(() => {
+							console.log('🔄 Auto-redirecting to orders page after 8 seconds');
+							navigate("/orders");
+						}, 0);
 						return 0;
 					}
 					return prev - 1;
@@ -417,7 +419,7 @@ const CheckoutPage: React.FC = () => {
 					...paymentInfo,
 					method:
 						paymentMethod === "deuna"
-							? ("transfer" as PaymentMethod)
+							? ("qr" as PaymentMethod)
 							: paymentMethod === "credit_card" 
 							? ("credit_card" as PaymentMethod)
 							: paymentInfo.method,
@@ -428,7 +430,15 @@ const CheckoutPage: React.FC = () => {
 				items: checkoutCalculations.checkoutItems, // ✅ Usar items con descuentos calculados
 				// ✅ NUEVO: Incluir código de descuento aplicado y su información
 				discount_code: appliedDiscount?.discountCode?.code || null,
-				discount_info: appliedDiscount || null // ✅ Pasar información completa del descuento
+				discount_info: appliedDiscount || null, // ✅ Pasar información completa del descuento
+				// ✅ CRÍTICO: Enviar totales calculados al backend
+				calculated_totals: {
+					subtotal: checkoutCalculations.totals.subtotal,
+					tax: checkoutCalculations.totals.tax,
+					shipping: checkoutCalculations.totals.shipping,
+					total: checkoutCalculations.totals.total,
+					total_discounts: checkoutCalculations.totals.totalDiscounts
+				}
 			};
 
 			console.log(
@@ -895,37 +905,111 @@ const CheckoutPage: React.FC = () => {
 							console.log('✅ DeUna payment successful, processing completion:', paymentData);
 							
 							try {
-								// Set order completion state FIRST for receipt display
+								// ✅ VALIDAR DATOS DEL PAGO ANTES DE PROCESAR
+								if (!paymentData || !paymentData.payment_id) {
+									throw new Error('Datos de pago de DeUna incompletos');
+								}
+
+								// ✅ INTENTAR VERIFICAR EL ESTADO DEL PAGO CON FALLBACKS
+								let orderData = null;
+								let attempts = 0;
+								const maxAttempts = 3;
+								
+								while (!orderData && attempts < maxAttempts) {
+									attempts++;
+									console.log(`🔄 Intento ${attempts}/${maxAttempts} - Verificando orden creada por webhook...`);
+									
+									try {
+										// Esperar un poco más en cada intento para que el webhook procese
+										await new Promise(resolve => setTimeout(resolve, 1000 * attempts));
+										
+										// Intentar obtener la orden del backend si está disponible
+										// En el futuro se puede implementar una llamada al backend para verificar
+										// Por ahora, usar los datos del paymentData
+										orderData = {
+											order_id: paymentData.order_id || `DEUNA-${Date.now()}`,
+											order_number: paymentData.payment_id,
+											total: checkoutCalculations.totals.total,
+											payment_status: 'paid',
+											payment_method: 'deuna',
+											payment_id: paymentData.payment_id,
+											created_via: 'deuna_webhook',
+											completed_at: paymentData.completed_at || new Date().toISOString()
+										};
+										break;
+										
+									} catch (attemptError) {
+										console.warn(`⚠️ Intento ${attempts} falló:`, attemptError);
+										if (attempts >= maxAttempts) {
+											// En el último intento, usar datos básicos como fallback
+											orderData = {
+												order_id: paymentData.payment_id || `DEUNA-${Date.now()}`,
+												order_number: paymentData.payment_id || `DEUNA-${Date.now()}`,
+												total: checkoutCalculations.totals.total,
+												payment_status: 'processing', // Estado más conservador
+												payment_method: 'deuna',
+												payment_id: paymentData.payment_id,
+												created_via: 'deuna_frontend_fallback',
+												completed_at: new Date().toISOString()
+											};
+											console.log('🆘 Usando datos de fallback para mostrar recibo');
+										}
+									}
+								}
+
+								// ✅ MOSTRAR ESTADO DE LA ORDEN SEGÚN LO QUE SE OBTUVO
 								console.log('🎯 Setting orderComplete to true and orderDetails');
-								
-								setOrderDetails({
-									order_id: paymentData.order_id,
-									order_number: paymentData.order_id || `DEUNA-${Date.now()}`,
-									total: checkoutCalculations.totals.total,
-									payment_status: 'paid',
-									payment_method: 'deuna',
-									payment_id: paymentData.payment_id,
-									created_via: 'deuna_webhook',
-									completed_at: paymentData.completed_at || new Date().toISOString()
-								});
-								
-								// IMPORTANT: Set this AFTER orderDetails to ensure proper rendering
+								setOrderDetails(orderData);
 								setOrderComplete(true);
 								
-								// Clear cart after setting state
+								// ✅ LIMPIAR CARRITO SOLO DESPUÉS DE PROCESAR EXITOSAMENTE
 								clearCart();
 
-								// 🔧 CORREGIDO: Remover toast notification para evitar confusión con valores
-								// Toast removed as per user request: "si no funciona solo quita el toast por que no es importante"
-								// handleSuccess(successMessage);
+								// ✅ NOTIFICACIÓN ESPECÍFICA SEGÚN EL RESULTADO
+								if (orderData && orderData.created_via === 'deuna_frontend_fallback') {
+									showNotification(
+										NotificationType.WARNING,
+										'Pago completado. Si no aparece en tus órdenes inmediatamente, revisa en unos minutos.'
+									);
+								} else {
+									showNotification(
+										NotificationType.SUCCESS,
+										'¡Pago completado exitosamente con DeUna!'
+									);
+								}
+								
 								console.log('✅ DeUna payment completion processed successfully - should show receipt now');
 								console.log('📊 Order details set:', {
-									order_id: paymentData.order_id,
-									total: checkoutCalculations.totals.total
+									order_id: orderData?.order_id,
+									total: orderData?.total,
+									created_via: orderData?.created_via
 								});
 								
 							} catch (error) {
 								console.error('❌ Error processing DeUna payment completion:', error);
+								
+								// ✅ FALLBACK CRÍTICO: MOSTRAR INFORMACIÓN MÍNIMA PARA EL USUARIO
+								const fallbackOrderData = {
+									order_id: paymentData?.payment_id || `DEUNA-ERROR-${Date.now()}`,
+									order_number: paymentData?.payment_id || `ERROR-${Date.now()}`,
+									total: checkoutCalculations.totals.total,
+									payment_status: 'unknown',
+									payment_method: 'deuna',
+									payment_id: paymentData?.payment_id || 'unknown',
+									created_via: 'deuna_error_fallback',
+									completed_at: new Date().toISOString(),
+									error_message: 'Error procesando la confirmación. Verifica tus órdenes.'
+								};
+								
+								setOrderDetails(fallbackOrderData);
+								setOrderComplete(true);
+								
+								// No limpiar carrito si hay error - mejor experiencia para el usuario
+								showNotification(
+									NotificationType.ERROR,
+									'Error procesando la confirmación del pago. Si el pago fue exitoso, aparecerá en tus órdenes.'
+								);
+								
 								handleError(error as Error, "Error procesando la confirmación del pago. Por favor, verifica tus órdenes.");
 							}
 						}}

@@ -9,6 +9,11 @@ const ModerationConfiguration: React.FC = () => {
   const [success, setSuccess] = useState<string | null>(null);
 
   const [config, setConfig] = useState<ModerationConfig>({
+    auto_approval: true,
+    review_threshold: 3,
+    enable_user_reports: true,
+    auto_suspend_threshold: 5,
+    manual_review_required: false,
     userStrikesThreshold: 3,
     contactScorePenalty: 3,
     businessScoreBonus: 15,
@@ -45,7 +50,7 @@ const ModerationConfiguration: React.FC = () => {
     }
   };
 
-  const handleConfigChange = (field: keyof ModerationConfig, value: number) => {
+  const handleConfigChange = (field: keyof ModerationConfig, value: number | boolean) => {
     setConfig(prev => ({
       ...prev,
       [field]: value

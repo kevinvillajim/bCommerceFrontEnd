@@ -5,6 +5,8 @@ import {GetOrderStatsUseCase} from "../useCases/order/GetOrderStatsUseCase";
 import {UpdateOrderStatusUseCase} from "../useCases/order/UpdateOrderStatusUseCase";
 import {GetOrderDetailUseCase} from "../useCases/order/GetOrderDetailUseCase";
 import {GetUserOrdersUseCase} from "../useCases/order/GetUserOrdersUseCase";
+import ConfigurationManager from '../services/ConfigurationManager';
+import { isNumberEqual } from "../../constants/calculationConfig";
 import type {
 	Order,
 	OrderDetail,
@@ -369,14 +371,18 @@ export class OrderServiceAdapter {
 							0
 						) || 0;
 
-					const taxRate = 0.15;
+					// 🎯 JORDAN: Tax rate dinámico desde configuración
+					const configManager = ConfigurationManager.getInstance();
+					const configResult = await configManager.getUnifiedConfig();
+					const taxRate = configResult.config.tax_rate;
 					const taxAmount = subtotal * taxRate;
 					const calculatedTotal = subtotal + taxAmount;
 
-					if (Math.abs(orderDetail.total - calculatedTotal) > 0.01) {
-						console.warn("⚠️ Diferencia en cálculo de totales, corrigiendo:", {
+					if (!isNumberEqual(orderDetail.total, calculatedTotal)) {
+						console.warn("🔧 OrderServiceAdapter: Corrigiendo diferencia en cálculo de totales:", {
 							original: orderDetail.total,
-							calculated: calculatedTotal
+							calculated: calculatedTotal,
+							difference: Math.abs(orderDetail.total - calculatedTotal)
 						});
 						orderDetail.total = calculatedTotal;
 					}
@@ -403,7 +409,11 @@ export class OrderServiceAdapter {
 		const subtotal = order.subtotal_products || 
 			order.items?.reduce((sum, item) => sum + (item.price * item.quantity), 0) || 0;
 
-		const taxAmount = order.iva_amount || (subtotal * 0.15); // Fallback al 15%
+		// 🎯 JORDAN: Usar ConfigurationManager para fallback dinámico
+		const configManager = ConfigurationManager.getInstance();
+		const config = configManager.getConfigSync(); // Síncrono para adaptación
+		const fallbackTaxRate = config?.tax_rate || 0.15;
+		const taxAmount = order.iva_amount || (subtotal * fallbackTaxRate);
 		const total = order.total || (subtotal + taxAmount);
 
 		// Determinar el número de ítems

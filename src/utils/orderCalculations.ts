@@ -1,10 +1,11 @@
 // src/utils/orderCalculations.ts - Unified order calculation utilities
 
 import { calculateCartItemDiscounts } from './volumeDiscountCalculator';
-import ShippingConfigService from '../core/services/ShippingConfigService';
+// import ShippingConfigService from '../core/services/ShippingConfigService'; // 🎯 JORDAN: Migrado a ConfigurationManager
+import ConfigurationManager from '../core/services/ConfigurationManager';
 
-// Helper function for precise decimal calculations
-function roundToPrecision(value: number, decimals: number = 2): number {
+// Helper function para DISPLAY ÚNICAMENTE - NO usar en cálculos intermedios
+function roundForDisplay(value: number, decimals: number = 2): number {
   return Math.round(value * Math.pow(10, decimals)) / Math.pow(10, decimals);
 }
 
@@ -41,6 +42,10 @@ export async function calculateOrderTotals(
   items: any[], 
   appliedDiscountCode?: { code: string; discount_percentage: number }
 ): Promise<OrderTotals> {
+  // 🎯 JORDAN: Get configuration once for entire calculation
+  const configManager = ConfigurationManager.getInstance();
+  const configResult = await configManager.getUnifiedConfig();
+  
   let originalSubtotal = 0;
   let subtotal = 0;
   let sellerDiscounts = 0;
@@ -50,40 +55,37 @@ export async function calculateOrderTotals(
   items.forEach(item => {
     const discount = calculateCartItemDiscounts(item);
     
-    const originalItemTotal = roundToPrecision(discount.originalPrice * item.quantity);
-    const discountedItemTotal = roundToPrecision(discount.finalPricePerUnit * item.quantity);
-    const sellerDiscountTotal = roundToPrecision(discount.sellerDiscountAmount * item.quantity);
-    const volumeDiscountTotal = roundToPrecision(discount.volumeDiscountAmount * item.quantity);
+    const originalItemTotal = discount.originalPrice * item.quantity; // Sin redondeo - frontend manejará
+    const discountedItemTotal = discount.finalPricePerUnit * item.quantity; // Sin redondeo - frontend manejará
+    const sellerDiscountTotal = discount.sellerDiscountAmount * item.quantity; // Sin redondeo - frontend manejará
+    const volumeDiscountTotal = discount.volumeDiscountAmount * item.quantity; // Sin redondeo - frontend manejará
 
-    originalSubtotal = roundToPrecision(originalSubtotal + originalItemTotal);
-    subtotal = roundToPrecision(subtotal + discountedItemTotal);
-    sellerDiscounts = roundToPrecision(sellerDiscounts + sellerDiscountTotal);
-    volumeDiscounts = roundToPrecision(volumeDiscounts + volumeDiscountTotal);
+    originalSubtotal = originalSubtotal + originalItemTotal; // Sin redondeo - frontend manejará
+    subtotal = subtotal + discountedItemTotal; // Sin redondeo - frontend manejará
+    sellerDiscounts = sellerDiscounts + sellerDiscountTotal; // Sin redondeo - frontend manejará
+    volumeDiscounts = volumeDiscounts + volumeDiscountTotal; // Sin redondeo - frontend manejará
   });
 
   // 2. Apply coupon discount to subtotal
   let couponDiscount = 0;
   if (appliedDiscountCode) {
-    couponDiscount = roundToPrecision(subtotal * (appliedDiscountCode.discount_percentage / 100));
-    subtotal = roundToPrecision(subtotal - couponDiscount);
+    couponDiscount = subtotal * (appliedDiscountCode.discount_percentage / 100); // Sin redondeo - frontend manejará
+    subtotal = subtotal - couponDiscount; // Sin redondeo - frontend manejará
   }
 
-  // 3. Calculate shipping with dynamic configuration
-  const shippingService = ShippingConfigService.getInstance();
-  const shippingConfig = await shippingService.getShippingConfig();
-  
-  const shipping = !shippingConfig.enabled ? 0 : 
-    (subtotal >= shippingConfig.freeThreshold ? 0 : shippingConfig.defaultCost);
+  // 3. Calculate shipping with dynamic configuration - 🎯 JORDAN: Unificado
+  const shipping = !configResult.config.shipping.enabled ? 0 : 
+    (subtotal >= configResult.config.shipping.free_threshold ? 0 : configResult.config.shipping.default_cost);
   const freeShipping = shipping === 0;
 
-  // 4. Calculate tax on subtotal + shipping
-  const taxRate = 0.15; // 15% IVA
-  const subtotalWithShipping = roundToPrecision(subtotal + shipping);
-  const tax = roundToPrecision(subtotalWithShipping * taxRate);
+  // 4. Calculate tax on subtotal + shipping - 🎯 JORDAN: Tax rate dinámico
+  const taxRate = configResult.config.tax_rate;
+  const subtotalWithShipping = subtotal + shipping; // Sin redondeo - frontend manejará
+  const tax = subtotalWithShipping * taxRate; // Sin redondeo - frontend manejará
 
   // 5. Final total
-  const total = roundToPrecision(subtotal + shipping + tax);
-  const totalDiscounts = roundToPrecision(sellerDiscounts + volumeDiscounts + couponDiscount);
+  const total = subtotal + shipping + tax; // Sin redondeo - frontend manejará
+  const totalDiscounts = sellerDiscounts + volumeDiscounts + couponDiscount; // Sin redondeo - frontend manejará
 
   return {
     subtotal,
@@ -113,8 +115,8 @@ export function calculateOrderItem(cartItem: any): OrderItemCalculated {
     quantity: cartItem.quantity,
     price: discount.finalPricePerUnit,
     original_price: discount.originalPrice,
-    discount_amount: roundToPrecision((discount.originalPrice - discount.finalPricePerUnit) * cartItem.quantity),
-    item_total: roundToPrecision(discount.finalPricePerUnit * cartItem.quantity)
+    discount_amount: (discount.originalPrice - discount.finalPricePerUnit) * cartItem.quantity, // Sin redondeo - frontend manejará
+    item_total: discount.finalPricePerUnit * cartItem.quantity // Sin redondeo - frontend manejará
   };
 }
 

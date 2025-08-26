@@ -31,8 +31,10 @@ const QRPaymentForm: React.FC<QRPaymentFormProps> = ({
   const [copySuccess, setCopySuccess] = useState<boolean>(false);
   const [isSimulating, setIsSimulating] = useState<boolean>(false);
   
-  // References for cleanup
+  // 🚨 CRITICAL FIX: References for cleanup - prevent memory leaks
   const pollingRef = React.useRef<any>(null);
+  const timerRef = React.useRef<NodeJS.Timeout | null>(null);
+  const cleanupRefs = React.useRef<(() => void)[]>([]);
 
   // Use prop total if provided, otherwise fallback to cart total
   const total = totalProp ?? cart?.total ?? 0;
@@ -53,12 +55,10 @@ const QRPaymentForm: React.FC<QRPaymentFormProps> = ({
     }
   };
 
-  // Timer countdown effect with automatic cancellation
+  // 🚨 CRITICAL FIX: Timer countdown effect with complete cleanup
   useEffect(() => {
-    let interval: NodeJS.Timeout;
-    
     if (paymentData && isPolling && timeRemaining > 0) {
-      interval = setInterval(() => {
+      const interval = setInterval(() => {
         setTimeRemaining(prev => {
           if (prev <= 1) {
             setIsPolling(false);
@@ -92,12 +92,34 @@ const QRPaymentForm: React.FC<QRPaymentFormProps> = ({
           return prev - 1;
         });
       }, 1000);
+
+      // 🚨 CRITICAL FIX: Store timer reference for cleanup
+      timerRef.current = interval;
+      
+      // Add to cleanup refs
+      cleanupRefs.current.push(() => {
+        if (interval) {
+          clearInterval(interval);
+        }
+      });
     }
 
+    // 🚨 CRITICAL FIX: Complete cleanup function
     return () => {
-      if (interval) clearInterval(interval);
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
     };
   }, [paymentData, isPolling, timeRemaining]);
+
+  // 🚨 CRITICAL FIX: Component unmount cleanup to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      console.log('🚨 QRPaymentForm: Component unmounting, executing critical cleanup');
+      resetPayment();
+    };
+  }, []); // Empty dependency array - only run on unmount
 
   // Format time remaining
   const formatTime = (seconds: number) => {
@@ -284,7 +306,7 @@ const QRPaymentForm: React.FC<QRPaymentFormProps> = ({
     }
   };
 
-  // Reset payment process
+  // 🚨 CRITICAL FIX: Complete reset with all cleanup
   const resetPayment = () => {
     // Cancel active polling
     if (pollingRef.current?.cancel) {
@@ -292,12 +314,30 @@ const QRPaymentForm: React.FC<QRPaymentFormProps> = ({
       pollingRef.current = null;
     }
     
+    // 🚨 CRITICAL FIX: Clear timer to prevent memory leak
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    
+    // 🚨 CRITICAL FIX: Execute all cleanup functions
+    cleanupRefs.current.forEach(cleanup => {
+      try {
+        cleanup();
+      } catch (error) {
+        console.error('Error during cleanup:', error);
+      }
+    });
+    cleanupRefs.current = [];
+    
     setPaymentData(null);
     setError("");
     setCurrentStatus("");
     setIsPolling(false);
     setTimeRemaining(600);
     setCopySuccess(false);
+    
+    console.log('🧹 QRPaymentForm: Complete cleanup executed');
   };
 
   // Cancel payment

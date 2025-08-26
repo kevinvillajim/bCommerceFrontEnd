@@ -38,14 +38,15 @@ export class CheckoutItemsService {
    */
   static async prepareItemsForCheckout(
     cartItems: any[], 
-    appliedDiscount: any = null, 
-    dynamicVolumeTiers?: Array<{quantity: number, discount: number}>
+    appliedDiscount: any = null,
+    forceRefresh: boolean = false
   ): Promise<CheckoutItem[]> {
-    console.log("🛒 CheckoutItemsService - Preparando items con calculadora centralizada");
+    console.log("🛒 JORDAN CheckoutItemsService - Preparando items con configuración unificada", { forceRefresh });
     console.log("🎫 Cupón para items:", appliedDiscount?.discountCode?.code || "NINGUNO");
     
-    // ✅ USAR CALCULADORA CENTRALIZADA CON CUPÓN Y TIERS DINÁMICOS
-    const { items } = await EcommerceCalculator.prepareCheckoutData(cartItems, appliedDiscount, dynamicVolumeTiers);
+    // ✅ JORDAN: USAR CALCULADORA MIGRADA CON CONFIGURACIÓN DINÁMICA
+    // 🎯 CRITICAL: forceRefresh para garantizar configuraciones frescas
+    const { items } = await EcommerceCalculator.prepareCheckoutData(cartItems, appliedDiscount, forceRefresh);
     
     const checkoutItems = items.map((item, index) => {
       console.log(`✅ Item ${index + 1} preparado para checkout:`, {
@@ -68,13 +69,14 @@ export class CheckoutItemsService {
    */
   static async calculateCheckoutTotals(
     cartItems: any[], 
-    appliedDiscount: any = null, 
-    dynamicVolumeTiers?: Array<{quantity: number, discount: number}>
+    appliedDiscount: any = null,
+    forceRefresh: boolean = false
   ): Promise<CheckoutTotals> {
-    console.log("🔍 FLUJO CHECKOUT CORREGIDO - USANDO CALCULADORA CENTRALIZADA:");
+    console.log("🔍 JORDAN - FLUJO CHECKOUT MIGRADO CON CONFIGURACIÓN UNIFICADA:", { forceRefresh });
     
-    // ✅ USAR CALCULADORA CENTRALIZADA CON TIERS DINÁMICOS - MISMA LÓGICA QUE CARTPAGE
-    const result = await EcommerceCalculator.calculateTotals(cartItems, appliedDiscount, dynamicVolumeTiers);
+    // ✅ JORDAN: USAR CALCULADORA MIGRADA - CONFIGURACIÓN DINÁMICA DESDE BD
+    // 🎯 CRITICAL: forceRefresh en puntos críticos (Checkout)
+    const result = await EcommerceCalculator.calculateTotals(cartItems, appliedDiscount, forceRefresh);
     
     console.log("📊 PASO A PASO:");
     console.log(`   1️⃣ Subtotal original (sin descuentos): ${result.step1_originalSubtotal}`);

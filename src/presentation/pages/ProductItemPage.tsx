@@ -31,7 +31,7 @@ import {useErrorHandler} from "../hooks/useErrorHandler";
 import {NotificationType} from "../contexts/CartContext";
 import CacheService from "../../infrastructure/services/CacheService";
 import ApiClient from "../../infrastructure/api/apiClient";
-import {useProductVolumeDiscount} from "../hooks/useVolumeDiscount";
+import {useVolumeDiscounts} from "../hooks/useUnifiedConfig";
 import ProductReviews from "../components/product/ProductReviews";
 import RatingStars from "../components/common/RatingStars";
 
@@ -85,15 +85,41 @@ const ProductItemPage: React.FC = () => {
 	} = useInvalidateCounters();
 
 	// ✅ USAR HOOK CORREGIDO PARA DESCUENTOS POR VOLUMEN
-	const {
-		quantity,
-		setQuantity,
-		discountResult,
-		discountInfo,
-		hasDiscount,
-		finalPrice,
-		totalSavings
-	} = useProductVolumeDiscount(product, 1);
+	// 🎯 JORDAN: Migrado a hook unificado + estado local
+	const [quantity, setQuantity] = useState(1);
+	const { tiers, getDiscountForQuantity } = useVolumeDiscounts();
+	
+	// Calcular descuento dinámico basado en cantidad
+	const applicableDiscount = getDiscountForQuantity(quantity);
+	const hasVolumeDiscount = applicableDiscount > 0;
+	
+	// Usar final_price como base (ya incluye descuento del seller) y aplicar descuento por volumen encima
+	const basePrice = product?.final_price || product?.price || 0;
+	const volumeDiscountedPrice = basePrice * (1 - applicableDiscount);
+	const finalPrice = hasVolumeDiscount ? volumeDiscountedPrice : basePrice;
+	
+	// El descuento total se calcula desde el precio original
+	const originalPrice = product?.price || 0;
+	const hasSellerDiscount = product && product.final_price && product.final_price < product.price;
+	const hasAnyDiscount = hasSellerDiscount || hasVolumeDiscount;
+	
+	const totalSavings = hasVolumeDiscount ? (basePrice - finalPrice) * quantity : 0;
+	
+	// Calcular siguiente tier para compatibilidad
+	const sortedTiers = [...tiers].sort((a, b) => a.quantity - b.quantity);
+	const nextTier = sortedTiers.find(tier => tier.quantity > quantity);
+	const itemsNeededForNext = nextTier ? nextTier.quantity - quantity : 0;
+	
+	// Compatibilidad completa con código existente
+	const discountResult = { 
+		finalPrice, 
+		totalSavings, 
+		hasDiscount: hasVolumeDiscount, // Solo para descuentos por volumen
+		discountPercentage: applicableDiscount * 100, // ✅ CORRECTO: applicableDiscount ya viene como decimal desde hook
+		nextTier,
+		itemsNeededForNext
+	};
+	const discountInfo = { tiers, enabled: tiers.length > 0 };
 
 
 	// ❌ YA NO necesitamos ProductService directo
@@ -254,8 +280,8 @@ const ProductItemPage: React.FC = () => {
 				invalidateRelatedPages();
 
 				let message = `${product!.name} ha sido agregado al carrito`;
-				if (hasDiscount && totalSavings > 0) {
-					message += ` con ${discountResult?.discountPercentage}% de descuento (ahorro: $${totalSavings.toFixed(2)})`;
+				if (hasVolumeDiscount && totalSavings > 0) {
+					message += ` con ${discountResult?.discountPercentage}% de descuento por volumen (ahorro: $${totalSavings.toFixed(2)})`;
 				}
 
 				handleSuccess(message);
@@ -656,20 +682,25 @@ const ProductItemPage: React.FC = () => {
 									<span className="text-3xl font-bold text-primary-700">
 										${finalPrice.toFixed(2)}
 									</span>
-									{hasDiscount && (
+									{hasAnyDiscount && (
 										<span className="ml-3 text-lg text-gray-500 line-through">
-											${(product!.final_price || product!.price).toFixed(2)}
+											${originalPrice.toFixed(2)}
 										</span>
 									)}
-									{hasDiscount && (
+									{hasSellerDiscount && product && (
 										<span className="ml-2 px-2 py-1 bg-green-100 text-green-800 text-sm font-medium rounded">
-											{discountResult?.discountPercentage}% OFF
+											{product.discount_percentage}% OFF
+										</span>
+									)}
+									{hasVolumeDiscount && (
+										<span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded">
+											+{discountResult?.discountPercentage}% Volumen
 										</span>
 									)}
 								</div>
 
 								{/* ✅ MOSTRAR AHORROS ACTUALES */}
-								{hasDiscount && totalSavings > 0 && (
+								{hasVolumeDiscount && totalSavings > 0 && (
 									<div className="flex items-center text-green-600">
 										<Gift size={16} className="mr-1" />
 										<span className="font-medium">
@@ -794,7 +825,7 @@ const ProductItemPage: React.FC = () => {
 											<span className="font-bold text-primary-700">
 												${(finalPrice * quantity).toFixed(2)}
 											</span>
-											{hasDiscount && (
+											{hasVolumeDiscount && (
 												<div className="text-sm text-green-600">
 													(Ahorras ${totalSavings.toFixed(2)})
 												</div>

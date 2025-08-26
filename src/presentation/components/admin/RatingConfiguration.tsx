@@ -45,11 +45,11 @@ const RatingConfigPage = () => {
 				const configs = response.data;
 
 				setAutoApproveAll(
-					(configs["ratings.auto_approve_all"]?.value as boolean) || false
+					Boolean(configs["ratings.auto_approve_all"] || configs.auto_approve_all) || false
 				);
 
 				setAutoApproveThreshold(
-					(configs["ratings.auto_approve_threshold"]?.value as number) || 2
+					Number(configs["ratings.auto_approve_threshold"] || configs.auto_approve_threshold) || 2
 				);
 			} else {
 				// Si no hay datos o hay un error en la respuesta
@@ -91,8 +91,16 @@ const RatingConfigPage = () => {
 
 		try {
 			const response = await configService.updateRatingConfigs({
+				min_rating: 1,
+				max_rating: 5,
+				allow_anonymous: false,
+				require_purchase: true,
+				enable_reviews: true,
+				auto_publish_reviews: true,
 				auto_approve_all: autoApproveAll,
 				auto_approve_threshold: autoApproveThreshold,
+				'ratings.auto_approve_all': autoApproveAll,
+				'ratings.auto_approve_threshold': autoApproveThreshold,
 			});
 
 			if (response?.status === "success") {

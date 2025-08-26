@@ -25,7 +25,8 @@ import {formatCurrency} from "../../utils/formatters/formatCurrency";
 import {calculateCartItemDiscountsAsync, calculateCartItemDiscounts} from "../../utils/volumeDiscountCalculator";
 import {EcommerceCalculator} from "../../utils/ecommerceCalculator";
 import type {CartItemWithDiscounts} from "../../utils/volumeDiscountCalculator";
-import {useCartVolumeDiscounts} from "../contexts/VolumeDiscountContext";
+// 🎯 JORDAN: VolumeDiscountContext eliminado - funcionalidad migrada a volumeDiscountCalculator
+// import {useCartVolumeDiscounts} from "../contexts/VolumeDiscountContext";
 
 // Importar hooks optimizados
 import {useImageCache} from "../hooks/useImageCache";
@@ -68,7 +69,8 @@ const CartPage: React.FC = () => {
 	const {toggleFavorite} = useFavorites();
 
 	// ✅ NUEVO: Hook para descuentos por volumen dinámicos desde BD
-	const {isEnabled: volumeDiscountsEnabled, config: volumeDiscountConfig} = useCartVolumeDiscounts();
+	// 🎯 JORDAN: Volume discounts ahora se manejan directamente en volumeDiscountCalculator
+	// const {isEnabled: volumeDiscountsEnabled, config: volumeDiscountConfig} = useCartVolumeDiscounts();
 
 	// Hook para manejo de errores mejorado
 	const {handleError, handleSuccess, handleStockError} = useErrorHandler({
@@ -76,21 +78,7 @@ const CartPage: React.FC = () => {
 		context: 'CartPage'
 	});
 
-	// Fetch cart data when component mounts
-	useEffect(() => {
-		const loadCartData = async () => {
-			setIsLoading(true);
-			try {
-				await fetchCart();
-			} catch (error) {
-				console.error('Error loading cart data:', error);
-			} finally {
-				setIsLoading(false);
-			}
-		};
-
-		loadCartData();
-	}, [fetchCart]);
+	// ✅ OPTIMIZADO: Solo fetch una vez al montar, sin duplicar con loadCart
 
 	// Hook para actualizaciones optimistas
 	const {
@@ -145,22 +133,19 @@ const CartPage: React.FC = () => {
 	// ✅ CALCULAR DESCUENTOS ASÍNCRONAMENTE USANDO BD CONFIG
 	useEffect(() => {
 		const calculateDiscountsAsync = async () => {
-			if (!cart?.items || !volumeDiscountConfig) {
+			if (!cart?.items) {
 				setCartItemsWithDiscounts([]);
 				return;
 			}
 
 			setLoadingDiscounts(true);
-			console.log("🔄 CartPage: Calculando descuentos con configuración BD:", volumeDiscountConfig);
+			console.log("🔄 CartPage: Calculando descuentos con configuración dinámica");
 
 			try {
 				const itemsWithDiscounts = await Promise.all(
 					cart.items.map(async (item) => {
-						// ✅ Usar calculadora asíncrona con tiers dinámicos de BD
-						const discount = await calculateCartItemDiscountsAsync(
-							item, 
-							volumeDiscountsEnabled ? volumeDiscountConfig?.default_tiers : []
-						);
+						// 🎯 JORDAN: Usar calculadora asíncrona con configuración dinámica
+						const discount = await calculateCartItemDiscountsAsync(item);
 						
 						return {
 							...item,
@@ -190,7 +175,7 @@ const CartPage: React.FC = () => {
 		};
 
 		calculateDiscountsAsync();
-	}, [cart?.items, volumeDiscountConfig, volumeDiscountsEnabled, getProductImage]);
+	}, [cart?.items, getProductImage]); // 🎯 JORDAN: Dependencias simplificadas
 
 	// ✅ ESTADO PARA TOTALES CALCULADOS ASÍNCRONAMENTE
 	const [cartTotals, setCartTotals] = useState({
@@ -223,11 +208,9 @@ const CartPage: React.FC = () => {
 				return;
 			}
 
-			console.log("🔍 FLUJO CART - Usando calculadora centralizada asíncrona");
-			// CORREGIDO: Pasar items originales del carrito (sin descuentos), no cartItemsWithDiscounts
-			// Y pasar también los tiers dinámicos desde BD para garantizar sincronización
-			const dynamicTiers = volumeDiscountConfig?.default_tiers || [];
-			const result = await EcommerceCalculator.calculateTotals(cart.items, appliedDiscount, dynamicTiers);
+			console.log("🔍 JORDAN CART - Usando calculadora migrada con configuración unificada");
+			// 🎯 CRITICAL: forceRefresh para garantizar configuraciones frescas en Cart
+			const result = await EcommerceCalculator.calculateTotals(cart.items, appliedDiscount, true);
 			
 			console.log("🔍 FLUJO CART - Totales finales calculados:");
 			console.log("   💰 Subtotal después de cupón:", result.subtotalAfterCoupon);
@@ -251,13 +234,14 @@ const CartPage: React.FC = () => {
 		};
 
 		calculateCartTotals();
-	}, [cart?.items, appliedDiscount, volumeDiscountConfig]);
+	}, [cart?.items, appliedDiscount]); // 🎯 JORDAN: Dependencias simplificadas
 
 	// Cargar carrito simple - Solo al montar componente
 	useEffect(() => {
 		const loadCart = async () => {
 			setIsLoading(true);
 			try {
+				// ✅ RESTAURADO: fetchCart() necesario ya que CartContext no auto-carga
 				await fetchCart();
 				// Prefetch de datos relacionados después de cargar carrito
 				prefetchCartPageData();
@@ -311,9 +295,8 @@ const CartPage: React.FC = () => {
 						throw new Error("No se pudo actualizar la cantidad");
 					}
 
-					// Invalidar cache y refetch
+					// ✅ OPTIMIZADO: Solo invalidar cache, no refetch (cart context ya se actualiza)
 					invalidateRelatedPages();
-					await fetchCart();
 				} catch (error: any) {
 					console.error("Error al aumentar cantidad:", error);
 					
@@ -357,9 +340,8 @@ const CartPage: React.FC = () => {
 						throw new Error("No se pudo actualizar la cantidad");
 					}
 
-					// Invalidar cache y refetch
+					// ✅ OPTIMIZADO: Solo invalidar cache, no refetch (cart context ya se actualiza)
 					invalidateRelatedPages();
-					await fetchCart();
 				} catch (error: any) {
 					console.error("Error al disminuir cantidad:", error);
 					handleError(error, "No se pudo actualizar la cantidad");
@@ -389,9 +371,8 @@ const CartPage: React.FC = () => {
 				const result = await removeFromCart(id);
 
 				if (result) {
-					// Invalidar cache y refetch
+					// ✅ OPTIMIZADO: Solo invalidar cache, no refetch (cart context ya se actualiza)
 					invalidateRelatedPages();
-					await fetchCart();
 
 					handleSuccess("Producto eliminado del carrito");
 				} else {
@@ -431,9 +412,8 @@ const CartPage: React.FC = () => {
 				const result = await removeFromCart(id);
 
 				if (result) {
-					// Invalidar cache y refetch
+					// ✅ OPTIMIZADO: Solo invalidar cache, no refetch (cart context ya se actualiza)
 					invalidateRelatedPages();
-					await fetchCart();
 
 					handleSuccess("Producto movido a favoritos");
 				} else {
@@ -507,9 +487,8 @@ const CartPage: React.FC = () => {
 			const result = await clearCart();
 
 			if (result) {
-				// Invalidar cache y refetch
+				// ✅ OPTIMIZADO: Solo invalidar cache
 				invalidateRelatedPages();
-				await fetchCart();
 
 				handleSuccess("Carrito vaciado exitosamente");
 			} else {

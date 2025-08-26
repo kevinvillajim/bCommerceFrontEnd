@@ -7,8 +7,9 @@
 import { EcommerceCalculator } from "./ecommerceCalculator";
 import type { CalculationResult } from "./ecommerceCalculator";
 
-// Helper para cálculos precisos (mantenido por compatibilidad)
+// Helper para DISPLAY ÚNICAMENTE - NO usar en cálculos (mantenido por compatibilidad)
 export function roundToPrecision(value: number, decimals: number = 2): number {
+  console.warn("⚠️ roundToPrecision está obsoleto - usar priceFormatter.roundForDisplay() para display");
   return Math.round(value * Math.pow(10, decimals)) / Math.pow(10, decimals);
 }
 
