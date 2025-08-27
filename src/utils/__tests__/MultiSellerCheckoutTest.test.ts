@@ -25,15 +25,21 @@ describe('🏪 MULTISELLER CHECKOUT TEST - FRONTEND', () => {
         enabled: true,
         default_cost: 5.0,
         free_threshold: 50.0,
-        seller_percentage: 80.0, // 80% para un solo seller
-        max_seller_percentage: 40.0 // 40% máximo por seller en multiseller
+        seller_percentage_single: 0.80, // 80% para un solo seller
+        seller_percentage_max_multi: 0.40 // 40% máximo por seller en multiseller
+      },
+      shipping_distribution: {
+        seller_percentage_single: 0.80,
+        seller_percentage_max_multi: 0.40
       },
       volume_discounts: [
         { quantity: 3, discount: 5, label: '3+' },
         { quantity: 5, discount: 8, label: '5+' }, 
         { quantity: 6, discount: 10, label: '6+' },
         { quantity: 10, discount: 15, label: '10+' }
-      ]
+      ],
+      updated_at: new Date().toISOString(),
+      is_valid: true
     };
 
     // Mock robusto del ConfigurationManager
@@ -42,8 +48,9 @@ describe('🏪 MULTISELLER CHECKOUT TEST - FRONTEND', () => {
     // Mock del método getUnifiedConfig directamente
     vi.spyOn(configManager, 'getUnifiedConfig').mockResolvedValue({
       config: mockConfig,
-      source: 'test',
+      source: 'cache' as const,
       is_stale: false,
+      errors: [],
       warnings: []
     });
   });
@@ -148,7 +155,6 @@ describe('🏪 MULTISELLER CHECKOUT TEST - FRONTEND', () => {
     const product2_seller_discount = product2_original_subtotal * (product2.product.discount_percentage / 100);
     const product2_after_seller = product2_original_subtotal - product2_seller_discount;
     // Volumen: 2 unidades < 3 = sin descuento por volumen
-    const product2_volume_discount = 0;
     const product2_final = product2_after_seller;
 
     // Seller 2: Cuaderno (4 unidades con 20% seller discount)

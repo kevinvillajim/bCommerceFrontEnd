@@ -4,6 +4,8 @@
  * Basada en la lógica de EcommerceCalculator pero para items individuales
  */
 
+import { roundForDisplay } from './priceFormatter';
+
 export interface ItemDiscountStep {
   label: string;
   value: number;
@@ -203,9 +205,3 @@ function calculateCouponDiscountFromOrder(
   return { percentage: 0, amount: 0 };
 }
 
-/**
- * Redondeo para DISPLAY ÚNICAMENTE - Este archivo es para presentación
- */
-function roundForDisplayForDisplay(value: number): number {
-  return parseFloat(value.toFixed(2));
-}

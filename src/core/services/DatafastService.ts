@@ -30,6 +30,7 @@ export interface DatafastCheckoutRequest {
 
 export interface DatafastCheckoutResponse {
 	success: boolean;
+	status?: string;
 	data?: {
 		checkout_id: string;
 		widget_url: string;
@@ -48,6 +49,7 @@ export interface DatafastVerifyPaymentRequest {
 
 export interface DatafastVerifyPaymentResponse {
 	success: boolean;
+	status?: string;
 	data?: {
 		order_id: string;
 		order_number: string;

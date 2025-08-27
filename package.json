@@ -5,7 +5,11 @@
 	"scripts": {
 		"dev": "vite",
 		"build": "tsc && vite build",
+		"build:local": "tsc && vite build --mode development",
+		"build:production": "tsc && vite build --mode production",
 		"preview": "vite preview",
+		"preview:local": "vite preview --mode development",
+		"preview:production": "vite preview --mode production",
 		"typecheck": "tsc --noEmit",
 		"test": "vitest"
 	},

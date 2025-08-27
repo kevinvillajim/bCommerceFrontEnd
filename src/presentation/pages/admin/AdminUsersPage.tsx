@@ -81,10 +81,7 @@ const AdminUsersPage: React.FC = () => {
 		searchTerm: searchTerm,
 	});
 
-	// Debug logging
-	React.useEffect(() => {
-		console.log('AdminUsersPage - Users changed:', filteredUsers.length);
-	}, [filteredUsers]);
+	// Debug logging removed to prevent infinite loop
 
 	// Manejar cambio de estado de usuario (bloquear/desbloquear)
 	const handleToggleUserStatus = async (

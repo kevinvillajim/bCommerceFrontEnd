@@ -109,10 +109,6 @@ export function calculateVolumeDiscount(
   };
 }
 
-// Helper function para DISPLAY ÚNICAMENTE - NO usar en cálculos intermedios
-function roundForDisplay(value: number, decimals: number = 2): number {
-  return Math.round(value * Math.pow(10, decimals)) / Math.pow(10, decimals);
-}
 
 /**
  * Calcula descuentos por volumen de manera asíncrona usando configuración de BD

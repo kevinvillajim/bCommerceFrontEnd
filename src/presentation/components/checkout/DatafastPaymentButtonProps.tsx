@@ -273,7 +273,7 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 
 			const script = document.createElement("script");
 			script.id = "datafast-widget-script";
-			script.src = checkoutData?.widget_url || `https://test.oppwa.com/v1/paymentWidgets.js?checkoutId=${checkoutId}`;
+			script.src = checkoutData?.widget_url || `https://eu-test.oppwa.com/v1/paymentWidgets.js?checkoutId=${checkoutId}`;
 			script.async = true;
 
 			script.onload = () => {

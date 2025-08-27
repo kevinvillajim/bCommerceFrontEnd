@@ -23,13 +23,21 @@ describe('🎯 COMPLETE DISCOUNT FLOW TEST - FRONTEND', () => {
       shipping: {
         enabled: true,
         default_cost: 5.0,
-        free_threshold: 50.0
+        free_threshold: 50.0,
+        seller_percentage_single: 0.80,
+        seller_percentage_max_multi: 0.40
+      },
+      shipping_distribution: {
+        seller_percentage_single: 0.80,
+        seller_percentage_max_multi: 0.40
       },
       volume_discounts: [
         { quantity: 3, discount: 5, label: 'Descuento 3+' },
         { quantity: 6, discount: 10, label: 'Descuento 6+' },
         { quantity: 12, discount: 15, label: 'Descuento 12+' }
-      ]
+      ],
+      updated_at: new Date().toISOString(),
+      is_valid: true
     };
 
     // Mock robusto del ConfigurationManager
@@ -38,8 +46,9 @@ describe('🎯 COMPLETE DISCOUNT FLOW TEST - FRONTEND', () => {
     // Mock del método getUnifiedConfig directamente
     vi.spyOn(configManager, 'getUnifiedConfig').mockResolvedValue({
       config: mockConfig,
-      source: 'test',
+      source: 'cache' as const,
       is_stale: false,
+      errors: [],
       warnings: []
     });
   });

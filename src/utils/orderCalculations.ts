@@ -4,10 +4,6 @@ import { calculateCartItemDiscounts } from './volumeDiscountCalculator';
 // import ShippingConfigService from '../core/services/ShippingConfigService'; // 🎯 JORDAN: Migrado a ConfigurationManager
 import ConfigurationManager from '../core/services/ConfigurationManager';
 
-// Helper function para DISPLAY ÚNICAMENTE - NO usar en cálculos intermedios
-function roundForDisplay(value: number, decimals: number = 2): number {
-  return Math.round(value * Math.pow(10, decimals)) / Math.pow(10, decimals);
-}
 
 export interface OrderTotals {
   subtotal: number;
