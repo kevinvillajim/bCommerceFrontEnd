@@ -1,0 +1,517 @@
+/**
+ * Dark Mode Theme for Comersia
+ * Este archivo contiene todas las modificaciones específicas para el modo oscuro
+ */
+
+/* Variables para el modo oscuro */
+.dark {
+  /* Background variables */
+  --bg-main: #121212;
+  --bg-card: #1e1e1e;
+  --bg-elevated: #262626;
+  --bg-input: #2d3748;
+  --bg-hover: #323232;
+  
+  /* Text variables */
+  --text-main: #e2e8f0;
+  --text-secondary: #a0aec0;
+  --text-muted: #718096;
+  
+  /* Border variables */
+  --border-subtle: #2d3748;
+  --border-strong: #4a5568;
+  
+  /* Accent variables */
+  --color-primary-50: #082f49;
+  --color-primary-100: #0c4a6e;
+  --color-primary-200: #075985;
+  --color-primary-300: #0369a1;
+  --color-primary-400: #0284c7;
+  --color-primary-500: #0ea5e9;
+  --color-primary-600: #38bdf8;
+  --color-primary-700: #7dd3fc;
+  --color-primary-800: #bae6fd;
+  --color-primary-900: #e0f2fe;
+  
+  /* Toast variables */
+  --toastify-color-light: #262626;
+  --toastify-text-color-light: #e2e8f0;
+  --toastify-color-dark: #1e1e1e;
+  --toastify-text-color-dark: #ffffff;
+}
+
+/* =================== COMPONENTES BÁSICOS =================== */
+
+/* Fondos */
+.dark body {
+  background-color: var(--bg-main);
+  color: var(--text-main);
+}
+
+.dark .bg-white {
+  background-color: var(--bg-card) !important;
+}
+
+.dark .bg-gray-50 {
+  background-color: var(--bg-main) !important;
+}
+
+.dark .bg-gray-100 {
+  background-color: var(--bg-elevated) !important;
+}
+
+.dark .bg-gray-200 {
+  background-color: #2a2a2a !important;
+}
+
+/* Textos */
+.dark .text-gray-900, 
+.dark .text-gray-800, 
+.dark .text-gray-700 {
+  color: var(--text-main) !important;
+}
+
+.dark .text-gray-600, 
+.dark .text-gray-500 {
+  color: var(--text-secondary) !important;
+}
+
+.dark .text-gray-400 {
+  color: var(--text-muted) !important;
+}
+
+/* Bordes */
+.dark .border, 
+.dark .border-gray-100, 
+.dark .border-gray-200, 
+.dark .border-gray-300 {
+  border-color: var(--border-subtle) !important;
+}
+
+/* Sombras */
+.dark .shadow-sm {
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.3) !important;
+}
+
+.dark .shadow, 
+.dark .shadow-md {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2) !important;
+}
+
+.dark .shadow-lg {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3) !important;
+}
+
+.dark .hover\:shadow:hover, 
+.dark .hover\:shadow-md:hover, 
+.dark .hover\:shadow-lg:hover {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Inputs y Formularios */
+.dark input, 
+.dark select, 
+.dark textarea {
+  background-color: var(--bg-input) !important;
+  border-color: var(--border-subtle) !important;
+  color: var(--text-main) !important;
+}
+
+.dark input:focus, 
+.dark select:focus, 
+.dark textarea:focus {
+  border-color: var(--color-primary-500) !important;
+  --tw-ring-color: var(--color-primary-500) !important;
+}
+
+.dark input::placeholder, 
+.dark textarea::placeholder {
+  color: var(--text-muted) !important;
+}
+
+/* Botones */
+.dark .bg-primary-600 {
+  background-color: #0284c7 !important;
+}
+
+.dark .hover\:bg-primary-700:hover {
+  background-color: #0369a1 !important;
+}
+
+.dark .bg-primary-50 {
+  background-color: rgba(14, 165, 233, 0.1) !important;
+}
+
+.dark .bg-primary-100 {
+  background-color: rgba(14, 165, 233, 0.2) !important;
+}
+
+.dark .text-primary-600 {
+  color: #38bdf8 !important;
+}
+
+.dark .hover\:text-primary-700:hover {
+  color: #7dd3fc !important;
+}
+
+/* Estados de hover */
+.dark .hover\:bg-gray-50:hover, 
+.dark .hover\:bg-gray-100:hover {
+  background-color: var(--bg-hover) !important;
+}
+
+.dark .hover\:text-gray-700:hover, 
+.dark .hover\:text-gray-800:hover {
+  color: var(--text-main) !important;
+}
+
+/* =================== COMPONENTES ESPECÍFICOS =================== */
+
+/* Header y Navbar */
+.dark header {
+  background-color: var(--bg-card) !important;
+  border-bottom-color: var(--border-subtle) !important;
+}
+
+.dark .top-bar {
+  background-color: #111827 !important;
+}
+
+.dark nav {
+  border-color: var(--border-subtle) !important;
+}
+
+/* Footer */
+.dark footer {
+  background-color: #111827 !important;
+}
+
+.dark footer .bg-gradient-to-r,
+.dark footer .bg-gradient-to-t {
+  background: linear-gradient(to right, #111827, #1f2937) !important;
+}
+
+/* Carrusel de imágenes */
+.dark .image-slider img {
+  filter: brightness(0.85);
+}
+
+.dark .image-slider .opacity-60 {
+  opacity: 0.4 !important;
+}
+
+/* Tarjetas de productos */
+.dark .product-card,
+.dark .product-card-wrapper,
+.dark article {
+  background-color: var(--bg-card) !important;
+}
+
+.dark .product-price {
+  color: #38bdf8 !important;
+}
+
+/* Categorías */
+.dark .category-card {
+  background-color: var(--bg-card) !important;
+  border-color: var(--border-subtle) !important;
+}
+
+.dark .category-card:hover {
+  background-color: var(--bg-hover) !important;
+  border-color: var(--border-strong) !important;
+}
+
+.dark .category-icon {
+  background-color: rgba(14, 165, 233, 0.1) !important;
+  color: #38bdf8 !important;
+}
+
+/* Sliders y Carruseles de texto */
+.dark .text-slider {
+  filter: brightness(0.85);
+}
+
+.dark .text-slider h1,
+.dark .text-slider p {
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* Why Us / Features */
+.dark .feature-card {
+  background-color: var(--bg-card) !important;
+}
+
+.dark .feature-icon {
+  background-color: rgba(14, 165, 233, 0.1) !important;
+  color: #38bdf8 !important;
+}
+
+/* ProductFilters */
+.dark .filter-section {
+  background-color: var(--bg-card) !important;
+}
+
+.dark .filter-option:hover {
+  background-color: var(--bg-hover) !important;
+}
+
+.dark .filter-active {
+  background-color: rgba(14, 165, 233, 0.2) !important;
+  color: #38bdf8 !important;
+}
+
+/* User Profile */
+.dark .profile-sidebar {
+  background-color: var(--bg-card) !important;
+}
+
+.dark .profile-tab {
+  background-color: var(--bg-card) !important;
+}
+
+.dark .profile-tab-active {
+  background-color: rgba(14, 165, 233, 0.1) !important;
+  color: #38bdf8 !important;
+}
+
+/* Otras clases utilitarias específicas */
+.dark .badge {
+  background-color: var(--bg-elevated) !important;
+}
+
+.dark .dropdown-menu {
+  background-color: var(--bg-elevated) !important;
+  border-color: var(--border-subtle) !important;
+}
+
+.dark .dropdown-item:hover {
+  background-color: var(--bg-hover) !important;
+}
+
+/* Estilos para sobrescrituras específicas */
+.dark .from-primary-500,
+.dark .to-primary-600,
+.dark .from-primary-600,
+.dark .to-primary-700 {
+  --tw-gradient-from: #0284c7 !important;
+  --tw-gradient-to: #0369a1 !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+
+.dark .from-slate-900,
+.dark .to-gray-800 {
+  --tw-gradient-from: #111827 !important;
+  --tw-gradient-to: #1f2937 !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+
+.dark .bg-gradient-to-r {
+  background-image: linear-gradient(to right, var(--tw-gradient-stops)) !important;
+}
+
+.dark .bg-gradient-to-tr {
+  background-image: linear-gradient(to top right, var(--tw-gradient-stops)) !important;
+}
+
+.dark .bg-gradient-to-bl {
+  background-image: linear-gradient(to bottom left, var(--tw-gradient-stops)) !important;
+}
+
+/* Ajuste para el SVG del footer en modo oscuro */
+.dark footer svg path {
+  fill: var(--bg-main) !important; /* Un color que coincida con el fondo del footer en modo oscuro */
+}
+
+/* Si el footer tiene un color de fondo específico en modo oscuro, usa ese color para el SVG */
+.dark .bg-gray-900 + svg path,
+.dark footer .bg-gray-900 + div svg path {
+  fill: #111827 !important; /* Debe coincidir con bg-gray-900 en modo oscuro */
+}
+
+/* Colores mejorados para el header y footer en modo oscuro */
+
+/* Top Bar en Header */
+.dark .bg-gray-900.text-white.text-sm.py-2,
+.dark .top-bar {
+  background-color: #0f172a !important; /* Azul oscuro profundo - da un buen contraste */
+}
+
+/* Fondo principal del Header */
+.dark header.bg-white {
+  background-color: #1e293b !important; /* Azul oscuro medio - ligeramente más claro que el top bar */
+  border-bottom: 1px solid #334155 !important; /* Borde sutil para separar */
+}
+
+/* Fondo de navegación */
+.dark nav {
+  border-top-color: #334155 !important;
+  background-color: #1e293b !important;
+}
+
+/* Footer principal */
+.dark .bg-gray-900.text-white.pt-16,
+.dark footer .bg-gray-900 {
+  background-color: #0f172a !important; /* Mismo azul oscuro profundo que el top bar */
+}
+
+/* Línea separadora en footer */
+.dark .bg-gradient-to-r.from-gray-900.via-gray-600.to-gray-900,
+.dark footer .h-px.bg-gradient-to-r {
+  background: linear-gradient(to right, #0f172a, #475569, #0f172a) !important;
+}
+
+/* Elementos en el footer */
+.dark footer .rounded-full.bg-gray-800:hover {
+  background-color: #1e40af !important; /* Azul primary al hacer hover para consistencia */
+}
+
+.dark footer .bg-gray-800 {
+  background-color: #1e293b !important; /* Coherencia con el header */
+}
+
+/* Input en footer */
+.dark footer input.bg-gray-800 {
+  background-color: #334155 !important;
+  border: 1px solid #475569 !important;
+}
+
+.dark .text-gray-700.font-medium.hover\:text-primary-600,
+.dark nav a {
+  color: #e2e8f0 !important; /* Texto claro para mejor legibilidad */
+}
+
+.dark .text-gray-700.font-medium.hover\:text-primary-600:hover,
+.dark nav a:hover {
+  color: #38bdf8 !important; /* Color primario claro al hacer hover */
+}
+
+/* Dropdown en el menú de usuario */
+.dark .dropdown-menu,
+.dark .absolute.right-0.mt-2.w-48.bg-white.rounded-lg.shadow-lg.py-2 {
+  background-color: #1e293b !important;
+  border-color: #334155 !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Opciones del dropdown */
+.dark .dropdown-item,
+.dark .flex.items-center.px-4.py-2.text-sm.text-gray-700.hover\:bg-gray-50 {
+  color: #e2e8f0 !important;
+}
+
+.dark .dropdown-item:hover,
+.dark .flex.items-center.px-4.py-2.text-sm.text-gray-700.hover\:bg-gray-50:hover {
+  background-color: #334155 !important;
+}
+
+/* Barra de búsqueda */
+.dark input[type="search"],
+.dark input[type="text"][placeholder*="Buscar"],
+.dark .relative input {
+  background-color: #334155 !important;
+  border-color: #475569 !important;
+  color: #e2e8f0 !important;
+}
+
+.dark input[type="search"]::placeholder,
+.dark input[type="text"][placeholder*="Buscar"]::placeholder {
+  color: #94a3b8 !important;
+}
+
+/* Iconos en header */
+.dark .text-gray-700.hover\:text-primary-600,
+.dark header svg {
+  color: #e2e8f0 !important;
+}
+
+.dark .sun-icon.hover\:text-yellow-400:hover {
+  color: #FFCC00 !important; /* Amarillo intenso para el sol */
+}
+
+.dark .text-gray-700.hover\:text-primary-600:hover,
+.dark header svg:hover {
+  color: #38bdf8 !important;
+}
+
+/* Avatar de usuario y badges */
+.dark .h-8.w-8.bg-primary-100.text-primary-600.rounded-full {
+  background-color: #0d4373 !important;
+  color: #38bdf8 !important;
+}
+
+.dark .absolute.-top-2.-right-2.bg-primary-600.text-white.text-xs.rounded-full {
+  background-color: #0284c7 !important;
+}
+
+/* Botones primarios */
+.dark .bg-primary-600,
+.dark button.bg-primary-600 {
+  background-color: #0284c7 !important; /* Un azul vibrante pero no demasiado brillante */
+}
+
+.dark .hover\:bg-primary-700:hover,
+.dark button.bg-primary-600:hover {
+  background-color: #0369a1 !important; /* Un poco más oscuro al hacer hover */
+}
+
+/* Botones secundarios/outlines */
+.dark .border.border-gray-300.rounded-md.shadow-sm.bg-white,
+.dark button.border.border-gray-300 {
+  border-color: #475569 !important;
+  background-color: #1e293b !important;
+  color: #e2e8f0 !important;
+}
+
+.dark .border.border-gray-300.rounded-md.shadow-sm.bg-white:hover,
+.dark button.border.border-gray-300:hover {
+  background-color: #334155 !important;
+}
+
+/* Enlaces de acción (texto) */
+.dark .text-primary-600,
+.dark a.text-primary-600,
+.dark .font-medium.text-primary-600 {
+  color: #38bdf8 !important; /* Azul más claro para destacar enlaces */
+}
+
+.dark .hover\:text-primary-700:hover,
+.dark a.text-primary-600:hover,
+.dark .font-medium.text-primary-600:hover {
+  color: #7dd3fc !important; /* Aún más claro al hacer hover */
+}
+
+/* Botones en controles de carrusel */
+.dark .rounded-full.border.text-gray-700.border-gray-300.hover\:bg-gray-100 {
+  border-color: #475569 !important;
+  color: #e2e8f0 !important;
+}
+
+.dark .rounded-full.border.text-gray-700.border-gray-300.hover\:bg-gray-100:hover {
+  background-color: #334155 !important;
+}
+
+/* Elementos deshabilitados */
+.dark button:disabled,
+.dark .disabled\:opacity-50:disabled,
+.dark .disabled\:cursor-not-allowed:disabled {
+  opacity: 0.5 !important;
+  background-color: #475569 !important;
+  color: #94a3b8 !important;
+}
+
+/* Badges y etiquetas */
+.dark .bg-primary-50.text-primary-700 {
+  background-color: rgba(2, 132, 199, 0.2) !important;
+  color: #38bdf8 !important;
+}
+
+.dark .bg-red-100.text-red-700 {
+  background-color: rgba(185, 28, 28, 0.2) !important;
+  color: #f87171 !important;
+}
+
+.dark .bg-green-100.text-green-800 {
+  background-color: rgba(6, 95, 70, 0.2) !important;
+  color: #4ade80 !important;
+}

@@ -1,0 +1,16 @@
+---
+deployment:
+  tasks:
+    # Solo dar permisos correctos a los archivos ya compilados
+    - chmod -R 755 /home/capacit3/repositories/bCommerceFrontEnd/dist/
+    
+    # Crear .htaccess para React Router si no existe
+    - |
+      if [ ! -f "/home/capacit3/repositories/bCommerceFrontEnd/dist/.htaccess" ]; then
+        cat > /home/capacit3/repositories/bCommerceFrontEnd/dist/.htaccess << 'EOF'
+      Options -MultiViews
+      RewriteEngine On
+      RewriteCond %{REQUEST_FILENAME} !-f
+      RewriteRule ^ index.html [QSA,L]
+      EOF
+      fi

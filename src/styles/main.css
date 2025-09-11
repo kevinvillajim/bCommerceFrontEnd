@@ -1,0 +1,93 @@
+/* Import Tailwind configuration */
+@import "./tailwind.css";
+@import "./dark-mode.css";
+@import "./chat.css";
+@import "./notification-animations.css";
+
+/* Additional global styles */
+:root {
+  --toastify-color-info: var(--color-primary-500);
+  --toastify-color-success: var(--color-green-500);
+  --toastify-color-warning: var(--color-amber-500);
+  --toastify-color-error: var(--color-red-500);
+
+  --color-primary-50: #f0f9ff;
+  --color-primary-100: #e0f2fe;
+  --color-primary-200: #bae6fd;
+  --color-primary-300: #7dd3fc;
+  --color-primary-400: #38bdf8;
+  --color-primary-500: #0ea5e9;
+  --color-primary-600: #0284c7;
+  --color-primary-700: #0369a1;
+  --color-primary-800: #075985;
+  --color-primary-900: #0c4a6e;
+}
+
+
+
+/* Scrollbar styles */
+@utility scrollbar-thin {
+  &::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: var(--color-gray-100);
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: var(--color-gray-300);
+    border-radius: 3px;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: var(--color-gray-400);
+  }
+}
+
+/* Custom animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.slide-in {
+  animation: slideIn 0.3s ease-in-out;
+}
+
+.category-card {
+  @apply bg-white shadow-md hover:shadow-xl rounded-xl p-6 text-center transition-all duration-300 hover:scale-105 border border-gray-50;
+}
+
+.category-icon {
+  @apply w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center text-gray-600 hover:text-primary-600 hover:bg-primary-50 transition-colors;
+}
+
+.feature-card {
+  @apply bg-white shadow-md hover:shadow-lg rounded-xl p-6 transition-all duration-300 hover:translate-y-[-5px];
+}
+
+.feature-icon {
+  @apply w-14 h-14 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mb-4;
+}
+

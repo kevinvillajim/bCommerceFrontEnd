@@ -1,0 +1,76 @@
+@import "tailwindcss";
+
+/* Theme configuration */
+@theme {
+  /* Colors */
+  --color-primary-50: #f0f9ff;
+  --color-primary-100: #e0f2fe;
+  --color-primary-200: #bae6fd;
+  --color-primary-300: #7dd3fc;
+  --color-primary-400: #38bdf8;
+  --color-primary-500: #0ea5e9;
+  --color-primary-600: #0284c7;
+  --color-primary-700: #0369a1;
+  --color-primary-800: #075985;
+  --color-primary-900: #0c4a6e;
+
+  /* Font family */
+  --font-sans: 'Inter', system-ui, sans-serif;
+  
+  /* Box shadows */
+  --shadow-custom-light: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+}
+
+/* Custom utilities */
+@utility bg-primary-gradient {
+  background: linear-gradient(to right, var(--color-primary-600), var(--color-primary-400));
+}
+
+/* Sources for content detection */
+@source "./src/**/*.{js,ts,jsx,tsx}";
+
+/* Base styles */
+@layer base {
+  html {
+    font-family: var(--font-sans);
+  }
+  
+  body {
+    @apply text-gray-900 bg-gray-50;
+  }
+  
+  h1 {
+    @apply text-3xl font-bold mb-4;
+  }
+  
+  h2 {
+    @apply text-2xl font-semibold mb-3;
+  }
+  
+  h3 {
+    @apply text-xl font-semibold mb-2;
+  }
+}
+
+/* Components */
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center px-4 py-2 rounded-md font-medium transition-colors;
+  }
+  
+  .btn-primary {
+    @apply bg-primary-600 text-white hover:bg-primary-700;
+  }
+  
+  .btn-secondary {
+    @apply bg-gray-200 text-gray-800 hover:bg-gray-300;
+  }
+  
+  .card {
+    @apply bg-white rounded-lg shadow-custom-light p-6;
+  }
+  
+  .input {
+    @apply w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500;
+  }
+}

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- CSP removido para permitir Datafast - Se añade dinámicamente cuando NO estamos en páginas de pago -->
+    <!-- Meta tags para FedCM -->
+  <meta http-equiv="Permissions-Policy" content="identity-credentials-get=*">
+  
+    <title>Comersia</title>
+    <!-- Preload crítico para Google -->
+  <link rel="preconnect" href="https://accounts.google.com">
+  <link rel="preconnect" href="https://www.google.com">
+  
+  <!-- Prefetch del script de Google -->
+  <link rel="prefetch" href="https://accounts.google.com/gsi/client">
+    <script type="module" crossorigin src="/assets/index-C7ooKqFU.js"></script>
+    <link rel="modulepreload" crossorigin href="/assets/react-vendor-Cy458wKG.js">
+    <link rel="modulepreload" crossorigin href="/assets/ui-vendor-BUNMIuFe.js">
+    <link rel="modulepreload" crossorigin href="/assets/admin-chunk-BNcFjXlJ.js">
+    <link rel="modulepreload" crossorigin href="/assets/utils-vendor-DeGC_a19.js">
+    <link rel="modulepreload" crossorigin href="/assets/seller-chunk-6swISJwY.js">
+    <link rel="modulepreload" crossorigin href="/assets/chat-chunk-BRsdDZXf.js">
+    <link rel="modulepreload" crossorigin href="/assets/checkout-chunk-DAros4Zm.js">
+    <link rel="stylesheet" crossorigin href="/assets/index-CrpDlItN.css">
+  </head>
+  <body>
+    <div id="root"></div>
+    
+    <script>
+      // DESACTIVADO COMPLETAMENTE - CSP causa problemas con Datafast
+      // El CSP bloquea los scripts de pago externos necesarios para el procesamiento
+      // NO ACTIVAR CSP hasta resolver completamente la integración con Datafast
+      console.log('🔓 CSP completamente desactivado para permitir scripts de pago externos');
+      
+      // Función para remover cualquier CSP que se intente añadir
+      (function() {
+        // Remover cualquier CSP existente al cargar
+        const removeAllCSP = () => {
+          const cspMetas = document.querySelectorAll('meta[http-equiv="Content-Security-Policy"]');
+          cspMetas.forEach(meta => meta.remove());
+        };
+        
+        // Remover inmediatamente
+        removeAllCSP();
+        
+        // Observar y prevenir que se añadan nuevos CSP
+        const observer = new MutationObserver((mutations) => {
+          mutations.forEach((mutation) => {
+            if (mutation.type === 'childList') {
+              mutation.addedNodes.forEach((node) => {
+                if (node.nodeType === 1 && node.tagName === 'META') {
+                  const httpEquiv = node.getAttribute('http-equiv');
+                  if (httpEquiv && httpEquiv.toLowerCase().includes('content-security')) {
+                    console.log('⚠️ Intento de añadir CSP bloqueado y removido');
+                    node.remove();
+                  }
+                }
+              });
+            }
+          });
+        });
+        
+        observer.observe(document.head, {
+          childList: true,
+          subtree: true
+        });
+      })();
+    </script>
+
+    <!-- Script Google -->
+     <script>
+    // Función para cargar Google OAuth de forma optimizada
+    (function() {
+      const script = document.createElement('script');
+      script.src = 'https://accounts.google.com/gsi/client';
+      script.async = true;
+      script.defer = true;
+      
+      // Configurar callback cuando el script se cargue
+      script.onload = function() {
+        console.log('✅ Google Identity Services cargado');
+        
+        // Configurar FedCM globalmente si está disponible
+        if (window.google && window.google.accounts && window.google.accounts.id) {
+          console.log('✅ FedCM disponible');
+        }
+      };
+      
+      script.onerror = function() {
+        console.error('❌ Error cargando Google Identity Services');
+      };
+      
+      document.head.appendChild(script);
+    })();
+  </script>
+  <!-- Script React -->
+    </body>
+</html>

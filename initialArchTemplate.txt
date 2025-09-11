@@ -1,0 +1,115 @@
+src/
+├── core/                   # Core business logic and domain
+│   ├── domain/             # Domain models and interfaces
+│   │   ├── entities/       # Core business entities
+│   │   │   ├── User.ts
+│   │   │   ├── Product.ts
+│   │   │   ├── Order.ts
+│   │   │   ├── Seller.ts
+│   │   │   └── ...
+│   │   ├── interfaces/     # Interfaces for repositories, services
+│   │   │   ├── IUserRepository.ts
+│   │   │   ├── IProductService.ts
+│   │   │   └── ...
+│   │   └── valueObjects/   # Value objects
+│   │       ├── Money.ts
+│   │       ├── Address.ts
+│   │       └── ...
+│   │
+│   ├── services/           # Application-specific services
+│   │   ├── AuthService.ts
+│   │   ├── ProductService.ts
+│   │   ├── RecommendationService.ts
+│   │   └── ...
+│   │
+│   └── useCases/           # Use case implementations
+│       ├── user/
+│       │   ├── LoginUseCase.ts
+│       │   ├── RegisterUseCase.ts
+│       │   └── UpdateProfileUseCase.ts
+│       ├── product/
+│       │   ├── SearchProductsUseCase.ts
+│       │   ├── CreateProductUseCase.ts
+│       │   └── GetProductDetailsUseCase.ts
+│       └── ...
+│
+├── infrastructure/         # External implementations
+│   ├── repositories/       # Data fetching and storage
+│   │   ├── HttpUserRepository.ts
+│   │   ├── HttpProductRepository.ts
+│   │   └── ...
+│   │
+│   ├── services/           # External service implementations
+│   │   ├── HttpAuthService.ts
+│   │   ├── LocalStorageService.ts
+│   │   └── ...
+│   │
+│   └── api/                # API configuration and utilities
+│       ├── axiosConfig.ts
+│       ├── endpoints.ts
+│       └── apiClient.ts
+│
+├── presentation/           # UI components and logic
+│   ├── components/         # Reusable UI components
+│   │   ├── common/         # Generic components
+│   │   │   ├── Button.tsx
+│   │   │   ├── Input.tsx
+│   │   │   └── ...
+│   │   ├── product/        # Product-specific components
+│   │   │   ├── ProductCard.tsx
+│   │   │   ├── ProductList.tsx
+│   │   │   └── ...
+│   │   ├── user/           # User-related components
+│   │   │   ├── LoginForm.tsx
+│   │   │   ├── ProfileCard.tsx
+│   │   │   └── ...
+│   │   └── ...
+│   │
+│   ├── hooks/              # Custom React hooks
+│   │   ├── useAuth.ts
+│   │   ├── useProducts.ts
+│   │   └── ...
+│   │
+│   ├── contexts/           # React context providers
+│   │   ├── AuthContext.tsx
+│   │   ├── CartContext.tsx
+│   │   └── ...
+│   │
+│   ├── layouts/            # Page layouts
+│   │   ├── MainLayout.tsx
+│   │   ├── DashboardLayout.tsx
+│   │   └── ...
+│   │
+│   └── pages/              # Page components
+│       ├── HomePage.tsx
+│       ├── ProductPage.tsx
+│       ├── UserProfilePage.tsx
+│       └── ...
+│
+├── routes/                 # Routing configuration
+│   ├── PrivateRoute.tsx
+│   ├── PublicRoute.tsx
+│   └── AppRoutes.tsx
+│
+├── utils/                  # Utility functions
+│   ├── formatters/
+│   │   ├── currencyFormatter.ts
+│   │   └── dateFormatter.ts
+│   ├── validators/
+│   │   ├── formValidation.ts
+│   │   └── ...
+│   └── helpers.ts
+│
+├── assets/                 # Static assets
+│   ├── images/
+│   ├── styles/
+│   └── icons/
+│
+├── constants/              # Constant values and enums
+│   ├── routes.ts
+│   ├── apiEndpoints.ts
+│   └── ...
+│
+└── config/                 # Configuration files
+    ├── environment.ts
+    └── appConfig.ts

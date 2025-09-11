@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <!-- Meta tags para FedCM -->
+  <meta http-equiv="Permissions-Policy" content="identity-credentials-get=*">
+  
+    <title>Comersia</title>
+    <!-- Preload crítico para Google -->
+  <link rel="preconnect" href="https://accounts.google.com">
+  <link rel="preconnect" href="https://www.google.com">
+  
+  <!-- Prefetch del script de Google -->
+  <link rel="prefetch" href="https://accounts.google.com/gsi/client">
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <!-- Script Google -->
+     <script>
+    // Función para cargar Google OAuth de forma optimizada
+    (function() {
+      const script = document.createElement('script');
+      script.src = 'https://accounts.google.com/gsi/client';
+      script.async = true;
+      script.defer = true;
+      
+      // Configurar callback cuando el script se cargue
+      script.onload = function() {
+        console.log('✅ Google Identity Services cargado');
+        
+        // Configurar FedCM globalmente si está disponible
+        if (window.google && window.google.accounts && window.google.accounts.id) {
+          console.log('✅ FedCM disponible');
+        }
+      };
+      
+      script.onerror = function() {
+        console.error('❌ Error cargando Google Identity Services');
+      };
+      
+      document.head.appendChild(script);
+    })();
+  </script>
+  <!-- Script React -->
+    <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- Script de validaciones adicionales de Datafast (según documentación oficial) -->
+    <script type="text/javascript" src="https://www.datafast.com.ec/js/dfAdditionalValidations1.js"></script>
+    </body>
+</html>
