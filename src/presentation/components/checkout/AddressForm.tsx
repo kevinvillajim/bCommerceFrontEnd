@@ -46,6 +46,29 @@ const AddressForm: React.FC<AddressFormProps> = ({
 
 				<div className="md:col-span-2">
 					<label
+						htmlFor={`identification-${formId}`}
+						className="block text-sm font-medium text-gray-700 mb-1"
+					>
+						Cédula/RUC *
+					</label>
+					<input
+						type="text"
+						id={`identification-${formId}`}
+						value={address.identification || ""}
+						onChange={(e) => onAddressChange("identification", e.target.value)}
+						className={`w-full px-4 py-2 border rounded-md focus:ring-primary-500 focus:border-primary-500 ${
+							errors.identification ? "border-red-500" : "border-gray-300"
+						}`}
+						placeholder="1234567890 (cédula) o 1234567890001 (RUC)"
+						maxLength={13}
+					/>
+					{errors.identification && (
+						<p className="mt-1 text-sm text-red-500">{errors.identification}</p>
+					)}
+				</div>
+
+				<div className="md:col-span-2">
+					<label
 						htmlFor={`street-${formId}`}
 						className="block text-sm font-medium text-gray-700 mb-1"
 					>

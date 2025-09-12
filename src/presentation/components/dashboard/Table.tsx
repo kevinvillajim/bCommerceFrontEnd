@@ -160,7 +160,7 @@ function Table<T>({
 										))}
 									</tr>
 								</thead>
-								<tbody className="bg-whitedivide-y divide-gray-200">
+								<tbody className="bg-white divide-y divide-gray-200">
 									{filteredAndSortedData.map((item, index) => (
 										<tr
 											key={index}

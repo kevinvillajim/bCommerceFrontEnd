@@ -6,4 +6,5 @@ export interface Address {
 	country: string;
 	name?: string; // Added for full name
 	phone?: string; // Added for phone number
+	identification?: string; // Added for cédula/RUC (SRI requirement)
 }
