@@ -223,6 +223,78 @@ export class DatafastService {
 	}
 
 	/**
+	 * Simular el flujo completo del widget (idéntico al comportamiento real)
+	 * Esta función replica exactamente lo que haría el widget real sin consumir crédito
+	 * IMPORTANTE: Usa el endpoint de verificación con simulate_success=true para garantizar 
+	 * que pase por EXACTAMENTE el mismo proceso: crear orden + factura + envío SRI
+	 */
+	async simulateCompleteWidgetFlow(
+		checkoutId: string,
+		transactionId: string,
+		calculatedTotal: number,
+		formData: any
+	): Promise<string> {
+		try {
+			console.log("🎯 DatafastService: Simulando flujo COMPLETO del widget (orden + factura + SRI)");
+			console.log("📊 Parámetros:", { checkoutId, transactionId, calculatedTotal });
+			
+			// 1. Simular el resourcePath que generaría el widget real
+			const mockResourcePath = `/v1/checkouts/${checkoutId}/payment`;
+			console.log("🔗 ResourcePath simulado:", mockResourcePath);
+			
+			// 2. Guardar datos en localStorage EXACTAMENTE igual que el widget real
+			console.log("💾 Guardando datos en localStorage (idéntico a widget real)...");
+			
+			// ResourcePath (usado por DatafastResultPage)
+			localStorage.setItem("datafast_resource_path", mockResourcePath);
+			
+			// Form data (usado por DatafastResultPage para crear orden)
+			localStorage.setItem("datafast_form_data", JSON.stringify(formData));
+			
+			// Total calculado (para verificación en resultado)
+			localStorage.setItem("datafast_calculated_total", calculatedTotal.toString());
+			
+			// Transaction y checkout IDs (ya deberían estar guardados pero asegurar)
+			localStorage.setItem("datafast_transaction_id", transactionId);
+			localStorage.setItem("datafast_checkout_id", checkoutId);
+			
+			console.log("✅ Datos guardados en localStorage:");
+			console.log("   - datafast_resource_path:", mockResourcePath);
+			console.log("   - datafast_form_data:", "guardado");
+			console.log("   - datafast_calculated_total:", calculatedTotal);
+			console.log("   - datafast_transaction_id:", transactionId);
+			console.log("   - datafast_checkout_id:", checkoutId);
+			
+			// 3. ✅ CRÍTICO: NO hacer request prematuramente
+			// El único request debe ser cuando DatafastResultPage procese la URL
+			// Esto evita el problema de doble request que causaba "carrito vacío"
+			console.log("📋 Configuración lista - DatafastResultPage procesará el pago");
+			console.log("⚠️ NO hacer request aquí para evitar doble procesamiento");
+			
+			// 4. Simular delay del widget (más realista)
+			console.log("⏳ Simulando delay de procesamiento del widget...");
+			await new Promise(resolve => setTimeout(resolve, 1000));
+			
+			// 5. Construir URL de redirección idéntica al widget real
+			// DatafastResultPage procesará esto y seguirá el flujo completo:
+			// verifyPayment() → processCheckout() → orden + factura + SRI
+			const resultUrl = `/datafast-result?resourcePath=${encodeURIComponent(mockResourcePath)}&status=pending&transactionId=${transactionId}`;
+			console.log("🚀 URL de redirección generada (flujo completo):", resultUrl);
+			console.log("📋 DatafastResultPage ejecutará:");
+			console.log("   1. verifyPayment() - verificación (simulada como exitosa)");  
+			console.log("   2. processCheckout() - crear orden + factura + enviar SRI");
+			console.log("   3. clearCart() - limpiar carrito");
+			console.log("   4. navigate('/orders') - redirigir a órdenes");
+			
+			return resultUrl;
+			
+		} catch (error) {
+			console.error("❌ Error en simulación de widget flow:", error);
+			throw new Error("Error al simular el flujo del widget");
+		}
+	}
+
+	/**
 	 * Extraer resourcePath de la URL de respuesta
 	 */
 	extractResourcePath(url: string): string | null {

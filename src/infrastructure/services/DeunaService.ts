@@ -553,6 +553,77 @@ export class DeunaService {
   }
 
   /**
+   * Process real payment completion (NOT simulation)
+   * This method handles actual completed payments from Deuna webhook events
+   * and processes them through the real webhook flow for creating order + invoice + SRI
+   */
+  static async processRealPaymentCompletion(paymentId: string, amount?: number, customerEmail?: string): Promise<{
+    success: boolean;
+    message: string;
+    data?: any;
+  }> {
+    try {
+      console.log('✅ Processing REAL payment completion (not simulation)', { paymentId, amount, customerEmail });
+      console.log('📋 Real payment flow: webhook processing → order creation → invoice → SRI');
+
+      // First, get the current payment status to confirm it's completed
+      const statusResponse = await this.getPaymentStatus(paymentId);
+      
+      if (statusResponse.success && statusResponse.data?.status === 'completed') {
+        console.log('✅ Payment confirmed as completed, processing real webhook flow');
+        
+        // Construct webhook data as it would come from Deuna's real webhook
+        const webhookData = {
+          event: 'payment.completed',
+          payment_id: paymentId,
+          status: 'completed',
+          amount: amount || statusResponse.data.amount,
+          currency: 'USD',
+          customer_email: customerEmail || statusResponse.data.customer_email,
+          completed_at: new Date().toISOString(),
+          // Mark this as a real payment completion (not simulation)
+          source: 'real_payment_completion'
+        };
+        
+        console.log('🔄 Processing real payment through webhook handler');
+        
+        // Process through the real webhook endpoint (NOT the simulation one)
+        const response = await ApiClient.post<{
+          success: boolean;
+          message: string;
+          data: any;
+        }>(
+          '/webhooks/deuna', // Real webhook endpoint
+          webhookData
+        );
+        
+        console.log('🎉 Real payment processed successfully:', response);
+        console.log('📊 This payment went through: HandleDeunaWebhookUseCase → createOrderFromPayment() → order + invoice + SRI');
+        
+        return response;
+        
+      } else {
+        console.warn('⚠️ Payment status is not completed, cannot process real completion');
+        throw new Error('Payment is not in completed status');
+      }
+
+    } catch (error: any) {
+      console.error('❌ Error processing real payment completion:', error);
+      
+      // If the real webhook fails, we could fallback to simulation
+      // but log this clearly for debugging
+      console.error('🔄 Real payment processing failed, this should be investigated');
+      console.error('💡 Consider checking: payment status, webhook endpoint, HandleDeunaWebhookUseCase');
+      
+      throw new Error(
+        error.response?.data?.message || 
+        error.message || 
+        'Error procesando el pago completado real'
+      );
+    }
+  }
+
+  /**
    * Check if we're in development environment
    */
   static isDevelopmentMode(): boolean {

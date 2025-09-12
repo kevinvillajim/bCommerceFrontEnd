@@ -138,23 +138,25 @@ const QRPaymentForm: React.FC<QRPaymentFormProps> = ({
     switch (status) {
       case 'completed':
         setIsPolling(false);
-        console.log('✅ Payment completed successfully, processing order creation');
+        console.log('✅ Payment completed successfully, processing REAL payment completion');
         
-        // Process the payment completion using the SAME method as the test button
+        // ✅ CORRECTED: Process real payment completion using the proper real flow
         const processPayment = async () => {
           try {
             if (paymentData) {
-              console.log('🎯 Processing real QR payment completion using simulation endpoint');
+              console.log('🎯 Processing REAL QR payment completion through actual webhook flow');
+              console.log('📋 This will trigger: webhook → HandleDeunaWebhookUseCase → createOrderFromPayment() → order + invoice + SRI');
               
-              // Use the SAME endpoint that the test button uses (which we know works perfectly)
-              const result = await DeunaService.simulatePaymentSuccess(
+              // Use the REAL payment completion flow (NOT simulation)
+              const result = await DeunaService.processRealPaymentCompletion(
                 paymentData.payment_id,
                 paymentData.amount,
                 user?.email
               );
               
               if (result.success) {
-                console.log('✅ Order created successfully from real QR payment:', result);
+                console.log('✅ Order created successfully from REAL QR payment:', result);
+                console.log('🏆 Real payment processed with complete flow: order + invoice + SRI generation');
               }
             }
             
@@ -302,10 +304,10 @@ const QRPaymentForm: React.FC<QRPaymentFormProps> = ({
         // Start polling for status updates
         setIsPolling(true);
         
-        // Start polling in background (now cancelable)
+        // Start polling in background (now cancelable) - 🔧 FIXED: Reduced frequency to avoid rate limiting
         const polling = DeunaService.pollPaymentStatus(response.data.payment_id, {
-          maxAttempts: 120, // 10 minutes
-          interval: 5000, // 5 seconds
+          maxAttempts: 40, // 10 minutes (40 attempts × 15s = 10 minutes)  
+          interval: 15000, // 15 seconds (reduced from 5s to avoid rate limiting)
           onStatusChange: handleStatusChange
         });
 
@@ -460,9 +462,11 @@ const QRPaymentForm: React.FC<QRPaymentFormProps> = ({
     setError("");
 
     try {
-      console.log('🧪 Simulating payment success for testing purposes');
+      console.log('🧪 SIMULATING payment success for testing purposes');
+      console.log('📋 This will trigger: simulation webhook → HandleDeunaWebhookUseCase → createOrderFromPayment() → order + invoice + SRI');
       
-      // Call the simulation endpoint
+      // ✅ CORRECT: Call the simulation endpoint for testing
+      // This uses /webhooks/deuna/simulate-payment-success endpoint
       const result = await DeunaService.simulatePaymentSuccess(
         paymentData.payment_id,
         paymentData.amount,

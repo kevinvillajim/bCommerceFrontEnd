@@ -6,6 +6,7 @@ import type { InvoiceDetail } from '../../core/useCases/admin/invoice/GetInvoice
 import type { RetryInvoiceResponse } from '../../core/useCases/admin/invoice/RetryInvoiceUseCase';
 import type { InvoiceStatusCheck } from '../../core/useCases/admin/invoice/CheckInvoiceStatusUseCase';
 import type { InvoiceStats } from '../../core/useCases/admin/invoice/GetInvoiceStatsUseCase';
+import type { UpdateInvoiceRequest, UpdateInvoiceResponse } from '../../core/useCases/admin/invoice/UpdateInvoiceUseCase';
 
 export class HttpInvoiceRepository implements InvoiceRepository {
 
@@ -85,6 +86,16 @@ export class HttpInvoiceRepository implements InvoiceRepository {
       return response;
     } catch (error) {
       console.error('Error en HttpInvoiceRepository.getInvoiceStats:', error);
+      throw error;
+    }
+  }
+
+  async updateInvoice(invoiceId: number, updateData: UpdateInvoiceRequest): Promise<ApiResponse<UpdateInvoiceResponse>> {
+    try {
+      const response = await ApiClient.put<UpdateInvoiceResponse>(`/admin/invoices/${invoiceId}`, updateData);
+      return response;
+    } catch (error) {
+      console.error('Error en HttpInvoiceRepository.updateInvoice:', error);
       throw error;
     }
   }

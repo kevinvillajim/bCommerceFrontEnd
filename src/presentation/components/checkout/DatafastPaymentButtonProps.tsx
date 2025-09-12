@@ -13,6 +13,16 @@ import {useDatafastCSP} from "../../hooks/useDatafastCSP";
 interface DatafastPaymentButtonProps {
 	onSuccess?: (orderData: any) => void;
 	onError?: (error: string) => void;
+	shippingAddress?: {
+		name?: string;
+		street?: string;
+		city?: string;
+		state?: string;
+		postalCode?: string;
+		country?: string;
+		phone?: string;
+		identification?: string;
+	};
 }
 
 interface FormData {
@@ -29,29 +39,59 @@ interface FormData {
 const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 	onSuccess,
 	onError,
+	shippingAddress,
 }) => {
 	// 🔓 Desactivar CSP temporalmente para permitir scripts de Datafast
 	useDatafastCSP();
+	
+	// ✅ MAPEO DE PAÍSES: nombres completos a códigos ISO 3166-1 alpha-2
+	const countryMapping: Record<string, string> = {
+		"Ecuador": "EC",
+		"Colombia": "CO", 
+		"Perú": "PE",
+		"Peru": "PE",
+		"Estados Unidos": "US",
+		"United States": "US",
+		"USA": "US",
+		// Si ya viene como código, lo dejamos igual
+		"EC": "EC",
+		"CO": "CO", 
+		"PE": "PE",
+		"US": "US"
+	};
 	
 	const navigate = useNavigate();
 	const {cart, clearCart, showNotification, appliedDiscount} = useCart();
 	const {user} = useAuth();
 	const [isLoading, setIsLoading] = useState(false);
+	// ✅ FUNCIÓN HELPER: Mapear país a código ISO (debe estar antes del useState)
+	const mapCountryCode = (country: string): string => {
+		return countryMapping[country] || country.substring(0, 2).toUpperCase();
+	};
+
 	const [showWidget, setShowWidget] = useState(false);
 	const [checkoutData, setCheckoutData] = useState<any>(null);
 	const [showForm, setShowForm] = useState(false);
 	const [widgetLoaded, setWidgetLoaded] = useState(false);
 	const [calculatedTotals, setCalculatedTotals] = useState<any>(null);
 
-	const [formData, setFormData] = useState<FormData>({
-		address: "Av. Test 123",
-		city: "Quito",
-		country: "EC",
-		given_name: "Juan",
-		middle_name: "Carlos",
-		surname: "Pérez",
-		phone: "0999999999",
-		doc_id: "1234567890",
+	// ✅ FIX: Usar datos de shippingAddress en lugar de hardcodeados
+	const [formData, setFormData] = useState<FormData>(() => {
+		// Separar el nombre completo en partes si está disponible
+		const nameParts = shippingAddress?.name?.split(' ') || [];
+		const firstName = nameParts[0] || "Juan";
+		const lastName = nameParts.slice(1).join(' ') || "Pérez";
+		
+		return {
+			address: shippingAddress?.street || "Av. Test 123",
+			city: shippingAddress?.city || "Quito", 
+			country: mapCountryCode(shippingAddress?.country || "Ecuador"),
+			given_name: firstName,
+			middle_name: "",
+			surname: lastName,
+			phone: shippingAddress?.phone || "0999999999",
+			doc_id: shippingAddress?.identification || "1234567890",
+		};
 	});
 
 	const datafastService = new DatafastService();
@@ -65,6 +105,40 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 			}
 		};
 	}, []);
+
+	// ✅ NUEVO: Actualizar formData cuando cambia shippingAddress
+	useEffect(() => {
+		if (shippingAddress) {
+			const nameParts = shippingAddress.name?.split(' ') || [];
+			const firstName = nameParts[0] || formData.given_name;
+			const lastName = nameParts.slice(1).join(' ') || formData.surname;
+			const mappedCountry = mapCountryCode(shippingAddress.country || "Ecuador");
+			
+			setFormData(prev => ({
+				...prev,
+				address: shippingAddress.street || prev.address,
+				city: shippingAddress.city || prev.city,
+				country: mappedCountry,
+				given_name: firstName,
+				surname: lastName,
+				phone: shippingAddress.phone || prev.phone,
+				doc_id: shippingAddress.identification || prev.doc_id,
+			}));
+			
+			console.log("📍 Datos de dirección actualizados en Datafast:", {
+				from_shippingAddress: shippingAddress,
+				updated_formData: {
+					address: shippingAddress.street,
+					city: shippingAddress.city,
+					country: mappedCountry,
+					given_name: firstName,
+					surname: lastName,
+					phone: shippingAddress.phone,
+					doc_id: shippingAddress.identification,
+				}
+			});
+		}
+	}, [shippingAddress]);
 
 	const handleInputChange = (field: keyof FormData, value: string) => {
 		setFormData((prev) => ({...prev, [field]: value}));
@@ -125,19 +199,26 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 			console.log("💰 Totales calculados para Datafast:", totals);
 			console.log("🛒 Items para Datafast (preparados como Prueba Completa):", checkoutItems);
 			
+			// ✅ FIX DEFINITIVO: Construir customer object condicionalmente
+			const customerData: any = {
+				given_name: formData.given_name,
+				surname: formData.surname,
+				phone: formData.phone,
+				doc_id: formData.doc_id,
+			};
+			
+			// Solo agregar middle_name si realmente tiene valor
+			if (formData.middle_name && formData.middle_name.trim() !== "") {
+				customerData.middle_name = formData.middle_name.trim();
+			}
+			
 			const requestData: DatafastCheckoutRequest = {
 				shipping: {
 					address: formData.address,
 					city: formData.city,
-					country: formData.country.toUpperCase(),
+					country: mapCountryCode(formData.country), // ✅ Usar función de mapeo
 				},
-				customer: {
-					given_name: formData.given_name,
-					middle_name: formData.middle_name,
-					surname: formData.surname,
-					phone: formData.phone,
-					doc_id: formData.doc_id,
-				},
+				customer: customerData,
 				items: checkoutItems,
 				total: totals.total,
 				subtotal: totals.subtotal,
@@ -150,6 +231,12 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 
 			console.log("Iniciando checkout con Datafast...", requestData);
 			console.log("💰 Total enviado a Datafast: $", totals.total);
+			console.log("🔍 DEBUG - Datos específicos que están causando error:");
+			console.log("   - customer.middle_name:", requestData.customer.middle_name !== undefined 
+				? `"${requestData.customer.middle_name}" (tipo: ${typeof requestData.customer.middle_name})` 
+				: "OMITIDO - campo no enviado");
+			console.log("   - shipping.country:", `"${requestData.shipping.country}" (tipo: ${typeof requestData.shipping.country})`);
+			console.log("🔍 DEBUG - Customer completo:", JSON.stringify(requestData.customer, null, 2));
 
 			const response = await datafastService.createCheckout(requestData);
 			console.log("Respuesta del checkout:", response);
@@ -724,82 +811,52 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 			console.log("   - shipping:", testCheckoutData.calculated_totals.shipping);
 			console.log("   - total:", testCheckoutData.calculated_totals.total);
 			console.log("   - total_discounts:", testCheckoutData.calculated_totals.total_discounts);
-			// 🔧 SOLUCIÓN SIMPLE: USAR EL FLUJO NORMAL handleStartPayment EN LUGAR DE CREAR NUEVA LÓGICA
-			console.log("🔄 PRUEBA COMPLETA DATAFAST: Usando handleStartPayment + simulación automática");
+			// ✅ SOLUCIÓN CORREGIDA: Replicar EXACTAMENTE el flujo del widget real
+			console.log("🎯 PRUEBA COMPLETA DATAFAST: Simulando flujo idéntico al widget real");
 
-			// Usar el flujo normal de handleStartPayment que ya funciona
+			// Paso 1: Crear checkout (igual que el widget)
 			await handleStartPayment();
 
-			// Esperar un momento para que el checkout se complete
+			// Paso 2: Esperar a que se complete la creación del checkout
 			setTimeout(async () => {
 				try {
-					// Obtener transaction_id y checkout_id del localStorage (guardado por handleStartPayment)
+					// Obtener datos del checkout creado
 					const transactionId = localStorage.getItem("datafast_transaction_id");
 					const checkoutId = localStorage.getItem("datafast_checkout_id");
 					
-					if (!transactionId) {
-						throw new Error("No se encontró transaction_id para simular pago");
-					}
-					
-					if (!checkoutId) {
-						throw new Error("No se encontró checkout_id para simular pago");
+					if (!transactionId || !checkoutId) {
+						throw new Error("No se encontraron IDs de transacción para continuar con la simulación");
 					}
 
-					console.log("🎯 Simulando pago exitoso automáticamente con:", { checkoutId, transactionId, total: calculatedTotals.total });
-					const simulationResponse = await datafastService.simulateSuccessfulPayment(
+					console.log("🔄 Simulando flujo completo del widget (sin usar crédito)...");
+					
+					// Paso 3: Simular el comportamiento EXACTO del widget real
+					const resultUrl = await datafastService.simulateCompleteWidgetFlow(
 						checkoutId,
 						transactionId,
-						calculatedTotals.total
+						calculatedTotals.total,
+						formData
 					);
 
-					console.log("✅ Respuesta de simulación DATAFAST:", simulationResponse);
+					console.log("✅ Flujo del widget simulado exitosamente");
+					console.log("🚀 Redirigiendo a DatafastResultPage (idéntico al widget real):", resultUrl);
 
-					if (simulationResponse.status === "success") {
-						console.log("🎉 Simulación exitosa - orden DATAFAST creada, limpiando carrito...");
-						clearCart();
-						setShowWidget(false);
-						setShowForm(false);
-
-						showNotification(
-							NotificationType.SUCCESS,
-							"¡Pedido de prueba DATAFAST completado con éxito!"
-						);
-
-						console.log("📊 Detalles COMPLETOS de la orden DATAFAST:", JSON.stringify(simulationResponse.data, null, 2));
-
-						if (simulationResponse.data && typeof simulationResponse.data === 'object') {
-							const orderData = simulationResponse.data as any;
-							console.log("🔍 ANÁLISIS DE LA ORDEN CREADA (DATAFAST):");
-							console.log("📊 Order ID:", orderData.order_id);
-							console.log("📊 Order Number:", orderData.order_number);
-							console.log("📊 Total:", orderData.total);
-							
-							if (orderData.items) {
-								console.log("📊 Items en la orden creada:", orderData.items?.length);
-								orderData.items?.forEach((item: any, index: number) => {
-									console.log(`📋 Order Item ${index + 1}:`, {
-										id: item.id,
-										product_id: item.product_id,
-										product_name: item.product_name,
-										quantity: item.quantity,
-										price: item.price
-									});
-								});
-							}
-						}
-
-						onSuccess?.(simulationResponse.data);
-						navigate("/orders");
-					} else {
-						throw new Error(simulationResponse.message || "Error en simulación de pago DATAFAST");
-					}
+					// Paso 4: Redirigir EXACTAMENTE igual que lo haría el widget real
+					// Esto procesará el resultado a través de DatafastResultPage usando el flujo completo
+					window.location.href = resultUrl;
+					
+					// Ya no necesitamos limpiar el carrito aquí - DatafastResultPage se encargará
+					
 				} catch (simulationError) {
-					console.error("❌ Error en simulación automática:", simulationError);
-					showNotification(NotificationType.ERROR, "Error en simulación automática de pago");
+					console.error("❌ Error en simulación de widget flow:", simulationError);
+					showNotification(
+						NotificationType.ERROR, 
+						"Error al simular el flujo del widget: " + (simulationError as any)?.message
+					);
 				}
-			}, 2000); // Esperar 2 segundos para que se complete el checkout
+			}, 2000); // Tiempo para que se complete el checkout
 
-			// Salir de la función aquí para que no continúe con el código de error
+			// Salir aquí - el flujo continuará en DatafastResultPage
 			return;
 		} catch (error) {
 			console.error("❌ Error COMPLETO en el checkout de prueba (DATAFAST):");

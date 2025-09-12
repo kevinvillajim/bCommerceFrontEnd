@@ -56,6 +56,9 @@ const DatafastResultPage: React.FC = () => {
 	useEffect(() => {
 		const resourcePath = searchParams.get('resourcePath');
 		
+		// ✅ CORRECCIÓN: Declarar cleanupFunction al inicio del scope
+		let cleanupFunction: (() => void) | null = null;
+		
 		// 🚨 VALIDACIÓN #1: Sin resourcePath no hay nada que procesar
 		if (!resourcePath) {
 			console.log("⚠️ No hay resourcePath en la URL");
@@ -117,7 +120,12 @@ const DatafastResultPage: React.FC = () => {
 						}
 					}
 				}, 1000);
-				return () => clearInterval(checkInterval);
+				
+				// Guardar función de limpieza para el useEffect
+				cleanupFunction = () => clearInterval(checkInterval);
+				
+				// ✅ CRÍTICO: Salir completamente cuando está procesando para evitar request duplicado  
+				return;
 			}
 			
 			// Si ya se completó, mostrar resultado
@@ -202,45 +210,67 @@ const DatafastResultPage: React.FC = () => {
 				throw new Error("No se encontró información del pago");
 			}
 			
-			// 🛡️ VERIFICACIÓN CRÍTICA: Si ya hay una orden procesada MUY recientemente, NO hacer nada más
+			// 🛡️ VERIFICACIÓN CRÍTICA MEJORADA: Si ya hay una orden procesada MUY recientemente, NO hacer nada más
 			const existingOrderStr = localStorage.getItem("datafast_order_result");
 			const existingOrderTimestamp = localStorage.getItem("datafast_order_timestamp");
+			const currentTransactionId = localStorage.getItem("datafast_transaction_id");
 			
-			if (existingOrderStr && existingOrderTimestamp) {
+			if (existingOrderStr && existingOrderTimestamp && currentTransactionId) {
 				const orderAge = Date.now() - parseInt(existingOrderTimestamp);
-				// Si la orden tiene menos de 60 segundos, es el segundo montaje de StrictMode
+				// Si la orden tiene menos de 60 segundos, verificar si es la misma transacción
 				if (orderAge < 60000) {
-					console.log("✅ Orden ya procesada hace", Math.round(orderAge/1000), "segundos. Mostrando resultado existente.");
-					const existingOrder = JSON.parse(existingOrderStr);
-					
-					// Actualizar el registro global
-					globalProcessingRecords.set(resourcePath, {
-						processedAt: Date.now(),
-						status: 'completed',
-						orderData: existingOrder
-					});
-					
-					// Mostrar resultado existente
-					setResult({
-						success: true,
-						data: existingOrder,
-						message: "Pago procesado exitosamente"
-					});
-					
-					// Limpiar carrito por si acaso
-					setTimeout(() => {
-						if (cartRef.current && cartRef.current.items.length > 0) {
-							clearCart();
+					try {
+						const existingOrder = JSON.parse(existingOrderStr);
+						
+						// ✅ VERIFICACIÓN ADICIONAL: Comparar transaction_id para evitar conflictos entre transacciones
+						const existingTransactionFromOrder = existingOrder.datafast_transaction_id || existingOrder.transaction_id;
+						
+						console.log("🔍 Verificando transacción duplicada:", {
+							currentTransactionId,
+							existingTransactionFromOrder,
+							orderAge: Math.round(orderAge/1000) + "s",
+							match: existingTransactionFromOrder === currentTransactionId
+						});
+						
+						// Solo salir si es la MISMA transacción
+						if (existingTransactionFromOrder === currentTransactionId) {
+							console.log("✅ MISMA TRANSACCIÓN ya procesada hace", Math.round(orderAge/1000), "segundos. Evitando request duplicado.");
+							
+							// Actualizar el registro global
+							globalProcessingRecords.set(resourcePath, {
+								processedAt: Date.now(),
+								status: 'completed',
+								orderData: existingOrder
+							});
+							
+							// Mostrar resultado existente
+							setResult({
+								success: true,
+								data: existingOrder,
+								message: "Pago procesado exitosamente"
+							});
+							
+							// Limpiar carrito por si acaso
+							setTimeout(() => {
+								if (cartRef.current && cartRef.current.items.length > 0) {
+									clearCart();
+								}
+								showNotification(NotificationType.SUCCESS, "¡Pago completado exitosamente!");
+							}, 100);
+							
+							// Redirigir
+							setTimeout(() => {
+								navigate("/orders");
+							}, 3000);
+							
+							return; // SALIR COMPLETAMENTE - NO HACER MÁS LLAMADAS API
+						} else {
+							console.log("⚠️ Transacción DIFERENTE detectada. Continuando con procesamiento normal.");
 						}
-						showNotification(NotificationType.SUCCESS, "¡Pago completado exitosamente!");
-					}, 100);
-					
-					// Redirigir
-					setTimeout(() => {
-						navigate("/orders");
-					}, 3000);
-					
-					return; // SALIR COMPLETAMENTE - NO HACER MÁS LLAMADAS API
+					} catch (e) {
+						console.error("Error parseando orden existente:", e);
+						// Si hay error, continúar con procesamiento normal
+					}
 				}
 			}
 			
@@ -508,6 +538,7 @@ const DatafastResultPage: React.FC = () => {
 						},
 						shippingAddress: {
 							name: formData.given_name + " " + formData.surname,
+							identification: formData.doc_id || "",
 							street: formData.address,
 							city: formData.city,
 							state: formData.country,
@@ -536,7 +567,9 @@ const DatafastResultPage: React.FC = () => {
 							const finalOrderData = {
 								...verifyResponse.data,
 								order_id: checkoutResponse.data.order_id || verifyResponse.data.order_id,
-								order_number: checkoutResponse.data.order_number || verifyResponse.data.order_number
+								order_number: checkoutResponse.data.order_number || verifyResponse.data.order_number,
+								transaction_id: transactionId,  // ✅ AGREGAR TRANSACTION_ID PARA ANTI-DUPLICACIÓN
+								datafast_transaction_id: transactionId // También con nombre alternativo
 							};
 							
 							// Guardar resultado ANTES de cualquier otra cosa
@@ -713,7 +746,8 @@ const DatafastResultPage: React.FC = () => {
 
 		processDatafastResult();
 		
-		// NO necesitamos cleanup porque usamos variable global
+		// Retornar función de cleanup si existe (para limpiar intervals)
+		return cleanupFunction || undefined;
 	}, [searchParams, navigate]); // ✅ REMOVIDO 'cart' - ahora usando cartRef para evitar bucles
 
 	if (isProcessing) {

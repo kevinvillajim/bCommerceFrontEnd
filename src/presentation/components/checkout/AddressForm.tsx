@@ -138,7 +138,7 @@ const AddressForm: React.FC<AddressFormProps> = ({
 						htmlFor={`postalCode-${formId}`}
 						className="block text-sm font-medium text-gray-700 mb-1"
 					>
-						Código Postal *
+						Código Postal
 					</label>
 					<input
 						type="text"

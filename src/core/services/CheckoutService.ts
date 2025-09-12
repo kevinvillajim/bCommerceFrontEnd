@@ -218,6 +218,13 @@ export class CheckoutService {
 					...checkoutData.payment,
 					method: paymentMethod
 				},
+				// ✅ CUSTOMER: REQUERIDO PARA SRI
+				customer: {
+					given_name: nameParts[0] || '',
+					surname: nameParts.slice(1).join(' ') || '',
+					phone: checkoutData.shippingAddress.phone || '',
+					doc_id: checkoutData.shippingAddress.identification || ''
+				},
 				shipping: {
 					first_name: nameParts[0] || '',
 					last_name: nameParts.slice(1).join(' ') || '',
@@ -227,7 +234,8 @@ export class CheckoutService {
 					city: checkoutData.shippingAddress.city || '',
 					state: checkoutData.shippingAddress.state || '',
 					postal_code: checkoutData.shippingAddress.postalCode || '',
-					country: checkoutData.shippingAddress.country || ''
+					country: checkoutData.shippingAddress.country || '',
+					identification: checkoutData.shippingAddress.identification || ''
 				},
 				seller_id: checkoutData.seller_id,
 				items: items, // ✅ Usar items con precios finales calculados

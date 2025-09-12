@@ -19,7 +19,8 @@ import {
   RotateCcw,
   CreditCard,
   Phone,
-  MapPin
+  MapPin,
+  Edit
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import StatCardList from "../../components/dashboard/StatCardList";
@@ -29,6 +30,7 @@ import { GetInvoiceByIdUseCase, type InvoiceDetail } from "../../../core/useCase
 import { RetryInvoiceUseCase } from "../../../core/useCases/admin/invoice/RetryInvoiceUseCase";
 import { CheckInvoiceStatusUseCase } from "../../../core/useCases/admin/invoice/CheckInvoiceStatusUseCase";
 import { GetInvoiceStatsUseCase, type InvoiceStats } from "../../../core/useCases/admin/invoice/GetInvoiceStatsUseCase";
+import { UpdateInvoiceUseCase, type UpdateInvoiceRequest } from "../../../core/useCases/admin/invoice/UpdateInvoiceUseCase";
 
 // Estados válidos de facturas SRI
 const validStatuses = [
@@ -68,6 +70,10 @@ const AdminInvoicesPage: React.FC = () => {
     const repository = new HttpInvoiceRepository();
     return new GetInvoiceStatsUseCase(repository);
   });
+  const [updateInvoiceUseCase] = useState(() => {
+    const repository = new HttpInvoiceRepository();
+    return new UpdateInvoiceUseCase(repository);
+  });
 
   // Estado de la aplicación
   const [invoices, setInvoices] = useState<AdminInvoice[]>([]);
@@ -93,6 +99,11 @@ const AdminInvoicesPage: React.FC = () => {
   const [selectedInvoice, setSelectedInvoice] = useState<InvoiceDetail | null>(null);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [showPrintOptions, setShowPrintOptions] = useState(false);
+
+  // Modal de edición
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingInvoice, setEditingInvoice] = useState<AdminInvoice | null>(null);
+  const [editFormData, setEditFormData] = useState<UpdateInvoiceRequest>({});
 
   // Estado de acciones
   const [actionLoading, setActionLoading] = useState<{[key: number]: boolean}>({});
@@ -236,6 +247,71 @@ const AdminInvoicesPage: React.FC = () => {
     }
   };
 
+  // Abrir modal de edición
+  const openEditModal = (invoice: AdminInvoice) => {
+    setEditingInvoice(invoice);
+    setEditFormData({
+      customer_name: invoice.customer?.name || '',
+      customer_identification: invoice.customer?.identification || '',
+      customer_email: invoice.customer?.email || '',
+      customer_address: invoice.customer?.address || '',
+      customer_phone: invoice.customer?.phone || '',
+    });
+    setShowEditModal(true);
+  };
+
+  // Cerrar modal de edición
+  const closeEditModal = () => {
+    setShowEditModal(false);
+    setEditingInvoice(null);
+    setEditFormData({});
+  };
+
+  // Guardar cambios de edición
+  const saveEditChanges = async () => {
+    if (!editingInvoice) return;
+
+    try {
+      setActionLoading(prev => ({...prev, [editingInvoice.id]: true}));
+      
+      // Filtrar solo campos que han cambiado y no están vacíos
+      const changedData: UpdateInvoiceRequest = {};
+      if (editFormData.customer_name && editFormData.customer_name !== editingInvoice.customer?.name) {
+        changedData.customer_name = editFormData.customer_name;
+      }
+      if (editFormData.customer_identification && editFormData.customer_identification !== editingInvoice.customer?.identification) {
+        changedData.customer_identification = editFormData.customer_identification;
+      }
+      if (editFormData.customer_email !== editingInvoice.customer?.email) {
+        changedData.customer_email = editFormData.customer_email || undefined;
+      }
+      if (editFormData.customer_address && editFormData.customer_address !== editingInvoice.customer?.address) {
+        changedData.customer_address = editFormData.customer_address;
+      }
+      if (editFormData.customer_phone !== editingInvoice.customer?.phone) {
+        changedData.customer_phone = editFormData.customer_phone || undefined;
+      }
+
+      // Solo actualizar si hay cambios
+      if (Object.keys(changedData).length === 0) {
+        alert('No se detectaron cambios para guardar');
+        return;
+      }
+
+      await updateInvoiceUseCase.execute(editingInvoice.id, changedData);
+      
+      alert('Factura actualizada correctamente');
+      closeEditModal();
+      fetchData(); // Recargar datos
+      
+    } catch (error) {
+      console.error('Error actualizando factura:', error);
+      alert(error instanceof Error ? error.message : 'Error al actualizar la factura');
+    } finally {
+      setActionLoading(prev => ({...prev, [editingInvoice.id]: false}));
+    }
+  };
+
   // Definir columnas de la tabla
   const columns = [
     {
@@ -358,8 +434,20 @@ const AdminInvoicesPage: React.FC = () => {
               <Eye size={18} />
             </button>
 
+            {/* Editar (solo si no está autorizada) */}
+            {invoice.status !== 'AUTHORIZED' && (
+              <button
+                onClick={() => openEditModal(invoice)}
+                disabled={isActionLoading}
+                className="p-1 text-green-600 hover:bg-green-100 rounded-md disabled:opacity-50"
+                title="Editar datos de cliente"
+              >
+                <Edit size={18} />
+              </button>
+            )}
+
             {/* Reintentar (solo si está fallida y puede reintentarse) */}
-            {invoice.status === 'FAILED' && invoice.retry_count < 3 && (
+            {invoice.status === 'FAILED' && invoice.retry_count < 12 && (
               <button
                 onClick={() => retryInvoice(invoice.id)}
                 disabled={isActionLoading}
@@ -606,6 +694,128 @@ const AdminInvoicesPage: React.FC = () => {
           onPageChange: handlePageChange,
         }}
       />
+
+      {/* Modal de Edición de Factura */}
+      {showEditModal && editingInvoice && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+              <h3 className="text-lg font-medium text-gray-900">
+                Editar Factura {editingInvoice.invoice_number}
+              </h3>
+              <button
+                onClick={closeEditModal}
+                className="text-gray-400 hover:text-gray-500"
+                disabled={actionLoading[editingInvoice.id]}
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="p-6">
+              <div className="space-y-4">
+                {/* Nombre del cliente */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Nombre del cliente
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    value={editFormData.customer_name || ''}
+                    onChange={(e) => setEditFormData(prev => ({...prev, customer_name: e.target.value}))}
+                    placeholder="Nombre completo del cliente"
+                  />
+                </div>
+
+                {/* Identificación */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Cédula/RUC
+                  </label>
+                  <input
+                    type="text"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    value={editFormData.customer_identification || ''}
+                    onChange={(e) => setEditFormData(prev => ({...prev, customer_identification: e.target.value}))}
+                    placeholder="Cédula (10 dígitos) o RUC (13 dígitos)"
+                    maxLength={13}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Cédula: 10 dígitos | RUC: 13 dígitos terminado en 001
+                  </p>
+                </div>
+
+                {/* Email */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email (opcional)
+                  </label>
+                  <input
+                    type="email"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    value={editFormData.customer_email || ''}
+                    onChange={(e) => setEditFormData(prev => ({...prev, customer_email: e.target.value}))}
+                    placeholder="email@ejemplo.com"
+                  />
+                </div>
+
+                {/* Dirección */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Dirección
+                  </label>
+                  <textarea
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    rows={3}
+                    value={editFormData.customer_address || ''}
+                    onChange={(e) => setEditFormData(prev => ({...prev, customer_address: e.target.value}))}
+                    placeholder="Dirección completa del cliente"
+                  />
+                </div>
+
+                {/* Teléfono */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Teléfono (opcional)
+                  </label>
+                  <input
+                    type="tel"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    value={editFormData.customer_phone || ''}
+                    onChange={(e) => setEditFormData(prev => ({...prev, customer_phone: e.target.value}))}
+                    placeholder="0999999999"
+                  />
+                </div>
+              </div>
+
+              {/* Acciones */}
+              <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200">
+                <button
+                  onClick={closeEditModal}
+                  disabled={actionLoading[editingInvoice.id]}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={saveEditChanges}
+                  disabled={actionLoading[editingInvoice.id]}
+                  className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 flex items-center"
+                >
+                  {actionLoading[editingInvoice.id] ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      Guardando...
+                    </>
+                  ) : (
+                    'Guardar Cambios'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal de Detalle de Factura */}
       {showInvoiceModal && selectedInvoice && (

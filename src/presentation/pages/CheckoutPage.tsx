@@ -35,6 +35,7 @@ const CheckoutPage: React.FC = () => {
 
 	const initialAddress: Address = {
 		name: "",
+		identification: "",
 		street: "",
 		city: "",
 		state: "",
@@ -334,10 +335,10 @@ const CheckoutPage: React.FC = () => {
 		const validateAddress = (address: Address, prefix: string) => {
 			const requiredFields: (keyof Address)[] = [
 				"name",
+				"identification",
 				"street",
 				"city",
 				"state",
-				"postalCode",
 				"country",
 				"phone",
 			];
@@ -824,7 +825,13 @@ const CheckoutPage: React.FC = () => {
 									type="checkbox"
 									className="form-checkbox h-5 w-5 text-primary-600"
 									checked={useSameAddress}
-									onChange={(e) => setUseSameAddress(e.target.checked)}
+									onChange={(e) => {
+										const checked = e.target.checked;
+										setUseSameAddress(checked);
+										if (!checked) {
+											setBillingAddress({...shippingAddress});
+										}
+									}}
 								/>
 								<span className="ml-2 text-gray-700">
 									Usar la misma dirección para facturación
@@ -893,6 +900,7 @@ const CheckoutPage: React.FC = () => {
 									<DatafastPaymentButton
 										onSuccess={handleDatafastSuccess}
 										onError={handleDatafastError}
+										shippingAddress={shippingAddress}
 									/>
 								}
 							/>

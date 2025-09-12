@@ -4,6 +4,7 @@ import type { InvoiceDetail } from '../../useCases/admin/invoice/GetInvoiceByIdU
 import type { RetryInvoiceResponse } from '../../useCases/admin/invoice/RetryInvoiceUseCase';
 import type { InvoiceStatusCheck } from '../../useCases/admin/invoice/CheckInvoiceStatusUseCase';
 import type { InvoiceStats } from '../../useCases/admin/invoice/GetInvoiceStatsUseCase';
+import type { UpdateInvoiceRequest, UpdateInvoiceResponse } from '../../useCases/admin/invoice/UpdateInvoiceUseCase';
 
 export interface InvoiceRepository {
   getAllInvoices(filters?: InvoiceFilters): Promise<ApiResponse<AdminInvoice[], PaginatedResponse<AdminInvoice>['meta']>>;
@@ -11,4 +12,5 @@ export interface InvoiceRepository {
   retryInvoice(invoiceId: number): Promise<ApiResponse<RetryInvoiceResponse>>;
   checkInvoiceStatus(invoiceId: number): Promise<ApiResponse<InvoiceStatusCheck>>;
   getInvoiceStats(): Promise<ApiResponse<InvoiceStats>>;
+  updateInvoice(invoiceId: number, updateData: UpdateInvoiceRequest): Promise<ApiResponse<UpdateInvoiceResponse>>;
 }
