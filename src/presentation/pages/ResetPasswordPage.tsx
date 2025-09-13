@@ -3,6 +3,7 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import axiosInstance from '../../infrastructure/api/axiosConfig';
 import { API_ENDPOINTS } from '../../constants/apiEndpoints';
 import { AuthService } from '../../core/services/AuthService';
+import { NotificationType } from '../types/NotificationTypes';
 
 /**
  * Página de restablecimiento de contraseña
@@ -132,7 +133,7 @@ const ResetPasswordPage: React.FC = () => {
           navigate('/login', { 
             state: { 
               message: 'Contraseña actualizada. Ahora puedes iniciar sesión con tu nueva contraseña.',
-              type: 'success' 
+              type: NotificationType.SUCCESS 
             } 
           });
         }, 3000);

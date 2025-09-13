@@ -8,6 +8,7 @@ import {CheckoutItemsService} from "../../../infrastructure/services/CheckoutIte
 import type {DatafastCheckoutRequest} from "../../../core/services/DatafastService";
 import type {PaymentMethod, PaymentInfo} from "../../../core/services/CheckoutService";
 import {NotificationType} from "../../contexts/CartContext";
+// import {useToast} from "../UniversalToast"; // TODO: Remove if not used
 import {useDatafastCSP} from "../../hooks/useDatafastCSP";
 
 interface DatafastPaymentButtonProps {
@@ -62,6 +63,7 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 	
 	const navigate = useNavigate();
 	const {cart, clearCart, showNotification, appliedDiscount} = useCart();
+	// const {showToast} = useToast(); // Disponible para uso futuro
 	const {user} = useAuth();
 	const [isLoading, setIsLoading] = useState(false);
 	// ✅ FUNCIÓN HELPER: Mapear país a código ISO (debe estar antes del useState)
@@ -526,7 +528,7 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 									const result = await verifyResponse.json();
 									console.log(`📊 Estado del pago (intento ${checkCount}):`, result.data?.payment_status);
 									
-									if (result.status === 'success' && result.data?.payment_status === 'completed') {
+									if (result.status === NotificationType.SUCCESS && result.data?.payment_status === 'completed') {
 										console.log("🎉 Pago completado exitosamente!");
 										clearInterval(checkInterval);
 										window.location.href = `/datafast-result?status=success&transactionId=${transactionId}`;

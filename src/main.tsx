@@ -7,6 +7,7 @@ import {CartProvider} from "./presentation/contexts/CartContext";
 import {FavoriteProvider} from "./presentation/contexts/FavoriteContext";
 import {NotificationProvider} from "./presentation/contexts/NotificationContext";
 import {ThemeProvider} from "./presentation/contexts/ThemeContext";
+import {UniversalToastProvider} from "./presentation/components/UniversalToast";
 import NotificationWrapper from "./presentation/components/layout/NotificationWrapper";
 import PrefetchService from "./infrastructure/services/PrefetchService";
 
@@ -31,17 +32,19 @@ if (root) {
 		<React.StrictMode>
 			<BrowserRouter>
 				<ThemeProvider>
-					<AuthProvider>
-						<NotificationProvider>
-							<CartProvider>
-								<FavoriteProvider>
-									<NotificationWrapper>
-										<App />
-									</NotificationWrapper>
-								</FavoriteProvider>
-							</CartProvider>
-						</NotificationProvider>
-					</AuthProvider>
+					<UniversalToastProvider defaultPosition="bottom-right" maxToasts={5}>
+						<AuthProvider>
+							<NotificationProvider>
+								<CartProvider>
+									<FavoriteProvider>
+										<NotificationWrapper>
+											<App />
+										</NotificationWrapper>
+									</FavoriteProvider>
+								</CartProvider>
+							</NotificationProvider>
+						</AuthProvider>
+					</UniversalToastProvider>
 				</ThemeProvider>
 			</BrowserRouter>
 		</React.StrictMode>

@@ -19,15 +19,16 @@ import {AuthContext} from "./AuthContext";
 import {CartService} from "../../core/services/CartService";
 import appConfig from "../../config/appConfig";
 import CacheService from "../../infrastructure/services/CacheService";
+import {useToast} from "../components/UniversalToast";
 
-// Tipos para las notificaciones del carrito
-export enum NotificationType {
-	SUCCESS = "success",
-	ERROR = "error",
-	INFO = "info",
-	WARNING = "warning",
-}
+// Importar tipos centralizados
+import { NotificationType } from '../types/NotificationTypes';
 
+// Re-exportar para mantener compatibilidad con archivos existentes
+export { NotificationType };
+
+// Interface mantenida para compatibilidad futura si se necesita
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface CartNotification {
 	id: string;
 	type: NotificationType;
@@ -59,10 +60,8 @@ interface CartContextProps {
 	fetchCart: () => Promise<void>;
 	itemCount: number;
 	totalAmount: number;
-	// Propiedades de notificación
-	notification: CartNotification | null;
+	// Propiedades de notificación (usando UniversalToast)
 	showNotification: (type: NotificationType, message: string) => void;
-	hideNotification: () => void;
 	cartItemCount: number;
 	// ✅ NUEVAS: Propiedades de código de descuento
 	appliedDiscount: AppliedDiscount | null;
@@ -83,9 +82,7 @@ export const CartContext = createContext<CartContextProps>({
 	fetchCart: async () => {},
 	itemCount: 0,
 	totalAmount: 0,
-	notification: null,
 	showNotification: () => {},
-	hideNotification: () => {},
 	cartItemCount: 0,
 	// ✅ NUEVOS: Valores por defecto para descuentos
 	appliedDiscount: null,
@@ -119,19 +116,16 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 	const [error, setError] = useState<string | null>(null);
 	const [itemCount, setItemCount] = useState<number>(0);
 	const [totalAmount, setTotalAmount] = useState<number>(0);
-	const [notification, setNotification] = useState<CartNotification | null>(
-		null
-	);
 	// ✅ NUEVO: Estado para descuentos
 	const [appliedDiscount, setAppliedDiscount] = useState<AppliedDiscount | null>(null);
 
 	const {isAuthenticated} = useContext(AuthContext);
+	const {showToast} = useToast();
 
 	// Referencias para controlar el flujo
 	const isInitialized = useRef(false);
 	const lastCartString = useRef("");
 	const isAuthenticatedRef = useRef(isAuthenticated);
-	const notificationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 	const fetchCartTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 	const isFetchingRef = useRef(false);
 	const cartUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -141,42 +135,20 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 		isAuthenticatedRef.current = isAuthenticated;
 	}, [isAuthenticated]);
 
-	// Función para mostrar una notificación
+	// Función para mostrar una notificación usando UniversalToast
 	const showNotification = useCallback(
 		(type: NotificationType, message: string) => {
-			if (notificationTimeoutRef.current) {
-				clearTimeout(notificationTimeoutRef.current);
-			}
-
-			setNotification({
-				id: Date.now().toString(),
-				type,
-				message,
+			// Usar directamente el enum NotificationType con UniversalToast
+			showToast(type, message, {
+				duration: 3000
 			});
-
-			notificationTimeoutRef.current = setTimeout(() => {
-				setNotification(null);
-				notificationTimeoutRef.current = null;
-			}, 3000);
 		},
-		[]
+		[showToast]
 	);
-
-	// Función para ocultar manualmente la notificación
-	const hideNotification = useCallback(() => {
-		if (notificationTimeoutRef.current) {
-			clearTimeout(notificationTimeoutRef.current);
-			notificationTimeoutRef.current = null;
-		}
-		setNotification(null);
-	}, []);
 
 	// Limpiar temporizadores al desmontar
 	useEffect(() => {
 		return () => {
-			if (notificationTimeoutRef.current) {
-				clearTimeout(notificationTimeoutRef.current);
-			}
 			if (fetchCartTimeoutRef.current) {
 				clearTimeout(fetchCartTimeoutRef.current);
 			}
@@ -828,9 +800,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 				fetchCart,
 				itemCount,
 				totalAmount,
-				notification,
 				showNotification,
-				hideNotification,
 				cartItemCount: itemCount,
 				// ✅ NUEVOS: Propiedades de código de descuento
 				appliedDiscount,
@@ -840,27 +810,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 			}}
 		>
 			{children}
-			{/* Renderizar notificación si existe */}
-			{notification && (
-				<div className="fixed bottom-4 right-4 z-50 max-w-sm">
-					<div
-						className={`px-4 py-3 rounded-lg shadow-lg flex items-center ${
-							notification.type === NotificationType.SUCCESS
-								? "bg-green-600 text-white"
-								: notification.type === NotificationType.ERROR
-									? "bg-red-500 text-white"
-									: notification.type === NotificationType.WARNING
-										? "bg-yellow-500 text-white"
-										: "bg-blue-500 text-white"
-						}`}
-					>
-						<span className="flex-1">{notification.message}</span>
-						<button onClick={hideNotification} className="ml-2 text-white">
-							×
-						</button>
-					</div>
-				</div>
-			)}
+			{/* Las notificaciones ahora se muestran a través del UniversalToast global */}
 		</CartContext.Provider>
 	);
 };

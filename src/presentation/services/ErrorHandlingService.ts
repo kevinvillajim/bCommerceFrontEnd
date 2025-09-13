@@ -1,4 +1,6 @@
 // src/presentation/services/ErrorHandlingService.ts - MEJORADO
+import { NotificationType } from '../types/NotificationTypes';
+
 export interface ApiError {
 	status: string;
 	message: string;
@@ -15,7 +17,7 @@ export interface ErrorResponse {
 
 export interface ErrorHandlingResult {
 	message: string;
-	type: 'error' | 'warning' | 'info';
+	type: NotificationType.ERROR | NotificationType.WARNING | NotificationType.INFO;
 	shouldRetry: boolean;
 }
 
@@ -151,29 +153,29 @@ export class ErrorHandlingService {
 	/**
 	 * Determina el tipo de notificación basado en el error
 	 */
-	static getNotificationType(error: any): 'error' | 'warning' | 'info' {
+	static getNotificationType(error: any): NotificationType.ERROR | NotificationType.WARNING | NotificationType.INFO {
 		const message = error?.response?.data?.message || error?.message || '';
 		const lowerMessage = message.toLowerCase();
 
 		// Warnings para errores de validación o stock
-		if (lowerMessage.includes('stock') || 
+		if (lowerMessage.includes('stock') ||
 			lowerMessage.includes('existencia') ||
 			lowerMessage.includes('cantidad') ||
-			lowerMessage.includes('validation') || 
+			lowerMessage.includes('validation') ||
 			lowerMessage.includes('required')) {
-			return 'warning';
+			return NotificationType.WARNING;
 		}
 
 		// Info para errores de autenticación
-		if (lowerMessage.includes('unauthorized') || 
+		if (lowerMessage.includes('unauthorized') ||
 			lowerMessage.includes('token') ||
 			lowerMessage.includes('login') ||
 			lowerMessage.includes('sesión')) {
-			return 'info';
+			return NotificationType.INFO;
 		}
 
 		// Error por defecto
-		return 'error';
+		return NotificationType.ERROR;
 	}
 
 	/**
@@ -241,10 +243,10 @@ export class ErrorHandlingService {
 	 */
 	static handleStockError(availableStock: number, requestedQuantity: number): ErrorHandlingResult {
 		const message = `Solo hay ${availableStock} unidad${availableStock !== 1 ? 'es' : ''} disponible${availableStock !== 1 ? 's' : ''} en stock. Solicitaste ${requestedQuantity}.`;
-		
+
 		return {
 			message,
-			type: 'warning',
+			type: NotificationType.WARNING,
 			shouldRetry: false
 		};
 	}
@@ -255,10 +257,10 @@ export class ErrorHandlingService {
 	static handleValidationError(validationErrors: Record<string, string[]>): ErrorHandlingResult {
 		const errors = Object.values(validationErrors).flat();
 		const message = errors.length > 0 ? errors.join('. ') : 'Error de validación';
-		
+
 		return {
 			message,
-			type: 'warning',
+			type: NotificationType.WARNING,
 			shouldRetry: false
 		};
 	}

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Mail, RefreshCw, ArrowRight, CheckCircle, AlertCircle } from 'lucide-react';
+import { NotificationType } from '../types/NotificationTypes';
 
 /**
  * Página que se muestra después del registro para informar sobre la verificación de email pendiente
@@ -10,7 +11,7 @@ const EmailVerificationPendingPage: React.FC = () => {
   const location = useLocation();
   
   const [resendLoading, setResendLoading] = useState(false);
-  const [resendMessage, setResendMessage] = useState<{type: 'success' | 'error', text: string} | null>(null);
+  const [resendMessage, setResendMessage] = useState<{type: NotificationType.SUCCESS | NotificationType.ERROR, text: string} | null>(null);
 
   // Obtener email del state de navegación
   const userEmail = (location.state as any)?.email;
@@ -18,7 +19,7 @@ const EmailVerificationPendingPage: React.FC = () => {
   // Función para reenviar email de verificación
   const handleResendVerification = async () => {
     if (!userEmail) {
-      setResendMessage({type: 'error', text: 'No se pudo determinar tu email. Por favor, intenta registrarte nuevamente.'});
+      setResendMessage({type: NotificationType.ERROR, text: 'No se pudo determinar tu email. Por favor, intenta registrarte nuevamente.'});
       return;
     }
 
@@ -37,15 +38,15 @@ const EmailVerificationPendingPage: React.FC = () => {
       const data = await response.json();
 
       if (data.status === 'success') {
-        setResendMessage({type: 'success', text: 'Email de verificación reenviado correctamente. Revisa tu bandeja de entrada.'});
+        setResendMessage({type: NotificationType.SUCCESS, text: 'Email de verificación reenviado correctamente. Revisa tu bandeja de entrada.'});
       } else if (data.status === 'rate_limited') {
-        setResendMessage({type: 'error', text: data.message || 'Debes esperar antes de solicitar otro email.'});
+        setResendMessage({type: NotificationType.ERROR, text: data.message || 'Debes esperar antes de solicitar otro email.'});
       } else {
-        setResendMessage({type: 'error', text: data.message || 'Error al reenviar el email de verificación.'});
+        setResendMessage({type: NotificationType.ERROR, text: data.message || 'Error al reenviar el email de verificación.'});
       }
     } catch (error) {
       console.error('Error al reenviar verificación:', error);
-      setResendMessage({type: 'error', text: 'Error al procesar la solicitud. Inténtalo de nuevo.'});
+      setResendMessage({type: NotificationType.ERROR, text: 'Error al procesar la solicitud. Inténtalo de nuevo.'});
     } finally {
       setResendLoading(false);
     }
@@ -114,12 +115,12 @@ const EmailVerificationPendingPage: React.FC = () => {
           {/* Mensaje de reenvío */}
           {resendMessage && (
             <div className={`p-4 rounded-lg border mb-4 ${
-              resendMessage.type === 'success' 
+              resendMessage.type === NotificationType.SUCCESS 
                 ? 'bg-green-50 border-green-200 text-green-700' 
                 : 'bg-red-50 border-red-200 text-red-700'
             }`}>
               <div className="flex items-center">
-                {resendMessage.type === 'success' ? (
+                {resendMessage.type === NotificationType.SUCCESS ? (
                   <CheckCircle className="h-5 w-5 mr-2" />
                 ) : (
                   <AlertCircle className="h-5 w-5 mr-2" />

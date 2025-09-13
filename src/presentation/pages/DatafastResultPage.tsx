@@ -2,7 +2,8 @@ import React, {useEffect, useState, useRef} from "react";
 import {useNavigate, useSearchParams} from "react-router-dom";
 import {DatafastService} from "../../core/services/DatafastService";
 import {useCart} from "../hooks/useCart";
-import {NotificationType} from "../contexts/CartContext";
+import {useToast} from "../components/UniversalToast";
+import { NotificationType } from '../types/NotificationTypes';
 import {formatCurrency} from "../../utils/formatters/formatCurrency";
 import {CheckoutService} from "../../core/services/CheckoutService";
 import type {PaymentMethod} from "../../core/services/CheckoutService";
@@ -39,7 +40,8 @@ const DatafastResultPage: React.FC = () => {
 	
 	const navigate = useNavigate();
 	const [searchParams] = useSearchParams();
-	const {cart, clearCart, showNotification, appliedDiscount} = useCart();
+	const {cart, clearCart, appliedDiscount} = useCart();
+	const {showToast} = useToast();
 	const {user} = useAuth();
 	const [isProcessing, setIsProcessing] = useState(true);
 	const [result, setResult] = useState<ProcessingResult | null>(null);
@@ -255,7 +257,7 @@ const DatafastResultPage: React.FC = () => {
 								if (cartRef.current && cartRef.current.items.length > 0) {
 									clearCart();
 								}
-								showNotification(NotificationType.SUCCESS, "¡Pago completado exitosamente!");
+								showToast(NotificationType.SUCCESS, '¡Pago completado exitosamente!');
 							}, 100);
 							
 							// Redirigir
@@ -307,7 +309,7 @@ const DatafastResultPage: React.FC = () => {
 							localStorage.removeItem("datafast_cart_backup");
 							
 							setTimeout(() => {
-								showNotification(NotificationType.SUCCESS, "¡Pago completado exitosamente!");
+								showToast(NotificationType.SUCCESS, '¡Pago completado exitosamente!');
 							}, 100);
 							
 							setTimeout(() => {
@@ -435,7 +437,7 @@ const DatafastResultPage: React.FC = () => {
 								});
 								
 								setTimeout(() => {
-									showNotification(NotificationType.SUCCESS, "¡Pago completado exitosamente!");
+									showToast(NotificationType.SUCCESS, '¡Pago completado exitosamente!');
 									navigate("/orders");
 								}, 3000);
 								
@@ -589,8 +591,7 @@ const DatafastResultPage: React.FC = () => {
 							clearCart();
 							
 							// Mostrar notificación de éxito
-							showNotification(
-								NotificationType.SUCCESS,
+							showToast(NotificationType.SUCCESS,
 								"¡Pago y orden completados exitosamente!"
 							);
 							
@@ -676,7 +677,7 @@ const DatafastResultPage: React.FC = () => {
 									localStorage.removeItem("datafast_resource_path");
 									
 									setTimeout(() => {
-										showNotification(NotificationType.SUCCESS, "¡Pago completado exitosamente!");
+										showToast(NotificationType.SUCCESS, '¡Pago completado exitosamente!');
 									}, 100);
 									
 									setTimeout(() => {
@@ -732,7 +733,7 @@ const DatafastResultPage: React.FC = () => {
 
 				// Usar setTimeout para evitar setState durante render
 				setTimeout(() => {
-					showNotification(NotificationType.ERROR, errorMessage);
+					showToast(NotificationType.ERROR, errorMessage);
 				}, 100);
 
 				// Redirigir al carrito después de 8 segundos

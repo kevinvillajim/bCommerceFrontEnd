@@ -67,6 +67,68 @@ interface SriActiveCertificateResponse {
   message?: string;
 }
 
+interface Certificate {
+  id: number;
+  alias: string;
+  subject: string;
+  issuer: string;
+  validFrom: string;
+  validTo: string;
+  isActive: boolean;
+  daysUntilExpiry: number;
+  status: 'vigente' | 'vencido' | 'proximo_vencer';
+  algorithm?: string;
+  keySize?: number;
+  fingerprint?: string;
+  fechaSubida?: string;
+  ultimoUso?: string;
+}
+
+interface CertificateListResponse {
+  success: boolean;
+  data: {
+    certificates: any[]; // Usando any[] porque la estructura del backend es diferente
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      pages: number;
+    };
+  };
+  message?: string;
+}
+
+interface ActivateCertificateResponse {
+  success: boolean;
+  data?: {
+    certificateId: number;
+    alias: string;
+    isActive: boolean;
+    previousActiveId?: number;
+  };
+  message?: string;
+}
+
+interface CertificateLimitsResponse {
+  success: boolean;
+  data: {
+    limits: {
+      maxAllowed: number;
+      currentCount: number;
+      remainingSlots: number;
+      limitReached: boolean;
+    };
+    breakdown: {
+      total: number;
+      active: number;
+      expired: number;
+      inactive: number;
+    };
+    suggestion: string;
+  };
+  message?: string;
+}
+
 export class SriApiClient {
   private static instance: SriApiClient;
   private axiosInstance: AxiosInstance;
@@ -114,6 +176,79 @@ export class SriApiClient {
   }
 
   /**
+   * Ejecuta una operación con retry automático para errores de conexión y autenticación
+   */
+  private async executeWithRetry<T>(operation: (token: string) => Promise<T>, maxRetries: number = 2): Promise<T> {
+    let lastError: any = null;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        // Intentar autenticarse
+        let token = await this.authenticate();
+
+        try {
+          // Ejecutar la operación
+          return await operation(token);
+        } catch (error: any) {
+          lastError = error;
+
+          // Si es error 401, limpiar token y reintentar
+          if (error.response?.status === 401) {
+            console.log(`🔄 Token expirado (intento ${attempt}/${maxRetries}), reautenticando...`);
+            this.authToken = null;
+            continue; // Reintentar
+          }
+
+          // Si es error de conexión, reintentar
+          if (this.isConnectionError(error)) {
+            console.log(`🔄 Error de conexión (intento ${attempt}/${maxRetries}), reintentando...`);
+            this.authToken = null; // Limpiar token para reautenticar
+            await this.delay(1000 * attempt); // Esperar antes de reintentar
+            continue; // Reintentar
+          }
+
+          // Para otros errores, no reintentar
+          throw error;
+        }
+      } catch (authError: any) {
+        lastError = authError;
+
+        // Si es error de conexión en autenticación, reintentar
+        if (this.isConnectionError(authError)) {
+          console.log(`🔄 Error de conexión en autenticación (intento ${attempt}/${maxRetries}), reintentando...`);
+          this.authToken = null;
+          await this.delay(1000 * attempt); // Esperar antes de reintentar
+          continue;
+        }
+
+        // Para otros errores de autenticación, no reintentar
+        throw authError;
+      }
+    }
+
+    // Si llegamos aquí, todos los intentos fallaron
+    throw lastError;
+  }
+
+  /**
+   * Verifica si un error es de conexión
+   */
+  private isConnectionError(error: any): boolean {
+    return error.code === 'ERR_NETWORK' ||
+           error.code === 'ERR_CONNECTION_REFUSED' ||
+           error.code === 'ECONNREFUSED' ||
+           error.message?.includes('Network Error') ||
+           error.message?.includes('connect ECONNREFUSED');
+  }
+
+  /**
+   * Espera un tiempo determinado
+   */
+  private delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  /**
    * Autentica con la API SRI y obtiene JWT token
    */
   private async authenticate(): Promise<string> {
@@ -148,187 +283,80 @@ export class SriApiClient {
   }
 
   /**
-   * Realiza petición GET autenticada con retry en caso de 401
+   * Realiza petición GET autenticada con retry en caso de 401 o errores de conexión
    */
   private async authenticatedGet<T>(url: string): Promise<T> {
-    let token = await this.authenticate();
-    
-    try {
+    return this.executeWithRetry(async (token: string) => {
       const response = await this.axiosInstance.get<T>(url, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
-
       return response.data;
-    } catch (error: any) {
-      // Si es error 401, limpiar token y reautenticar
-      if (error.response?.status === 401) {
-        console.log('🔄 Token expirado, reautenticando...');
-        this.authToken = null; // Limpiar token expirado
-        
-        // Reautenticar y reintentar
-        token = await this.authenticate();
-        const response = await this.axiosInstance.get<T>(url, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-
-        return response.data;
-      }
-      
-      throw error;
-    }
+    });
   }
 
   /**
-   * Realiza petición PUT autenticada con retry en caso de 401
+   * Realiza petición PUT autenticada con retry
    */
   private async authenticatedPut<T>(url: string, data: any): Promise<T> {
-    let token = await this.authenticate();
-    
-    try {
+    return this.executeWithRetry(async (token: string) => {
       const response = await this.axiosInstance.put<T>(url, data, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
-
       return response.data;
-    } catch (error: any) {
-      // Si es error 401, limpiar token y reautenticar
-      if (error.response?.status === 401) {
-        console.log('🔄 Token expirado, reautenticando...');
-        this.authToken = null; // Limpiar token expirado
-        
-        // Reautenticar y reintentar
-        token = await this.authenticate();
-        const response = await this.axiosInstance.put<T>(url, data, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-
-        return response.data;
-      }
-      
-      throw error;
-    }
+    });
   }
 
   /**
-   * Realiza petición POST autenticada con retry en caso de 401
+   * Realiza petición POST autenticada con retry
    */
   private async authenticatedPost<T>(url: string, data: any, config?: any): Promise<T> {
-    let token = await this.authenticate();
-    
-    try {
+    return this.executeWithRetry(async (token: string) => {
       const headers = {
         'Authorization': `Bearer ${token}`,
         ...config?.headers
       };
-      
+
       console.log('🔗 Realizando POST a:', url);
       console.log('🎫 Token:', token.substring(0, 20) + '...');
-      console.log('📋 Headers enviados:', headers);
-      console.log('📦 Tipo de data:', typeof data, data instanceof FormData ? 'FormData' : 'other');
-      console.log('⚙️ Config completo:', {
-        ...config,
-        headers: headers
-      });
-      
+
       const requestConfig = {
         headers,
         ...config
       };
-      
+
       // Para FormData, asegurar que los headers no se pierdan en CORS
       if (data instanceof FormData) {
         console.log('🔧 Configurando petición FormData con headers CORS seguros');
         requestConfig.withCredentials = false;
-        // Asegurar que Authorization header se mantenga
         requestConfig.headers = {
           ...requestConfig.headers,
           'Authorization': headers['Authorization']
         };
       }
-      
-      console.log('🚀 Config final de request:', requestConfig);
 
       const response = await this.axiosInstance.post<T>(url, data, requestConfig);
 
       console.log('✅ POST exitoso:', response.status);
       return response.data;
-    } catch (error: any) {
-      // Si es error 401, limpiar token y reautenticar
-      if (error.response?.status === 401) {
-        console.log('🔄 Token expirado, reautenticando...');
-        this.authToken = null; // Limpiar token expirado
-        
-        // Reautenticar y reintentar
-        token = await this.authenticate();
-        
-        const retryConfig = {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            ...config?.headers
-          },
-          ...config
-        };
-        
-        // Para FormData, asegurar que los headers no se pierdan en CORS (retry)
-        if (data instanceof FormData) {
-          console.log('🔧 Configurando retry FormData con headers CORS seguros');
-          retryConfig.withCredentials = false;
-          retryConfig.headers = {
-            ...retryConfig.headers,
-            'Authorization': `Bearer ${token}`
-          };
-        }
-        
-        const response = await this.axiosInstance.post<T>(url, data, retryConfig);
-
-        return response.data;
-      }
-      
-      throw error;
-    }
+    });
   }
 
   /**
-   * Realiza petición DELETE autenticada con retry en caso de 401
+   * Realiza petición DELETE autenticada con retry
    */
   private async authenticatedDelete<T>(url: string): Promise<T> {
-    let token = await this.authenticate();
-    
-    try {
+    return this.executeWithRetry(async (token: string) => {
       const response = await this.axiosInstance.delete<T>(url, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
-
       return response.data;
-    } catch (error: any) {
-      // Si es error 401, limpiar token y reautenticar
-      if (error.response?.status === 401) {
-        console.log('🔄 Token expirado, reautenticando...');
-        this.authToken = null; // Limpiar token expirado
-        
-        // Reautenticar y reintentar
-        token = await this.authenticate();
-        const response = await this.axiosInstance.delete<T>(url, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-
-        return response.data;
-      }
-      
-      throw error;
-    }
+    });
   }
 
   /**
@@ -470,11 +498,67 @@ export class SriApiClient {
   }
 
   /**
+   * Lista todos los certificados del usuario
+   */
+  public async listCertificates(page = 1, limit = 50): Promise<CertificateListResponse> {
+    try {
+      console.log('📋 Obteniendo lista de certificados desde API SRI...', { page, limit });
+
+      const response = await this.authenticatedGet<CertificateListResponse>(
+        `/api/certificates?page=${page}&limit=${limit}`
+      );
+
+      console.log('✅ Lista de certificados obtenida:', response);
+      return response;
+    } catch (error) {
+      console.error('❌ Error obteniendo lista de certificados:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Activa un certificado específico
+   */
+  public async activateCertificate(certificateId: number): Promise<ActivateCertificateResponse> {
+    try {
+      console.log('⚡ Activando certificado...', { certificateId });
+
+      const response = await this.authenticatedPut<ActivateCertificateResponse>(
+        `/api/certificates/${certificateId}/activate`,
+        {} // Body vacío para PUT
+      );
+
+      console.log('✅ Certificado activado exitosamente:', response);
+      return response;
+    } catch (error) {
+      console.error('❌ Error activando certificado:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Obtiene los límites de certificados del usuario
+   */
+  public async getCertificateLimits(): Promise<CertificateLimitsResponse> {
+    try {
+      console.log('📊 Obteniendo límites de certificados desde API SRI...');
+
+      const response = await this.authenticatedGet<CertificateLimitsResponse>('/api/certificates/limits');
+
+      console.log('✅ Límites de certificados obtenidos:', response);
+      return response;
+    } catch (error) {
+      console.error('❌ Error obteniendo límites de certificados:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Limpia el token de autenticación (para logout)
    */
   public clearAuth(): void {
     this.authToken = null;
-    console.log('🚪 Token de autenticación SRI limpiado');
+    console.log('Token de autenticación SRI limpiado');
   }
 }
 

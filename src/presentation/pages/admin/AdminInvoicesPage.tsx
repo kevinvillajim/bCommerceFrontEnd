@@ -30,8 +30,8 @@ import { RetryInvoiceUseCase } from "../../../core/useCases/admin/invoice/RetryI
 import { CheckInvoiceStatusUseCase } from "../../../core/useCases/admin/invoice/CheckInvoiceStatusUseCase";
 import { GetInvoiceStatsUseCase, type InvoiceStats } from "../../../core/useCases/admin/invoice/GetInvoiceStatsUseCase";
 import { UpdateInvoiceUseCase, type UpdateInvoiceRequest } from "../../../core/useCases/admin/invoice/UpdateInvoiceUseCase";
-import { useCart } from "../../hooks/useCart";
-import { NotificationType } from "../../contexts/CartContext";
+import { useToast } from "../../components/UniversalToast";
+import { NotificationType } from "../../types/NotificationTypes";
 
 // Estados válidos de facturas SRI
 const validStatuses = [
@@ -51,7 +51,7 @@ const validStatuses = [
 
 const AdminInvoicesPage: React.FC = () => {
   // Hook para mostrar notificaciones usando el sistema correcto
-  const { showNotification } = useCart();
+  const { showToast } = useToast();
 
   // Inicializar repositorios y use cases una sola vez
   const [getAllInvoicesUseCase] = useState(() => {
@@ -172,7 +172,7 @@ const AdminInvoicesPage: React.FC = () => {
       setSelectedInvoice(detail);
     } catch (error) {
       console.error('Error cargando detalles:', error);
-      showNotification(NotificationType.ERROR, 'Error al cargar los detalles de la factura');
+      showToast(NotificationType.ERROR, 'Error al cargar los detalles de la factura');
       setShowInvoiceModal(false);
     }
   };
@@ -189,11 +189,11 @@ const AdminInvoicesPage: React.FC = () => {
     try {
       setActionLoading(prev => ({...prev, [invoiceId]: true}));
       await retryInvoiceUseCase.execute(invoiceId);
-      showNotification(NotificationType.SUCCESS, 'Reintento de factura iniciado correctamente');
+      showToast(NotificationType.SUCCESS, 'Reintento de factura iniciado correctamente');
       fetchData(); // Recargar datos
     } catch (error) {
       const errorMessage = error?.response?.data?.error || 'Error al reintentar la factura';
-      showNotification(NotificationType.ERROR, errorMessage);
+      showToast(NotificationType.ERROR, errorMessage);
     } finally {
       setActionLoading(prev => ({...prev, [invoiceId]: false}));
     }
@@ -204,10 +204,10 @@ const AdminInvoicesPage: React.FC = () => {
     try {
       setActionLoading(prev => ({...prev, [invoiceId]: true}));
       const result = await checkInvoiceStatusUseCase.execute(invoiceId);
-      showNotification(NotificationType.INFO, `Estado actual: ${result.current_status}\nEstado SRI: ${JSON.stringify(result.sri_status, null, 2)}`);
+      showToast(NotificationType.INFO, `Estado actual: ${result.current_status}\nEstado SRI: ${JSON.stringify(result.sri_status, null, 2)}`);
     } catch (error) {
       console.error('Error consultando estado:', error);
-      showNotification(NotificationType.ERROR, error instanceof Error ? error.message : 'Error al consultar el estado');
+      showToast(NotificationType.ERROR, error instanceof Error ? error.message : 'Error al consultar el estado');
     } finally {
       setActionLoading(prev => ({...prev, [invoiceId]: false}));
     }
@@ -237,7 +237,7 @@ const AdminInvoicesPage: React.FC = () => {
 
   // Descargar factura (placeholder)
   const downloadInvoice = (_invoiceId: number, format: "pdf" | "xml") => {
-    showNotification(NotificationType.INFO, `Funcionalidad de descarga ${format.toUpperCase()} en desarrollo`);
+    showToast(NotificationType.INFO, `Funcionalidad de descarga ${format.toUpperCase()} en desarrollo`);
     if (showPrintOptions) {
       setShowPrintOptions(false);
     }
@@ -245,7 +245,7 @@ const AdminInvoicesPage: React.FC = () => {
 
   // Enviar por email (placeholder)
   const sendInvoiceByEmail = (_invoiceId: number) => {
-    showNotification(NotificationType.INFO, 'Funcionalidad de envío por email en desarrollo');
+    showToast(NotificationType.INFO, 'Funcionalidad de envío por email en desarrollo');
     if (showPrintOptions) {
       setShowPrintOptions(false);
     }
@@ -298,19 +298,19 @@ const AdminInvoicesPage: React.FC = () => {
 
       // Solo actualizar si hay cambios
       if (Object.keys(changedData).length === 0) {
-        showNotification(NotificationType.WARNING, 'No se detectaron cambios para guardar');
+        showToast(NotificationType.WARNING, 'No se detectaron cambios para guardar');
         return;
       }
 
       await updateInvoiceUseCase.execute(editingInvoice.id, changedData);
       
-      showNotification(NotificationType.SUCCESS, 'Factura actualizada correctamente');
+      showToast(NotificationType.SUCCESS, 'Factura actualizada correctamente');
       closeEditModal();
       fetchData(); // Recargar datos
       
     } catch (error) {
       console.error('Error actualizando factura:', error);
-      showNotification(NotificationType.ERROR, error instanceof Error ? error.message : 'Error al actualizar la factura');
+      showToast(NotificationType.ERROR, error instanceof Error ? error.message : 'Error al actualizar la factura');
     } finally {
       setActionLoading(prev => ({...prev, [editingInvoice.id]: false}));
     }

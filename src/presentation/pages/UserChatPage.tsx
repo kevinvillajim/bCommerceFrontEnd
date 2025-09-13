@@ -9,7 +9,7 @@ import ChatList from "../components/chat/ChatList";
 import ChatMessages from "../components/chat/ChatMessages";
 import ChatHeader from "../components/chat/ChatHeader";
 import MessageForm from "../components/chat/MessageForm";
-import {useChatFilterNotifications} from "../components/notifications/ChatFilterToast";
+import {useChatFilter} from "../hooks/useChatFilter";
 import type { Chat } from "../../core/domain/entities/Chat";
 
 const UserChatPage: React.FC = () => {
@@ -38,9 +38,8 @@ const UserChatPage: React.FC = () => {
 
 	// Hook para notificaciones de filtro
 	const {
-		showUserWarning,
-		NotificationComponent
-	} = useChatFilterNotifications();
+		showUserWarning
+	} = useChatFilter();
 
 	// Obtener datos del chat usando el hook personalizado
 	const {
@@ -512,8 +511,7 @@ const UserChatPage: React.FC = () => {
 				)}
 			</div>
 
-			{/* Componente de notificaciones flotantes */}
-			<NotificationComponent />
+			{/* Las notificaciones ahora se muestran a través del UniversalToast global */}
 		</div>
 	);
 };

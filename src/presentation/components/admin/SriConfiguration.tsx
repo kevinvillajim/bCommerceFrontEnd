@@ -1,6 +1,39 @@
 import React, { useState, useEffect } from 'react';
-import { Upload, Save, CheckCircle, AlertCircle, Building, FileText, Key, Loader2, Trash2, Edit } from 'lucide-react';
+import { Upload, Save, CheckCircle, AlertCircle, Building, FileText, Key, Loader2 } from 'lucide-react';
 import SriApiClient from '../../../infrastructure/api/sriApiClient';
+import CertificateManager from './CertificateManager';
+import { useToast } from '../UniversalToast';
+import { NotificationType } from '../../types/NotificationTypes';
+
+// Helper para extraer nombre limpio del subject
+const extractSignerName = (subject: string): string => {
+  if (!subject) return 'Sin nombre';
+
+  // Buscar CN (Common Name) en el subject
+  const cnMatch = subject.match(/CN=([^,]+)/);
+  if (cnMatch) {
+    return cnMatch[1].trim();
+  }
+
+  // Si no hay CN, devolver parte del subject limpia
+  const firstPart = subject.split(',')[0].trim();
+  const valueMatch = firstPart.match(/[A-Z]+=(.+)/);
+  return valueMatch ? valueMatch[1].trim() : firstPart || 'Sin nombre';
+};
+
+// Helper para extraer nombre limpio del issuer
+const extractIssuerName = (issuer: string): string => {
+  if (!issuer) return 'Desconocido';
+
+  // Buscar CN (Common Name) en el issuer
+  const cnMatch = issuer.match(/CN=([^,]+)/);
+  if (cnMatch) {
+    return cnMatch[1].trim();
+  }
+
+  // Si no hay CN, devolver la primera parte
+  return issuer.split(',')[0].trim() || 'Desconocido';
+};
 
 interface CompanyData {
   ruc: string;
@@ -18,17 +51,6 @@ interface CertificateData {
   file: File | null;
   password: string;
   alias: string;
-}
-
-interface Certificate {
-  id: number;
-  alias: string;
-  subject: string;
-  issuer: string;
-  validFrom: string;
-  validTo: string;
-  isActive: boolean;
-  daysUntilExpiry: number;
 }
 
 interface ActiveCertificate {
@@ -61,6 +83,7 @@ const formatDate = (dateString: string): string => {
 };
 
 const SriConfiguration: React.FC = () => {
+  const { showToast } = useToast();
   const [companyData, setCompanyData] = useState<CompanyData>({
     ruc: '',
     razon_social: '',
@@ -79,12 +102,12 @@ const SriConfiguration: React.FC = () => {
     alias: ''
   });
 
-  const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [activeCertificate, setActiveCertificate] = useState<ActiveCertificate | null>(null);
   const [loading, setLoading] = useState(false);
   const [pageLoading, setPageLoading] = useState(true);
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [certificateManagerKey, setCertificateManagerKey] = useState(0); // Para forzar re-render
 
   // Cargar datos del perfil al montar el componente
   useEffect(() => {
@@ -187,7 +210,9 @@ const SriConfiguration: React.FC = () => {
 
   const handleUploadCertificate = async () => {
     if (!certificate.file || !certificate.password) {
-      setError('Selecciona un archivo .p12 y proporciona la contraseña');
+      const errorMessage = 'Selecciona un archivo .p12 y proporciona la contraseña';
+      setError(errorMessage);
+      showToast(NotificationType.WARNING, errorMessage);
       return;
     }
 
@@ -203,57 +228,31 @@ const SriConfiguration: React.FC = () => {
       );
 
       if (response.success) {
-        setSuccess('Certificado digital subido correctamente');
+        const successMessage = 'Certificado digital subido correctamente';
+        setSuccess(successMessage);
+        showToast(NotificationType.SUCCESS, successMessage);
         // Limpiar formulario
         setCertificate({
           file: null,
           password: '',
           alias: ''
         });
-        // Recargar lista de certificados y certificado activo
-        loadCertificates();
+        // Recargar certificado activo
         await loadActiveCertificate();
+        // Actualizar CertificateManager
+        setCertificateManagerKey(prev => prev + 1);
       }
     } catch (err: any) {
       console.error('Error subiendo certificado SRI:', err);
       const errorMessage = err?.response?.data?.message || err?.message || 'Error al subir el certificado digital';
       setError(errorMessage);
+      showToast(NotificationType.ERROR, errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
-  const loadCertificates = async () => {
-    try {
-      // TODO: Implementar cuando sepamos el endpoint para listar certificados
-      // Puede ser que necesitemos hacer múltiples llamadas GET /api/certificates/{id}
-      // o que exista un endpoint GET /api/certificates para listar todos
-    } catch (err) {
-      console.error('Error cargando certificados:', err);
-    }
-  };
-
-  const deleteCertificate = async (certificateId: number) => {
-    if (!confirm('¿Estás seguro de que quieres eliminar este certificado? Esta acción no se puede deshacer.')) {
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const response = await SriApiClient.deleteCertificate(certificateId);
-      
-      if (response.success) {
-        setSuccess('Certificado eliminado correctamente');
-        loadCertificates(); // Recargar lista
-      }
-    } catch (err: any) {
-      console.error('Error eliminando certificado SRI:', err);
-      const errorMessage = err?.response?.data?.message || err?.message || 'Error al eliminar el certificado';
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Nota: La gestión de certificados (listar, eliminar, activar) ahora se maneja en CertificateManager
 
   // Mostrar loader principal mientras cargan los datos
   if (pageLoading) {
@@ -303,6 +302,18 @@ const SriConfiguration: React.FC = () => {
         </div>
       )}
 
+      {/* Gestión de Certificados */}
+      <CertificateManager
+        key={certificateManagerKey}
+        onCertificateChange={() => {
+          // Recargar certificado activo cuando cambie la gestión
+          loadActiveCertificate();
+          // Limpiar mensajes de success/error del componente padre
+          setSuccess(null);
+          setError(null);
+        }}
+      />
+
       {/* Certificado Digital Activo */}
       <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
         <div className="flex items-center space-x-3 mb-6">
@@ -326,11 +337,11 @@ const SriConfiguration: React.FC = () => {
                   )}
                   <div>
                     <span className="font-medium text-green-700">Sujeto:</span>
-                    <span className="ml-2 text-green-600 break-all">{activeCertificate.subject}</span>
+                    <span className="ml-2 text-green-600">{extractSignerName(activeCertificate.subject)}</span>
                   </div>
                   <div>
                     <span className="font-medium text-green-700">Emisor:</span>
-                    <span className="ml-2 text-green-600 break-all">{activeCertificate.issuer}</span>
+                    <span className="ml-2 text-green-600">{extractIssuerName(activeCertificate.issuer)}</span>
                   </div>
                 </div>
               </div>
@@ -531,40 +542,15 @@ const SriConfiguration: React.FC = () => {
           </h3>
         </div>
 
-        {/* Lista de certificados existentes */}
-        {certificates.length > 0 && (
-          <div className="mb-6">
-            <h4 className="text-sm font-medium text-gray-900 mb-3">Certificados Existentes</h4>
-            <div className="space-y-3">
-              {certificates.map((cert) => (
-                <div key={cert.id} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
-                  <div className="flex items-center space-x-3">
-                    <div className={`h-3 w-3 rounded-full ${cert.isActive ? 'bg-green-500' : 'bg-gray-400'}`}></div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">{cert.alias || 'Sin alias'}</p>
-                      <p className="text-sm text-gray-500">{cert.subject}</p>
-                      <div className="flex items-center space-x-4 mt-1">
-                        <span className="text-xs text-gray-500">Vence: {new Date(cert.validTo).toLocaleDateString()}</span>
-                        <span className={`text-xs ${cert.daysUntilExpiry < 30 ? 'text-red-600' : 'text-green-600'}`}>
-                          {cert.daysUntilExpiry} días restantes
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <button
-                      onClick={() => deleteCertificate(cert.id)}
-                      disabled={loading}
-                      className="text-red-600 hover:text-red-800 disabled:opacity-50"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        {/* Información sobre el upload */}
+        <div className="mb-6 bg-gray-50 border border-gray-200 rounded-lg p-4">
+          <h4 className="text-sm font-medium text-gray-900 mb-2">
+            Subir Nuevo Certificado
+          </h4>
+          <p className="text-sm text-gray-600">
+            Usa este formulario para agregar un nuevo certificado digital. Una vez subido, podrás gestionarlo desde la sección de arriba.
+          </p>
+        </div>
 
         <div className="space-y-4">
           <div>

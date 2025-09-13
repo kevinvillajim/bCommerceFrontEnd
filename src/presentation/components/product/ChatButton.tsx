@@ -4,7 +4,7 @@ import {useNavigate} from "react-router-dom";
 import {MessageCircle, Send, Loader2} from "lucide-react";
 import {useChat} from "../../hooks/useChat";
 import {useAuth} from "../../hooks/useAuth";
-import {useChatFilterNotifications} from "../notifications/ChatFilterToast";
+import {useChatFilter} from "../../hooks/useChatFilter";
 
 interface ChatButtonProps {
 	productId: number;
@@ -33,9 +33,8 @@ const ChatButton: React.FC<ChatButtonProps> = ({
 
 	// Hook para notificaciones de filtro
 	const {
-		showUserWarning,
-		NotificationComponent
-	} = useChatFilterNotifications();
+		showUserWarning
+	} = useChatFilter();
 
 	// Verificar si ya existe un chat con este vendedor para este producto
 	useEffect(() => {
@@ -209,8 +208,7 @@ const ChatButton: React.FC<ChatButtonProps> = ({
 				</div>
 			)}
 
-			{/* Notificaciones flotantes para filtros */}
-			<NotificationComponent />
+			{/* Las notificaciones ahora se muestran a través del UniversalToast global */}
 		</div>
 	);
 };
