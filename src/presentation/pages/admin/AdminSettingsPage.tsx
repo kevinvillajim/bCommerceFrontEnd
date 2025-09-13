@@ -9,6 +9,7 @@ import {
   Truck,
   Code,
   DollarSign,
+  FileText,
 } from "lucide-react";
 // Imports de todos los componentes de configuración
 import SecurityConfiguration from "../../components/admin/SecurityConfiguration";
@@ -18,6 +19,7 @@ import VolumeDiscountManager from "../../components/admin/VolumeDiscountManager"
 import ShippingConfiguration from "../../components/admin/ShippingConfiguration";
 import DevelopmentConfiguration from "../../components/admin/DevelopmentConfiguration";
 import FinancialConfiguration from "../../components/admin/FinancialConfiguration";
+import SriConfiguration from "../../components/admin/SriConfiguration";
 
 /**
  * Página de configuración del sistema para el panel de administración
@@ -136,6 +138,17 @@ const AdminSettingsPage: React.FC = () => {
 							<DollarSign className="w-5 h-5 inline-block mr-1" />
 							Financiero
 						</button>
+						<button
+							onClick={() => setActiveTab("sri")}
+							className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
+								activeTab === "sri"
+									? "border-primary-500 text-primary-600"
+									: "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+							}`}
+						>
+							<FileText className="w-5 h-5 inline-block mr-1" />
+							SRI / Facturación
+						</button>
 					</nav>
 				</div>
 			</div>
@@ -189,6 +202,13 @@ const AdminSettingsPage: React.FC = () => {
 				{activeTab === "financial" && (
 					<div className="p-6">
 						<FinancialConfiguration />
+					</div>
+				)}
+
+				{/* Configuración SRI */}
+				{activeTab === "sri" && (
+					<div className="p-6">
+						<SriConfiguration />
 					</div>
 				)}
 
