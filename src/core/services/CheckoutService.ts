@@ -212,31 +212,22 @@ export class CheckoutService {
 
 			const nameParts = (checkoutData.shippingAddress.name || '').split(' ');
 			
-			// ✅ FIX: Construir objeto base sin discount_code
+			// ✅ FIX CORREGIDO: Enviar shippingAddress y billingAddress directamente sin transformar
 			const backendData: any = {
 				payment: {
 					...checkoutData.payment,
 					method: paymentMethod
 				},
-				// ✅ CUSTOMER: REQUERIDO PARA SRI
+				// ✅ CUSTOMER: REQUERIDO PARA SRI (mantener para Datafast)
 				customer: {
 					given_name: nameParts[0] || '',
 					surname: nameParts.slice(1).join(' ') || '',
 					phone: checkoutData.shippingAddress.phone || '',
 					doc_id: checkoutData.shippingAddress.identification || ''
 				},
-				shipping: {
-					first_name: nameParts[0] || '',
-					last_name: nameParts.slice(1).join(' ') || '',
-					email: userEmail || '',
-					phone: checkoutData.shippingAddress.phone || '',
-					address: checkoutData.shippingAddress.street || '',
-					city: checkoutData.shippingAddress.city || '',
-					state: checkoutData.shippingAddress.state || '',
-					postal_code: checkoutData.shippingAddress.postalCode || '',
-					country: checkoutData.shippingAddress.country || '',
-					identification: checkoutData.shippingAddress.identification || ''
-				},
+				// ✅ CORRECCIÓN CRÍTICA: Enviar shippingAddress y billingAddress con formato original
+				shippingAddress: checkoutData.shippingAddress, // ✅ Directo, sin transformar
+				billingAddress: checkoutData.billingAddress,   // ✅ AÑADIDO: Faltaba por completo
 				seller_id: checkoutData.seller_id,
 				items: items, // ✅ Usar items con precios finales calculados
 				// ✅ CRÍTICO: Enviar totales exactos de calculadora centralizada para que backend los use SIN RECALCULAR
@@ -257,7 +248,8 @@ export class CheckoutService {
 				console.log("✅ No hay cupón - campo discount_code omitido del request");
 			}
 
-			console.log("🔍 DEBUGGING - Datos completos enviados al backend:", JSON.stringify(backendData, null, 2));
+			console.log("🔍 DEBUGGING - Datos CORREGIDOS enviados al backend:", JSON.stringify(backendData, null, 2));
+			console.log("✅ CORRECCIÓN APLICADA: shippingAddress y billingAddress enviados con formato original");
 			
 			// ✅ LOGS CRÍTICOS PARA TOTALES CORREGIDOS
 			console.log("💰 TOTALES CRÍTICOS CORREGIDOS QUE DEBE USAR EL BACKEND:");

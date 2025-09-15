@@ -16,7 +16,6 @@ const SecurityConfiguration: React.FC = () => {
       require_numbers: true,
       require_special_chars: true,
     },
-    session_timeout: 3600,
     max_login_attempts: 5,
     lockout_duration: 900,
     passwordMinLength: 8,
@@ -24,7 +23,7 @@ const SecurityConfiguration: React.FC = () => {
     passwordRequireUppercase: true,
     passwordRequireNumbers: true,
     accountLockAttempts: 5,
-    sessionTimeout: 120,
+    sessionTimeout: parseInt(import.meta.env.VITE_SESSION_TIMEOUT_MINUTES || '120'), // minutos - from .env
     enableTwoFactor: false,
     requireEmailVerification: true,
     adminIpRestriction: false,

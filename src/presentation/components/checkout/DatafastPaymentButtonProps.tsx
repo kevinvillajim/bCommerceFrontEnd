@@ -8,7 +8,6 @@ import {CheckoutItemsService} from "../../../infrastructure/services/CheckoutIte
 import type {DatafastCheckoutRequest} from "../../../core/services/DatafastService";
 import type {PaymentMethod, PaymentInfo} from "../../../core/services/CheckoutService";
 import {NotificationType} from "../../contexts/CartContext";
-// import {useToast} from "../UniversalToast"; // TODO: Remove if not used
 import {useDatafastCSP} from "../../hooks/useDatafastCSP";
 
 interface DatafastPaymentButtonProps {
@@ -63,7 +62,6 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 	
 	const navigate = useNavigate();
 	const {cart, clearCart, showNotification, appliedDiscount} = useCart();
-	// const {showToast} = useToast(); // Disponible para uso futuro
 	const {user} = useAuth();
 	const [isLoading, setIsLoading] = useState(false);
 	// ✅ FUNCIÓN HELPER: Mapear país a código ISO (debe estar antes del useState)
@@ -82,15 +80,16 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 		// Separar el nombre completo en partes si está disponible
 		const nameParts = shippingAddress?.name?.split(' ') || [];
 		const firstName = nameParts[0] || "Juan";
-		const lastName = nameParts.slice(1).join(' ') || "Pérez";
-		
+		const lastName = nameParts.slice(1).join(' ');
+		const finalLastName = lastName;
+
 		return {
 			address: shippingAddress?.street || "Av. Test 123",
-			city: shippingAddress?.city || "Quito", 
+			city: shippingAddress?.city || "Quito",
 			country: mapCountryCode(shippingAddress?.country || "Ecuador"),
 			given_name: firstName,
 			middle_name: "",
-			surname: lastName,
+			surname: finalLastName,
 			phone: shippingAddress?.phone || "0999999999",
 			doc_id: shippingAddress?.identification || "1234567890",
 		};
@@ -113,16 +112,17 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 		if (shippingAddress) {
 			const nameParts = shippingAddress.name?.split(' ') || [];
 			const firstName = nameParts[0] || formData.given_name;
-			const lastName = nameParts.slice(1).join(' ') || formData.surname;
+			const lastName = nameParts.slice(1).join(' ');
+			const finalLastName = lastName || formData.surname;
 			const mappedCountry = mapCountryCode(shippingAddress.country || "Ecuador");
-			
+
 			setFormData(prev => ({
 				...prev,
 				address: shippingAddress.street || prev.address,
 				city: shippingAddress.city || prev.city,
 				country: mappedCountry,
 				given_name: firstName,
-				surname: lastName,
+				surname: finalLastName,
 				phone: shippingAddress.phone || prev.phone,
 				doc_id: shippingAddress.identification || prev.doc_id,
 			}));
@@ -134,7 +134,7 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 					city: shippingAddress.city,
 					country: mappedCountry,
 					given_name: firstName,
-					surname: lastName,
+					surname: finalLastName,
 					phone: shippingAddress.phone,
 					doc_id: shippingAddress.identification,
 				}
@@ -208,15 +208,15 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 				phone: formData.phone,
 				doc_id: formData.doc_id,
 			};
-			
+
 			// Solo agregar middle_name si realmente tiene valor
 			if (formData.middle_name && formData.middle_name.trim() !== "") {
 				customerData.middle_name = formData.middle_name.trim();
 			}
 			
 			const requestData: DatafastCheckoutRequest = {
-				shipping: {
-					address: formData.address,
+				shippingAddress: {
+					street: formData.address, // ✅ CORREGIDO: usar 'street' en lugar de 'address'
 					city: formData.city,
 					country: mapCountryCode(formData.country), // ✅ Usar función de mapeo
 				},
@@ -237,7 +237,7 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 			console.log("   - customer.middle_name:", requestData.customer.middle_name !== undefined 
 				? `"${requestData.customer.middle_name}" (tipo: ${typeof requestData.customer.middle_name})` 
 				: "OMITIDO - campo no enviado");
-			console.log("   - shipping.country:", `"${requestData.shipping.country}" (tipo: ${typeof requestData.shipping.country})`);
+			console.log("   - shippingAddress.country:", `"${requestData.shippingAddress.country}" (tipo: ${typeof requestData.shippingAddress.country})`);
 			console.log("🔍 DEBUG - Customer completo:", JSON.stringify(requestData.customer, null, 2));
 
 			const response = await datafastService.createCheckout(requestData);

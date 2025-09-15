@@ -16,10 +16,54 @@ const ShippingForm: React.FC<ShippingFormProps> = ({
 		<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 			<div className="md:col-span-2">
 				<label
+					htmlFor="shipping-name"
+					className="block text-sm font-medium text-gray-700 mb-1"
+				>
+					Nombre del receptor *
+				</label>
+				<input
+					type="text"
+					id="shipping-name"
+					value={shippingInfo.name || ""}
+					onChange={(e) => onChange("name", e.target.value)}
+					className={`w-full px-4 py-2 border rounded-md focus:ring-primary-500 focus:border-primary-500 ${
+						errors.name ? "border-red-500" : "border-gray-300"
+					}`}
+					placeholder="Nombre completo de quien recibe"
+				/>
+				{errors.name && (
+					<p className="mt-1 text-sm text-red-500">{errors.name}</p>
+				)}
+			</div>
+
+			<div className="md:col-span-2">
+				<label
+					htmlFor="shipping-identification"
+					className="block text-sm font-medium text-gray-700 mb-1"
+				>
+					Cédula/RUC del receptor *
+				</label>
+				<input
+					type="text"
+					id="shipping-identification"
+					value={shippingInfo.identification || ""}
+					onChange={(e) => onChange("identification", e.target.value)}
+					className={`w-full px-4 py-2 border rounded-md focus:ring-primary-500 focus:border-primary-500 ${
+						errors.identification ? "border-red-500" : "border-gray-300"
+					}`}
+					placeholder="Número de cédula o RUC del receptor"
+				/>
+				{errors.identification && (
+					<p className="mt-1 text-sm text-red-500">{errors.identification}</p>
+				)}
+			</div>
+
+			<div className="md:col-span-2">
+				<label
 					htmlFor="street"
 					className="block text-sm font-medium text-gray-700 mb-1"
 				>
-					Dirección *
+					Dirección de envío *
 				</label>
 				<input
 					type="text"

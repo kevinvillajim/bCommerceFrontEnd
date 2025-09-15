@@ -13,4 +13,5 @@ export interface InvoiceRepository {
   checkInvoiceStatus(invoiceId: number): Promise<ApiResponse<InvoiceStatusCheck>>;
   getInvoiceStats(): Promise<ApiResponse<InvoiceStats>>;
   updateInvoice(invoiceId: number, updateData: UpdateInvoiceRequest): Promise<ApiResponse<UpdateInvoiceResponse>>;
+  downloadInvoicePdf(invoiceId: number): Promise<Blob>;
 }

@@ -45,7 +45,6 @@ export interface SecurityConfig {
     require_numbers: boolean;
     require_special_chars: boolean;
   };
-  session_timeout: number;
   max_login_attempts: number;
   lockout_duration: number;
   passwordMinLength: number;
@@ -53,7 +52,7 @@ export interface SecurityConfig {
   passwordRequireUppercase: boolean;
   passwordRequireNumbers: boolean;
   accountLockAttempts: number;
-  sessionTimeout: number;
+  sessionTimeout: number; // minutos - unified field from backend
   requireEmailVerification: boolean;
   enableTwoFactor: boolean;
   adminIpRestriction: boolean;
@@ -249,7 +248,7 @@ class ConfigurationService {
         passwordRequireUppercase: response?.data?.require_uppercase || true,
         passwordRequireNumbers: response?.data?.require_numbers || true,
         accountLockAttempts: response?.data?.max_login_attempts || 5,
-        sessionTimeout: response?.data?.session_timeout || 3600,
+        sessionTimeout: response?.data?.session_timeout || parseInt(import.meta.env.VITE_SESSION_TIMEOUT_MINUTES || '120'),
         requireEmailVerification: response?.data?.require_email_verification || true,
         enableTwoFactor: response?.data?.enable_two_factor || false,
         adminIpRestriction: response?.data?.admin_ip_restriction || false,

@@ -2,15 +2,9 @@
 @import "./tailwind.css";
 @import "./dark-mode.css";
 @import "./chat.css";
-@import "./notification-animations.css";
 
 /* Additional global styles */
 :root {
-  --toastify-color-info: var(--color-primary-500);
-  --toastify-color-success: var(--color-green-500);
-  --toastify-color-warning: var(--color-amber-500);
-  --toastify-color-error: var(--color-red-500);
-
   --color-primary-50: #f0f9ff;
   --color-primary-100: #e0f2fe;
   --color-primary-200: #bae6fd;

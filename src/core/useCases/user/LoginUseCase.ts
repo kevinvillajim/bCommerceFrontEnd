@@ -34,10 +34,16 @@ export class LoginUseCase {
 
       // Guardar el token en el almacenamiento local
       this.storageService.setItem(appConfig.storage.authTokenKey, authResponse.access_token);
-      
+
       // Si existe información del usuario, guardarla también
       if (authResponse.user) {
         this.storageService.setItem(appConfig.storage.userKey, authResponse.user);
+      }
+
+      // Si existe configuración de sesión, guardarla también
+      if (authResponse.session_config) {
+        this.storageService.setItem('session_config', authResponse.session_config);
+        console.log('✅ Session config guardada:', authResponse.session_config);
       }
 
       return authResponse;

@@ -42,6 +42,14 @@ export interface UserStrike {
 }
 
 /**
+ * Session configuration from backend
+ */
+export interface SessionConfig {
+  timeout_minutes: number;
+  expires_at: string;
+}
+
+/**
  * Authentication response
  */
 export interface AuthResponse {
@@ -50,6 +58,7 @@ export interface AuthResponse {
   expires_in: string;
   refresh_token?: string;
   user: User;
+  session_config?: SessionConfig;
 }
 
 /**

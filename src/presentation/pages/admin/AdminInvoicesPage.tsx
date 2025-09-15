@@ -235,11 +235,43 @@ const AdminInvoicesPage: React.FC = () => {
     }).format(amount);
   };
 
-  // Descargar factura (placeholder)
-  const downloadInvoice = (_invoiceId: number, format: "pdf" | "xml") => {
-    showToast(NotificationType.INFO, `Funcionalidad de descarga ${format.toUpperCase()} en desarrollo`);
-    if (showPrintOptions) {
-      setShowPrintOptions(false);
+  // Descargar factura
+  const downloadInvoice = async (invoiceId: number, format: "pdf" | "xml") => {
+    if (format === "xml") {
+      showToast(NotificationType.INFO, 'Funcionalidad de descarga XML en desarrollo');
+      if (showPrintOptions) {
+        setShowPrintOptions(false);
+      }
+      return;
+    }
+
+    try {
+      setActionLoading(prev => ({...prev, [invoiceId]: true}));
+
+      // Descargar PDF usando el repositorio
+      const repository = new HttpInvoiceRepository();
+      const pdfBlob = await repository.downloadInvoicePdf(invoiceId);
+
+      // Crear URL del blob y descargar
+      const url = window.URL.createObjectURL(pdfBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `factura_${invoiceId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      showToast(NotificationType.SUCCESS, 'PDF descargado correctamente');
+
+    } catch (error) {
+      console.error('Error descargando PDF:', error);
+      showToast(NotificationType.ERROR, error instanceof Error ? error.message : 'Error al descargar el PDF');
+    } finally {
+      setActionLoading(prev => ({...prev, [invoiceId]: false}));
+      if (showPrintOptions) {
+        setShowPrintOptions(false);
+      }
     }
   };
 

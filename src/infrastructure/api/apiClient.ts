@@ -51,12 +51,14 @@ export class ApiClient {
     try {
         // POST request
 
-        // ✅ ARREGLADO: NO transformar FormData
-        const transformedData = data instanceof FormData 
+        // ✅ ARREGLADO: NO transformar FormData ni requests de checkout/datafast
+        const transformedData = data instanceof FormData
             ? data  // FormData se mantiene tal como está
-            : data ? this.transformDataToSnakeCase(data) : undefined;
+            : (url.includes('/checkout') || url.includes('/datafast'))
+              ? data  // ✅ CRÍTICO: NO transformar checkout/datafast - mantener camelCase para validación backend
+              : data ? this.transformDataToSnakeCase(data) : undefined;
 
-        // Debug: Log data transformation for Deuna payments
+        // Debug: Log data transformation for specific endpoints
         if (url.includes('/deuna/payments')) {
             console.log('🔍 API CLIENT - DATA TRANSFORMATION:', {
                 original_data: data,
@@ -65,6 +67,19 @@ export class ApiClient {
                 transformed_items: transformedData?.items,
                 original_first_item: data?.items?.[0],
                 transformed_first_item: transformedData?.items?.[0]
+            });
+        }
+
+        // ✅ NUEVO: Debug específico para checkout/datafast
+        if (url.includes('/checkout') || url.includes('/datafast')) {
+            console.log('🔍 API CLIENT - CHECKOUT/DATAFAST NO TRANSFORMATION:', {
+                url: url,
+                original_data_keys: data ? Object.keys(data) : [],
+                has_shippingAddress: data?.shippingAddress ? 'YES' : 'NO',
+                has_billingAddress: data?.billingAddress ? 'YES' : 'NO',
+                transformation_skipped: transformedData === data,
+                shipping_address_name: data?.shippingAddress?.name,
+                billing_address_name: data?.billingAddress?.name
             });
         }
 

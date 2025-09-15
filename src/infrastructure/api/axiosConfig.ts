@@ -13,6 +13,14 @@ import appConfig from "../../config/appConfig";
 let isRefreshing = false;
 let refreshSubscribers: Array<(token: string) => void> = [];
 
+// Variable global para acceder a clearSessionData desde el interceptor
+let globalClearSessionData: (() => void) | null = null;
+
+// Función para registrar clearSessionData desde AuthContext
+export const setGlobalClearSessionData = (clearSessionDataFn: () => void) => {
+	globalClearSessionData = clearSessionDataFn;
+};
+
 // Función para añadir callbacks a la cola
 const subscribeTokenRefresh = (callback: (token: string) => void) => {
 	refreshSubscribers.push(callback);
@@ -63,6 +71,20 @@ axiosInstance.interceptors.request.use(
 // Response interceptor
 axiosInstance.interceptors.response.use(
 	(response: AxiosResponse) => {
+		// Capturar headers de sesión del refresh para mantener cliente sincronizado
+		const sessionTimeout = response.headers['x-session-timeout'];
+		const sessionExpires = response.headers['x-session-expires'];
+
+		if (sessionTimeout) {
+			localStorage.setItem('session_timeout_seconds', sessionTimeout);
+			console.log('🔄 Session timeout actualizado desde headers:', sessionTimeout + 's');
+		}
+
+		if (sessionExpires) {
+			localStorage.setItem('session_expires_at', sessionExpires);
+			console.log('🔄 Session expires_at actualizado desde headers:', sessionExpires);
+		}
+
 		return response;
 	},
 	async (error: AxiosError) => {
@@ -71,7 +93,10 @@ axiosInstance.interceptors.response.use(
 		};
 
 		// Handle 401 Unauthorized error (token expired)
-		if (error.response?.status === 401 && !originalRequest._retry) {
+		// Check if auto-refresh is enabled from .env
+		const autoRefreshEnabled = import.meta.env.VITE_AUTO_REFRESH_ENABLED === 'true';
+
+		if (error.response?.status === 401 && !originalRequest._retry && autoRefreshEnabled) {
 			// Evitar múltiples solicitudes de refresh simultáneas
 			if (isRefreshing) {
 				// Esperar a que se complete el refresh actual
@@ -137,16 +162,48 @@ axiosInstance.interceptors.response.use(
 			} catch (refreshError) {
 				isRefreshing = false;
 
-				// Si falla el refresh, limpiar datos de sesión y redirigir a login
-				localStorage.removeItem(appConfig.storage.authTokenKey);
-				localStorage.removeItem(appConfig.storage.refreshTokenKey);
-				localStorage.removeItem(appConfig.storage.userKey);
+				// Si falla el refresh, usar limpieza completa si está disponible
+				if (globalClearSessionData) {
+					console.log("🧹 Utilizando limpieza completa de sesión por expiración automática");
+					globalClearSessionData();
+				} else {
+					// Fallback: limpieza básica
+					console.log("⚠️ Usando limpieza básica de sesión (fallback)");
+					localStorage.removeItem(appConfig.storage.authTokenKey);
+					localStorage.removeItem(appConfig.storage.refreshTokenKey);
+					localStorage.removeItem(appConfig.storage.userKey);
+					localStorage.removeItem(appConfig.storage.cartKey);
+				}
 
-				// Usar window.location.replace para evitar entradas en el historial
-				window.location.replace(appConfig.routes.login);
+				// Redirigir a login con parámetro sessionExpired
+				const loginUrl = `${appConfig.routes.login}?sessionExpired=true`;
+				console.log("🚪 Redirigiendo a login por sesión expirada:", loginUrl);
+				window.location.replace(loginUrl);
 
 				return Promise.reject(refreshError);
 			}
+		} else if (error.response?.status === 401 && !originalRequest._retry) {
+			// Handle 401 when auto-refresh is DISABLED - clear session immediately
+			console.log("🚨 Token expired and auto-refresh disabled - clearing session");
+
+			if (globalClearSessionData) {
+				console.log("🧹 Using complete session cleanup");
+				globalClearSessionData();
+			} else {
+				// Fallback: basic cleanup
+				console.log("⚠️ Using basic session cleanup (fallback)");
+				localStorage.removeItem(appConfig.storage.authTokenKey);
+				localStorage.removeItem(appConfig.storage.refreshTokenKey);
+				localStorage.removeItem(appConfig.storage.userKey);
+				localStorage.removeItem(appConfig.storage.cartKey);
+			}
+
+			// Redirect to login with sessionExpired parameter
+			const loginUrl = `${appConfig.routes.login}?sessionExpired=true`;
+			console.log("🚪 Redirecting to login due to expired session:", loginUrl);
+			window.location.replace(loginUrl);
+
+			return Promise.reject(error);
 		}
 
 		// Handle other errors

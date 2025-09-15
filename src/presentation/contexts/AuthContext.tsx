@@ -16,7 +16,7 @@ import appConfig from "../../config/appConfig";
 import RoleService from "../../infrastructure/services/RoleService";
 import {OptimizedRoleService} from "../../infrastructure/services/OptimizedRoleService";
 import {CacheService} from "../../infrastructure/services/CacheService";
-import axiosInstance from "../../infrastructure/api/axiosConfig";
+import axiosInstance, {setGlobalClearSessionData} from "../../infrastructure/api/axiosConfig";
 import {API_ENDPOINTS} from "../../constants/apiEndpoints";
 
 // Interfaz para información de rol
@@ -59,6 +59,7 @@ interface AuthContextProps {
 	isAuthenticated: boolean;
 	setIsAuthenticated: React.Dispatch<React.SetStateAction<boolean>>;
 	logout: () => Promise<void>;
+	clearSessionData: () => void;
 	roleInfo: UserRoleInfo;
 	isLoadingRole: boolean;
 	refreshRoleInfo: () => Promise<void>;
@@ -77,6 +78,7 @@ export const AuthContext = createContext<AuthContextProps>({
 	isAuthenticated: false,
 	setIsAuthenticated: () => {},
 	logout: async () => {},
+	clearSessionData: () => {},
 	roleInfo: {
 		role: null,
 		isAdmin: false,
@@ -430,6 +432,88 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 		}
 	}, [user, initialized]);
 
+	// Función global para limpieza completa de datos de sesión
+	const clearSessionData = useCallback(() => {
+		console.log("🧹 Iniciando limpieza completa de datos de sesión...");
+
+		// Limpiar datos locales específicos
+		storageService.removeItem(appConfig.storage.authTokenKey);
+		storageService.removeItem(appConfig.storage.userKey);
+		storageService.removeItem(appConfig.storage.refreshTokenKey);
+		storageService.removeItem(appConfig.storage.cartKey);
+
+		// Limpiar cache
+		CacheService.removeItem(CACHE_KEYS.ROLE_INFO);
+		CacheService.removeItem(CACHE_KEYS.USER_DATA);
+		OptimizedRoleService.clearAllCache();
+
+		// Limpieza inteligente basada en análisis de datos reales
+		// PRESERVAR: Configuraciones de usuario y sistema
+		const preserveInLocalStorage = [
+			'user_theme', // Tema del usuario - UX crítica
+		];
+
+		// PRESERVAR: Configuraciones técnicas que mejoran rendimiento
+		const preserveInSessionStorage = [
+			'bcommerce_shipping_config', // Config de envío - evita llamadas API
+			'bcommerce_volume_discount_config', // Config de descuentos - evita llamadas API
+		];
+
+		// ELIMINAR de localStorage: Datos específicos del usuario
+		const authRelatedKeys = [
+			'user_data', // Datos del usuario - SEGURIDAD
+			'cache_user_role_data', // Roles del usuario - SEGURIDAD
+		];
+
+		// ELIMINAR: Tokens y datos sensibles (pattern matching)
+		const sensitivePatterns = [
+			/^eyJ/, // JWT tokens (empiezan con eyJ)
+			/^cache_header_counters/, // Contadores específicos del usuario
+			/^cache_products_/, // Cache de productos - puede estar desactualizado
+		];
+
+		// Limpiar localStorage
+		authRelatedKeys.forEach(key => localStorage.removeItem(key));
+
+		// Limpiar por patrones
+		const localStorageKeys = Object.keys(localStorage);
+		localStorageKeys.forEach(key => {
+			const shouldRemove = sensitivePatterns.some(pattern => pattern.test(key));
+			if (shouldRemove && !preserveInLocalStorage.includes(key)) {
+				localStorage.removeItem(key);
+			}
+		});
+
+		// Limpiar sessionStorage selectivamente
+		const sessionKeys = Object.keys(sessionStorage);
+		sessionKeys.forEach(key => {
+			// Solo mantener configs técnicas y flags de prefetch
+			if (!preserveInSessionStorage.includes(key) &&
+				!key.includes('_executed') && // prefetch flags
+				!key.includes('autoprefetch')) {
+				sessionStorage.removeItem(key);
+			}
+		});
+
+		console.log("✅ Limpieza inteligente completada - Preservadas configs técnicas");
+
+		// Reiniciar flags
+		hasFetchedRole.current = false;
+		isAuthenticatedRef.current = false;
+		userRef.current = null;
+
+		// Actualizar estados
+		setIsAuthenticated(false);
+		setUser(null);
+		setRoleInfo({
+			role: null,
+			isAdmin: false,
+			isSeller: false,
+			sellerInfo: null,
+			adminInfo: null,
+		});
+	}, []);
+
 	// Implementación OPTIMIZADA de logout
 	const logout = useCallback(async (): Promise<void> => {
 		try {
@@ -441,97 +525,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 				}
 			}
 
-			// Limpiar datos locales específicos
-			storageService.removeItem(appConfig.storage.authTokenKey);
-			storageService.removeItem(appConfig.storage.userKey);
-			storageService.removeItem(appConfig.storage.refreshTokenKey);
-			storageService.removeItem(appConfig.storage.cartKey);
-
-			// Limpiar cache
-			CacheService.removeItem(CACHE_KEYS.ROLE_INFO);
-			CacheService.removeItem(CACHE_KEYS.USER_DATA);
-			OptimizedRoleService.clearAllCache();
-
-			// Limpieza inteligente basada en análisis de datos reales
-			console.log("🧹 Limpiando datos específicos de sesión...");
-			
-			// PRESERVAR: Configuraciones de usuario y sistema
-			const preserveInLocalStorage = [
-				'user_theme', // Tema del usuario - UX crítica
-			];
-			
-			// PRESERVAR: Configuraciones técnicas que mejoran rendimiento
-			const preserveInSessionStorage = [
-				'bcommerce_shipping_config', // Config de envío - evita llamadas API
-				'bcommerce_volume_discount_config', // Config de descuentos - evita llamadas API
-			];
-			
-			// ELIMINAR de localStorage: Datos específicos del usuario
-			const authRelatedKeys = [
-				'user_data', // Datos del usuario - SEGURIDAD
-				'cache_user_role_data', // Roles del usuario - SEGURIDAD
-			];
-			
-			// ELIMINAR: Tokens y datos sensibles (pattern matching)
-			const sensitivePatterns = [
-				/^eyJ/, // JWT tokens (empiezan con eyJ)
-				/^cache_header_counters/, // Contadores específicos del usuario
-				/^cache_products_/, // Cache de productos - puede estar desactualizado
-			];
-			
-			// Limpiar localStorage
-			authRelatedKeys.forEach(key => localStorage.removeItem(key));
-			
-			// Limpiar por patrones
-			const localStorageKeys = Object.keys(localStorage);
-			localStorageKeys.forEach(key => {
-				const shouldRemove = sensitivePatterns.some(pattern => pattern.test(key));
-				if (shouldRemove && !preserveInLocalStorage.includes(key)) {
-					localStorage.removeItem(key);
-				}
-			});
-			
-			// Limpiar sessionStorage selectivamente
-			const sessionKeys = Object.keys(sessionStorage);
-			sessionKeys.forEach(key => {
-				// Solo mantener configs técnicas y flags de prefetch
-				if (!preserveInSessionStorage.includes(key) && 
-					!key.includes('_executed') && // prefetch flags
-					!key.includes('autoprefetch')) {
-					sessionStorage.removeItem(key);
-				}
-			});
-			
-			console.log("✅ Limpieza inteligente completada - Preservadas configs técnicas");
-
-			// Reiniciar flags
-			hasFetchedRole.current = false;
-			isAuthenticatedRef.current = false;
-			userRef.current = null;
-
-			// Actualizar estados
-			setIsAuthenticated(false);
-			setUser(null);
-			setRoleInfo({
-				role: null,
-				isAdmin: false,
-				isSeller: false,
-				sellerInfo: null,
-				adminInfo: null,
-			});
+			// Usar la función de limpieza global
+			clearSessionData();
 
 			console.log("✅ Logout completado exitosamente");
 		} catch (error) {
 			console.error("❌ Error durante el proceso de logout:", error);
 			// Asegurar limpieza local incluso en error
-			storageService.removeItem(appConfig.storage.authTokenKey);
-			storageService.removeItem(appConfig.storage.userKey);
-			CacheService.removeItem(CACHE_KEYS.ROLE_INFO);
-			CacheService.removeItem(CACHE_KEYS.USER_DATA);
-			setIsAuthenticated(false);
-			setUser(null);
+			clearSessionData();
 		}
-	}, []);
+	}, [clearSessionData]);
+
+	// Registrar clearSessionData en axiosConfig
+	useEffect(() => {
+		setGlobalClearSessionData(clearSessionData);
+	}, [clearSessionData]);
 
 	// Memorizar el contexto para evitar renderizaciones innecesarias
 	const contextValue = useMemo(
@@ -541,6 +549,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 			isAuthenticated,
 			setIsAuthenticated,
 			logout,
+			clearSessionData,
 			roleInfo,
 			isLoadingRole,
 			refreshRoleInfo,
@@ -554,6 +563,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 			user,
 			isAuthenticated,
 			logout,
+			clearSessionData,
 			roleInfo,
 			isLoadingRole,
 			refreshRoleInfo,

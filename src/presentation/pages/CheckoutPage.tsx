@@ -347,6 +347,15 @@ const CheckoutPage: React.FC = () => {
 					errors[`${prefix}${field}`] =
 						`El campo ${field.replace("_", " ")} es obligatorio`;
 				}
+
+				// Validación especial para el campo name (nombre completo)
+				if (field === "name" && address[field]) {
+					const nameParts = address[field].trim().split(/\s+/);
+					if (nameParts.length < 2) {
+						errors[`${prefix}${field}`] =
+							"Debe ingresar al menos un nombre y un apellido separados por espacio";
+					}
+				}
 			});
 		};
 

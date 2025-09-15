@@ -16,16 +16,17 @@ Sistema centralizado de notificaciones toast para BCommerce. Reemplaza el anteri
 
 ```tsx
 import { useToast } from '../UniversalToast';
+import { NotificationType } from '../../types/NotificationTypes';
 
 function MyComponent() {
   const { showToast } = useToast();
 
   const handleSuccess = () => {
-    showToast('success', 'Operación completada exitosamente');
+    showToast(NotificationType.SUCCESS, 'Operación completada exitosamente');
   };
 
   const handleError = () => {
-    showToast('error', 'Algo salió mal');
+    showToast(NotificationType.ERROR, 'Algo salió mal');
   };
 
   return (
@@ -43,7 +44,7 @@ function MyComponent() {
 const { showToast } = useToast();
 
 // Toast con botón de acción
-showToast('error', 'Falló la conexión', {
+showToast(NotificationType.ERROR, 'Falló la conexión', {
   duration: 10000,
   actionButton: {
     label: 'Reintentar',
@@ -52,13 +53,13 @@ showToast('error', 'Falló la conexión', {
 });
 
 // Toast persistente (no se cierra automáticamente)
-showToast('info', 'Proceso en curso...', {
+showToast(NotificationType.INFO, 'Proceso en curso...', {
   persistent: true,
   showProgress: false
 });
 
 // Toast en posición personalizada
-showToast('warning', 'Advertencia importante', {
+showToast(NotificationType.WARNING, 'Advertencia importante', {
   position: 'top-center',
   duration: 8000
 });
@@ -69,7 +70,7 @@ showToast('warning', 'Advertencia importante', {
 ### `showToast(type, message, options?)`
 
 **Parámetros:**
-- `type`: `'success' | 'error' | 'warning' | 'info'`
+- `type`: `NotificationType` - Tipo de notificación (importar desde `../../types/NotificationTypes`)
 - `message`: `string` - Mensaje a mostrar
 - `options`: `ToastOptions` (opcional)
 
@@ -105,7 +106,8 @@ const showToast = (type, message) => { /* lógica compleja */ };
 **Después:**
 ```tsx
 // Sistema nuevo
+import { NotificationType } from '../../types/NotificationTypes';
 const { showToast } = useToast();
-showToast('success', 'Mensaje');
+showToast(NotificationType.SUCCESS, 'Mensaje');
 // ¡Eso es todo!
 ```

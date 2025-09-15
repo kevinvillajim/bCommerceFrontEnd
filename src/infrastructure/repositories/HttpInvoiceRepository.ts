@@ -1,4 +1,5 @@
 import { ApiClient } from '../api/apiClient';
+import appConfig from '../../config/appConfig';
 import type { InvoiceRepository } from '../../core/domain/repositories/InvoiceRepository';
 import type { ApiResponse, PaginatedResponse } from '../../core/domain/entities/ApiResponse';
 import type { InvoiceFilters, AdminInvoice } from '../../core/useCases/admin/invoice/GetAllInvoicesUseCase';
@@ -96,6 +97,28 @@ export class HttpInvoiceRepository implements InvoiceRepository {
       return response;
     } catch (error) {
       console.error('Error en HttpInvoiceRepository.updateInvoice:', error);
+      throw error;
+    }
+  }
+
+  async downloadInvoicePdf(invoiceId: number): Promise<Blob> {
+    try {
+      // Usar fetch directo como en AdminLogService para descargas de archivos
+      const response = await fetch(`${appConfig.api.baseUrl}/admin/invoices/${invoiceId}/download-pdf`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem(appConfig.storage.authTokenKey)}`,
+          'Accept': 'application/pdf',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
+      }
+
+      return await response.blob();
+    } catch (error) {
+      console.error('Error en HttpInvoiceRepository.downloadInvoicePdf:', error);
       throw error;
     }
   }

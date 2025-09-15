@@ -32,12 +32,6 @@
   --color-primary-700: #7dd3fc;
   --color-primary-800: #bae6fd;
   --color-primary-900: #e0f2fe;
-  
-  /* Toast variables */
-  --toastify-color-light: #262626;
-  --toastify-text-color-light: #e2e8f0;
-  --toastify-color-dark: #1e1e1e;
-  --toastify-text-color-dark: #ffffff;
 }
 
 /* =================== COMPONENTES BÁSICOS =================== */

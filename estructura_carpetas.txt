@@ -462,7 +462,6 @@ C:.
     |       chat.css
     |       dark-mode.css
     |       main.css
-    |       notification-animations.css
     |       tailwind.css
     |       
     \---utils

@@ -3,8 +3,8 @@ import {API_ENDPOINTS} from "../../constants/apiEndpoints";
 import {extractErrorMessage} from "../../utils/errorHandler";
 
 export interface DatafastCheckoutRequest {
-	shipping: {
-		address: string;
+	shippingAddress: {
+		street: string; // ✅ CORREGIDO: usar 'street' en lugar de 'address'
 		city: string;
 		country: string;
 	};

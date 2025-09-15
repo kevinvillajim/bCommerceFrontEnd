@@ -30,6 +30,9 @@ const LoginPage: React.FC = () => {
 	// Verificar si viene desde verificación exitosa
 	const verifiedParam = new URLSearchParams(location.search).get('verified');
 
+	// Verificar si viene desde sesión expirada
+	const sessionExpiredParam = new URLSearchParams(location.search).get('sessionExpired');
+
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 
@@ -151,6 +154,19 @@ const LoginPage: React.FC = () => {
 							<span className="font-medium">¡Email verificado correctamente!</span>
 						</div>
 						<p className="mt-1 text-sm">Tu cuenta está ahora activa. Puedes iniciar sesión normalmente.</p>
+					</div>
+				)}
+
+				{/* Mensaje de sesión expirada */}
+				{sessionExpiredParam && (
+					<div className="bg-amber-50 border border-amber-200 text-amber-700 p-4 rounded-md">
+						<div className="flex items-center">
+							<svg className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+								<path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+							</svg>
+							<span className="font-medium">Tu sesión expiró</span>
+						</div>
+						<p className="mt-1 text-sm">Por favor, vuelve a iniciar sesión para continuar navegando.</p>
 					</div>
 				)}
 
