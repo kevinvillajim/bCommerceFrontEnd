@@ -1,7 +1,7 @@
 import { ApiClient } from '../api/apiClient';
 import appConfig from '../../config/appConfig';
 import type { InvoiceRepository } from '../../core/domain/repositories/InvoiceRepository';
-import type { ApiResponse, PaginatedResponse } from '../../core/domain/entities/ApiResponse';
+import type { PaginatedApiResponse } from '../../core/domain/entities/ApiResponse';
 import type { InvoiceFilters, AdminInvoice } from '../../core/useCases/admin/invoice/GetAllInvoicesUseCase';
 import type { InvoiceDetail } from '../../core/useCases/admin/invoice/GetInvoiceByIdUseCase';
 import type { RetryInvoiceResponse } from '../../core/useCases/admin/invoice/RetryInvoiceUseCase';
@@ -11,90 +11,88 @@ import type { UpdateInvoiceRequest, UpdateInvoiceResponse } from '../../core/use
 
 export class HttpInvoiceRepository implements InvoiceRepository {
 
-  async getAllInvoices(filters: InvoiceFilters = {}): Promise<ApiResponse<AdminInvoice[], PaginatedResponse<AdminInvoice>['meta']>> {
+  async getAllInvoices(filters: InvoiceFilters = {}): Promise<PaginatedApiResponse<AdminInvoice>> {
     try {
-      // Construir query parameters
-      const queryParams = new URLSearchParams();
-      
-      if (filters.status) queryParams.append('status', filters.status);
-      if (filters.customer_identification) queryParams.append('customer_identification', filters.customer_identification);
-      if (filters.customer_name) queryParams.append('customer_name', filters.customer_name);
-      if (filters.start_date) queryParams.append('start_date', filters.start_date);
-      if (filters.end_date) queryParams.append('end_date', filters.end_date);
-      if (filters.invoice_number) queryParams.append('invoice_number', filters.invoice_number);
-      if (filters.page) queryParams.append('page', filters.page.toString());
-      if (filters.per_page) queryParams.append('per_page', filters.per_page.toString());
+      // Construir query parameters (usar objeto directo como AdminOrderService)
+      const queryParams = filters;
 
-      const queryString = queryParams.toString();
-      const url = queryString ? `/admin/invoices?${queryString}` : '/admin/invoices';
-      
-      const response = await ApiClient.get<{
-        success: boolean;
-        data: AdminInvoice[];
-        meta: PaginatedResponse<AdminInvoice>['meta'];
-        message?: string;
-      }>(url);
+      const response = await ApiClient.get<any>('/admin/invoices', queryParams);
+
+      // Seguir patrón de AdminOrderService - acceso directo a datos
+      const invoices = response?.data || [];
+      const meta = response?.meta || {
+        current_page: 1,
+        last_page: 1,
+        per_page: 20,
+        total: 0,
+        from: 0,
+        to: 0,
+      };
 
       return {
-        success: response.success,
-        message: response.message,
-        data: response.data || [],
-        meta: response.meta
+        status: 'success',
+        message: 'Facturas obtenidas exitosamente',
+        data: {
+          data: invoices,
+          meta: meta,
+          links: {
+            first: '',
+            last: '',
+            prev: null,
+            next: null,
+          }
+        }
       };
     } catch (error) {
       console.error('Error en HttpInvoiceRepository.getAllInvoices:', error);
-      return {
-        success: false,
-        message: error instanceof Error ? error.message : 'Error al obtener las facturas',
-        data: []
-      };
+      throw error;
     }
   }
 
-  async getInvoiceById(id: number): Promise<ApiResponse<InvoiceDetail>> {
+  async getInvoiceById(id: number): Promise<InvoiceDetail> {
     try {
-      const response = await ApiClient.get<InvoiceDetail>(`/admin/invoices/${id}`);
-      return response;
+      const response = await ApiClient.get<any>(`/admin/invoices/${id}`);
+      return response.data;
     } catch (error) {
       console.error('Error en HttpInvoiceRepository.getInvoiceById:', error);
       throw error;
     }
   }
 
-  async retryInvoice(invoiceId: number): Promise<ApiResponse<RetryInvoiceResponse>> {
+  async retryInvoice(invoiceId: number): Promise<RetryInvoiceResponse> {
     try {
-      const response = await ApiClient.post<RetryInvoiceResponse>(`/admin/invoices/${invoiceId}/retry`, {});
-      return response;
+      const response = await ApiClient.post<any>(`/admin/invoices/${invoiceId}/retry`, {});
+      return response.data;
     } catch (error) {
       console.error('Error en HttpInvoiceRepository.retryInvoice:', error);
       throw error;
     }
   }
 
-  async checkInvoiceStatus(invoiceId: number): Promise<ApiResponse<InvoiceStatusCheck>> {
+  async checkInvoiceStatus(invoiceId: number): Promise<InvoiceStatusCheck> {
     try {
-      const response = await ApiClient.get<InvoiceStatusCheck>(`/admin/invoices/${invoiceId}/check-status`);
-      return response;
+      const response = await ApiClient.get<any>(`/admin/invoices/${invoiceId}/check-status`);
+      return response.data;
     } catch (error) {
       console.error('Error en HttpInvoiceRepository.checkInvoiceStatus:', error);
       throw error;
     }
   }
 
-  async getInvoiceStats(): Promise<ApiResponse<InvoiceStats>> {
+  async getInvoiceStats(): Promise<InvoiceStats> {
     try {
-      const response = await ApiClient.get<InvoiceStats>('/admin/invoices/stats/overview');
-      return response;
+      const response = await ApiClient.get<any>('/admin/invoices/stats/overview');
+      return response.data;
     } catch (error) {
       console.error('Error en HttpInvoiceRepository.getInvoiceStats:', error);
       throw error;
     }
   }
 
-  async updateInvoice(invoiceId: number, updateData: UpdateInvoiceRequest): Promise<ApiResponse<UpdateInvoiceResponse>> {
+  async updateInvoice(invoiceId: number, updateData: UpdateInvoiceRequest): Promise<UpdateInvoiceResponse> {
     try {
-      const response = await ApiClient.put<UpdateInvoiceResponse>(`/admin/invoices/${invoiceId}`, updateData);
-      return response;
+      const response = await ApiClient.put<any>(`/admin/invoices/${invoiceId}`, updateData);
+      return response.data;
     } catch (error) {
       console.error('Error en HttpInvoiceRepository.updateInvoice:', error);
       throw error;

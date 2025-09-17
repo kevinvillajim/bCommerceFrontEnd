@@ -67,22 +67,6 @@ interface SriActiveCertificateResponse {
   message?: string;
 }
 
-interface Certificate {
-  id: number;
-  alias: string;
-  subject: string;
-  issuer: string;
-  validFrom: string;
-  validTo: string;
-  isActive: boolean;
-  daysUntilExpiry: number;
-  status: 'vigente' | 'vencido' | 'proximo_vencer';
-  algorithm?: string;
-  keySize?: number;
-  fingerprint?: string;
-  fechaSubida?: string;
-  ultimoUso?: string;
-}
 
 interface CertificateListResponse {
   success: boolean;

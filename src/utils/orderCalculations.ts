@@ -106,7 +106,11 @@ export function calculateOrderItem(cartItem: any): OrderItemCalculated {
   return {
     id: cartItem.id,
     productId: cartItem.productId,
-    product_name: cartItem.product?.name || 'Producto',
+    // ✅ VALIDACIÓN ESTRICTA - NO FALLBACKS EN NOMBRES DE PRODUCTOS
+    product_name: cartItem.product?.name ?? (() => {
+      console.error('Producto sin nombre válido:', cartItem.product);
+      throw new Error('Error: producto sin nombre válido en orden');
+    })(),
     product_image: cartItem.product?.image,
     quantity: cartItem.quantity,
     price: discount.finalPricePerUnit,

@@ -15,6 +15,7 @@ import {
 	AtSign,
 	Send,
 	Trash2,
+	CreditCard,
 } from "lucide-react";
 import useAdminUsers from "../../hooks/useAdminUsers";
 import type {AdminUserData} from "../../hooks/useAdminUsers";
@@ -33,6 +34,7 @@ const AdminUsersPage: React.FC = () => {
 		toggleUserStatus,
 		sendPasswordReset,
 		makeUserAdmin,
+		makeUserPayment,
 		makeUserSeller,
 		deleteUser,
 		filterUsers,
@@ -121,6 +123,17 @@ const AdminUsersPage: React.FC = () => {
 
 		if (success) {
 			setSuccessMessage("Usuario promocionado a administrador correctamente.");
+
+			// Limpiar mensaje después de 3 segundos
+			setTimeout(() => setSuccessMessage(null), 3000);
+		}
+	};
+
+	const handleMakePaymentUser = async (userId: number) => {
+		const success = await makeUserPayment(userId);
+
+		if (success) {
+			setSuccessMessage("Usuario convertido a rol de pagos correctamente.");
 
 			// Limpiar mensaje después de 3 segundos
 			setTimeout(() => setSuccessMessage(null), 3000);
@@ -431,6 +444,15 @@ const AdminUsersPage: React.FC = () => {
 							title="Hacer Administrador"
 						>
 							<Shield size={18} />
+						</button>
+					)}
+					{user.role !== "admin" && (
+						<button
+							onClick={() => handleMakePaymentUser(user.id)}
+							className="p-1 text-blue-600 hover:bg-blue-100 rounded-md"
+							title="Hacer Usuario de Pagos"
+						>
+							<CreditCard size={18} />
 						</button>
 					)}
 					<button

@@ -82,6 +82,18 @@ export class AdminUserService {
 	}
 
 	/**
+	 * Actualiza rol de usuario a usuario de pagos
+	 * @param userId ID del usuario a promover
+	 * @returns true si se actualizó correctamente
+	 */
+	async makePaymentUser(userId: number): Promise<boolean> {
+		const response = await axiosInstance.put(
+			API_ENDPOINTS.ADMIN.MAKE_PAYMENT_USER(userId)
+		);
+		return response.data.success;
+	}
+
+	/**
 	 * Convierte un usuario en vendedor
 	 * @param userId ID del usuario a convertir
 	 * @param storeData Datos de la tienda

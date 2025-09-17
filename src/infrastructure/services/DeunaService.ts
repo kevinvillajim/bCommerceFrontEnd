@@ -515,14 +515,41 @@ export class DeunaService {
   /**
    * Simulate payment success (for testing only)
    * This triggers the webhook simulation endpoint
+   * ⚠️ CRITICAL: NO FALLBACKS - All parameters are required
    */
-  static async simulatePaymentSuccess(paymentId: string, amount?: number, customerEmail?: string): Promise<{
+  static async simulatePaymentSuccess(paymentId: string, amount: number, customerEmail: string, customerName?: string, sessionId?: string): Promise<{
     success: boolean;
     message: string;
     data?: any;
   }> {
+    // ✅ STRICT VALIDATION - NO FALLBACKS
+    if (!paymentId || paymentId.trim() === '') {
+      throw new Error('payment_id es obligatorio para la simulación');
+    }
+
+    if (!amount || amount <= 0) {
+      throw new Error('amount válido es obligatorio para la simulación');
+    }
+
+    if (!customerEmail || customerEmail.trim() === '') {
+      throw new Error('customer_email es obligatorio para la simulación');
+    }
+
     try {
       console.log('🧪 Simulating payment success for testing', { paymentId, amount, customerEmail });
+
+      // ✅ PAYLOAD CORRECTO PARA BACKEND COMPATIBILITY
+      const requestPayload = {
+        payment_id: paymentId,
+        transaction_id: paymentId, // ✅ REQUERIDO POR BACKEND
+        simulate_deuna: true, // ✅ REQUERIDO PARA DETECTAR SIMULACIÓN
+        amount: amount, // ✅ SIN FALLBACK
+        currency: 'USD',
+        customer_email: customerEmail, // ✅ SIN FALLBACK
+        customer_name: customerName || 'Test User', // Solo este fallback es aceptable
+        calculated_total: amount, // ✅ CAMPO OPCIONAL PERO CONSISTENTE
+        session_id: sessionId // ✅ SESSION_ID REAL PARA RECUPERAR CHECKOUTDATA
+      };
 
       const response = await ApiClient.post<{
         success: boolean;
@@ -530,13 +557,7 @@ export class DeunaService {
         data: any;
       }>(
         '/webhooks/deuna/simulate-payment-success',
-        {
-          payment_id: paymentId,
-          amount: amount || 100.00,
-          currency: 'USD',
-          customer_email: customerEmail || 'test@example.com',
-          customer_name: 'Test Customer'
-        }
+        requestPayload
       );
 
       console.log('🎉 Payment simulation response:', response);
@@ -545,8 +566,8 @@ export class DeunaService {
     } catch (error: any) {
       console.error('❌ Error simulating payment:', error);
       throw new Error(
-        error.response?.data?.message || 
-        error.message || 
+        error.response?.data?.message ||
+        error.message ||
         'Error simulando el pago'
       );
     }
@@ -579,7 +600,7 @@ export class DeunaService {
           status: 'completed',
           amount: amount || statusResponse.data.amount,
           currency: 'USD',
-          customer_email: customerEmail || statusResponse.data.customer_email,
+          customer_email: customerEmail || 'default@deuna.com',
           completed_at: new Date().toISOString(),
           // Mark this as a real payment completion (not simulation)
           source: 'real_payment_completion'

@@ -1,5 +1,4 @@
 import type { InvoiceRepository } from '../../../domain/repositories/InvoiceRepository';
-import type { ApiResponse } from '../../../domain/entities/ApiResponse';
 
 export interface InvoiceStats {
   sri_stats: {
@@ -30,13 +29,8 @@ export class GetInvoiceStatsUseCase {
 
   async execute(): Promise<InvoiceStats> {
     try {
-      const response = await this.invoiceRepository.getInvoiceStats();
-      
-      if (!response.success) {
-        throw new Error(response.message || 'Error al obtener las estadísticas de facturas');
-      }
-
-      return response.data;
+      const invoiceStats = await this.invoiceRepository.getInvoiceStats();
+      return invoiceStats;
     } catch (error) {
       console.error('Error en GetInvoiceStatsUseCase:', error);
       throw error;

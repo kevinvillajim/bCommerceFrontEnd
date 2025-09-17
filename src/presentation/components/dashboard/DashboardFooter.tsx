@@ -4,7 +4,7 @@ interface DashboardFooterProps {
 	/**
 	 * Tipo de dashboard para mostrar texto apropiado
 	 */
-	type: "admin" | "seller" | "customer";
+	type: "admin" | "seller" | "customer" | "payment";
 
 	/**
 	 * Año actual (por defecto usa el año actual)
@@ -34,6 +34,8 @@ const DashboardFooter: React.FC<DashboardFooterProps> = ({
 				return "Portal de Vendedor Comersia";
 			case "customer":
 				return "Comersia";
+			case "payment":
+				return "Panel de Pagos Comersia";
 			default:
 				return "Comersia";
 		}

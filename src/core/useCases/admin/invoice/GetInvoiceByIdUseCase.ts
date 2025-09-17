@@ -1,5 +1,4 @@
 import type { InvoiceRepository } from '../../../domain/repositories/InvoiceRepository';
-import type { ApiResponse } from '../../../domain/entities/ApiResponse';
 
 export interface InvoiceDetail {
   id: number;
@@ -70,13 +69,8 @@ export class GetInvoiceByIdUseCase {
 
   async execute(id: number): Promise<InvoiceDetail> {
     try {
-      const response = await this.invoiceRepository.getInvoiceById(id);
-      
-      if (!response.success) {
-        throw new Error(response.message || 'Error al obtener los detalles de la factura');
-      }
-
-      return response.data;
+      const invoiceDetail = await this.invoiceRepository.getInvoiceById(id);
+      return invoiceDetail;
     } catch (error) {
       console.error('Error en GetInvoiceByIdUseCase:', error);
       throw error;

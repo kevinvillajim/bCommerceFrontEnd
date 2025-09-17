@@ -209,28 +209,53 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 					id: response.data.id,
 					total: response.data.total,
 					items: response.data.items.map((item) => {
-						const product = item.product as Product || {} as Product;
+						// ✅ VALIDACIÓN ESTRICTA - NO FALLBACKS EN PRODUCTOS
+						if (!item.product) {
+							console.error('Item sin producto asociado:', item);
+							throw new Error('Error en carrito: item sin producto válido');
+						}
+
+						const product = item.product as Product;
+						if (!product.id || product.id <= 0) {
+							console.error('Producto sin ID válido:', product);
+							throw new Error('Error en carrito: producto sin ID válido');
+						}
+						if (!product.name || product.name.trim() === '') {
+							console.error('Producto sin nombre:', product);
+							throw new Error('Error en carrito: producto sin nombre');
+						}
+						if (typeof product.price !== 'number' || product.price <= 0) {
+							console.error('Producto sin precio válido:', product);
+							throw new Error('Error en carrito: producto sin precio válido');
+						}
+
+						// Validar sellerId - CRÍTICO para checkout
+						const sellerId = product.sellerId || product.seller_id || (product.seller ? product.seller.id : undefined) || product.user_id;
+						if (!sellerId || sellerId <= 0) {
+							console.error('Producto sin seller válido:', product);
+							throw new Error('Error en carrito: producto sin vendedor válido');
+						}
 
 						return {
 							id: item.id,
-							productId: product.id || 0,
+							productId: product.id,
 							quantity: item.quantity,
 							price: item.price,
 							subtotal: item.subtotal,
 							attributes: item.attributes,
-							
-							// ✅ INCLUIR INFORMACIÓN DE DESCUENTOS SI VIENE DEL BACKEND
+
+							// Datos calculados por backend
 							final_price: item.final_price || item.price,
 							original_price: item.original_price || item.price,
 							volume_discount_percentage: item.volume_discount_percentage || 0,
 							volume_savings: item.volume_savings || 0,
 							discount_label: item.discount_label || undefined,
-							
+
 							product: {
-								id: product.id || 0,
-								name: product.name || "Producto sin nombre",
+								id: product.id,
+								name: product.name,
 								slug: product.slug,
-								price: product.price || 0,
+								price: product.price,
 								final_price: product.final_price ?? product.price ?? 0,
 								discount_percentage: product.discount_percentage ?? 0,
 								rating: product.rating ?? 0,

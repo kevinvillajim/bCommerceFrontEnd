@@ -9,14 +9,14 @@ export interface CreateSellerData {
 	store_name: string;
 	description?: string;
 	status: "pending" | "active";
-	commission_rate: number;
+	// commission_rate: number; // TODO: Implementar comisiones individuales en el futuro
 	is_featured: boolean;
 }
 
 export interface UpdateSellerData {
 	store_name?: string;
 	description?: string;
-	commission_rate?: number;
+	// commission_rate?: number; // TODO: Implementar comisiones individuales en el futuro
 	is_featured?: boolean;
 	user_id?: number; // AGREGADO para compatibilidad con SellerFormModal
 }

@@ -6,6 +6,7 @@ import {useAuth} from "../hooks/useAuth";
 import {useErrorHandler} from "../hooks/useErrorHandler";
 import {CheckoutService} from "../../core/services/CheckoutService";
 import {CheckoutItemsService} from "../../infrastructure/services/CheckoutItemsService";
+import {DatafastService} from "../../core/services/DatafastService";
 import {calculateCartItemDiscountsAsync} from "../../utils/volumeDiscountCalculator";
 // 🎯 JORDAN: VolumeDiscountContext eliminado - funcionalidad migrada a volumeDiscountCalculator
 // import {useCartVolumeDiscounts} from "../contexts/VolumeDiscountContext";
@@ -18,16 +19,19 @@ import CreditCardForm from "../components/checkout/CreditCardForm";
 import QRPaymentForm from "../components/checkout/QRPaymentForm";
 import AddressForm from "../components/checkout/AddressForm";
 import type {Address} from "../../core/domain/valueObjects/Address";
-import TestCheckoutButton from "../components/checkout/TestCheckoutButton";
 import DatafastPaymentButton from "../components/checkout/DatafastPaymentButtonProps";
 import {formatCurrency} from "../../utils/formatters/formatCurrency";
 import {Gift, AlertTriangle, TrendingDown} from "lucide-react";
+import type {CheckoutData, CheckoutState} from "../../types/checkout";
 
 const CheckoutPage: React.FC = () => {
 	const navigate = useNavigate();
 	const {cart, clearCart, showNotification, appliedDiscount} = useCart();
 	const {user} = useAuth();
 	const [isLoading, setIsLoading] = useState(false);
+
+	// ✅ Servicios para arquitectura centralizada
+	const datafastService = new DatafastService();
 
 	// ✅ Hook para descuentos por volumen dinámicos desde BD
 	// 🎯 JORDAN: Volume discounts ahora se manejan directamente en volumeDiscountCalculator
@@ -69,6 +73,11 @@ const CheckoutPage: React.FC = () => {
 	const [orderComplete, setOrderComplete] = useState(false);
 	const [orderDetails, setOrderDetails] = useState<any>(null);
 	const [countdown, setCountdown] = useState(8);
+
+	// ✅ NUEVO: Estados para el flujo de checkout centralizado
+	const [, setCheckoutState] = useState<CheckoutState>("forms_filling" as CheckoutState);
+	const [validatedCheckoutData, setValidatedCheckoutData] = useState<CheckoutData | null>(null);
+	const [showPaymentMethods, setShowPaymentMethods] = useState(false);
 
 	const checkoutService = new CheckoutService();
 
@@ -329,6 +338,7 @@ const CheckoutPage: React.FC = () => {
 		}
 	};
 
+	// ✅ VALIDACIÓN COMPLETA: Para formularios con método de pago específico (legacy)
 	const validateForm = (): boolean => {
 		const errors: Record<string, string> = {};
 
@@ -388,7 +398,250 @@ const CheckoutPage: React.FC = () => {
 		return Object.keys(errors).length === 0;
 	};
 
-	const processCheckout = async () => {
+	// ✅ NUEVA VALIDACIÓN: Solo para direcciones (sin método de pago)
+	const validateAddressesOnly = (): boolean => {
+		const errors: Record<string, string> = {};
+
+		const validateAddress = (address: Address, prefix: string) => {
+			const requiredFields: (keyof Address)[] = [
+				"name",
+				"identification",
+				"street",
+				"city",
+				"state",
+				"country",
+				"phone",
+			];
+			requiredFields.forEach((field) => {
+				if (!address[field]) {
+					errors[`${prefix}${field}`] =
+						`El campo ${field.replace("_", " ")} es obligatorio`;
+				}
+
+				// Validación especial para el campo name (nombre completo)
+				if (field === "name" && address[field]) {
+					const nameParts = address[field].trim().split(/\s+/);
+					if (nameParts.length < 2) {
+						errors[`${prefix}${field}`] =
+							"Debe ingresar al menos un nombre y un apellido separados por espacio";
+					}
+				}
+			});
+		};
+
+		// Validar dirección de envío
+		validateAddress(shippingAddress, "shipping");
+
+		// Solo validar dirección de facturación si NO se usa la misma dirección
+		if (!useSameAddress) {
+			validateAddress(billingAddress, "billing");
+		}
+
+		setFormErrors(errors);
+		const isValid = Object.keys(errors).length === 0;
+
+		// Debug para ver qué está fallando
+		if (!isValid) {
+			console.log("❌ VALIDACIÓN FALLÓ - Errores encontrados:", errors);
+			console.log("📊 Estado actual de direcciones:");
+			console.log("   - useSameAddress:", useSameAddress);
+			console.log("   - shippingAddress:", shippingAddress);
+			if (!useSameAddress) {
+				console.log("   - billingAddress:", billingAddress);
+			}
+		} else {
+			console.log("✅ VALIDACIÓN DE DIRECCIONES EXITOSA");
+		}
+
+		return isValid;
+	};
+
+	// ✅ FUNCIÓN HELPER: Combina datos del cart con cálculos validados (estrategia híbrida)
+	const combineCartWithCalculations = (cartItems: any[], calculatedItems: any[]) => {
+		console.log("🔄 Combinando datos del cart con cálculos validados (estrategia híbrida)");
+
+		return cartItems.map((cartItem, index) => {
+			const calculatedItem = calculatedItems[index];
+
+			// Combinar información descriptiva del cart con precios validados de la calculadora
+			const combinedItem = {
+				// Del cart original (información descriptiva)
+				product_id: cartItem.productId || cartItem.product_id,
+				name: cartItem.product?.name || `Product ${cartItem.productId || cartItem.product_id}`,
+				subtotal: calculatedItem.price * calculatedItem.quantity, // Calcular subtotal con precio validado
+
+				// De la calculadora (precios validados)
+				quantity: calculatedItem.quantity,
+				price: calculatedItem.price,
+				original_price: calculatedItem.original_price || calculatedItem.base_price,
+				discount_percentage: calculatedItem.volume_discount_percentage || 0,
+			};
+
+			console.log(`   Item ${index + 1}: ${combinedItem.name} - $${combinedItem.price} x ${combinedItem.quantity}`);
+			return combinedItem;
+		});
+	};
+
+	// ✅ NUEVA FUNCIÓN: Validar formularios y crear objeto temporal de checkout
+	const validateAndPrepareCheckout = async () => {
+		console.log("🔍 VALIDACIÓN DE CHECKOUT: Iniciando validación centralizada");
+
+		// Validar stock
+		const stockValidation = validateCartStock();
+		if (!stockValidation.valid) {
+			console.log("❌ Validación de stock falló:", stockValidation.errors);
+
+			stockValidation.errors.forEach((error) => {
+				showNotification(NotificationType.ERROR, error);
+			});
+
+			showNotification(
+				NotificationType.WARNING,
+				"Por favor, ajusta las cantidades en tu carrito antes de continuar"
+			);
+			return false;
+		}
+
+		// Validar solo direcciones (sin método de pago)
+		if (!validateAddressesOnly()) {
+			console.log("❌ Validación de direcciones falló");
+			showNotification(
+				NotificationType.ERROR,
+				"Por favor, completa todos los campos de dirección obligatorios"
+			);
+			return false;
+		}
+
+		// Validar que el usuario esté autenticado
+		if (!user?.id) {
+			showNotification(
+				NotificationType.ERROR,
+				"Debes iniciar sesión para completar la compra"
+			);
+			return false;
+		}
+
+		console.log("✅ VALIDACIÓN EXITOSA: Creando objeto temporal de checkout");
+
+		try {
+			setIsLoading(true);
+
+			// Crear objeto temporal con toda la información necesaria
+			const now = new Date();
+			const sessionId = `checkout_${user.id}_${now.getTime()}`;
+
+			const checkoutData: CheckoutData = {
+				userId: user.id,
+				shippingData: {
+					name: shippingAddress.name || "",
+					email: user.email || "",
+					phone: shippingAddress.phone || "",
+					street: shippingAddress.street || "",
+					city: shippingAddress.city || "",
+					state: shippingAddress.state || "",
+					country: shippingAddress.country || "",
+					postal_code: shippingAddress.postalCode || "",
+					identification: shippingAddress.identification || "",
+				},
+				billingData: {
+					name: (useSameAddress ? shippingAddress : billingAddress).name || "",
+					email: user.email || "",
+					phone: (useSameAddress ? shippingAddress : billingAddress).phone || "",
+					street: (useSameAddress ? shippingAddress : billingAddress).street || "",
+					city: (useSameAddress ? shippingAddress : billingAddress).city || "",
+					state: (useSameAddress ? shippingAddress : billingAddress).state || "",
+					country: (useSameAddress ? shippingAddress : billingAddress).country || "",
+					postal_code: (useSameAddress ? shippingAddress : billingAddress).postalCode || "",
+					identification: (useSameAddress ? shippingAddress : billingAddress).identification || "",
+					same_as_shipping: useSameAddress,
+				},
+				items: combineCartWithCalculations(cart.items, checkoutCalculations.checkoutItems),
+				totals: {
+					subtotal_original: checkoutCalculations.totals.originalSubtotal,
+					subtotal_with_discounts: checkoutCalculations.totals.subtotal,
+					seller_discounts: checkoutCalculations.totals.sellerDiscounts,
+					volume_discounts: checkoutCalculations.totals.volumeDiscounts,
+					coupon_discount: checkoutCalculations.totals.couponDiscount,
+					total_discounts: checkoutCalculations.totals.totalDiscounts,
+					iva_amount: checkoutCalculations.totals.tax,
+					shipping_cost: checkoutCalculations.totals.shipping,
+					free_shipping: checkoutCalculations.totals.freeShipping,
+					free_shipping_threshold: 50, // Valor por defecto
+					final_total: checkoutCalculations.totals.total,
+				},
+				discountCode: appliedDiscount?.discountCode?.code,
+				discountInfo: appliedDiscount ? {
+					code: appliedDiscount.discountCode.code,
+					discount_percentage: appliedDiscount.discountCode.discount_percentage,
+					discount_amount: checkoutCalculations.totals.couponDiscount,
+				} : undefined,
+				timestamp: now.toISOString(),
+				sessionId: sessionId,
+				validatedAt: now.toISOString(),
+				expiresAt: new Date(now.getTime() + 30 * 60 * 1000).toISOString(), // 30 minutos
+			};
+
+			// ✅ ARQUITECTURA CENTRALIZADA: Almacenar datos en backend antes de mostrar métodos de pago
+			console.log("💾 Almacenando CheckoutData en backend (arquitectura centralizada)...");
+
+			const storeRequest = {
+				shippingData: checkoutData.shippingData,
+				billingData: checkoutData.billingData,
+				items: checkoutData.items,
+				totals: checkoutData.totals,
+				sessionId: checkoutData.sessionId,
+				discountCode: checkoutData.discountCode,
+				discountInfo: checkoutData.discountInfo
+			};
+
+			const storeResponse = await datafastService.storeCheckoutData(storeRequest);
+
+			if (!storeResponse.success) {
+				throw new Error(storeResponse.message || "Error al almacenar datos de checkout");
+			}
+
+			console.log("✅ CheckoutData almacenado en backend:", {
+				sessionId: storeResponse.data.session_id,
+				expiresAt: storeResponse.data.expires_at,
+				finalTotal: storeResponse.data.final_total
+			});
+
+			// Guardar objeto temporal local
+			setValidatedCheckoutData(checkoutData);
+			setCheckoutState("forms_validated" as CheckoutState);
+			setShowPaymentMethods(true);
+
+			console.log("✅ OBJETO TEMPORAL CREADO Y ALMACENADO:", {
+				sessionId: checkoutData.sessionId,
+				userId: checkoutData.userId,
+				total: checkoutData.totals.final_total,
+				itemsCount: checkoutData.items.length,
+				expiresAt: checkoutData.expiresAt,
+				backendSessionId: storeResponse.data.session_id
+			});
+
+			showNotification(
+				NotificationType.SUCCESS,
+				"Formularios validados y datos seguros almacenados. Selecciona tu método de pago preferido."
+			);
+
+			return true;
+
+		} catch (error) {
+			console.error("❌ Error creando objeto temporal:", error);
+			handleError(
+				error as Error,
+				"Error validando los datos. Por favor, intenta de nuevo."
+			);
+			return false;
+		} finally {
+			setIsLoading(false);
+		}
+	};
+
+	// ✅ FUNCIÓN MANTENIDA: Para procesamiento directo cuando sea necesario (legacy)
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	const _processCheckout = async () => {
 		console.log("🛒 CheckoutPage.processCheckout INICIADO CON DESCUENTOS POR VOLUMEN");
 
 		const stockValidation = validateCartStock();
@@ -423,14 +676,14 @@ const CheckoutPage: React.FC = () => {
 
 		try {
 			const sellerId = CheckoutService.getSellerIdFromCart(cart);
-			
+
 			const checkoutData = {
 				payment: {
 					...paymentInfo,
 					method:
 						paymentMethod === "deuna"
 							? ("qr" as PaymentMethod)
-							: paymentMethod === "credit_card" 
+							: paymentMethod === "credit_card"
 							? ("credit_card" as PaymentMethod)
 							: paymentInfo.method,
 				},
@@ -819,7 +1072,6 @@ const CheckoutPage: React.FC = () => {
 		<div className="container mx-auto px-4 py-10">
 			<div className="flex justify-between items-center mb-8">
 				<h1 className="text-3xl font-bold">Finalizar compra</h1>
-				<TestCheckoutButton />
 			</div>
 
 			<div className="flex flex-col lg:flex-row gap-8">
@@ -871,213 +1123,268 @@ const CheckoutPage: React.FC = () => {
 						)}
 					</div>
 
-					<div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-						<h2 className="text-xl font-bold mb-4">Método de pago</h2>
+					{/* ✅ MOSTRAR MÉTODOS DE PAGO SOLO DESPUÉS DE VALIDACIÓN */}
+					{showPaymentMethods && validatedCheckoutData && (
+						<div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+							<h2 className="text-xl font-bold mb-4">Método de pago</h2>
 
-						<div className="flex flex-wrap gap-4 mb-6">
-							<button
-								type="button"
-								onClick={() => handlePaymentMethodChange("credit_card")}
-								className={`flex items-center border rounded-lg px-4 py-3 ${
-									paymentMethod === "credit_card"
-										? "border-primary-600 bg-primary-50 text-primary-600"
-										: "border-gray-300 hover:bg-gray-50"
-								}`}
-							>
-								<span>Tarjeta de crédito</span>
-							</button>
+							{/* ✅ INDICADOR DE DATOS VALIDADOS */}
+							<div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
+								<div className="flex items-center">
+									<div className="w-4 h-4 bg-green-500 rounded-full mr-2"></div>
+									<span className="text-sm text-green-800 font-medium">
+										Datos validados correctamente
+									</span>
+								</div>
+								<p className="text-xs text-green-600 mt-1">
+									Total a pagar: {formatCurrency(validatedCheckoutData.totals.final_total)}
+								</p>
+							</div>
 
-							<button
-								type="button"
-								onClick={() => handlePaymentMethodChange("deuna")}
-								className={`flex items-center border rounded-lg px-4 py-3 ${
-									paymentMethod === "deuna"
-										? "border-primary-600 bg-primary-50 text-primary-600"
-										: "border-gray-300 hover:bg-gray-50"
-								}`}
-							>
-								<span>Pago con Deuna!</span>
-							</button>
-						</div>
+							<div className="flex flex-wrap gap-4 mb-6">
+								<button
+									type="button"
+									onClick={() => handlePaymentMethodChange("credit_card")}
+									className={`flex items-center border rounded-lg px-4 py-3 ${
+										paymentMethod === "credit_card"
+											? "border-primary-600 bg-primary-50 text-primary-600"
+											: "border-gray-300 hover:bg-gray-50"
+									}`}
+								>
+									<span>Tarjeta de crédito</span>
+								</button>
 
-						{paymentMethod === "credit_card" && (
-							<CreditCardForm
-								paymentInfo={paymentInfo}
-								errors={formErrors}
-								onChange={handlePaymentChange}
-								content={
-									<DatafastPaymentButton
-										onSuccess={handleDatafastSuccess}
-										onError={handleDatafastError}
-										shippingAddress={shippingAddress}
-									/>
-								}
-							/>
-						)}
+								<button
+									type="button"
+									onClick={() => handlePaymentMethodChange("deuna")}
+									className={`flex items-center border rounded-lg px-4 py-3 ${
+										paymentMethod === "deuna"
+											? "border-primary-600 bg-primary-50 text-primary-600"
+											: "border-gray-300 hover:bg-gray-50"
+									}`}
+								>
+									<span>Pago con Deuna!</span>
+								</button>
+							</div>
 
-						{paymentMethod === "deuna" && (
-					<QRPaymentForm 
-						total={checkoutCalculations.totals.total}
-						onPaymentSuccess={async (paymentData) => {
-							console.log('✅ DeUna payment successful, processing completion:', paymentData);
-							
-							try {
-								// ✅ VALIDAR DATOS DEL PAGO ANTES DE PROCESAR
-								if (!paymentData || !paymentData.payment_id) {
-									throw new Error('Datos de pago de DeUna incompletos');
-								}
-
-								// ✅ INTENTAR VERIFICAR EL ESTADO DEL PAGO CON FALLBACKS
-								let orderData = null;
-								let attempts = 0;
-								const maxAttempts = 3;
-								
-								while (!orderData && attempts < maxAttempts) {
-									attempts++;
-									console.log(`🔄 Intento ${attempts}/${maxAttempts} - Verificando orden creada por webhook...`);
-									
-									try {
-										// Esperar un poco más en cada intento para que el webhook procese
-										await new Promise(resolve => setTimeout(resolve, 1000 * attempts));
-										
-										// Intentar obtener la orden del backend si está disponible
-										// En el futuro se puede implementar una llamada al backend para verificar
-										// Por ahora, usar los datos del paymentData
-										orderData = {
-											order_id: paymentData.order_id || `DEUNA-${Date.now()}`,
-											order_number: paymentData.payment_id,
-											total: checkoutCalculations.totals.total,
-											payment_status: 'paid',
-											payment_method: 'deuna',
-											payment_id: paymentData.payment_id,
-											created_via: 'deuna_webhook',
-											completed_at: paymentData.completed_at || new Date().toISOString()
-										};
-										break;
-										
-									} catch (attemptError) {
-										console.warn(`⚠️ Intento ${attempts} falló:`, attemptError);
-										if (attempts >= maxAttempts) {
-											// En el último intento, usar datos básicos como fallback
-											orderData = {
-												order_id: paymentData.payment_id || `DEUNA-${Date.now()}`,
-												order_number: paymentData.payment_id || `DEUNA-${Date.now()}`,
-												total: checkoutCalculations.totals.total,
-												payment_status: 'processing', // Estado más conservador
-												payment_method: 'deuna',
-												payment_id: paymentData.payment_id,
-												created_via: 'deuna_frontend_fallback',
-												completed_at: new Date().toISOString()
-											};
-											console.log('🆘 Usando datos de fallback para mostrar recibo');
-										}
+							{paymentMethod === "credit_card" && (
+								<CreditCardForm
+									paymentInfo={paymentInfo}
+									errors={formErrors}
+									onChange={handlePaymentChange}
+									content={
+										<DatafastPaymentButton
+											onSuccess={handleDatafastSuccess}
+											onError={handleDatafastError}
+											checkoutData={validatedCheckoutData}
+										/>
 									}
-								}
+								/>
+							)}
 
-								// ✅ MOSTRAR ESTADO DE LA ORDEN SEGÚN LO QUE SE OBTUVO
-								console.log('🎯 Setting orderComplete to true and orderDetails');
-								setOrderDetails(orderData);
-								setOrderComplete(true);
-								
-								// ✅ LIMPIAR CARRITO SOLO DESPUÉS DE PROCESAR EXITOSAMENTE
-								clearCart();
+							{paymentMethod === "deuna" && (
+								<QRPaymentForm
+									total={validatedCheckoutData?.totals?.final_total}
+									checkoutData={validatedCheckoutData}
+									onPaymentSuccess={async (paymentData) => {
+										console.log('✅ DeUna payment successful, processing completion:', paymentData);
 
-								// ✅ NOTIFICACIÓN ESPECÍFICA SEGÚN EL RESULTADO
-								if (orderData && orderData.created_via === 'deuna_frontend_fallback') {
-									showNotification(
-										NotificationType.WARNING,
-										'Pago completado. Si no aparece en tus órdenes inmediatamente, revisa en unos minutos.'
-									);
-								} else {
-									showNotification(
-										NotificationType.SUCCESS,
-										'¡Pago completado exitosamente con DeUna!'
-									);
-								}
-								
-								console.log('✅ DeUna payment completion processed successfully - should show receipt now');
-								console.log('📊 Order details set:', {
-									order_id: orderData?.order_id,
-									total: orderData?.total,
-									created_via: orderData?.created_via
-								});
-								
-							} catch (error) {
-								console.error('❌ Error processing DeUna payment completion:', error);
-								
-								// ✅ FALLBACK CRÍTICO: MOSTRAR INFORMACIÓN MÍNIMA PARA EL USUARIO
-								const fallbackOrderData = {
-									order_id: paymentData?.payment_id || `DEUNA-ERROR-${Date.now()}`,
-									order_number: paymentData?.payment_id || `ERROR-${Date.now()}`,
-									total: checkoutCalculations.totals.total,
-									payment_status: 'unknown',
-									payment_method: 'deuna',
-									payment_id: paymentData?.payment_id || 'unknown',
-									created_via: 'deuna_error_fallback',
-									completed_at: new Date().toISOString(),
-									error_message: 'Error procesando la confirmación. Verifica tus órdenes.'
-								};
-								
-								setOrderDetails(fallbackOrderData);
-								setOrderComplete(true);
-								
-								// No limpiar carrito si hay error - mejor experiencia para el usuario
-								showNotification(
-									NotificationType.ERROR,
-									'Error procesando la confirmación del pago. Si el pago fue exitoso, aparecerá en tus órdenes.'
-								);
-								
-								handleError(error as Error, "Error procesando la confirmación del pago. Por favor, verifica tus órdenes.");
-							}
-						}}
-						onPaymentError={(error) => {
-							console.error('❌ DeUna payment error:', error);
-							handleError(new Error(error), "Error en el pago con DeUna. Por favor, intenta de nuevo.");
-						}}
-					/>
-				)}
-					</div>
+										try {
+											// ✅ VALIDAR DATOS DEL PAGO ANTES DE PROCESAR
+											if (!paymentData || !paymentData.payment_id) {
+												throw new Error('Datos de pago de DeUna incompletos');
+											}
+
+											// ✅ INTENTAR VERIFICAR EL ESTADO DEL PAGO CON FALLBACKS
+											let orderData = null;
+											let attempts = 0;
+											const maxAttempts = 3;
+
+											while (!orderData && attempts < maxAttempts) {
+												attempts++;
+												console.log(`🔄 Intento ${attempts}/${maxAttempts} - Verificando orden creada por webhook...`);
+
+												try {
+													// Esperar un poco más en cada intento para que el webhook procese
+													await new Promise(resolve => setTimeout(resolve, 1000 * attempts));
+
+													// Intentar obtener la orden del backend si está disponible
+													// En el futuro se puede implementar una llamada al backend para verificar
+													// Por ahora, usar los datos del paymentData
+													orderData = {
+														order_id: paymentData.order_id || `DEUNA-${Date.now()}`,
+														order_number: paymentData.payment_id,
+														total: validatedCheckoutData.totals.final_total,
+														payment_status: 'paid',
+														payment_method: 'deuna',
+														payment_id: paymentData.payment_id,
+														created_via: 'deuna_webhook',
+														completed_at: paymentData.completed_at || new Date().toISOString()
+													};
+													break;
+
+												} catch (attemptError) {
+													console.warn(`⚠️ Intento ${attempts} falló:`, attemptError);
+													if (attempts >= maxAttempts) {
+														// En el último intento, usar datos básicos como fallback
+														orderData = {
+															order_id: paymentData.payment_id || `DEUNA-${Date.now()}`,
+															order_number: paymentData.payment_id || `DEUNA-${Date.now()}`,
+															total: validatedCheckoutData.totals.final_total,
+															payment_status: 'processing', // Estado más conservador
+															payment_method: 'deuna',
+															payment_id: paymentData.payment_id,
+															created_via: 'deuna_frontend_fallback',
+															completed_at: new Date().toISOString()
+														};
+														console.log('🆘 Usando datos de fallback para mostrar recibo');
+													}
+												}
+											}
+
+											// ✅ MOSTRAR ESTADO DE LA ORDEN SEGÚN LO QUE SE OBTUVO
+											console.log('🎯 Setting orderComplete to true and orderDetails');
+											setOrderDetails(orderData);
+											setOrderComplete(true);
+
+											// ✅ LIMPIAR CARRITO SOLO DESPUÉS DE PROCESAR EXITOSAMENTE
+											clearCart();
+
+											// ✅ NOTIFICACIÓN ESPECÍFICA SEGÚN EL RESULTADO
+											if (orderData && orderData.created_via === 'deuna_frontend_fallback') {
+												showNotification(
+													NotificationType.WARNING,
+													'Pago completado. Si no aparece en tus órdenes inmediatamente, revisa en unos minutos.'
+												);
+											} else {
+												showNotification(
+													NotificationType.SUCCESS,
+													'¡Pago completado exitosamente con DeUna!'
+												);
+											}
+
+											console.log('✅ DeUna payment completion processed successfully - should show receipt now');
+											console.log('📊 Order details set:', {
+												order_id: orderData?.order_id,
+												total: orderData?.total,
+												created_via: orderData?.created_via
+											});
+
+										} catch (error) {
+											console.error('❌ Error processing DeUna payment completion:', error);
+
+											// ✅ FALLBACK CRÍTICO: MOSTRAR INFORMACIÓN MÍNIMA PARA EL USUARIO
+											const fallbackOrderData = {
+												order_id: paymentData?.payment_id || `DEUNA-ERROR-${Date.now()}`,
+												order_number: paymentData?.payment_id || `ERROR-${Date.now()}`,
+												total: validatedCheckoutData.totals.final_total,
+												payment_status: 'unknown',
+												payment_method: 'deuna',
+												payment_id: paymentData?.payment_id || 'unknown',
+												created_via: 'deuna_error_fallback',
+												completed_at: new Date().toISOString(),
+												error_message: 'Error procesando la confirmación. Verifica tus órdenes.'
+											};
+
+											setOrderDetails(fallbackOrderData);
+											setOrderComplete(true);
+
+											// No limpiar carrito si hay error - mejor experiencia para el usuario
+											showNotification(
+												NotificationType.ERROR,
+												'Error procesando la confirmación del pago. Si el pago fue exitoso, aparecerá en tus órdenes.'
+											);
+
+											handleError(error as Error, "Error procesando la confirmación del pago. Por favor, verifica tus órdenes.");
+										}
+									}}
+									onPaymentError={(error) => {
+										console.error('❌ DeUna payment error:', error);
+										handleError(new Error(error), "Error en el pago con DeUna. Por favor, intenta de nuevo.");
+									}}
+								/>
+							)}
+						</div>
+					)}
+
+					{/* ✅ MENSAJE INFORMATIVO CUANDO NO HAY MÉTODOS DE PAGO */}
+					{!showPaymentMethods && (
+						<div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+							<h2 className="text-xl font-bold mb-4">Método de pago</h2>
+							<div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+								<p className="text-blue-800 text-sm">
+									Los métodos de pago se mostrarán después de validar tu información de envío y facturación.
+								</p>
+							</div>
+						</div>
+					)}
 				</div>
 
 				<div className="lg:w-1/3">
 					<div className="bg-white rounded-lg shadow-lg p-6 sticky top-24">
 						<OrderSummaryComponent />
 
-						<button
-							onClick={processCheckout}
-							disabled={isLoading || checkoutCalculations.stockIssues.length > 0}
-							className="mt-6 w-full bg-primary-600 hover:bg-primary-700 text-white font-medium py-3 px-4 rounded-md transition-colors disabled:opacity-50 flex items-center justify-center"
-						>
-							{isLoading ? (
-								<>
-									<svg
-										className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-										xmlns="http://www.w3.org/2000/svg"
-										fill="none"
-										viewBox="0 0 24 24"
+						{/* ✅ BOTÓN DINÁMICO SEGÚN EL ESTADO DEL CHECKOUT */}
+						{!showPaymentMethods ? (
+							<button
+								onClick={validateAndPrepareCheckout}
+								disabled={isLoading || checkoutCalculations.stockIssues.length > 0}
+								className="mt-6 w-full bg-primary-600 hover:bg-primary-700 text-white font-medium py-3 px-4 rounded-md transition-colors disabled:opacity-50 flex items-center justify-center"
+							>
+								{isLoading ? (
+									<>
+										<svg
+											className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+											xmlns="http://www.w3.org/2000/svg"
+											fill="none"
+											viewBox="0 0 24 24"
+										>
+											<circle
+												className="opacity-25"
+												cx="12"
+												cy="12"
+												r="10"
+												stroke="currentColor"
+												strokeWidth="4"
+											></circle>
+											<path
+												className="opacity-75"
+												fill="currentColor"
+												d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+											></path>
+										</svg>
+										Validando datos...
+									</>
+								) : checkoutCalculations.stockIssues.length > 0 ? (
+									"Resuelve problemas de stock"
+								) : (
+									`Validar datos y continuar - ${formatCurrency(checkoutCalculations.totals.total)}`
+								)}
+							</button>
+						) : (
+							<div className="mt-6 bg-green-50 border border-green-200 rounded-lg p-4">
+								<div className="flex items-center justify-between">
+									<div>
+										<h4 className="text-sm font-medium text-green-800">
+											✅ Datos validados
+										</h4>
+										<p className="text-xs text-green-600 mt-1">
+											Selecciona tu método de pago para continuar
+										</p>
+									</div>
+									<button
+										onClick={() => {
+											setShowPaymentMethods(false);
+											setValidatedCheckoutData(null);
+											setCheckoutState("forms_filling" as CheckoutState);
+										}}
+										className="text-xs text-green-600 underline hover:no-underline"
 									>
-										<circle
-											className="opacity-25"
-											cx="12"
-											cy="12"
-											r="10"
-											stroke="currentColor"
-											strokeWidth="4"
-										></circle>
-										<path
-											className="opacity-75"
-											fill="currentColor"
-											d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-										></path>
-									</svg>
-									Procesando...
-								</>
-							) : checkoutCalculations.stockIssues.length > 0 ? (
-								"Resuelve problemas de stock"
-							) : (
-								`Finalizar compra - ${formatCurrency(checkoutCalculations.totals.total)}`
-							)}
-						</button>
+										Editar datos
+									</button>
+								</div>
+							</div>
+						)}
 
 						{checkoutCalculations.stockIssues.length > 0 && (
 							<div className="mt-3 text-xs text-center text-red-600">

@@ -141,7 +141,7 @@ export class CheckoutService {
 	 */
 	async processCheckout(
 		checkoutData: CheckoutRequest,
-		userEmail?: string
+		_userEmail?: string
 	): Promise<CheckoutResponse> {
 		try {
 			console.log("🚀 CheckoutService.processCheckout INICIADO CON DESCUENTOS POR VOLUMEN");

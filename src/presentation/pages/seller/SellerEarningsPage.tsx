@@ -6,59 +6,15 @@ import {
 	RefreshCw,
 	Download,
 	CreditCard,
-	ArrowRight,
 	Wallet,
-	PieChart,
-
 	BarChart2,
 } from "lucide-react";
 import { formatCurrency } from "../../../utils/formatters/formatCurrency";
 import DashboardCardList from "@/presentation/components/dashboard/DashboardCardList";
+import SellerEarningsService from "../../../infrastructure/services/SellerEarningsService";
+import type { EarningsStats, MonthlyEarnings } from "../../../infrastructure/services/SellerEarningsService";
 
-// Tipos
-interface PaymentMethod {
-  method: string;
-  amount: number;
-  percentage: number;
-  color: string;
-}
-
-interface MonthlySales {
-	month: string;
-	sales: number;
-	commissions: number;
-	net: number;
-}
-
-interface CategorySales {
-	category: string;
-	amount: number;
-	percentage: number;
-	color: string;
-}
-
-interface PendingPayment {
-  id: string;
-  date: string;
-  amount: number;
-  status: "processing" | "scheduled";
-  estimatedArrival?: string;
-}
-
-interface EarningsStats {
-  totalEarnings: number;
-  pendingPayments: number;
-  salesThisMonth: number;
-  salesGrowth: number;
-  commissionsThisMonth: number;
-  commissionsPercentage: number;
-  netEarningsThisMonth: number;
-  earningsGrowth: number;
-  paymentMethods: PaymentMethod[];
-  monthlySales: MonthlySales[];
-  categorySales: CategorySales[];
-  pendingPaymentsList: PendingPayment[];
-}
+// Tipos locales (solo para la UI)
 
 // Componente principal
 const SellerEarningsPage: React.FC = () => {
@@ -68,79 +24,66 @@ const SellerEarningsPage: React.FC = () => {
     end: ""
   });
   const [stats, setStats] = useState<EarningsStats | null>(null);
-  const [selectedChart, setSelectedChart] = useState<"sales" | "categories">("sales");
+  const [monthlyData, setMonthlyData] = useState<MonthlyEarnings[]>([]);
+  const [error, setError] = useState<string>("");
+  const [exporting, setExporting] = useState<boolean>(false);
 
-  // Cargar datos de ganancias (simulando una llamada a API)
+  // Cargar datos de ganancias
   useEffect(() => {
     fetchEarningsData();
   }, []);
 
-  const fetchEarningsData = () => {
+  const fetchEarningsData = async () => {
     setLoading(true);
-    // Simulación de carga desde API
-    setTimeout(() => {
-      // Datos de ejemplo
-	  const mockStats: EarningsStats = {
-		totalEarnings: 12580.45,
-		pendingPayments: 1458.32,
-		salesThisMonth: 3450.8,
-		salesGrowth: 12.5,
-		commissionsThisMonth: 517.62,
-		commissionsPercentage: 15,
-		netEarningsThisMonth: 2933.18,
-		earningsGrowth: 8.2,
-		paymentMethods: [
-		  { method: "Tarjeta de Crédito", amount: 7548.27, percentage: 60, color: "bg-blue-500" },
-		  { method: "Transferencia", amount: 2516.09, percentage: 20, color: "bg-green-500" },
-		  { method: "PayPal", amount: 1887.07, percentage: 15, color: "bg-indigo-500" },
-		  { method: "Otros", amount: 629.02, percentage: 5, color: "bg-gray-500" }
-		],
-        monthlySales: [
-          { month: "Enero", sales: 1850.50, commissions: 277.58, net: 1572.92 },
-          { month: "Febrero", sales: 2105.30, commissions: 315.80, net: 1789.50 },
-          { month: "Marzo", sales: 2300.75, commissions: 345.11, net: 1955.64 },
-          { month: "Abril", sales: 2150.40, commissions: 322.56, net: 1827.84 },
-          { month: "Mayo", sales: 2485.60, commissions: 372.84, net: 2112.76 },
-          { month: "Junio", sales: 2890.25, commissions: 433.54, net: 2456.71 },
-          { month: "Julio", sales: 3120.80, commissions: 468.12, net: 2652.68 },
-          { month: "Agosto", sales: 3250.45, commissions: 487.57, net: 2762.88 },
-          { month: "Septiembre", sales: 3125.30, commissions: 468.80, net: 2656.50 },
-          { month: "Octubre", sales: 3450.80, commissions: 517.62, net: 2933.18 },
-          { month: "Noviembre", sales: 0, commissions: 0, net: 0 },
-          { month: "Diciembre", sales: 0, commissions: 0, net: 0 }
-        ],
-        categorySales: [
-          { category: "Electrónica", amount: 4650.25, percentage: 37, color: "bg-blue-500" },
-          { category: "Accesorios", amount: 3145.11, percentage: 25, color: "bg-green-500" },
-          { category: "Moda", amount: 2516.09, percentage: 20, color: "bg-yellow-500" },
-          { category: "Hogar", amount: 1258.05, percentage: 10, color: "bg-red-500" },
-          { category: "Otros", amount: 1010.95, percentage: 8, color: "bg-purple-500" }
-        ],
-        pendingPaymentsList: [
-          {
-            id: "PAY-2023-001",
-            date: "2023-11-05",
-            amount: 958.32,
-            status: "processing"
-          },
-          {
-            id: "PAY-2023-002",
-            date: "2023-11-10",
-            amount: 500.00,
-            status: "scheduled",
-            estimatedArrival: "2023-11-15"
-          }
-        ]
-      };
+    setError("");
+    try {
+      // Cargar datos principales de earnings
+      const earningsData = await SellerEarningsService.getEarnings(
+        dateRange.start ? { start_date: dateRange.start, end_date: dateRange.end } : undefined
+      );
 
-      setStats(mockStats);
+      // Cargar desglose mensual
+      const monthlyBreakdown = await SellerEarningsService.getMonthlyBreakdown();
+
+      setStats(earningsData);
+      setMonthlyData(monthlyBreakdown);
+    } catch (error: any) {
+      console.error('Error loading earnings data:', error);
+      setError(error.message || 'Error al cargar los datos de ganancias');
+    } finally {
       setLoading(false);
-    }, 800);
-	};
+    }
+  };
+
+  // Función para exportar PDF
+  const handleExportPdf = async () => {
+    setExporting(true);
+    try {
+      const exportData = await SellerEarningsService.exportPdf(
+        dateRange.start && dateRange.end
+          ? { start_date: dateRange.start, end_date: dateRange.end }
+          : undefined
+      );
+
+      // Crear un link temporal y hacer click automáticamente
+      const link = document.createElement('a');
+      link.href = exportData.download_url;
+      link.download = exportData.filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+    } catch (error: any) {
+      console.error('Error exporting PDF:', error);
+      setError(error.message || 'Error al exportar el reporte PDF');
+    } finally {
+      setExporting(false);
+    }
+  };
 	
 
   // Renderiza un gráfico simple de barras para las ventas mensuales
-  const renderSalesChart = (monthlySales: MonthlySales[]) => {
+  const renderSalesChart = (monthlySales: MonthlyEarnings[]) => {
 		if (!monthlySales || monthlySales.length === 0) return null;
 
 		const data = monthlySales;
@@ -262,7 +205,7 @@ const SellerEarningsPage: React.FC = () => {
 								{data.map((item, index) => (
 									<div key={index} className="flex-1 text-center">
 										<div className="text-xs text-gray-500">
-											{item.month.substring(0, 3)}
+											{item.month_short}
 										</div>
 									</div>
 								))}
@@ -273,142 +216,12 @@ const SellerEarningsPage: React.FC = () => {
 			</div>
 		);
 	};
-  // Renderiza un gráfico circular para las categorías
-  const renderCategoryChart = (categorySales: CategorySales[]) => {
-		if (!categorySales || categorySales.length === 0) return null;
 
-		return (
-			<div className="mt-4">
-				<h3 className="text-lg font-medium text-gray-900 mb-4">
-					Ventas por Categoría
-				</h3>
-				<div className="flex flex-col md:flex-row">
-					<div className="md:w-1/2 flex justify-center items-center">
-						<div className="relative w-48 h-48 md:w-56 md:h-56">
-							{/* Gráfico circular usando SVG */}
-							<svg viewBox="0 0 100 100" className="w-full h-full">
-								{/* Círculo de fondo */}
-								<circle
-									cx="50"
-									cy="50"
-									r="40"
-									fill="#f3f4f6"
-									className=""
-								/>
-
-								{/* Renderizamos cada segmento del círculo */}
-								{categorySales.map((item, index) => {
-									// Calculamos los ángulos inicial y final basados en porcentajes acumulados
-									const previousSections = categorySales
-										.slice(0, index)
-										.reduce((sum, curr) => sum + curr.percentage, 0);
-
-									const startAngle = (previousSections / 100) * 360;
-									const endAngle = startAngle + (item.percentage / 100) * 360;
-
-									// Convertimos grados a radianes
-									const startRad = ((startAngle - 90) * Math.PI) / 180;
-									const endRad = ((endAngle - 90) * Math.PI) / 180;
-
-									// Calculamos las coordenadas de inicio y fin del arco
-									const x1 = 50 + 40 * Math.cos(startRad);
-									const y1 = 50 + 40 * Math.sin(startRad);
-									const x2 = 50 + 40 * Math.cos(endRad);
-									const y2 = 50 + 40 * Math.sin(endRad);
-
-									// Determinamos si el arco debe ser mayor a 180 grados
-									const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
-
-									// Construimos el path del segmento
-									const path = [
-										`M 50 50`,
-										`L ${x1} ${y1}`,
-										`A 40 40 0 ${largeArcFlag} 1 ${x2} ${y2}`,
-										"Z",
-									].join(" ");
-
-									// Mapeamos colores de clases a colores SVG
-									const colorMap: {[key: string]: string} = {
-										"bg-blue-500": "#3b82f6",
-										"bg-green-500": "#10b981",
-										"bg-yellow-500": "#f59e0b",
-										"bg-red-500": "#ef4444",
-										"bg-purple-500": "#8b5cf6",
-										"bg-indigo-500": "#6366f1",
-										"bg-pink-500": "#ec4899",
-										"bg-gray-500": "#6b7280",
-									};
-
-									const fillColor = colorMap[item.color] || "#6b7280";
-
-									return (
-										<g key={index} className="cursor-pointer">
-											<path
-												d={path}
-												fill={fillColor}
-												className="hover:opacity-80 transition-opacity"
-												// onMouseOver={(e) => {
-												// 	// Si quieres añadir interactividad como destacar al pasar el mouse
-												// }}
-											/>
-											{/* Tooltip svg nativo */}
-											<title>
-												{item.category}: {item.percentage}% (
-												{formatCurrency(item.amount)})
-											</title>
-										</g>
-									);
-								})}
-
-								{/* Circulo central opcional para hacer un donut chart */}
-								{/* <circle cx="50" cy="50" r="25" fill="white" className="" /> */}
-							</svg>
-						</div>
-					</div>
-
-					{/* Leyenda */}
-					<div className="md:w-1/2 mt-4 md:mt-0">
-						<div className="space-y-3">
-							{categorySales.map((item, index) => (
-								<div key={index} className="flex items-center group">
-									<div
-										className={`w-4 h-4 ${item.color} rounded-sm mr-2`}
-									></div>
-									<span className="text-sm text-gray-700 flex-1">
-										{item.category}
-									</span>
-									<span className="text-sm font-medium text-gray-900">
-										{formatCurrency(item.amount)}
-									</span>
-									<span className="text-xs text-gray-500 ml-2 w-12 text-right">
-										({item.percentage}%)
-									</span>
-								</div>
-							))}
-						</div>
-					</div>
-				</div>
-			</div>
-		);
-	};
-
-	const statsE =
-	{
-		totalEarnings: 12580.45,
-		pendingPayments: 1458.32,
-		salesThisMonth: 3450.8,
-		salesGrowth: 12.5,
-		commissionsThisMonth: 517.62,
-		commissionsPercentage: 15, // 15% de comisión
-		netEarningsThisMonth: 2933.18,
-		earningsGrowth: 8.2,
-	};
-	
-
-	const cards = [
+	// Crear tarjetas de estadísticas basadas en datos reales
+	const cards = stats ? [
 		{
 			title: "Total Ganancias",
-			value: formatCurrency(statsE.totalEarnings),
+			value: formatCurrency(stats.total_earnings),
 			change: 0,
 			icon: DollarSign,
 			iconBgColor: "bg-green-50",
@@ -416,32 +229,32 @@ const SellerEarningsPage: React.FC = () => {
 		},
 		{
 			title: "Ventas este mes",
-			value: formatCurrency(statsE.salesThisMonth),
-			change: statsE.salesGrowth,
-			text: `${Math.abs(statsE.salesGrowth)}% respecto al mes anterior`,
+			value: formatCurrency(stats.sales_this_month),
+			change: stats.sales_growth,
+			text: `${Math.abs(stats.sales_growth)}% respecto al mes anterior`,
 			icon: TrendingUp,
 			iconBgColor: "bg-blue-50",
 			iconColor: "text-blue-600",
 		},
 		{
 			title: "Comisiones este mes",
-			value: formatCurrency(statsE.commissionsThisMonth),
+			value: formatCurrency(stats.commissions_this_month),
 			change: 0,
-			text: `${statsE.commissionsPercentage}% de comisión`,
+			text: `${stats.commissions_percentage}% de comisión`,
 			icon: CreditCard,
 			iconBgColor: "bg-red-50",
 			iconColor: "text-red-600",
 		},
 		{
 			title: "Ganancias netas este mes",
-			value: formatCurrency(statsE.netEarningsThisMonth),
-			change: statsE.earningsGrowth,
-			text: `${Math.abs(statsE.earningsGrowth)}% respecto al mes anterior`,
+			value: formatCurrency(stats.net_earnings_this_month),
+			change: stats.earnings_growth,
+			text: `${Math.abs(stats.earnings_growth)}% respecto al mes anterior`,
 			icon: Wallet,
 			iconBgColor: "bg-indigo-50",
 			iconColor: "text-indigo-600",
 		},
-	];
+	] : [];
 
   return (
 		<div className="space-y-6">
@@ -463,11 +276,12 @@ const SellerEarningsPage: React.FC = () => {
 						{loading ? "Cargando..." : "Actualizar"}
 					</button>
 					<button
-						onClick={() => alert("Descargando reporte de ganancias...")}
-						className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors flex items-center"
+						onClick={handleExportPdf}
+						disabled={exporting || loading}
+						className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
 					>
-						<Download size={18} className="mr-2" />
-						Exportar
+						<Download size={18} className={`mr-2 ${exporting ? 'animate-spin' : ''}`} />
+						{exporting ? 'Exportando...' : 'Exportar PDF'}
 					</button>
 				</div>
 			</div>
@@ -500,155 +314,85 @@ const SellerEarningsPage: React.FC = () => {
 					</div>
 					<button
 						className="px-3 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center"
-						onClick={() =>
-							console.log("Aplicando filtro de fechas:", dateRange)
-						}
+						onClick={fetchEarningsData}
+						disabled={loading}
 					>
-						Aplicar
+						{loading ? "Aplicando..." : "Aplicar"}
 					</button>
 				</div>
 			</div>
+
+			{error && (
+				<div className="bg-red-50 border border-red-200 rounded-lg p-4">
+					<div className="flex">
+						<div className="ml-3">
+							<h3 className="text-sm font-medium text-red-800">
+								Error al cargar datos
+							</h3>
+							<div className="mt-2 text-sm text-red-700">
+								{error}
+							</div>
+							<div className="mt-4">
+								<button
+									onClick={fetchEarningsData}
+									className="px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
+								>
+									Reintentar
+								</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			)}
 
 			{loading ? (
 				<div className="flex justify-center items-center h-64">
 					<div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
 				</div>
-			) : stats ? (
+			) : stats && !error ? (
 				<>
 					{/* Tarjetas de estadísticas principales */}
 					<DashboardCardList cards={cards} />
 
-					{/* Contenedor principal con gráficos y pagos */}
-					<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-						{/* Sección de gráficos */}
-						<div className="lg:col-span-2 bg-white rounded-lg shadow-sm p-6">
-							<div className="flex justify-between items-center mb-4">
-								<h2 className="text-lg font-medium text-gray-900">
-									Análisis de Ventas
-								</h2>
-								<div className="flex border border-gray-300 rounded-lg overflow-hidden">
-									<button
-										className={`px-3 py-1 text-sm ${selectedChart === "sales" ? "bg-primary-600 text-white" : "bg-white text-gray-700"}`}
-										onClick={() => setSelectedChart("sales")}
-									>
-										<BarChart2 size={16} className="inline mr-1" />
-										Ventas mensuales
-									</button>
-									<button
-										className={`px-3 py-1 text-sm ${selectedChart === "categories" ? "bg-primary-600 text-white" : "bg-white text-gray-700"}`}
-										onClick={() => setSelectedChart("categories")}
-									>
-										<PieChart size={16} className="inline mr-1" />
-										Categorías
-									</button>
-								</div>
+					{/* Gráfico de ventas mensuales */}
+					<div className="bg-white rounded-lg shadow-sm p-6">
+						<div className="flex justify-between items-center mb-4">
+							<h2 className="text-lg font-medium text-gray-900 flex items-center">
+								<BarChart2 size={20} className="mr-2" />
+								Ventas Mensuales
+							</h2>
+							<div className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+								Últimos 12 meses
 							</div>
+						</div>
+						{renderSalesChart(monthlyData)}
+					</div>
 
-							{/* Contenido del gráfico seleccionado */}
-							{selectedChart === "sales"
-								? renderSalesChart(stats.monthlySales)
-								: renderCategoryChart(stats.categorySales)}
+					{/* Información de pagos pendientes */}
+					<div className="bg-white rounded-lg shadow-sm p-6">
+						<div className="flex justify-between items-center mb-4">
+							<h2 className="text-lg font-medium text-gray-900 flex items-center">
+								<CreditCard className="w-5 h-5 mr-2" />
+								Pagos Pendientes
+							</h2>
+							<span className="bg-amber-100 text-amber-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+								{formatCurrency(stats.pending_payments)}
+							</span>
 						</div>
 
-						{/* Sección de pagos pendientes */}
-						<div className="bg-white rounded-lg shadow-sm p-6">
-							<div className="flex justify-between items-center mb-4">
-								<h2 className="text-lg font-medium text-gray-900 flex items-center">
-									<CreditCard className="w-5 h-5 mr-2" />
-									Pagos Pendientes
-								</h2>
-								<span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-									{formatCurrency(stats.pendingPayments)}
-								</span>
-							</div>
-
-							{stats.pendingPaymentsList.length > 0 ? (
-								<div className="space-y-4">
-									{stats.pendingPaymentsList.map((payment, index) => (
-										<div
-											key={index}
-											className="border border-gray-200rounded-lg p-4"
-										>
-											<div className="flex justify-between mb-2">
-												<span className="text-sm font-medium text-gray-900">
-													{payment.id}
-												</span>
-												<span
-													className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${
-														payment.status === "processing"
-															? "bg-amber-100 text-amber-800"
-															: "bg-green-100 text-green-800"
-													}`}
-												>
-													{payment.status === "processing"
-														? "En proceso"
-														: "Programado"}
-												</span>
-											</div>
-											<div className="flex justify-between text-sm text-gray-500 mb-2">
-												<span>Fecha:</span>
-												<span>{payment.date}</span>
-											</div>
-											{payment.estimatedArrival && (
-												<div className="flex justify-between text-sm text-gray-500 mb-2">
-													<span>Llegada estimada:</span>
-													<span>{payment.estimatedArrival}</span>
-												</div>
-											)}
-											<div className="flex justify-between items-center mt-3">
-												<span className="text-sm font-bold text-gray-900">
-													{formatCurrency(payment.amount)}
-												</span>
-												<a
-													href="#"
-													className="text-primary-600 text-sm hover:underline flex items-center"
-												>
-													Detalles
-													<ArrowRight size={14} className="ml-1" />
-												</a>
-											</div>
-										</div>
-									))}
-								</div>
-							) : (
-								<div className="text-center py-8">
-									<p className="text-gray-500">
-										No hay pagos pendientes
-									</p>
-								</div>
-							)}
-
-							<div className="mt-6">
-								<h3 className="text-md font-medium text-gray-900 mb-3">
-									Métodos de Pago Recibidos
-								</h3>
-								<div className="space-y-2">
-									{stats.paymentMethods.map((method, index) => (
-										<div key={index}>
-											<div className="flex justify-between text-sm">
-												<span className="text-gray-600">
-													{method.method}
-												</span>
-												<span className="text-gray-900 font-medium">
-													{formatCurrency(method.amount)}
-												</span>
-											</div>
-											<div className="w-full bg-gray-200 rounded-full h-2 mt-1">
-												<div
-													className={`${method.color} h-2 rounded-full`}
-													style={{width: `${method.percentage}%`}}
-												></div>
-											</div>
-										</div>
-									))}
-								</div>
-							</div>
+						<div className="text-center py-8">
+							<p className="text-gray-500 mb-2">
+								Las ganancias de tus ventas completadas se procesan automáticamente.
+							</p>
+							<p className="text-sm text-gray-400">
+								Los pagos pendientes se transfieren cada 7 días hábiles.
+							</p>
 						</div>
 					</div>
 
 					{/* Tabla de ventas mensuales */}
 					<div className="bg-white rounded-lg shadow-sm overflow-hidden">
-						<div className="px-6 py-4 border-b border-gray-200aaborder-gray-700">
+						<div className="px-6 py-4 border-b border-gray-200">
 							<h2 className="text-lg font-medium text-gray-900">
 								Desglose de Ventas Mensuales
 							</h2>
@@ -661,6 +405,18 @@ const SellerEarningsPage: React.FC = () => {
 											scope="col"
 											className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
 										>
+											Mes
+										</th>
+										<th
+											scope="col"
+											className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+										>
+											Ventas
+										</th>
+										<th
+											scope="col"
+											className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+										>
 											Comisiones
 										</th>
 										<th
@@ -669,10 +425,16 @@ const SellerEarningsPage: React.FC = () => {
 										>
 											Neto
 										</th>
+										<th
+											scope="col"
+											className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+										>
+											Órdenes
+										</th>
 									</tr>
 								</thead>
 								<tbody className="bg-white divide-y divide-gray-200">
-									{stats.monthlySales.map((month, index) => (
+									{monthlyData.map((month, index) => (
 										<tr
 											key={index}
 											className="hover:bg-gray-50"
@@ -689,6 +451,9 @@ const SellerEarningsPage: React.FC = () => {
 											<td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
 												{formatCurrency(month.net)}
 											</td>
+											<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+												{month.orders_count}
+											</td>
 										</tr>
 									))}
 								</tbody>
@@ -699,7 +464,7 @@ const SellerEarningsPage: React.FC = () => {
 										</td>
 										<td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
 											{formatCurrency(
-												stats.monthlySales.reduce(
+												monthlyData.reduce(
 													(sum, month) => sum + month.sales,
 													0
 												)
@@ -707,7 +472,7 @@ const SellerEarningsPage: React.FC = () => {
 										</td>
 										<td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-red-600">
 											{formatCurrency(
-												stats.monthlySales.reduce(
+												monthlyData.reduce(
 													(sum, month) => sum + month.commissions,
 													0
 												)
@@ -715,10 +480,16 @@ const SellerEarningsPage: React.FC = () => {
 										</td>
 										<td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
 											{formatCurrency(
-												stats.monthlySales.reduce(
+												monthlyData.reduce(
 													(sum, month) => sum + month.net,
 													0
 												)
+											)}
+										</td>
+										<td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+											{monthlyData.reduce(
+												(sum, month) => sum + month.orders_count,
+												0
 											)}
 										</td>
 									</tr>

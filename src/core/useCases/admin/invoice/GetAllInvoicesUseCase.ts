@@ -1,5 +1,5 @@
 import type { InvoiceRepository } from '../../../domain/repositories/InvoiceRepository';
-import type { ApiResponse, PaginatedResponse } from '../../../domain/entities/ApiResponse';
+import type { PaginatedResponse } from '../../../domain/entities/ApiResponse';
 
 export interface InvoiceFilters {
   status?: string;
@@ -54,23 +54,7 @@ export class GetAllInvoicesUseCase {
   async execute(filters: InvoiceFilters = {}): Promise<PaginatedResponse<AdminInvoice>> {
     try {
       const response = await this.invoiceRepository.getAllInvoices(filters);
-      
-      if (!response.success) {
-        throw new Error(response.message || 'Error al obtener las facturas');
-      }
-
-      return {
-        success: true,
-        data: response.data,
-        meta: response.meta || {
-          current_page: 1,
-          last_page: 1,
-          per_page: 20,
-          total: 0,
-          from: 0,
-          to: 0,
-        }
-      };
+      return response.data;
     } catch (error) {
       console.error('Error en GetAllInvoicesUseCase:', error);
       throw error;

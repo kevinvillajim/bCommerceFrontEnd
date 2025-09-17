@@ -5,16 +5,19 @@ import { useAuth } from "../../hooks/useAuth";
 import { formatCurrency } from "../../../utils/formatters/formatCurrency";
 import { DeunaService } from "../../../infrastructure/services/DeunaService";
 import type { DeunaPaymentRequest } from "../../../infrastructure/services/DeunaTypes";
+import type { CheckoutData } from "../../../types/checkout";
 import { CheckCircle, XCircle, Clock, RefreshCw, Copy, ExternalLink, Smartphone, Zap } from "lucide-react";
 
 interface QRPaymentFormProps {
   total?: number;
+  checkoutData?: CheckoutData; // ✅ NUEVO: Objeto temporal con datos validados
   onPaymentSuccess?: (paymentData: any) => void;
   onPaymentError?: (error: string) => void;
 }
 
 const QRPaymentForm: React.FC<QRPaymentFormProps> = ({
   total: totalProp,
+  checkoutData,
   onPaymentSuccess,
   onPaymentError
 }) => {
@@ -36,8 +39,15 @@ const QRPaymentForm: React.FC<QRPaymentFormProps> = ({
   const timerRef = React.useRef<NodeJS.Timeout | null>(null);
   const cleanupRefs = React.useRef<(() => void)[]>([]);
 
-  // Use prop total if provided, otherwise fallback to cart total
-  const total = totalProp ?? cart?.total ?? 0;
+  // ✅ VALIDACIÓN ESTRICTA - NO FALLBACKS
+  if (!checkoutData || !checkoutData.totals) {
+    throw new Error("QRPaymentForm requiere CheckoutData válido con totales");
+  }
+  if (!checkoutData.totals.final_total || checkoutData.totals.final_total <= 0) {
+    throw new Error("QRPaymentForm requiere total válido mayor a $0");
+  }
+
+  const total = checkoutData.totals.final_total;
 
   // Create order ID for payment
   const generateOrderId = useCallback(() => {
@@ -195,10 +205,16 @@ const QRPaymentForm: React.FC<QRPaymentFormProps> = ({
     }
   }, [paymentData, onPaymentSuccess, onPaymentError]);
 
-  // Generate QR code for payment
+  // ✅ NUEVO: Generate QR code usando CheckoutData validado
   const generateQRPayment = async () => {
-    if (!user || !cart?.items?.length) {
-      setError("Información de usuario o carrito no disponible");
+    // ✅ VALIDACIÓN ESTRICTA: Requerir CheckoutData
+    if (!checkoutData) {
+      setError("No se puede generar QR sin datos de checkout validados");
+      return;
+    }
+
+    if (!user) {
+      setError("Información de usuario no disponible");
       return;
     }
 
@@ -208,73 +224,57 @@ const QRPaymentForm: React.FC<QRPaymentFormProps> = ({
     try {
       const orderId = generateOrderId();
 
-      // Debug: Log cart items before transformation
-      console.log('🔍 CART ITEMS BEFORE TRANSFORMATION:', cart.items.map((item, index) => ({
-        index,
-        productId: item.productId,
-        product_name: item.product?.name,
-        quantity: item.quantity,
-        final_price: item.final_price,
-        price: item.price,
-        subtotal: item.subtotal,
-        all_keys: Object.keys(item)
-      })));
+      // ✅ USAR DATOS DEL CHECKOUTDATA VALIDADO
+      console.log('🎯 USANDO CHECKOUTDATA PARA QR DEUNA:', {
+        sessionId: checkoutData.sessionId,
+        userId: checkoutData.userId,
+        total: checkoutData.totals.final_total,
+        itemsCount: checkoutData.items.length,
+        validatedAt: checkoutData.validatedAt
+      });
 
-      // Prepare payment request
+      // ✅ PREPARAR REQUEST USANDO SOLO DATOS VALIDADOS
       const paymentRequest: DeunaPaymentRequest = {
         order_id: orderId,
-        amount: total,
+        amount: checkoutData.totals.final_total,
         currency: 'USD',
         customer: {
-          name: user.name || 'Cliente',
-          email: user.email,
-          phone: user.phone || undefined,
+          name: checkoutData.shippingData.name,
+          email: checkoutData.shippingData.email,
+          phone: checkoutData.shippingData.phone,
         },
-        items: cart.items.map((item, index) => {
-          // 🔧 CRITICAL FIX: Ensure product_id is always present and valid
-          const productId = item.productId || item.product?.id || (item.product as any)?.product_id;
-          
-          if (!productId) {
-            console.error(`❌ CRITICAL: Missing product_id for cart item ${index}:`, {
-              item_keys: Object.keys(item),
-              item_productId: item.productId,
-              product_id_alternatives: {
-                'item.product?.id': item.product?.id,
-                'item.product?.product_id': (item.product as any)?.product_id,
-                'item.id': item.id
-              },
-              full_item: item
-            });
-            throw new Error(`Cart item ${index} is missing product_id. Cannot proceed with payment.`);
-          }
-
+        items: checkoutData.items.map((item, index) => {
+          // ✅ DATOS YA VALIDADOS - NO NECESITA VERIFICACIÓN ADICIONAL
           const mappedItem = {
-            name: item.product?.name || 'Producto',
+            name: item.name,
             quantity: item.quantity,
-            price: item.final_price || item.price || item.subtotal || 0,
-            description: (item.product as any)?.description || '',
-            product_id: productId, // 🔧 FIXED: Use the validated product_id
+            price: item.price,
+            description: item.name, // Usar name como descripción
+            product_id: item.product_id,
           };
-          
-          // Debug: Log each item transformation
-          console.log(`✅ ITEM ${index} TRANSFORMATION SUCCESS:`, {
-            original_productId: item.productId,
-            mapped_product_id: mappedItem.product_id,
-            product_id_source: item.productId ? 'item.productId' : item.product?.id ? 'item.product.id' : 'other',
-            mapped_item_keys: Object.keys(mappedItem),
-            mapped_item: mappedItem
+
+          console.log(`✅ ITEM ${index} FROM CHECKOUTDATA:`, {
+            product_id: mappedItem.product_id,
+            name: mappedItem.name,
+            quantity: mappedItem.quantity,
+            price: mappedItem.price,
           });
-          
+
           return mappedItem;
         }),
         qr_type: 'dynamic',
         format: '2', // QR + Payment Link
         metadata: {
-          source: 'bcommerce_frontend',
+          source: 'bcommerce_checkout_validated',
           user_id: user.id,
-          cart_id: cart.id,
+          session_id: checkoutData.sessionId,
+          validated_at: checkoutData.validatedAt,
           checkout_timestamp: new Date().toISOString(),
-        }
+        },
+        // ✅ NUEVOS CAMPOS PARA CHECKOUTDATA TEMPORAL
+        session_id: checkoutData.sessionId,
+        validated_at: checkoutData.validatedAt,
+        checkout_data: checkoutData, // Enviar objeto completo para validación en backend
       };
 
       // Debug: Log final payment request
@@ -453,8 +453,19 @@ const QRPaymentForm: React.FC<QRPaymentFormProps> = ({
 
   // Simulate payment success (for testing only)
   const handleSimulatePayment = async () => {
+    // ✅ VALIDACIÓN ESTRICTA - NO FALLBACKS
     if (!paymentData?.payment_id) {
       setError("No hay un pago activo para simular");
+      return;
+    }
+
+    if (!paymentData?.amount || paymentData.amount <= 0) {
+      setError("Monto del pago inválido o faltante");
+      return;
+    }
+
+    if (!user?.email) {
+      setError("Email del usuario requerido para la simulación");
       return;
     }
 
@@ -464,13 +475,14 @@ const QRPaymentForm: React.FC<QRPaymentFormProps> = ({
     try {
       console.log('🧪 SIMULATING payment success for testing purposes');
       console.log('📋 This will trigger: simulation webhook → HandleDeunaWebhookUseCase → createOrderFromPayment() → order + invoice + SRI');
-      
-      // ✅ CORRECT: Call the simulation endpoint for testing
-      // This uses /webhooks/deuna/simulate-payment-success endpoint
+
+      // ✅ STRICT CALL: All parameters required - NO FALLBACKS
       const result = await DeunaService.simulatePaymentSuccess(
         paymentData.payment_id,
         paymentData.amount,
-        user?.email
+        user.email,
+        user.name || undefined,
+        checkoutData?.sessionId // ✅ PASAR SESSION_ID REAL PARA RECUPERAR CHECKOUTDATA
       );
 
       if (result.success) {

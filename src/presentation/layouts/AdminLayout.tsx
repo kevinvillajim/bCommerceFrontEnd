@@ -27,6 +27,7 @@ const AdminLayout: React.FC = () => {
 		"/admin/discounts": "Códigos de Descuento",
 		"/admin/invoices": "Facturas",
 		"/admin/accounting": "Contabilidad",
+		"/admin/external-payments": "Pagos Externos",
 		"/admin/settings": "Configuración del Sistema",
 		"/admin/logs": "Registro de Errores",
 	};

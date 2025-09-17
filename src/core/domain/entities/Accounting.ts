@@ -3,17 +3,22 @@
  */
 export interface AccountingTransaction {
   id?: number;
-  referenceNumber: string;
-  transactionDate: string;
+  reference_number: string;
+  transaction_date: string;
   description: string;
   type: string;
-  userId?: number;
-  orderId?: number;
-  isPosted: boolean;
+  user_id?: number;
+  order_id?: number;
+  is_posted: boolean;
   entries: AccountingEntry[];
+  user?: any;
+  order?: any;
+  created_at?: string;
+  updated_at?: string;
+  deleted_at?: string;
   // Propiedades calculadas
   balance?: number;
-  isBalanced?: boolean;
+  is_balanced?: boolean;
 }
 
 /**
@@ -21,10 +26,10 @@ export interface AccountingTransaction {
  */
 export interface AccountingEntry {
   id?: number;
-  transactionId?: number;
-  accountId: number;
-  debitAmount: number;
-  creditAmount: number;
+  transaction_id?: number;
+  account_id: number;
+  debit_amount: number;
+  credit_amount: number;
   notes?: string;
   // Campos relacionados
   account?: AccountingAccount;
@@ -39,7 +44,7 @@ export interface AccountingAccount {
   name: string;
   type: string;
   description?: string;
-  isActive: boolean;
+  is_active: boolean;
   // Campos calculados que pueden ser útiles
   balance?: number;
 }
@@ -61,9 +66,9 @@ export interface AccountingTransactionCreationData {
  * Entry creation data
  */
 export interface AccountingEntryCreationData {
-  accountId: number;
-  debitAmount: number;
-  creditAmount: number;
+  account_id: number;
+  debit_amount: number;
+  credit_amount: number;
   notes?: string;
 }
 

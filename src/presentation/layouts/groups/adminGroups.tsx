@@ -13,6 +13,7 @@ import {
 	Truck,
 	Briefcase,
 	ClipboardList,
+	CreditCard,
 } from "lucide-react";
 
 interface adminGroups {
@@ -133,6 +134,11 @@ const adminGroups = [
 				path: "/admin/accounting",
 				label: "Contabilidad",
 				icon: <DollarSign className="w-5 h-5 mr-3" />,
+			},
+			{
+				path: "/admin/external-payments",
+				label: "Pagos Externos",
+				icon: <CreditCard className="w-5 h-5 mr-3" />,
 			},
 		],
 	},

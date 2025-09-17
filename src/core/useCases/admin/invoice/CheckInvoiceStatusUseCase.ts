@@ -1,5 +1,4 @@
 import type { InvoiceRepository } from '../../../domain/repositories/InvoiceRepository';
-import type { ApiResponse } from '../../../domain/entities/ApiResponse';
 
 export interface InvoiceStatusCheck {
   invoice_id: number;
@@ -12,13 +11,8 @@ export class CheckInvoiceStatusUseCase {
 
   async execute(invoiceId: number): Promise<InvoiceStatusCheck> {
     try {
-      const response = await this.invoiceRepository.checkInvoiceStatus(invoiceId);
-      
-      if (!response.success) {
-        throw new Error(response.message || 'Error al consultar el estado de la factura');
-      }
-
-      return response.data;
+      const invoiceStatus = await this.invoiceRepository.checkInvoiceStatus(invoiceId);
+      return invoiceStatus;
     } catch (error) {
       console.error('Error en CheckInvoiceStatusUseCase:', error);
       throw error;

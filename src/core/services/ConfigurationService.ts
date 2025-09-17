@@ -240,7 +240,6 @@ class ConfigurationService {
           require_numbers: response?.data?.require_numbers || true,
           require_special_chars: response?.data?.require_special_chars || false,
         },
-        session_timeout: response?.data?.session_timeout || 3600, // 1 hora
         max_login_attempts: response?.data?.max_login_attempts || 5,
         lockout_duration: response?.data?.lockout_duration || 900, // 15 minutos
         passwordMinLength: response?.data?.min_length || 8,

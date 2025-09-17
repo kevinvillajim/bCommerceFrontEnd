@@ -12,6 +12,7 @@ export const DASHBOARD_TYPES = {
 	ADMIN: "admin",
 	SELLER: "seller",
 	CUSTOMER: "customer",
+	PAYMENT: "payment",
 } as const;
 
 export type DashboardType =

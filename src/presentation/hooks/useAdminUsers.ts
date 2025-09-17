@@ -219,6 +219,41 @@ export const useAdminUsers = () => {
 	}, []);
 
 	/**
+	 * Convierte un usuario en usuario de pagos
+	 */
+	const makeUserPayment = useCallback(async (userId: number) => {
+		setLoading(true);
+		setError(null);
+
+		try {
+			const success = await adminUserService.makePaymentUser(userId);
+
+			if (success) {
+				// Actualizar el rol del usuario en la lista local
+				setUsers((prevUsers) =>
+					prevUsers.map((user) =>
+						user.id === userId ? {...user, role: "admin"} : user
+					)
+				);
+				return true;
+			} else {
+				setError("No se pudo convertir al usuario en usuario de pagos");
+				return false;
+			}
+		} catch (err) {
+			const errorMsg = extractErrorMessage(
+				err,
+				"Error al convertir usuario en usuario de pagos"
+			);
+			console.error("Error making user payment:", errorMsg);
+			setError(errorMsg);
+			return false;
+		} finally {
+			setLoading(false);
+		}
+	}, []);
+
+	/**
 	 * Convierte un usuario en vendedor
 	 */
 	const makeUserSeller = useCallback(
@@ -375,6 +410,7 @@ export const useAdminUsers = () => {
 		toggleUserStatus,
 		sendPasswordReset,
 		makeUserAdmin,
+		makeUserPayment,
 		makeUserSeller,
 		deleteUser,
 		refreshData,

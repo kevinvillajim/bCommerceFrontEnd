@@ -1,7 +1,7 @@
 const environments = {
 	development: {
-		apiBaseUrl: "http://127.0.0.1:8000/api",
-		imageBaseUrl: "http://127.0.0.1:8000/storage/",
+		apiBaseUrl: (import.meta.env.VITE_URL_BASE || "http://localhost:8000") + "/api",
+		imageBaseUrl: (import.meta.env.VITE_URL_BASE || "http://localhost:8000") + "/storage/",
 		debug: true,
 	},
 	staging: {

@@ -30,7 +30,7 @@ const SellerFormModal: React.FC<SellerFormModalProps> = ({
 			store_name: "",
 			description: "",
 			status: "pending",
-			commission_rate: 10,
+			// commission_rate: 10, // TODO: Implementar comisiones individuales en el futuro
 			is_featured: false,
 			user_id: 0,
 		}
@@ -44,7 +44,7 @@ const SellerFormModal: React.FC<SellerFormModalProps> = ({
 			setFormData({
 				store_name: seller.storeName,
 				description: seller.description || "",
-				commission_rate: seller.commissionRate,
+				// commission_rate: seller.commissionRate, // TODO: Implementar comisiones individuales en el futuro
 				is_featured: seller.isFeatured,
 			});
 		} else if (isCreate) {
@@ -54,7 +54,7 @@ const SellerFormModal: React.FC<SellerFormModalProps> = ({
 				store_name: "",
 				description: "",
 				status: "pending",
-				commission_rate: 10,
+				// commission_rate: 10, // TODO: Implementar comisiones individuales en el futuro
 				is_featured: false,
 			});
 		}
@@ -75,11 +75,11 @@ const SellerFormModal: React.FC<SellerFormModalProps> = ({
 				...prev,
 				[name]: checkbox.checked,
 			}));
-		} else if (name === "commission_rate") {
-			setFormData((prev) => ({
-				...prev,
-				[name]: parseFloat(value),
-			}));
+		// } else if (name === "commission_rate") {
+		//	setFormData((prev) => ({
+		//		...prev,
+		//		[name]: parseFloat(value),
+		//	}));
 		} else if (name === "user_id") {
 			setFormData((prev) => ({
 				...prev,
@@ -232,8 +232,9 @@ const SellerFormModal: React.FC<SellerFormModalProps> = ({
 						</p>
 					</div>
 
+					{/* TODO: Implementar comisiones individuales en el futuro */}
 					{/* Comisión (Solo visual) */}
-					<div className="mb-4">
+					{/* <div className="mb-4">
 						<label className="block text-sm font-medium text-gray-700 mb-1">
 							Tasa de comisión (%):
 						</label>
@@ -250,7 +251,7 @@ const SellerFormModal: React.FC<SellerFormModalProps> = ({
 						<p className="text-xs text-gray-500 mt-1">
 							Campo informativo - La comisión se configurará en el futuro
 						</p>
-					</div>
+					</div> */}
 
 
 					{/* Botones */}

@@ -16,7 +16,7 @@ export class SellerAdapter {
 			description: backendData.description,
 			status: backendData.status,
 			verificationLevel: backendData.verification_level || "none",
-			commissionRate: backendData.commission_rate || 0,
+			// commissionRate: backendData.commission_rate || 0, // TODO: Implementar comisiones individuales en el futuro - usar configuración global del admin
 			totalSales: backendData.total_sales || 0,
 			isFeatured: backendData.is_featured || false,
 			averageRating: backendData.average_rating,
@@ -54,8 +54,8 @@ export class SellerAdapter {
 		if (entityData.status !== undefined) result.status = entityData.status;
 		if (entityData.verificationLevel !== undefined)
 			result.verification_level = entityData.verificationLevel;
-		if (entityData.commissionRate !== undefined)
-			result.commission_rate = entityData.commissionRate;
+		// if (entityData.commissionRate !== undefined) // TODO: Implementar comisiones individuales en el futuro - usar configuración global del admin
+		//	result.commission_rate = entityData.commissionRate;
 		if (entityData.isFeatured !== undefined)
 			result.is_featured = entityData.isFeatured;
 

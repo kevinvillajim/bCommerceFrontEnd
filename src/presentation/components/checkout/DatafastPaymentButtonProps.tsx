@@ -9,10 +9,13 @@ import type {DatafastCheckoutRequest} from "../../../core/services/DatafastServi
 import type {PaymentMethod, PaymentInfo} from "../../../core/services/CheckoutService";
 import {NotificationType} from "../../contexts/CartContext";
 import {useDatafastCSP} from "../../hooks/useDatafastCSP";
+import type {CheckoutData} from "../../../types/checkout";
 
 interface DatafastPaymentButtonProps {
 	onSuccess?: (orderData: any) => void;
 	onError?: (error: string) => void;
+	checkoutData?: CheckoutData; // ✅ NUEVO: Objeto temporal con datos validados
+	// ✅ LEGACY: Mantener soporte para shippingAddress por compatibilidad
 	shippingAddress?: {
 		name?: string;
 		street?: string;
@@ -39,7 +42,7 @@ interface FormData {
 const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 	onSuccess,
 	onError,
-	shippingAddress,
+	checkoutData,
 }) => {
 	// 🔓 Desactivar CSP temporalmente para permitir scripts de Datafast
 	useDatafastCSP();
@@ -70,28 +73,32 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 	};
 
 	const [showWidget, setShowWidget] = useState(false);
-	const [checkoutData, setCheckoutData] = useState<any>(null);
+	const [checkoutResponse, setCheckoutResponse] = useState<any>(null);
 	const [showForm, setShowForm] = useState(false);
 	const [widgetLoaded, setWidgetLoaded] = useState(false);
 	const [calculatedTotals, setCalculatedTotals] = useState<any>(null);
 
-	// ✅ FIX: Usar datos de shippingAddress en lugar de hardcodeados
+	// ✅ VALIDAR QUE EXISTAN DATOS VÁLIDOS - NO FALLBACKS
 	const [formData, setFormData] = useState<FormData>(() => {
-		// Separar el nombre completo en partes si está disponible
-		const nameParts = shippingAddress?.name?.split(' ') || [];
-		const firstName = nameParts[0] || "Juan";
+		// SOLO usar CheckoutData validado - no fallbacks
+		if (!checkoutData?.shippingData) {
+			throw new Error("DatafastPaymentButton requiere CheckoutData válido");
+		}
+
+		const shippingData = checkoutData.shippingData;
+		const nameParts = shippingData.name.split(' ');
+		const firstName = nameParts[0];
 		const lastName = nameParts.slice(1).join(' ');
-		const finalLastName = lastName;
 
 		return {
-			address: shippingAddress?.street || "Av. Test 123",
-			city: shippingAddress?.city || "Quito",
-			country: mapCountryCode(shippingAddress?.country || "Ecuador"),
+			address: shippingData.street,
+			city: shippingData.city,
+			country: mapCountryCode(shippingData.country),
 			given_name: firstName,
 			middle_name: "",
-			surname: finalLastName,
-			phone: shippingAddress?.phone || "0999999999",
-			doc_id: shippingAddress?.identification || "1234567890",
+			surname: lastName,
+			phone: shippingData.phone,
+			doc_id: shippingData.identification,
 		};
 	});
 
@@ -107,40 +114,20 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 		};
 	}, []);
 
-	// ✅ NUEVO: Actualizar formData cuando cambia shippingAddress
+	// ✅ VALIDACIÓN: CheckoutData no debe cambiar una vez pasado
 	useEffect(() => {
-		if (shippingAddress) {
-			const nameParts = shippingAddress.name?.split(' ') || [];
-			const firstName = nameParts[0] || formData.given_name;
-			const lastName = nameParts.slice(1).join(' ');
-			const finalLastName = lastName || formData.surname;
-			const mappedCountry = mapCountryCode(shippingAddress.country || "Ecuador");
-
-			setFormData(prev => ({
-				...prev,
-				address: shippingAddress.street || prev.address,
-				city: shippingAddress.city || prev.city,
-				country: mappedCountry,
-				given_name: firstName,
-				surname: finalLastName,
-				phone: shippingAddress.phone || prev.phone,
-				doc_id: shippingAddress.identification || prev.doc_id,
-			}));
-			
-			console.log("📍 Datos de dirección actualizados en Datafast:", {
-				from_shippingAddress: shippingAddress,
-				updated_formData: {
-					address: shippingAddress.street,
-					city: shippingAddress.city,
-					country: mappedCountry,
-					given_name: firstName,
-					surname: finalLastName,
-					phone: shippingAddress.phone,
-					doc_id: shippingAddress.identification,
-				}
+		if (!checkoutData) {
+			console.error("❌ DatafastPaymentButton: No se recibió CheckoutData válido");
+		} else {
+			console.log("✅ DatafastPaymentButton: Usando CheckoutData validado:", {
+				sessionId: checkoutData.sessionId,
+				userId: checkoutData.userId,
+				total: checkoutData.totals.final_total,
+				itemsCount: checkoutData.items.length,
+				validatedAt: checkoutData.validatedAt
 			});
 		}
-	}, [shippingAddress]);
+	}, [checkoutData]);
 
 	const handleInputChange = (field: keyof FormData, value: string) => {
 		setFormData((prev) => ({...prev, [field]: value}));
@@ -191,17 +178,19 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 		setIsLoading(true);
 
 		try {
-			// ✅ USAR MISMA LÓGICA QUE EL BOTÓN "PRUEBA COMPLETA" QUE FUNCIONA PERFECTO
-			const checkoutItems = await CheckoutItemsService.prepareItemsForCheckout(cart.items); // SIN appliedDiscount
-			const totals = await CheckoutItemsService.calculateCheckoutTotals(cart.items, appliedDiscount);
-			
+			// ✅ VALIDAR QUE EXISTE CHECKOUTDATA
+			if (!checkoutData) {
+				throw new Error("No se puede proceder sin CheckoutData validado");
+			}
+
+			// ✅ USAR DATOS DIRECTAMENTE DEL OBJETO TEMPORAL - NO RECALCULAR
+			console.log("💰 Usando totales pre-calculados de CheckoutData:", checkoutData.totals);
+			console.log("🛒 Usando items pre-preparados de CheckoutData:", checkoutData.items);
+
 			// Almacenar totales para usar en el widget
-			setCalculatedTotals(totals);
-			
-			console.log("💰 Totales calculados para Datafast:", totals);
-			console.log("🛒 Items para Datafast (preparados como Prueba Completa):", checkoutItems);
-			
-			// ✅ FIX DEFINITIVO: Construir customer object condicionalmente
+			setCalculatedTotals(checkoutData.totals);
+
+			// ✅ USAR DATOS VALIDADOS DEL CHECKOUT - NO FORMULARIO
 			const customerData: any = {
 				given_name: formData.given_name,
 				surname: formData.surname,
@@ -213,29 +202,32 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 			if (formData.middle_name && formData.middle_name.trim() !== "") {
 				customerData.middle_name = formData.middle_name.trim();
 			}
-			
+
 			const requestData: DatafastCheckoutRequest = {
 				shippingAddress: {
-					street: formData.address, // ✅ CORREGIDO: usar 'street' en lugar de 'address'
+					street: formData.address,
 					city: formData.city,
-					country: mapCountryCode(formData.country), // ✅ Usar función de mapeo
+					country: mapCountryCode(formData.country),
 				},
 				customer: customerData,
-				items: checkoutItems,
-				total: totals.total,
-				subtotal: totals.subtotal,
-				shipping_cost: totals.shipping,
-				tax: totals.tax,
-				// ✅ AGREGAR LO MISMO QUE HACE "PRUEBA COMPLETA"
-				discount_code: appliedDiscount?.discountCode.code || null,
-				discount_info: appliedDiscount || null
+				items: checkoutData.items, // ✅ USAR ITEMS DEL OBJETO TEMPORAL
+				total: checkoutData.totals.final_total, // ✅ USAR TOTAL DEL OBJETO TEMPORAL
+				subtotal: checkoutData.totals.subtotal_with_discounts,
+				shipping_cost: checkoutData.totals.shipping_cost,
+				tax: checkoutData.totals.iva_amount,
+				discount_code: checkoutData.discountCode || null,
+				discount_info: checkoutData.discountInfo || null,
+				// ✅ NUEVO: Incluir información de sesión para validación
+				session_id: checkoutData.sessionId,
+				validated_at: checkoutData.validatedAt
 			};
 
-			console.log("Iniciando checkout con Datafast...", requestData);
-			console.log("💰 Total enviado a Datafast: $", totals.total);
-			console.log("🔍 DEBUG - Datos específicos que están causando error:");
-			console.log("   - customer.middle_name:", requestData.customer.middle_name !== undefined 
-				? `"${requestData.customer.middle_name}" (tipo: ${typeof requestData.customer.middle_name})` 
+			console.log("Iniciando checkout con Datafast usando CheckoutData...", requestData);
+			console.log("💰 Total enviado a Datafast: $", checkoutData.totals.final_total);
+			console.log("🔍 DEBUG - Datos de CheckoutData enviados:");
+			console.log("   - sessionId:", checkoutData.sessionId);
+			console.log("   - customer.middle_name:", requestData.customer?.middle_name !== undefined
+				? `"${requestData.customer.middle_name}" (tipo: ${typeof requestData.customer.middle_name})`
 				: "OMITIDO - campo no enviado");
 			console.log("   - shippingAddress.country:", `"${requestData.shippingAddress.country}" (tipo: ${typeof requestData.shippingAddress.country})`);
 			console.log("🔍 DEBUG - Customer completo:", JSON.stringify(requestData.customer, null, 2));
@@ -244,7 +236,7 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 			console.log("Respuesta del checkout:", response);
 
 			if (response.status === "success" && response.data) { // ✅ CORREGIDO: Cambiar response.success por response.status
-				setCheckoutData(response.data);
+				setCheckoutResponse(response.data);
 				setShowForm(false);
 				setShowWidget(true);
 
@@ -260,18 +252,16 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 					response.data.checkout_id
 				);
 				
-				// ✅ GUARDAR TOTAL CALCULADO PARA PAGOS REALES
-				localStorage.setItem("datafast_calculated_total", totals.total.toString());
-				
-				// ✅ GUARDAR DATOS DEL FORMULARIO PARA LA PÁGINA DE RESULTADO
+				// ✅ GUARDAR CHECKOUTDATA COMPLETO PARA PROCESAR LA ORDEN DESPUÉS
+				localStorage.setItem("datafast_calculated_total", checkoutData.totals.final_total.toString());
 				localStorage.setItem("datafast_form_data", JSON.stringify(formData));
-				
-				// ✅ GUARDAR BACKUP DEL CARRITO PARA PROCESAR LA ORDEN DESPUÉS
-				console.log("💾 GUARDANDO BACKUP DEL CARRITO EN LOCALSTORAGE");
-				console.log("   - Items en carrito:", cart?.items?.length || 0);
-				console.log("   - Carrito completo:", cart);
-				localStorage.setItem("datafast_cart_backup", JSON.stringify(cart));
-				console.log("   ✅ Backup guardado en 'datafast_cart_backup'");
+
+				// ✅ GUARDAR CHECKOUTDATA COMPLETO EN LUGAR DEL CARRITO
+				console.log("💾 GUARDANDO CHECKOUTDATA VALIDADO EN LOCALSTORAGE");
+				console.log("   - Items en CheckoutData:", checkoutData.items.length);
+				console.log("   - SessionId:", checkoutData.sessionId);
+				localStorage.setItem("datafast_checkout_data", JSON.stringify(checkoutData));
+				console.log("   ✅ CheckoutData guardado en 'datafast_checkout_data'");
 
 				showNotification(
 					NotificationType.SUCCESS,
@@ -629,9 +619,9 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 			script.id = "datafast-widget-script";
 			
 			// IMPORTANTE: Usar widget_url del backend que ya incluye el checkoutId
-			if (checkoutData?.widget_url) {
-				script.src = checkoutData.widget_url;
-				console.log("📌 Usando widget_url del backend:", checkoutData.widget_url);
+			if (checkoutResponse?.widget_url) {
+				script.src = checkoutResponse.widget_url;
+				console.log("📌 Usando widget_url del backend:", checkoutResponse.widget_url);
 			} else {
 				// Fallback solo si no hay widget_url del backend
 				const widgetBaseUrl = import.meta.env.VITE_DATAFAST_WIDGET_URL || "https://eu-test.oppwa.com/v1/paymentWidgets.js";
@@ -777,32 +767,51 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 
 			console.log("🛒 Items formateados para backend (DATAFAST):", JSON.stringify(checkoutItems, null, 2));
 
+			// ✅ VALIDACIÓN ESTRICTA - NO FALLBACKS
+			if (!formData.address || formData.address.trim() === '') {
+				throw new Error('Dirección es obligatoria para procesar el pago');
+			}
+			if (!formData.city || formData.city.trim() === '') {
+				throw new Error('Ciudad es obligatoria para procesar el pago');
+			}
+			if (!formData.country || formData.country.trim() === '') {
+				throw new Error('País es obligatorio para procesar el pago');
+			}
+			if (!formData.phone || formData.phone.trim() === '') {
+				throw new Error('Teléfono es obligatorio para procesar el pago');
+			}
+			if (!calculatedTotals) {
+				throw new Error('No se pudieron calcular los totales del pedido');
+			}
+			if (calculatedTotals.total <= 0) {
+				throw new Error('El total del pedido debe ser mayor a $0');
+			}
+
 			const testCheckoutData = {
 				payment: {
 					method: "datafast" as PaymentMethod,
 				} as PaymentInfo,
 				shippingAddress: {
 					name: formData.given_name + " " + formData.surname,
-					street: formData.address || "Calle de Prueba 123",
-					city: formData.city || "Quito", 
-					state: formData.country || "Pichincha",
+					street: formData.address,
+					city: formData.city,
+					state: formData.country,
 					postalCode: "170000",
-					country: formData.country || "Ecuador",
-					phone: formData.phone || "0999999999",
+					country: formData.country,
+					phone: formData.phone,
 				},
 				seller_id: sellerId || undefined,
-				items: checkoutItems, // ✅ USAR ITEMS CON DESCUENTOS CALCULADOS
-				// ✅ CRÍTICO: Incluir totales calculados requeridos por el backend
+				items: checkoutItems,
+				// ✅ STRICT: Usar totales calculados SIN fallbacks
 				calculated_totals: {
-					subtotal: calculatedTotals?.subtotal || 0,     // subtotal_products (después de descuentos)
-					tax: calculatedTotals?.tax || 0,               // iva_amount
-					shipping: calculatedTotals?.shipping || 0,     // shipping_cost  
-					total: calculatedTotals?.total || 0,           // total final (subtotal + shipping + tax)
-					total_discounts: calculatedTotals?.totalDiscounts || 0 // total_discounts
+					subtotal: calculatedTotals.subtotal,
+					tax: calculatedTotals.tax,
+					shipping: calculatedTotals.shipping,
+					total: calculatedTotals.total,
+					total_discounts: calculatedTotals.totalDiscounts
 				},
-				// ✅ NUEVO: Incluir código de descuento aplicado y su información
 				discount_code: appliedDiscount?.discountCode.code || null,
-				discount_info: appliedDiscount || null // ✅ Pasar información completa del descuento
+				discount_info: appliedDiscount || null
 			};
 
 			console.log("📦 Datos completos de checkout (DATAFAST):", JSON.stringify(testCheckoutData, null, 2));
@@ -876,7 +885,7 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 	};
 
 	const handleSimulatePaymentResult = async () => {
-		if (!checkoutData) {
+		if (!checkoutResponse) {
 			showNotification(NotificationType.ERROR, "No hay datos de checkout");
 			return;
 		}
@@ -885,13 +894,20 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 		try {
 			console.log("Simulando pago exitoso completo...");
 
-			// ✅ ENVIAR EL TOTAL CALCULADO CORRECTO PARA SIMULACIÓN
-			const totals = cart ? await CheckoutItemsService.calculateCheckoutTotals(cart.items, appliedDiscount) : null;
-			
+			// ✅ STRICT: Validar datos antes de proceder
+			if (!cart || cart.items.length === 0) {
+				throw new Error('Carrito vacío - no se puede procesar el pago');
+			}
+
+			const totals = await CheckoutItemsService.calculateCheckoutTotals(cart.items, appliedDiscount);
+			if (!totals || totals.total <= 0) {
+				throw new Error('No se pudieron calcular totales válidos para el pago');
+			}
+
 			const verifyResponse = await datafastService.simulateSuccessfulPayment(
-				checkoutData.checkout_id,
-				checkoutData.transaction_id,
-				totals?.total || 0
+				checkoutResponse.checkout_id,
+				checkoutResponse.transaction_id,
+				totals.total
 			);
 
 			console.log("Respuesta de verificación Datafast:", verifyResponse);
@@ -930,14 +946,14 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 					},
 					seller_id: sellerId || undefined,
 					items: items,
-					// ✅ CRÍTICO: Incluir totales calculados requeridos por el backend
-					calculated_totals: calculatedTotals ? {
-						subtotal: calculatedTotals.subtotal,     // subtotal_products (después de descuentos)
-						tax: calculatedTotals.tax,               // iva_amount
-						shipping: calculatedTotals.shipping,     // shipping_cost
-						total: calculatedTotals.total,           // total final (subtotal + shipping + tax)
-						total_discounts: calculatedTotals.totalDiscounts // total_discounts
-					} : undefined
+					// ✅ STRICT: Usar totales calculados SIN validación ternaria
+					calculated_totals: {
+						subtotal: calculatedTotals.subtotal,
+						tax: calculatedTotals.tax,
+						shipping: calculatedTotals.shipping,
+						total: calculatedTotals.total,
+						total_discounts: calculatedTotals.totalDiscounts
+					}
 				};
 
 				const checkoutResponse = await checkoutService.processCheckout(checkoutRequestData, user?.email);
@@ -978,7 +994,7 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 	};
 
 	const handleRealPayment = async () => {
-		if (!checkoutData) {
+		if (!checkoutResponse) {
 			showNotification(NotificationType.ERROR, "No hay datos de checkout disponibles");
 			return;
 		}
@@ -986,7 +1002,6 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 		try {
 			setIsLoading(true);
 			
-			// ✅ GUARDAR EL TOTAL CALCULADO EN LOCALSTORAGE PARA LA PÁGINA DE RESULTADO
 			const totals = cart ? await CheckoutItemsService.calculateCheckoutTotals(cart.items, appliedDiscount) : null;
 			if (totals) {
 				localStorage.setItem("datafast_calculated_total", totals.total.toString());
@@ -1049,8 +1064,8 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 						<h4 className="font-semibold text-blue-800">
 							Información del pedido:
 						</h4>
-						<p className="text-blue-700">Monto: ${calculatedTotals?.total?.toFixed(2) || checkoutData?.amount || cart?.total}</p>
-						<p className="text-blue-700">ID: {checkoutData?.transaction_id}</p>
+						<p className="text-blue-700">Monto: ${calculatedTotals?.total?.toFixed(2) || checkoutResponse?.amount || cart?.total}</p>
+						<p className="text-blue-700">ID: {checkoutResponse?.transaction_id}</p>
 					</div>
 
 					<div className="min-h-[400px] border border-gray-200 rounded-lg p-4">

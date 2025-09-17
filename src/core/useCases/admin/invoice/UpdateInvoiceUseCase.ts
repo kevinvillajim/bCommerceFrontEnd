@@ -1,5 +1,4 @@
 import type { InvoiceRepository } from '../../../domain/repositories/InvoiceRepository';
-import type { ApiResponse } from '../../../domain/entities/ApiResponse';
 
 export interface UpdateInvoiceRequest {
   customer_name?: string;
@@ -19,13 +18,8 @@ export class UpdateInvoiceUseCase {
 
   async execute(invoiceId: number, updateData: UpdateInvoiceRequest): Promise<UpdateInvoiceResponse> {
     try {
-      const response = await this.invoiceRepository.updateInvoice(invoiceId, updateData);
-      
-      if (!response.success) {
-        throw new Error(response.message || 'Error al actualizar la factura');
-      }
-
-      return response.data;
+      const updateResponse = await this.invoiceRepository.updateInvoice(invoiceId, updateData);
+      return updateResponse;
     } catch (error) {
       console.error('Error en UpdateInvoiceUseCase:', error);
       throw error;

@@ -3,66 +3,171 @@ import {API_ENDPOINTS} from "../../constants/apiEndpoints";
 import {extractErrorMessage} from "../../utils/errorHandler";
 
 export interface DatafastCheckoutRequest {
+	// ✅ SINCRONIZADO CON PHP: Refleja exactamente las validaciones del backend
 	shippingAddress: {
-		street: string; // ✅ CORREGIDO: usar 'street' en lugar de 'address'
-		city: string;
-		country: string;
+		street: string;          // required|string|max:100
+		city: string;            // required|string|max:50
+		country: string;         // required|string|max:100
+		identification?: string; // sometimes|string|max:13 (RUC/cédula)
 	};
-	customer?: {
-		given_name?: string;
-		middle_name?: string;
-		surname?: string;
-		phone?: string;
-		doc_id?: string;
+	customer: {                  // required|array - OBLIGATORIO PARA SRI
+		given_name?: string;     // sometimes|string|max:48
+		middle_name?: string;    // sometimes|string|max:50
+		surname?: string;        // sometimes|string|max:48
+		phone?: string;          // sometimes|string|min:7|max:25
+		doc_id: string;          // required|string|size:10 - OBLIGATORIO PARA SRI
 	};
-	items?: {
+	items?: {                    // sometimes|array
 		product_id: number;
 		quantity: number;
 		price: number;
 	}[];
-	total: number;
-	subtotal: number;
-	shipping_cost: number;
-	tax: number;
-	discount_code?: string | null;
-	discount_info?: any;
+	total: number;               // required|numeric|min:0.01
+	subtotal?: number;           // sometimes|numeric|min:0
+	shipping_cost?: number;      // sometimes|numeric|min:0
+	tax?: number;                // sometimes|numeric|min:0
+	discount_code?: string | null; // sometimes|string|nullable
+	discount_info?: any;         // sometimes|array|nullable
+	// ✅ CAMPOS PARA CHECKOUTDATA TEMPORAL
+	session_id?: string;         // sometimes|string|max:100
+	validated_at?: string;       // sometimes|string
 }
 
+// ✅ ESTANDARIZADO: Response unificada con backend
 export interface DatafastCheckoutResponse {
-	success: boolean;
-	status?: string;
+	// ✅ DECISIÓN: Usar 'success' como campo principal booleano
+	success: boolean;               // Campo principal de estado
+	status: 'success' | 'failed' | 'error'; // ✅ OBLIGATORIO: Estado descriptivo
 	data?: {
-		checkout_id: string;
-		widget_url: string;
-		transaction_id: string;
-		amount: number;
+		checkout_id: string;        // ID del checkout de Datafast
+		widget_url: string;         // URL del widget para el pago
+		transaction_id: string;     // ID único del sistema (ORDER_xxx)
+		amount: number;             // Monto total a pagar
 	};
-	message: string;
-	error_code?: string;
+	message: string;                // ✅ OBLIGATORIO: Mensaje descriptivo del resultado
+	error_code?: string;            // Código de error específico si falla
 }
 
 export interface DatafastVerifyPaymentRequest {
 	resource_path: string;
 	transaction_id: string;
-	calculated_total?: number; // ✅ AGREGAR SOPORTE PARA TOTAL CALCULADO
+	calculated_total?: number; // ✅ OPCIONAL: Para verificación adicional de seguridad - Backend valida contra datos almacenados
+	session_id?: string; // ✅ OPCIONAL: Para arquitectura centralizada - Permite recuperar CheckoutData temporal
 }
 
+// ✅ ESTANDARIZADO: Response de verificación unificada
 export interface DatafastVerifyPaymentResponse {
+	// ✅ DECISIÓN: Usar 'success' como campo principal booleano
 	success: boolean;
-	status?: string;
+	status: 'success' | 'processing' | 'error' | 'pending'; // ✅ OBLIGATORIO: Estado descriptivo
 	data?: {
-		order_id: string;
-		order_number: string;
-		total: number;
-		payment_status: string;
-		payment_id: string;
+		order_id: number;             // ✅ CORREGIDO: ID numérico de la orden
+		order_number: string;         // Número de orden para mostrar al usuario
+		total: number;                // Total de la orden
+		payment_status: 'completed' | 'pending' | 'failed' | 'error'; // ✅ TIPADO FUERTE
+		payment_id: string;           // ID del pago de Datafast
+		transaction_id: string;       // ID único del sistema
+		processed_at: string;         // Timestamp ISO 8601
 	};
+	message: string;                  // ✅ OBLIGATORIO: Mensaje descriptivo del resultado
+	result_code?: string;             // Código de resultado de Datafast
+	is_phase_1_error?: boolean;       // Indicador de error típico de Fase 1
+}
+
+// ✅ INTERFACES TIPADAS FUERTEMENTE - SINCRONIZADAS CON PHP
+export interface ShippingData {
+	street: string;        // required|string|max:100
+	city: string;          // required|string|max:50
+	country: string;       // required|string|max:100
+	identification?: string; // sometimes|string|max:13
+}
+
+export interface BillingData {
+	street: string;
+	city: string;
+	country: string;
+	identification?: string;
+}
+
+export interface CartItem {
+	product_id: number;    // required|integer
+	quantity: number;      // required|integer|min:1
+	price: number;         // required|numeric|min:0
+	name?: string;         // Para mostrar en UI
+	subtotal?: number;     // Calculado: price * quantity
+}
+
+export interface OrderTotals {
+	subtotal: number;      // required|numeric|min:0
+	shipping_cost: number; // required|numeric|min:0
+	tax: number;           // required|numeric|min:0
+	discount: number;      // required|numeric|min:0
+	final_total: number;   // required|numeric|min:0.01
+}
+
+export interface DiscountInfo {
+	type: 'volume' | 'coupon' | 'feedback';
+	amount: number;
+	percentage?: number;
+	code?: string;
+	description?: string;
+}
+
+// ✅ INTERFACES PARA ARQUITECTURA CENTRALIZADA - FUERTEMENTE TIPADAS
+export interface StoreCheckoutDataRequest {
+	shippingData: ShippingData;      // ✅ TIPADO FUERTE
+	billingData: BillingData;        // ✅ TIPADO FUERTE
+	items: CartItem[];               // ✅ TIPADO FUERTE - min:1 validado en PHP
+	totals: OrderTotals;             // ✅ TIPADO FUERTE
+	sessionId: string;               // required|string|max:100
+	discountCode?: string | null;    // sometimes|string|nullable
+	discountInfo?: DiscountInfo[];   // ✅ TIPADO FUERTE - array de descuentos
+}
+
+// ✅ ESTANDARIZADO: Response de almacenamiento de checkout
+export interface StoreCheckoutDataResponse {
+	success: boolean;
+	status: 'success' | 'failed' | 'error'; // ✅ AÑADIDO: Consistencia con otras responses
 	message: string;
-	result_code?: string;
-	is_phase_1_error?: boolean;
+	data: {
+		session_id: string;         // Identificador único de sesión
+		expires_at: string;         // Timestamp ISO 8601 de expiración
+		final_total: number;        // Total calculado final
+	};
+	error_code?: string;            // ✅ AÑADIDO: Código de error si falla
 }
 
 export class DatafastService {
+	/**
+	 * Almacenar CheckoutData temporal para arquitectura centralizada
+	 * ✅ CORREGIDO: Usa interfaces fuertemente tipadas
+	 */
+	async storeCheckoutData(
+		checkoutData: StoreCheckoutDataRequest
+	): Promise<StoreCheckoutDataResponse> {
+		try {
+			console.log("DatafastService: Almacenando CheckoutData temporal", checkoutData);
+
+			const response = await ApiClient.post<StoreCheckoutDataResponse>(
+				API_ENDPOINTS.DATAFAST.STORE_CHECKOUT_DATA,
+				checkoutData
+			);
+
+			console.log("DatafastService: CheckoutData almacenado exitosamente", response);
+
+			return response;
+		} catch (error) {
+			console.error("DatafastService: Error al almacenar CheckoutData:", error);
+
+			const errorMessage = extractErrorMessage(
+				error,
+				"Error al almacenar datos de checkout"
+			);
+
+			throw new Error(errorMessage);
+		}
+	}
+
 	/**
 	 * Crear un checkout de Datafast
 	 */
@@ -148,17 +253,18 @@ export class DatafastService {
 		});
 
 		try {
-			// Llamar al endpoint de verificación con el parámetro simulate_success
+			// ✅ CORREGIDO: Llamar al endpoint de verificación con simulate_success en el body
 			const requestData = {
 				resource_path: mockResourcePath,
 				transaction_id: transactionId,
 				calculated_total: calculatedTotal, // ✅ ENVIAR TOTAL CALCULADO
+				simulate_success: true, // ✅ MOVIDO DEL QUERY PARAMETER AL BODY
 			};
-			
+
 			console.log("🔄 Enviando datos de simulación:", requestData);
-			
+
 			const response = await ApiClient.post<DatafastVerifyPaymentResponse>(
-				API_ENDPOINTS.DATAFAST.VERIFY_PAYMENT + "?simulate_success=true",
+				API_ENDPOINTS.DATAFAST.VERIFY_PAYMENT, // ✅ SIN QUERY PARAMETER
 				requestData
 			);
 
@@ -278,7 +384,8 @@ export class DatafastService {
 			// 5. Construir URL de redirección idéntica al widget real
 			// DatafastResultPage procesará esto y seguirá el flujo completo:
 			// verifyPayment() → processCheckout() → orden + factura + SRI
-			const resultUrl = `/datafast-result?resourcePath=${encodeURIComponent(mockResourcePath)}&status=pending&transactionId=${transactionId}`;
+			// ✅ AGREGADO: simulate=true para activar DatafastTestValidator
+			const resultUrl = `/datafast-result?resourcePath=${encodeURIComponent(mockResourcePath)}&status=pending&transactionId=${transactionId}&simulate=true`;
 			console.log("🚀 URL de redirección generada (flujo completo):", resultUrl);
 			console.log("📋 DatafastResultPage ejecutará:");
 			console.log("   1. verifyPayment() - verificación (simulada como exitosa)");  

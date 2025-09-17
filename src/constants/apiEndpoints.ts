@@ -163,6 +163,12 @@ export const API_ENDPOINTS = {
     TOP_RATING: "/sellers/top/rating",
     TOP_SALES: "/sellers/top/sales",
     FEATURED: "/sellers/featured",
+    EARNINGS: {
+      BASE: "/seller/earnings",
+      MONTHLY: "/seller/earnings/monthly",
+      EXPORT_PDF: "/seller/earnings/export-pdf",
+      DOWNLOAD_PDF: "/seller/earnings/download-pdf",
+    },
   },
 
   // Ratings
@@ -289,6 +295,7 @@ export const API_ENDPOINTS = {
     RESET_PASSWORD: (id: number) => `/admin/users/${id}/reset-password`,
     MAKE_ADMIN: (id: number) => `/admin/users/${id}/make-admin`,
     MAKE_SELLER: (id: number) => `/admin/users/${id}/make-seller`,
+    MAKE_PAYMENT_USER: (id: number) => `/admin/users/${id}/make-payment`,
     DELETE_USER: (id: number) => `/admin/users/${id}`,
 
     DASHBOARD: "/admin/dashboard",
@@ -407,6 +414,19 @@ export const API_ENDPOINTS = {
       VALIDATE: "/admin/discount-codes/validate",
       APPLY: "/admin/discount-codes/apply",
     },
+
+    // ✅ NUEVO: Admin Accounting Management
+    ACCOUNTING: {
+      METRICS: "/admin/accounting/metrics",
+      TRANSACTIONS: "/admin/accounting/transactions",
+      TRANSACTION_DETAIL: (id: string | number) => `/admin/accounting/transactions/${id}`,
+      POST_TRANSACTION: (id: string | number) => `/admin/accounting/transactions/${id}/post`,
+      ACCOUNTS: "/admin/accounting/accounts",
+      ACCOUNT_DETAIL: (id: string | number) => `/admin/accounting/accounts/${id}`,
+      ACCOUNT_LEDGER: (id: string | number) => `/admin/accounting/accounts/${id}/ledger`,
+      BALANCE_SHEET: "/admin/accounting/balance-sheet",
+      INCOME_STATEMENT: "/admin/accounting/income-statement",
+    },
   },
 
   // Development & Testing
@@ -424,9 +444,41 @@ export const API_ENDPOINTS = {
   },
 
   DATAFAST: {
+    STORE_CHECKOUT_DATA: "/datafast/store-checkout-data",
     CREATE_CHECKOUT: "/datafast/create-checkout",
     VERIFY_PAYMENT: "/datafast/verify-payment",
     WEBHOOK: "/datafast/webhook",
+  },
+
+  // ================================
+  // 💳 MÓDULO DE PAGOS EXTERNOS
+  // ================================
+  EXTERNAL_PAYMENT: {
+    // Rutas para rol payment
+    DASHBOARD: "/payment/dashboard",
+    LIST: "/payment/links",
+    CREATE: "/payment/links",
+    SHOW: (id: number) => `/payment/links/${id}`,
+    CANCEL: (id: number) => `/payment/links/${id}/cancel`,
+
+    // Rutas admin
+    ADMIN: {
+      DASHBOARD: "/admin/external-payments/dashboard",
+      LIST: "/admin/external-payments/links",
+      SHOW: (id: number) => `/admin/external-payments/links/${id}`,
+      CANCEL: (id: number) => `/admin/external-payments/links/${id}/cancel`,
+      USERS: "/admin/external-payments/users",
+      STATS: "/admin/external-payments/stats",
+    },
+
+    // Rutas públicas
+    PUBLIC: {
+      SHOW: (linkCode: string) => `/pay/${linkCode}`,
+      DATAFAST: (linkCode: string) => `/pay/${linkCode}/datafast`,
+      DEUNA: (linkCode: string) => `/pay/${linkCode}/deuna`,
+      DATAFAST_VERIFY: (linkCode: string) => `/pay/${linkCode}/datafast/verify`,
+      DEUNA_WEBHOOK: (linkCode: string) => `/pay/${linkCode}/deuna/webhook`,
+    },
   },
 };
 

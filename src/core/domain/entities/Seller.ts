@@ -13,7 +13,7 @@ export interface Seller {
   description?: string;
   status: 'pending' | 'active' | 'suspended' | 'inactive';
   verificationLevel?: 'none' | 'basic' | 'verified' | 'premium';
-  commissionRate?: number;
+  // commissionRate?: number; // TODO: Implementar comisiones individuales en el futuro - usar configuración global del admin
   totalSales?: number;
   total_orders?: number; // Backend field
   total_revenue?: number; // Backend field

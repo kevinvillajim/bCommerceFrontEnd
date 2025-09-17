@@ -18,6 +18,10 @@ export interface DeunaPaymentRequest {
   qr_type?: 'static' | 'dynamic';
   format?: '0' | '1' | '2' | '3' | '4';
   metadata?: Record<string, any>;
+  // ✅ NUEVOS CAMPOS para arquitectura centralizada
+  session_id?: string;
+  validated_at?: string;
+  checkout_data?: any;
 }
 
 export interface DeunaPaymentResponse {
