@@ -18,6 +18,10 @@ interface PaymentLinkData {
 }
 
 interface CustomerData {
+  given_name: string;
+  surname: string;
+  identification: string;
+  middle_name?: string;
   email: string;
   phone: string;
   address: string;
@@ -42,6 +46,10 @@ const PaymentPage: React.FC = () => {
   const [showDeunaQR, setShowDeunaQR] = useState(false);
   const [widgetUrl, setWidgetUrl] = useState<string | null>(null);
   const [customerData, setCustomerData] = useState<CustomerData>({
+    given_name: '',
+    surname: '',
+    identification: '',
+    middle_name: '',
     email: '',
     phone: '',
     address: '',
@@ -92,12 +100,15 @@ const PaymentPage: React.FC = () => {
   };
 
   const validateForm = () => {
-    const { email, phone, address, city, postal_code } = customerData;
-    const isValid = email.trim() !== '' &&
+    const { given_name, surname, identification, email, phone, address, city } = customerData;
+    const isValid = given_name.trim() !== '' &&
+                   surname.trim() !== '' &&
+                   identification.trim() !== '' &&
+                   /^\d{10}$/.test(identification) &&
+                   email.trim() !== '' &&
                    phone.trim() !== '' &&
                    address.trim() !== '' &&
                    city.trim() !== '' &&
-                   postal_code.trim() !== '' &&
                    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
     setFormValid(isValid);
     return isValid;
@@ -108,12 +119,15 @@ const PaymentPage: React.FC = () => {
     setCustomerData(newData);
     // Validar después de cada cambio
     setTimeout(() => {
-      const { email, phone, address, city, postal_code } = newData;
-      const isValid = email.trim() !== '' &&
+      const { given_name, surname, identification, email, phone, address, city } = newData;
+      const isValid = given_name.trim() !== '' &&
+                     surname.trim() !== '' &&
+                     identification.trim() !== '' &&
+                     /^\d{10}$/.test(identification) &&
+                     email.trim() !== '' &&
                      phone.trim() !== '' &&
                      address.trim() !== '' &&
                      city.trim() !== '' &&
-                     postal_code.trim() !== '' &&
                      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
       setFormValid(isValid);
     }, 100);
@@ -369,6 +383,75 @@ const PaymentPage: React.FC = () => {
               <p className="text-gray-600 mb-6">Por favor completa los siguientes datos para procesar tu pago de forma segura.</p>
 
               <div className="space-y-4">
+                {/* Nombres */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="given_name" className="block text-sm font-medium text-gray-700 mb-2">
+                      Nombre *
+                    </label>
+                    <input
+                      type="text"
+                      id="given_name"
+                      required
+                      value={customerData.given_name}
+                      onChange={(e) => handleCustomerDataChange('given_name', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Juan"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="surname" className="block text-sm font-medium text-gray-700 mb-2">
+                      Apellido *
+                    </label>
+                    <input
+                      type="text"
+                      id="surname"
+                      required
+                      value={customerData.surname}
+                      onChange={(e) => handleCustomerDataChange('surname', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Pérez"
+                    />
+                  </div>
+                </div>
+
+                {/* Segundo nombre (opcional) */}
+                <div>
+                  <label htmlFor="middle_name" className="block text-sm font-medium text-gray-700 mb-2">
+                    Segundo Nombre (opcional)
+                  </label>
+                  <input
+                    type="text"
+                    id="middle_name"
+                    value={customerData.middle_name || ''}
+                    onChange={(e) => handleCustomerDataChange('middle_name', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Carlos"
+                  />
+                </div>
+
+                {/* Cédula */}
+                <div>
+                  <label htmlFor="identification" className="block text-sm font-medium text-gray-700 mb-2">
+                    Cédula * (10 dígitos)
+                  </label>
+                  <input
+                    type="text"
+                    id="identification"
+                    required
+                    pattern="[0-9]{10}"
+                    maxLength={10}
+                    value={customerData.identification}
+                    onChange={(e) => handleCustomerDataChange('identification', e.target.value.replace(/\D/g, ''))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="1234567890"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Ingresa tu número de cédula de 10 dígitos
+                  </p>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
@@ -435,12 +518,11 @@ const PaymentPage: React.FC = () => {
 
                   <div>
                     <label htmlFor="postal_code" className="block text-sm font-medium text-gray-700 mb-2">
-                      Código Postal *
+                      Código Postal (opcional)
                     </label>
                     <input
                       type="text"
                       id="postal_code"
-                      required
                       pattern="[0-9A-Za-z\-\s]+"
                       value={customerData.postal_code}
                       onChange={(e) => handleCustomerDataChange('postal_code', e.target.value)}
