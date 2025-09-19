@@ -24,6 +24,7 @@ interface UserRoleInfo {
 	role: string | null;
 	isAdmin: boolean;
 	isSeller: boolean;
+	isPaymentUser: boolean;
 	sellerInfo?: {
 		id: number;
 		store_name: string;
@@ -33,6 +34,11 @@ interface UserRoleInfo {
 	adminInfo?: {
 		id: number;
 		role: string;
+		permissions: string[];
+	} | null;
+	paymentInfo?: {
+		id: number;
+		status: string;
 		permissions: string[];
 	} | null;
 }
@@ -83,8 +89,10 @@ export const AuthContext = createContext<AuthContextProps>({
 		role: null,
 		isAdmin: false,
 		isSeller: false,
+		isPaymentUser: false,
 		sellerInfo: null,
 		adminInfo: null,
+		paymentInfo: null,
 	},
 	isLoadingRole: false,
 	refreshRoleInfo: async () => {},
@@ -110,8 +118,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 		role: null,
 		isAdmin: false,
 		isSeller: false,
+		isPaymentUser: false,
 		sellerInfo: null,
 		adminInfo: null,
+		paymentInfo: null,
 	});
 
 	// Referencias para controlar flujos
@@ -224,8 +234,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 					role: roleData.data.role,
 					isAdmin: roleData.data.is_admin,
 					isSeller: roleData.data.is_seller,
+					isPaymentUser: roleData.data.is_payment_user || false,
 					sellerInfo: roleData.data.seller_info || null,
 					adminInfo: roleData.data.admin_info || null,
+					paymentInfo: roleData.data.payment_info || null,
 				};
 
 				console.log("Información de rol obtenida:", newRoleInfo);
@@ -291,8 +303,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 					role: roleData.data.role,
 					isAdmin: roleData.data.is_admin,
 					isSeller: roleData.data.is_seller,
+					isPaymentUser: roleData.data.is_payment_user || false,
 					sellerInfo: roleData.data.seller_info || null,
 					adminInfo: roleData.data.admin_info || null,
+					paymentInfo: roleData.data.payment_info || null,
 				};
 
 				console.log("Información de rol refrescada:", newRoleInfo);
@@ -509,8 +523,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 			role: null,
 			isAdmin: false,
 			isSeller: false,
+			isPaymentUser: false,
 			sellerInfo: null,
 			adminInfo: null,
+			paymentInfo: null,
 		});
 	}, []);
 

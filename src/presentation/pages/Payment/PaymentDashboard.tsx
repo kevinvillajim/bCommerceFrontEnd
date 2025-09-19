@@ -139,7 +139,7 @@ const PaymentDashboard: React.FC = () => {
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-500">Recaudado</p>
-              <p className="text-2xl font-bold text-gray-900">${stats.total_amount_collected.toFixed(2)}</p>
+              <p className="text-2xl font-bold text-gray-900">${Number(stats.total_amount_collected || 0).toFixed(2)}</p>
             </div>
           </div>
         </div>

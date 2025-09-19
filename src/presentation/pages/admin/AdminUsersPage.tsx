@@ -6,8 +6,6 @@ import {
 	Lock,
 	Unlock,
 	Mail,
-	Store,
-	Shield,
 	Filter,
 	RefreshCw,
 	AlertCircle,
@@ -15,12 +13,13 @@ import {
 	AtSign,
 	Send,
 	Trash2,
-	CreditCard,
+	Users,
 } from "lucide-react";
 import useAdminUsers from "../../hooks/useAdminUsers";
 import type {AdminUserData} from "../../hooks/useAdminUsers";
 import ApiClient from "../../../infrastructure/api/apiClient";
 import { API_ENDPOINTS } from "../../../constants/apiEndpoints";
+import RoleChangeModal from "../../components/admin/RoleChangeModal";
 
 /**
  * Página de gestión de usuarios para administradores
@@ -33,9 +32,7 @@ const AdminUsersPage: React.FC = () => {
 		fetchUsers,
 		toggleUserStatus,
 		sendPasswordReset,
-		makeUserAdmin,
-		makeUserPayment,
-		makeUserSeller,
+		changeUserRole,
 		deleteUser,
 		filterUsers,
 	} = useAdminUsers();
@@ -70,6 +67,10 @@ const AdminUsersPage: React.FC = () => {
 	const [showDeleteModal, setShowDeleteModal] = useState<boolean>(false);
 	const [selectedUserForDelete, setSelectedUserForDelete] = useState<AdminUserData | null>(null);
 	const [deleting, setDeleting] = useState<boolean>(false);
+
+	// Estados para el modal de cambio de rol
+	const [showRoleChangeModal, setShowRoleChangeModal] = useState<boolean>(false);
+	const [selectedUserForRoleChange, setSelectedUserForRoleChange] = useState<AdminUserData | null>(null);
 
 	// Obtener datos de usuarios al iniciar
 	useEffect(() => {
@@ -117,37 +118,6 @@ const AdminUsersPage: React.FC = () => {
 		}
 	};
 
-	// Manejar promoción a administrador
-	const handleMakeAdmin = async (userId: number) => {
-		const success = await makeUserAdmin(userId);
-
-		if (success) {
-			setSuccessMessage("Usuario promocionado a administrador correctamente.");
-
-			// Limpiar mensaje después de 3 segundos
-			setTimeout(() => setSuccessMessage(null), 3000);
-		}
-	};
-
-	const handleMakePaymentUser = async (userId: number) => {
-		const success = await makeUserPayment(userId);
-
-		if (success) {
-			setSuccessMessage("Usuario convertido a rol de pagos correctamente.");
-
-			// Limpiar mensaje después de 3 segundos
-			setTimeout(() => setSuccessMessage(null), 3000);
-		}
-	};
-
-	// Abrir modal para convertir en vendedor
-	const handleShowMakeSellerModal = (userId: number) => {
-		setSelectedUserId(userId);
-		setStoreName("");
-		setStoreDescription("");
-		setValidationErrors({});
-		setShowSellerModal(true);
-	};
 
 	// Cerrar modal
 	const handleCloseSellerModal = () => {
@@ -181,7 +151,7 @@ const AdminUsersPage: React.FC = () => {
 				description: storeDescription,
 			};
 
-			const success = await makeUserSeller(selectedUserId, storeData);
+			const success = await changeUserRole(selectedUserId, 'seller', storeData);
 
 			if (success) {
 				setSuccessMessage("Usuario convertido en vendedor correctamente.");
@@ -322,6 +292,39 @@ const AdminUsersPage: React.FC = () => {
 		}
 	};
 
+	// Funciones para el modal de cambio de rol
+	const handleShowRoleChangeModal = (user: AdminUserData) => {
+		setSelectedUserForRoleChange(user);
+		setShowRoleChangeModal(true);
+	};
+
+	const handleCloseRoleChangeModal = () => {
+		setShowRoleChangeModal(false);
+		setSelectedUserForRoleChange(null);
+	};
+
+	// Cambiar rol de usuario
+	const handleChangeUserRole = async (
+		role: 'customer' | 'seller' | 'admin' | 'payment',
+		storeData?: {store_name: string; description?: string}
+	) => {
+		if (!selectedUserForRoleChange) return;
+
+		try {
+			const success = await changeUserRole(selectedUserForRoleChange.id, role, storeData);
+
+			if (success) {
+				setSuccessMessage(`Usuario convertido a ${role === 'customer' ? 'cliente' : role === 'seller' ? 'vendedor' : role === 'admin' ? 'administrador' : 'usuario de pagos'} correctamente.`);
+				handleCloseRoleChangeModal();
+
+				// Limpiar mensaje después de 3 segundos
+				setTimeout(() => setSuccessMessage(null), 3000);
+			}
+		} catch (error) {
+			console.error('Error changing user role:', error);
+		}
+	};
+
 	// Definir columnas de la tabla
 	const columns = [
 		{
@@ -360,6 +363,7 @@ const AdminUsersPage: React.FC = () => {
 				>
 					{user.role === "admin" && "Administrador"}
 					{user.role === "seller" && "Vendedor"}
+					{user.role === "payment" && "Usuario de Pagos"}
 					{user.role === "customer" && "Cliente"}
 				</span>
 			),
@@ -428,33 +432,13 @@ const AdminUsersPage: React.FC = () => {
 					>
 						<AtSign size={18} />
 					</button>
-					{user.role !== "seller" && (
-						<button
-							onClick={() => handleShowMakeSellerModal(user.id)}
-							className="p-1 text-green-600 hover:bg-green-100 rounded-md"
-							title="Convertir en Vendedor"
-						>
-							<Store size={18} />
-						</button>
-					)}
-					{user.role !== "admin" && (
-						<button
-							onClick={() => handleMakeAdmin(user.id)}
-							className="p-1 text-purple-600 hover:bg-purple-100 rounded-md"
-							title="Hacer Administrador"
-						>
-							<Shield size={18} />
-						</button>
-					)}
-					{user.role !== "admin" && (
-						<button
-							onClick={() => handleMakePaymentUser(user.id)}
-							className="p-1 text-blue-600 hover:bg-blue-100 rounded-md"
-							title="Hacer Usuario de Pagos"
-						>
-							<CreditCard size={18} />
-						</button>
-					)}
+					<button
+						onClick={() => handleShowRoleChangeModal(user)}
+						className="p-1 text-indigo-600 hover:bg-indigo-100 rounded-md"
+						title="Cambiar Rol"
+					>
+						<Users size={18} />
+					</button>
 					<button
 						onClick={() => handleShowDeleteModal(user)}
 						className="p-1 text-red-600 hover:bg-red-100 rounded-md"
@@ -519,6 +503,7 @@ const AdminUsersPage: React.FC = () => {
 							<option value="customer">Cliente</option>
 							<option value="seller">Vendedor</option>
 							<option value="admin">Administrador</option>
+							<option value="payment">Usuario de Pagos</option>
 						</select>
 					</div>
 
@@ -847,7 +832,8 @@ const AdminUsersPage: React.FC = () => {
 								<p className="text-sm text-gray-600">
 									<strong>Rol:</strong> {
 										selectedUserForDelete.role === "admin" ? "Administrador" :
-										selectedUserForDelete.role === "seller" ? "Vendedor" : "Cliente"
+										selectedUserForDelete.role === "seller" ? "Vendedor" :
+										selectedUserForDelete.role === "payment" ? "Usuario de Pagos" : "Cliente"
 									}
 								</p>
 								<p className="text-sm text-gray-600">
@@ -884,6 +870,17 @@ const AdminUsersPage: React.FC = () => {
 						</div>
 					</div>
 				</div>
+			)}
+
+			{/* Modal de cambio de rol */}
+			{showRoleChangeModal && selectedUserForRoleChange && (
+				<RoleChangeModal
+					isOpen={showRoleChangeModal}
+					user={selectedUserForRoleChange}
+					onClose={handleCloseRoleChangeModal}
+					onConfirm={handleChangeUserRole}
+					isLoading={loading}
+				/>
 			)}
 		</div>
 	);

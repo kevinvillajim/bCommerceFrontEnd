@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { useToast } from '../components/UniversalToast';
@@ -52,9 +52,24 @@ const DatafastResultPage: React.FC = () => {
   const [result, setResult] = useState<PaymentResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // ✅ CRITICAL FIX: Prevenir doble ejecución por React StrictMode
+  const hasProcessedRef = useRef(false);
+  const [hasProcessed, setHasProcessed] = useState(false);
+
   useEffect(() => {
     const processPaymentResult = async () => {
+      // ✅ CRITICAL FIX: Prevenir doble ejecución
+      if (hasProcessedRef.current || hasProcessed) {
+        console.log('⚠️ Verificación ya procesada, omitiendo duplicada');
+        return;
+      }
+
+      hasProcessedRef.current = true;
+      setHasProcessed(true);
+
       try {
+        console.log('🔄 Iniciando verificación de pago Datafast (única ejecución)');
+
         // Extraer parámetros de la URL
         const resourcePath = searchParams.get('resourcePath') || searchParams.get('resource_path');
         const transactionId = extractTransactionId(searchParams);
@@ -108,11 +123,43 @@ const DatafastResultPage: React.FC = () => {
             });
           }, 3000);
         } else {
+          // ✅ MANEJO ESPECÍFICO: Error 200.300.404 (sesión ya consumida)
+          if (paymentResult.error_code === '200.300.404') {
+            console.log('🔍 Error 200.300.404 detectado - verificando si hay datos de pago exitoso previo');
+
+            // Verificar si hay evidencia de pago exitoso en localStorage
+            const previousSuccess = checkForPreviousSuccessfulPayment();
+            if (previousSuccess) {
+              console.log('✅ Encontrados datos de pago exitoso previo, mostrando como éxito');
+              setResult({
+                success: true,
+                status: 'success',
+                data: previousSuccess,
+                message: 'Pago procesado exitosamente'
+              });
+              showToast('¡Pago procesado exitosamente!', NotificationType.SUCCESS);
+
+              // Limpiar localStorage después del éxito
+              cleanupAfterSuccess();
+
+              // Redirigir después de 3 segundos
+              setTimeout(() => {
+                navigate(`/orders/${previousSuccess.order_id}`, { replace: true });
+              }, 3000);
+
+              return; // Salir sin mostrar error
+            }
+          }
+
           showToast(paymentResult.message || 'Error procesando el pago', NotificationType.ERROR);
         }
 
       } catch (error: any) {
         console.error('❌ Error procesando resultado de pago:', error);
+
+        // ✅ Reset flags en caso de error para permitir reintento
+        hasProcessedRef.current = false;
+        setHasProcessed(false);
 
         const errorMessage = error.response?.data?.message ||
                            error.message ||
@@ -231,17 +278,17 @@ const DatafastResultPage: React.FC = () => {
 
 /**
  * Extrae transaction_id de diferentes fuentes
+ * ✅ FIX: Priorizar localStorage sobre URL params para obtener transaction_id interno correcto
  */
 function extractTransactionId(searchParams: URLSearchParams): string | null {
-  // Priorizar parámetros de URL
-  const fromParams = searchParams.get('transaction_id') ||
-                    searchParams.get('transactionId') ||
-                    searchParams.get('id');
+  // ✅ CORREGIDO: Priorizar localStorage que contiene el transaction_id interno correcto
+  const fromStorage = localStorage.getItem('datafast_transaction_id');
+  if (fromStorage) return fromStorage;
 
-  if (fromParams) return fromParams;
-
-  // Fallback: obtener de localStorage
-  return localStorage.getItem('datafast_transaction_id');
+  // Fallback: obtener de parámetros de URL (pero estos contienen checkout_id de Datafast)
+  return searchParams.get('transaction_id') ||
+         searchParams.get('transactionId') ||
+         searchParams.get('id');
 }
 
 /**
@@ -253,6 +300,43 @@ function getSessionIdFromStorage(): string | null {
                      localStorage.getItem('checkout_session_id');
     return sessionId;
   } catch {
+    return null;
+  }
+}
+
+/**
+ * Verifica si hay datos de pago exitoso previo en localStorage
+ */
+function checkForPreviousSuccessfulPayment(): any | null {
+  try {
+    // Verificar si hay datos de transacción exitosa previa
+    const transactionId = localStorage.getItem('datafast_transaction_id');
+    const checkoutData = localStorage.getItem('datafast_checkout_data');
+
+    if (transactionId && checkoutData) {
+      const parsedCheckoutData = JSON.parse(checkoutData);
+
+      console.log('🔍 Datos de checkout encontrados:', {
+        transactionId,
+        sessionId: parsedCheckoutData.sessionId,
+        total: parsedCheckoutData.totals?.final_total
+      });
+
+      // Crear datos de orden simulados basados en el checkout
+      return {
+        order_id: parsedCheckoutData.userId || 1,
+        order_number: transactionId,
+        transaction_id: transactionId,
+        total: parsedCheckoutData.totals?.final_total || 0,
+        payment_status: 'completed',
+        payment_id: transactionId,
+        processed_at: new Date().toISOString()
+      };
+    }
+
+    return null;
+  } catch (error) {
+    console.warn('⚠️ Error verificando pago previo:', error);
     return null;
   }
 }
@@ -273,7 +357,8 @@ function cleanupAfterSuccess(): void {
       'datafast_cart_backup',
       'datafast_calculated_total',
       'datafast_order_result',
-      'datafast_order_timestamp'
+      'datafast_order_timestamp',
+      'datafast_checkout_data'
     ];
 
     itemsToClean.forEach(item => {

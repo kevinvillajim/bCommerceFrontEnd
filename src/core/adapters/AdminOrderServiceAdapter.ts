@@ -1,5 +1,7 @@
 import {AdminOrderService} from "../services/AdminOrderService";
 import type {OrderStatus} from "../domain/entities/Order";
+import appConfig from "../../config/appConfig";
+import ApiClient from "../../infrastructure/api/apiClient";
 
 // Interface para las estadísticas en la UI
 export interface AdminOrderStatUI {
@@ -15,6 +17,7 @@ export interface AdminOrderUI {
 	id: number;
 	orderNumber: string;
 	date: string;
+	updatedAt?: string;
 	customer: {
 		id: number;
 		name: string;
@@ -46,6 +49,13 @@ export interface AdminOrderUI {
 		phone?: string;
 		name?: string;
 	};
+	// Campos financieros del backend
+	subtotal_products?: number;
+	iva_amount?: number;
+	shipping_cost?: number;
+	feedback_discount_amount?: number;
+	volume_discount_savings?: number;
+	seller_discount_savings?: number;
 }
 
 /**
@@ -130,6 +140,25 @@ export class AdminOrderServiceAdapter {
 	}
 
 	/**
+	 * Obtiene información básica del seller
+	 * @param sellerId ID del seller
+	 * @returns Información del seller
+	 */
+	private async getSellerInfo(sellerId: number): Promise<{name: string; email?: string; store_name?: string} | null> {
+		try {
+			const response = await ApiClient.get(`/admin/sellers/${sellerId}`);
+			return {
+				name: response.data?.name || response.data?.store_name || "Vendedor",
+				email: response.data?.email,
+				store_name: response.data?.store_name
+			};
+		} catch (error) {
+			console.log(`No se pudo obtener info del seller ${sellerId}:`, error);
+			return null;
+		}
+	}
+
+	/**
 	 * Obtiene los detalles de una orden
 	 * @param orderId ID de la orden
 	 * @returns Detalles de la orden adaptados para la UI
@@ -138,6 +167,17 @@ export class AdminOrderServiceAdapter {
 		try {
 			const orderDetails =
 				await this.adminOrderService.getOrderDetails(orderId);
+
+			// Obtener información del seller si existe seller_id
+			if (orderDetails?.seller_id) {
+				const sellerInfo = await this.getSellerInfo(orderDetails.seller_id);
+				if (sellerInfo) {
+					orderDetails.seller_name = sellerInfo.name;
+					orderDetails.seller_email = sellerInfo.email;
+					orderDetails.seller_store_name = sellerInfo.store_name;
+				}
+			}
+
 			return this.adaptOrderToUI(orderDetails);
 		} catch (error) {
 			console.error(`Error al obtener detalles de la orden ${orderId}:`, error);
@@ -280,9 +320,9 @@ export class AdminOrderServiceAdapter {
 					quantity: item.quantity || 0,
 					price: item.price || 0,
 					subtotal: item.subtotal || 0,
-					image:
-						item.product_image ||
-						(item.product ? item.product.image : undefined),
+					image: item.product_image
+						? `${appConfig.imageBaseUrl}/${item.product_image}`
+						: undefined,
 				}))
 			: [];
 
@@ -310,6 +350,7 @@ export class AdminOrderServiceAdapter {
 				order.createdAt ||
 				order.date ||
 				new Date().toISOString(),
+			updatedAt: order.updated_at || order.updatedAt || order.date,
 			customer: {
 				id: order.user_id || (order.user ? order.user.id : 0) || 0,
 				name: customerName,
@@ -325,6 +366,13 @@ export class AdminOrderServiceAdapter {
 			paymentMethod: order.payment_method || order.paymentMethod || "N/A",
 			items: items,
 			shippingData: shippingData,
+			// Mapear campos financieros del backend
+			subtotal_products: order.subtotal_products || 0,
+			iva_amount: order.iva_amount || 0,
+			shipping_cost: order.shipping_cost || 0,
+			feedback_discount_amount: order.feedback_discount_amount || 0,
+			volume_discount_savings: order.volume_discount_savings || 0,
+			seller_discount_savings: order.seller_discount_savings || 0,
 		};
 	}
 }

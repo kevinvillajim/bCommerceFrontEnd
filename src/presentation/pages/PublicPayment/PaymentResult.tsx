@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { CheckCircle, XCircle, Clock, Loader2 } from 'lucide-react';
 import { ApiClient } from '../../../infrastructure/api/apiClient';
@@ -26,6 +26,10 @@ const PaymentResult: React.FC = () => {
   const [success, setSuccess] = useState<boolean | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // ✅ PREVENCIÓN DOBLE EJECUCIÓN: Mismo patrón que DatafastResultPage
+  const hasProcessedRef = useRef(false);
+  const [hasProcessed, setHasProcessed] = useState(false);
+
   useEffect(() => {
     if (!linkCode) {
       navigate('/');
@@ -35,28 +39,91 @@ const PaymentResult: React.FC = () => {
   }, [linkCode, searchParams]);
 
   const processPaymentResult = async () => {
+    // ✅ PREVENCIÓN DOBLE EJECUCIÓN: Mismo patrón que DatafastResultPage
+    if (hasProcessedRef.current || hasProcessed) {
+      console.log('⚠️ Verificación de pago externo ya procesada, omitiendo llamada duplicada');
+      return;
+    }
+
+    hasProcessedRef.current = true;
+    setHasProcessed(true);
+
     try {
+      console.log('🔄 Iniciando verificación única de pago externo');
       setLoading(true);
 
       // Extraer parámetros según el método de pago
       const resourcePath = searchParams.get('resourcePath') || searchParams.get('resource_path');
-      const transactionId = searchParams.get('transaction_id') || searchParams.get('transactionId') || searchParams.get('id');
+      // ✅ FIX: Priorizar localStorage sobre URL params para obtener transaction_id interno correcto
+      const transactionId = localStorage.getItem('datafast_transaction_id') ||
+                           searchParams.get('transaction_id') ||
+                           searchParams.get('transactionId') ||
+                           searchParams.get('id');
+
+      // ✅ LOGS DE DEBUGGING: Trazabilidad completa
+      console.log('🔍 Parámetros extraídos para verificación:', {
+        linkCode,
+        resourcePath,
+        transactionId,
+        searchParamsAll: Object.fromEntries(searchParams.entries()),
+        localStorage_transaction_id: localStorage.getItem('datafast_transaction_id'),
+        external_session_id: localStorage.getItem('external_datafast_session_id'),
+      });
 
       // Para Datafast necesitamos verificar el pago
       if (resourcePath && transactionId) {
-        const response = await ApiClient.post<{
-          success: boolean;
-          message: string;
-          data?: PaymentResultData;
-        }>(`${API_ENDPOINTS.EXTERNAL_PAYMENT.PUBLIC.DATAFAST_VERIFY}/${linkCode}`, {
+        console.log('🔄 Verificando pago Datafast externo:', {
+          endpoint: API_ENDPOINTS.EXTERNAL_PAYMENT.PUBLIC.DATAFAST_VERIFY(linkCode!),
           resource_path: resourcePath,
           transaction_id: transactionId,
         });
 
+        const response = await ApiClient.post<{
+          success: boolean;
+          message: string;
+          data?: PaymentResultData;
+          error_code?: string;
+        }>(API_ENDPOINTS.EXTERNAL_PAYMENT.PUBLIC.DATAFAST_VERIFY(linkCode!), {
+          resource_path: resourcePath,
+          transaction_id: transactionId,
+        });
+
+        console.log('📡 Respuesta del backend:', {
+          success: response.success,
+          has_data: !!response.data,
+          error_code: response.error_code,
+          message: response.message,
+        });
+
         if (response.success && response.data) {
+          console.log('✅ Pago externo verificado exitosamente');
           setResult(response.data);
           setSuccess(true);
         } else {
+          // ✅ MANEJO ESPECÍFICO ERROR 200.300.404: Mismo patrón que DatafastResultPage
+          if (response.error_code === '200.300.404') {
+            console.log('🔍 Error 200.300.404 detectado - verificando si el link ya está pagado');
+
+            // Verificar estado del link directamente
+            const linkResponse = await ApiClient.get<{
+              success: boolean;
+              data?: any;
+            }>(API_ENDPOINTS.EXTERNAL_PAYMENT.PUBLIC.SHOW(linkCode!));
+
+            if (linkResponse.success && linkResponse.data?.status === 'paid') {
+              console.log('✅ Link ya está marcado como pagado, mostrando como éxito');
+              setResult({
+                payment_method: 'datafast',
+                transaction_id: linkResponse.data.transaction_id || 'Procesado exitosamente',
+                amount: linkResponse.data.amount,
+                customer_name: linkResponse.data.customer_name,
+                paid_at: linkResponse.data.paid_at || new Date().toISOString(),
+              });
+              setSuccess(true);
+              return; // Salir sin mostrar error
+            }
+          }
+
           setError(response.message || 'Error verificando el pago');
           setSuccess(false);
         }
@@ -65,7 +132,7 @@ const PaymentResult: React.FC = () => {
         const response = await ApiClient.get<{
           success: boolean;
           data?: any;
-        }>(`${API_ENDPOINTS.EXTERNAL_PAYMENT.PUBLIC.SHOW}/${linkCode}`);
+        }>(API_ENDPOINTS.EXTERNAL_PAYMENT.PUBLIC.SHOW(linkCode!));
 
         if (response.success && response.data) {
           if (response.data.status === 'paid') {
@@ -88,7 +155,12 @@ const PaymentResult: React.FC = () => {
         }
       }
     } catch (err: any) {
-      console.error('Error processing payment result:', err);
+      console.error('❌ Error procesando resultado de pago externo:', err);
+
+      // ✅ Reset flags en caso de error para permitir reintento
+      hasProcessedRef.current = false;
+      setHasProcessed(false);
+
       setError(err.response?.data?.message || 'Error procesando el resultado del pago');
       setSuccess(false);
     } finally {
@@ -172,7 +244,7 @@ const PaymentResult: React.FC = () => {
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Monto:</span>
-                <span className="font-medium text-green-600">${result.amount.toFixed(2)} USD</span>
+                <span className="font-medium text-green-600">${parseFloat(result.amount).toFixed(2)} USD</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Método:</span>

@@ -54,6 +54,7 @@ export const routes = {
   ADMIN_FEEDBACK: '/admin/feedback',
   ADMIN_RATINGS: '/admin/ratings',
   ADMIN_INVOICES: '/admin/invoices',
+  ADMIN_CREDIT_NOTES: '/admin/credit-notes',
   ADMIN_ACCOUNTING: '/admin/accounting',
   ADMIN_SETTINGS: '/admin/settings',
   ADMIN_DISCOUNTS: '/admin/discounts'

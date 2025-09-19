@@ -380,12 +380,7 @@ const AdminOrderDetailPage: React.FC = () => {
 									Subtotal:
 								</span>
 								<span className="font-medium text-gray-900">
-									{formatCurrency(
-										orderDetail.items.reduce(
-											(sum: number, item: any) => sum + (item.subtotal || 0),
-											0
-										)
-									)}
+									{formatCurrency(orderDetail.subtotal_products || 0)}
 								</span>
 							</div>
 							{/* ✅ NUEVO: Sección de descuentos aplicados */}
@@ -582,70 +577,6 @@ const AdminOrderDetailPage: React.FC = () => {
 						)}
 					</div>
 
-					{/* Información de envío */}
-					<div className="bg-white rounded-lg shadow-sm p-4">
-						<div className="flex justify-between items-center mb-4">
-							<h2 className="text-lg font-semibold">Información de Envío</h2>
-							<button
-								onClick={() => setShowShippingModal(true)}
-								className="text-sm text-primary-600 hover:text-primary-800"
-							>
-								<Edit size={14} className="inline mr-1" />
-								Editar
-							</button>
-						</div>
-
-						{orderDetail.shippingData ? (
-							<div className="space-y-2 text-sm">
-								<p className="text-gray-600 flex items-start">
-									<MapPin className="w-4 h-4 mr-2 mt-0.5 flex-shrink-0" />
-									<span>
-										{orderDetail.shippingData.address},<br />
-										{orderDetail.shippingData.city},{" "}
-										{orderDetail.shippingData.state}
-										<br />
-										{orderDetail.shippingData.postalCode},{" "}
-										{orderDetail.shippingData.country}
-									</span>
-								</p>
-
-								{orderDetail.shippingData.phone && (
-									<p className="text-gray-600 mt-2">
-										<strong>Teléfono:</strong> {orderDetail.shippingData.phone}
-									</p>
-								)}
-
-								{orderDetail.shippingData.tracking_number && (
-									<div className="mt-3 pt-3 border-t border-gray-200">
-										<p className="text-gray-600">
-											<strong>Número de seguimiento:</strong>
-										</p>
-										<p className="font-mono bg-gray-100 px-2 py-1 rounded mt-1">
-											{orderDetail.shippingData.tracking_number}
-										</p>
-									</div>
-								)}
-
-								{orderDetail.shippingData.shipping_company && (
-									<p className="text-gray-600 mt-2">
-										<strong>Transportista:</strong>{" "}
-										{orderDetail.shippingData.shipping_company}
-									</p>
-								)}
-
-								{orderDetail.shippingData.estimated_delivery && (
-									<p className="text-gray-600 mt-2">
-										<strong>Entrega estimada:</strong>{" "}
-										{formatDate(orderDetail.shippingData.estimated_delivery)}
-									</p>
-								)}
-							</div>
-						) : (
-							<div className="text-gray-500 text-sm">
-								No hay información de envío disponible.
-							</div>
-						)}
-					</div>
 				</div>
 			</div>
 

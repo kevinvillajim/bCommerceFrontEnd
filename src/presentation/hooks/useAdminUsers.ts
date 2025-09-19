@@ -8,7 +8,7 @@ export interface AdminUserData {
 	id: number;
 	name: string;
 	email: string;
-	role: "customer" | "seller" | "admin";
+	role: "customer" | "seller" | "admin" | "payment";
 	status: "active" | "blocked";
 	lastLogin: string;
 	registeredDate: string;
@@ -44,9 +44,10 @@ export const useAdminUsers = () => {
 	 */
 	const mapApiUserToAdminUserData = (apiUser: any): AdminUserData => {
 		// Determinar el rol
-		let role: "customer" | "seller" | "admin" = "customer";
+		let role: "customer" | "seller" | "admin" | "payment" = "customer";
 		if (apiUser.is_admin) role = "admin";
 		else if (apiUser.is_seller) role = "seller";
+		else if (apiUser.is_payment_user) role = "payment";
 
 		// Mapear el estado (is_blocked -> status)
 		const status: "active" | "blocked" = apiUser.is_blocked
@@ -183,116 +184,6 @@ export const useAdminUsers = () => {
 		}
 	}, []);
 
-	/**
-	 * Actualiza el rol de un usuario a administrador
-	 */
-	const makeUserAdmin = useCallback(async (userId: number) => {
-		setLoading(true);
-		setError(null);
-
-		try {
-			const success = await adminUserService.makeAdmin(userId);
-
-			if (success) {
-				// Actualizar el rol del usuario en la lista local
-				setUsers((prevUsers) =>
-					prevUsers.map((user) =>
-						user.id === userId ? {...user, role: "admin"} : user
-					)
-				);
-				return true;
-			} else {
-				setError("No se pudo convertir al usuario en administrador");
-				return false;
-			}
-		} catch (err) {
-			const errorMsg = extractErrorMessage(
-				err,
-				"Error al convertir usuario en administrador"
-			);
-			console.error("Error making user admin:", errorMsg);
-			setError(errorMsg);
-			return false;
-		} finally {
-			setLoading(false);
-		}
-	}, []);
-
-	/**
-	 * Convierte un usuario en usuario de pagos
-	 */
-	const makeUserPayment = useCallback(async (userId: number) => {
-		setLoading(true);
-		setError(null);
-
-		try {
-			const success = await adminUserService.makePaymentUser(userId);
-
-			if (success) {
-				// Actualizar el rol del usuario en la lista local
-				setUsers((prevUsers) =>
-					prevUsers.map((user) =>
-						user.id === userId ? {...user, role: "admin"} : user
-					)
-				);
-				return true;
-			} else {
-				setError("No se pudo convertir al usuario en usuario de pagos");
-				return false;
-			}
-		} catch (err) {
-			const errorMsg = extractErrorMessage(
-				err,
-				"Error al convertir usuario en usuario de pagos"
-			);
-			console.error("Error making user payment:", errorMsg);
-			setError(errorMsg);
-			return false;
-		} finally {
-			setLoading(false);
-		}
-	}, []);
-
-	/**
-	 * Convierte un usuario en vendedor
-	 */
-	const makeUserSeller = useCallback(
-		async (
-			userId: number,
-			storeData: {store_name: string; description?: string}
-		) => {
-			setLoading(true);
-			setError(null);
-
-			try {
-				const success = await adminUserService.makeSeller(userId, storeData);
-
-				if (success) {
-					// Actualizar el rol del usuario en la lista local
-					setUsers((prevUsers) =>
-						prevUsers.map((user) =>
-							user.id === userId ? {...user, role: "seller"} : user
-						)
-					);
-					return true;
-				} else {
-					setError("No se pudo convertir al usuario en vendedor");
-					return false;
-				}
-			} catch (err) {
-				const errorMsg = extractErrorMessage(
-					err,
-					"Error al convertir usuario en vendedor"
-				);
-				console.error("Error making user seller:", errorMsg);
-				setError(errorMsg);
-				return false;
-			} finally {
-				setLoading(false);
-			}
-		},
-		[]
-	);
 
 	/**
 	 * Elimina un usuario del sistema
@@ -401,6 +292,38 @@ export const useAdminUsers = () => {
 		[users]
 	);
 
+	/**
+	 * Cambiar rol de usuario de manera centralizada
+	 */
+	const changeUserRole = useCallback(
+		async (
+			userId: number,
+			role: 'customer' | 'seller' | 'admin' | 'payment',
+			storeData?: {store_name: string; description?: string}
+		) => {
+			setLoading(true);
+			setError(null);
+
+			try {
+				const success = await adminUserService.changeUserRole(userId, role, storeData);
+
+				if (success) {
+					await refreshData();
+				}
+
+				return success;
+			} catch (err) {
+				const errorMessage = extractErrorMessage(err);
+				setError(errorMessage);
+				console.error("Error al cambiar rol de usuario:", err);
+				return false;
+			} finally {
+				setLoading(false);
+			}
+		},
+		[refreshData]
+	);
+
 	return {
 		users,
 		loading,
@@ -409,9 +332,7 @@ export const useAdminUsers = () => {
 		fetchUsers,
 		toggleUserStatus,
 		sendPasswordReset,
-		makeUserAdmin,
-		makeUserPayment,
-		makeUserSeller,
+		changeUserRole,
 		deleteUser,
 		refreshData,
 		filterUsers,

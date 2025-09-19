@@ -8,7 +8,7 @@ const appConfig = {
   appName: 'Comersia',
   api: {
     baseUrl: environment.apiBaseUrl,
-    timeout: 15000, // 15 segundos de espera maxima
+    timeout: 30000, // 30 segundos de espera maxima
     retryAttempts: 1,
   },
   imageBaseUrl: environment.imageBaseUrl,

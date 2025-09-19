@@ -232,7 +232,7 @@ export default class SellerOrderServiceAdapter {
 			);
 
 			// Usar el endpoint de actualización de estado según los endpoints reales
-			const response = await ApiClient.patch<ServiceResponse>(
+			const response = await ApiClient.put<ServiceResponse>(
 				API_ENDPOINTS.ORDERS.UPDATE_STATUS(Number(orderId)),
 				{
 					status,

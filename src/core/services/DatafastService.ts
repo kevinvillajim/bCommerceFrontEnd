@@ -8,7 +8,7 @@ export interface DatafastCheckoutRequest {
 		street: string;          // required|string|max:100
 		city: string;            // required|string|max:50
 		country: string;         // required|string|max:100
-		identification?: string; // sometimes|string|max:13 (RUC/cédula)
+		// ✅ NO incluir identification aquí - usar solo customer.doc_id
 	};
 	customer: {                  // required|array - OBLIGATORIO PARA SRI
 		given_name?: string;     // sometimes|string|max:48

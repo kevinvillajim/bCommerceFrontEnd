@@ -268,7 +268,7 @@ const ExternalPayments: React.FC = () => {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-500">Total Recaudado</p>
-                <p className="text-2xl font-bold text-gray-900">${stats.stats.total_amount_collected.toFixed(2)}</p>
+                <p className="text-2xl font-bold text-gray-900">${Number(stats.stats.total_amount_collected).toFixed(2)}</p>
               </div>
             </div>
           </div>
@@ -313,7 +313,7 @@ const ExternalPayments: React.FC = () => {
                       </div>
                     </td>
                     <td className="py-2 text-sm text-gray-900">{user.total_links}</td>
-                    <td className="py-2 text-sm text-gray-900">${user.total_collected.toFixed(2)}</td>
+                    <td className="py-2 text-sm text-gray-900">${Number(user.total_collected).toFixed(2)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -410,7 +410,7 @@ const ExternalPayments: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <DollarSign className="h-4 w-4 text-gray-400 mr-1" />
-                        <span className="text-sm font-medium text-gray-900">${link.amount.toFixed(2)}</span>
+                        <span className="text-sm font-medium text-gray-900">${parseFloat(link.amount).toFixed(2)}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -509,7 +509,7 @@ const ExternalPayments: React.FC = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Monto</label>
-                    <p className="text-gray-900">${selectedLink.amount.toFixed(2)} USD</p>
+                    <p className="text-gray-900">${parseFloat(selectedLink.amount).toFixed(2)} USD</p>
                   </div>
                 </div>
 

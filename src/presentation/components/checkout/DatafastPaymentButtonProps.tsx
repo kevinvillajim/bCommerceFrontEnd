@@ -72,6 +72,34 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 		return countryMapping[country] || country.substring(0, 2).toUpperCase();
 	};
 
+	// ✅ FUNCIÓN HELPER: Extraer cédula (10 dígitos) desde RUC (13 dígitos)
+	const extractCedulaFromRUC = (identification: string): { cedula: string; wasRuc: boolean; message?: string } => {
+		const cleanId = identification.replace(/\D/g, ''); // Solo números
+
+		if (cleanId.length === 10) {
+			// Ya es una cédula válida
+			if (!/^\d{10}$/.test(cleanId)) {
+				return { cedula: cleanId, wasRuc: false, message: "Cédula debe tener 10 dígitos numéricos" };
+			}
+			return { cedula: cleanId, wasRuc: false };
+		} else if (cleanId.length === 13) {
+			// Es RUC, extraer cédula (primeros 10 dígitos)
+			const extractedCedula = cleanId.substring(0, 10);
+			return {
+				cedula: extractedCedula,
+				wasRuc: true,
+				message: `Se extrajo automáticamente la cédula ${extractedCedula} del RUC ${cleanId}`
+			};
+		} else {
+			// Longitud inválida
+			return {
+				cedula: cleanId,
+				wasRuc: false,
+				message: `Identificación inválida: debe tener 10 dígitos (cédula) o 13 dígitos (RUC)`
+			};
+		}
+	};
+
 	const [showWidget, setShowWidget] = useState(false);
 	const [checkoutResponse, setCheckoutResponse] = useState<any>(null);
 	const [showForm, setShowForm] = useState(false);
@@ -90,6 +118,17 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 		const firstName = nameParts[0];
 		const lastName = nameParts.slice(1).join(' ');
 
+		// ✅ CRÍTICO: Auto-extraer cédula desde RUC para Datafast
+		const extractionResult = extractCedulaFromRUC(shippingData.identification);
+
+		// Log para debugging
+		console.log("🔍 DatafastPaymentButton: Procesando identificación:", {
+			original: shippingData.identification,
+			extracted: extractionResult.cedula,
+			wasRuc: extractionResult.wasRuc,
+			message: extractionResult.message
+		});
+
 		return {
 			address: shippingData.street,
 			city: shippingData.city,
@@ -98,7 +137,7 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 			middle_name: "",
 			surname: lastName,
 			phone: shippingData.phone,
-			doc_id: shippingData.identification,
+			doc_id: extractionResult.cedula, // ✅ Usar cédula extraída automáticamente
 		};
 	});
 
@@ -126,11 +165,30 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 				itemsCount: checkoutData.items.length,
 				validatedAt: checkoutData.validatedAt
 			});
+
+			// ✅ AUTO-EXTRACCIÓN SILENCIOSA: No mostrar notificaciones innecesarias
+			const extractionResult = extractCedulaFromRUC(checkoutData.shippingData.identification);
 		}
-	}, [checkoutData]);
+	}, [checkoutData, showNotification]);
 
 	const handleInputChange = (field: keyof FormData, value: string) => {
-		setFormData((prev) => ({...prev, [field]: value}));
+		// ✅ CRÍTICO: Si está editando doc_id, aplicar auto-extracción de cédula desde RUC
+		if (field === "doc_id") {
+			const extractionResult = extractCedulaFromRUC(value);
+
+			// ✅ AUTO-EXTRACCIÓN SILENCIOSA: Solo mostrar errores críticos
+			if (extractionResult.message && !extractionResult.wasRuc && extractionResult.cedula.length !== 10) {
+				// Solo mostrar errores de validación críticos
+				showNotification(
+					NotificationType.WARNING,
+					extractionResult.message
+				);
+			}
+
+			setFormData((prev) => ({...prev, [field]: extractionResult.cedula}));
+		} else {
+			setFormData((prev) => ({...prev, [field]: value}));
+		}
 	};
 
 	const validateFormData = (): boolean => {
@@ -262,6 +320,10 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 				console.log("   - SessionId:", checkoutData.sessionId);
 				localStorage.setItem("datafast_checkout_data", JSON.stringify(checkoutData));
 				console.log("   ✅ CheckoutData guardado en 'datafast_checkout_data'");
+
+				// ✅ CRITICAL FIX: Guardar sessionId que espera el backend
+				localStorage.setItem("datafast_session_id", checkoutData.sessionId);
+				console.log("   ✅ SessionId guardado para backend:", checkoutData.sessionId);
 
 				showNotification(
 					NotificationType.SUCCESS,
@@ -946,13 +1008,19 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 					},
 					seller_id: sellerId || undefined,
 					items: items,
-					// ✅ STRICT: Usar totales calculados SIN validación ternaria
-					calculated_totals: {
+					// ✅ STRICT: Usar totales calculados SIN validación ternaria (with null check)
+					calculated_totals: calculatedTotals ? {
 						subtotal: calculatedTotals.subtotal,
 						tax: calculatedTotals.tax,
 						shipping: calculatedTotals.shipping,
 						total: calculatedTotals.total,
 						total_discounts: calculatedTotals.totalDiscounts
+					} : {
+						subtotal: 0,
+						tax: 0,
+						shipping: 0,
+						total: 0,
+						total_discounts: 0
 					}
 				};
 
@@ -1240,18 +1308,19 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 
 						<div>
 							<label className="block text-sm font-medium text-gray-700 mb-1">
-								Cédula/ID * (10 dígitos)
+								Cédula * (10 dígitos)
 							</label>
 							<input
 								type="text"
 								value={formData.doc_id}
 								onChange={(e) => {
-									const value = e.target.value.replace(/\D/g, "").slice(0, 10);
+									// ✅ Permitir hasta 13 dígitos temporalmente para RUC, luego auto-extraer cédula
+									const value = e.target.value.replace(/\D/g, "").slice(0, 13);
 									handleInputChange("doc_id", value);
 								}}
 								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
-								placeholder="1234567890"
-								maxLength={10}
+								placeholder="1234567890 (si ingresa RUC se extraerá automáticamente la cédula)"
+								maxLength={13}
 							/>
 						</div>
 

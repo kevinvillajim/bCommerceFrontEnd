@@ -9,6 +9,7 @@ import {
 	Truck,
 	Package,
 	BarChart2,
+	CheckCircle,
 } from "lucide-react";
 import Table from "../../components/dashboard/Table";
 import {formatCurrency} from "../../../utils/formatters/formatCurrency";
@@ -279,7 +280,7 @@ const SellerOrdersPage: React.FC = () => {
 
 		try {
 			setIsUpdating(true);
-			
+
 			// Actualizar información de envío usando el adaptador
 			const success = await orderAdapter.updateShippingInfo(
 				selectedOrderId,
@@ -287,7 +288,7 @@ const SellerOrdersPage: React.FC = () => {
 			);
 
 			if (success) {
-				// Actualizar la orden localmente
+				// Actualizar la orden localmente a "shipped"
 				setOrders((prevOrders) =>
 					prevOrders.map((order) => {
 						if (order.id === selectedOrderId) {
@@ -552,6 +553,7 @@ const SellerOrdersPage: React.FC = () => {
 					>
 						<Truck size={18} />
 					</button>
+
 
 					{/* Preparar pedido - solo visible para pedidos pendientes */}
 					{order.status === "pending" && (

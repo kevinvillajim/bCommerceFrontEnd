@@ -17,6 +17,7 @@ export class SellerAdapter {
 			status: backendData.status,
 			verificationLevel: backendData.verification_level || "none",
 			// commissionRate: backendData.commission_rate || 0, // TODO: Implementar comisiones individuales en el futuro - usar configuración global del admin
+			// HARDCODEAR: No mapear commissionRate - propiedad comentada para forzar uso de configuración global
 			totalSales: backendData.total_sales || 0,
 			isFeatured: backendData.is_featured || false,
 			averageRating: backendData.average_rating,
@@ -56,6 +57,7 @@ export class SellerAdapter {
 			result.verification_level = entityData.verificationLevel;
 		// if (entityData.commissionRate !== undefined) // TODO: Implementar comisiones individuales en el futuro - usar configuración global del admin
 		//	result.commission_rate = entityData.commissionRate;
+		// HARDCODEAR: Nunca mapear commission_rate - siempre usar configuración global
 		if (entityData.isFeatured !== undefined)
 			result.is_featured = entityData.isFeatured;
 

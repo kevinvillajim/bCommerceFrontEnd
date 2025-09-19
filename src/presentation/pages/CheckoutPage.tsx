@@ -4,6 +4,7 @@ import {useNavigate} from "react-router-dom";
 import {useCart} from "../hooks/useCart";
 import {useAuth} from "../hooks/useAuth";
 import {useErrorHandler} from "../hooks/useErrorHandler";
+import {useInvalidateCounters} from "../hooks/useHeaderCounters";
 import {CheckoutService} from "../../core/services/CheckoutService";
 import {CheckoutItemsService} from "../../infrastructure/services/CheckoutItemsService";
 import {DatafastService} from "../../core/services/DatafastService";
@@ -52,6 +53,9 @@ const CheckoutPage: React.FC = () => {
 		showNotification,
 		context: "CheckoutPage",
 	});
+
+	// ✅ Hook para actualizaciones optimistas del header
+	const {optimisticCartRemove} = useInvalidateCounters();
 
 	const [paymentMethod, setPaymentMethod] = useState<"credit_card" | "deuna">(
 		"credit_card"
@@ -725,6 +729,13 @@ const CheckoutPage: React.FC = () => {
 				}
 
 				handleSuccess(successMessage);
+
+				// ✅ ACTUALIZACIÓN OPTIMISTA DEL HEADER (mismo patrón que CartPage)
+				const totalItems = cart?.items.reduce((total, item) => total + item.quantity, 0) || 0;
+				for (let i = 0; i < totalItems; i++) {
+					optimisticCartRemove();
+				}
+
 				clearCart();
 
 				// ✅ Log de información de descuentos aplicados
@@ -1246,6 +1257,12 @@ const CheckoutPage: React.FC = () => {
 											console.log('🎯 Setting orderComplete to true and orderDetails');
 											setOrderDetails(orderData);
 											setOrderComplete(true);
+
+											// ✅ ACTUALIZACIÓN OPTIMISTA DEL HEADER (mismo patrón que CartPage)
+											const totalItems = cart?.items.reduce((total, item) => total + item.quantity, 0) || 0;
+											for (let i = 0; i < totalItems; i++) {
+												optimisticCartRemove();
+											}
 
 											// ✅ LIMPIAR CARRITO SOLO DESPUÉS DE PROCESAR EXITOSAMENTE
 											clearCart();

@@ -151,6 +151,12 @@ const GoogleAuthSuccessPage: React.FC = () => {
 								"🏪 Usuario es seller, redirigiendo a:",
 								redirectPath
 							);
+						} else if (roleData.data.is_payment_user) {
+							redirectPath = "/payment/dashboard";
+							console.log(
+								"💳 Usuario es payment, redirigiendo a:",
+								redirectPath
+							);
 						} else {
 							redirectPath = "/";
 							console.log("👤 Usuario normal, redirigiendo a:", redirectPath);

@@ -19,9 +19,10 @@ import {
   CreditCard,
   Phone,
   MapPin,
-  Edit
+  Edit,
+  Minus
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import StatCardList from "../../components/dashboard/StatCardList";
 import { HttpInvoiceRepository } from "../../../infrastructure/repositories/HttpInvoiceRepository";
 import { GetAllInvoicesUseCase, type AdminInvoice, type InvoiceFilters } from "../../../core/useCases/admin/invoice/GetAllInvoicesUseCase";
@@ -52,6 +53,7 @@ const validStatuses = [
 const AdminInvoicesPage: React.FC = () => {
   // Hook para mostrar notificaciones usando el sistema correcto
   const { showToast } = useToast();
+  const navigate = useNavigate();
 
   // Inicializar repositorios y use cases una sola vez
   const [getAllInvoicesUseCase] = useState(() => {
@@ -281,6 +283,24 @@ const AdminInvoicesPage: React.FC = () => {
     if (showPrintOptions) {
       setShowPrintOptions(false);
     }
+  };
+
+  // Crear nota de crédito
+  const createCreditNote = (invoice: AdminInvoice) => {
+    // Navegar a la página de notas de crédito con datos de la factura
+    navigate('/admin/credit-notes', {
+      state: {
+        createFromInvoice: true,
+        invoiceData: {
+          id: invoice.id,
+          invoice_number: invoice.invoice_number,
+          customer: invoice.customer,
+          total_amount: invoice.total_amount,
+          subtotal: invoice.subtotal,
+          tax_amount: invoice.tax_amount
+        }
+      }
+    });
   };
 
   // Abrir modal de edición
@@ -522,6 +542,17 @@ const AdminInvoicesPage: React.FC = () => {
             >
               <Download size={18} />
             </button>
+
+            {/* Crear nota de crédito (solo si está autorizada) */}
+            {invoice.status === 'AUTHORIZED' && (
+              <button
+                onClick={() => createCreditNote(invoice)}
+                className="p-1 text-indigo-600 hover:bg-indigo-100 rounded-md"
+                title="Crear nota de crédito"
+              >
+                <Minus size={18} />
+              </button>
+            )}
           </div>
         );
       },
@@ -1087,6 +1118,37 @@ const AdminInvoicesPage: React.FC = () => {
 
               {/* Acciones */}
               <div className="flex flex-wrap justify-end gap-2 mt-6">
+                {/* Crear nota de crédito (solo si está autorizada) */}
+                {selectedInvoice.status === 'AUTHORIZED' && (
+                  <button
+                    onClick={() => {
+                      const invoice: AdminInvoice = {
+                        id: selectedInvoice.id,
+                        invoice_number: selectedInvoice.invoice_number,
+                        customer: selectedInvoice.customer,
+                        total_amount: selectedInvoice.total_amount,
+                        subtotal: selectedInvoice.subtotal,
+                        tax_amount: selectedInvoice.tax_amount,
+                        status: selectedInvoice.status,
+                        status_label: selectedInvoice.status_label,
+                        status_color: selectedInvoice.status_color,
+                        created_at: selectedInvoice.created_at,
+                        issue_date: selectedInvoice.issue_date,
+                        items_count: selectedInvoice.items.length,
+                        retry_count: selectedInvoice.retry_info.count,
+                        sri_access_key: selectedInvoice.sri.access_key,
+                        order: selectedInvoice.order
+                      };
+                      createCreditNote(invoice);
+                      closeInvoiceModal();
+                    }}
+                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center"
+                  >
+                    <Minus className="h-4 w-4 mr-2" />
+                    Crear Nota de Crédito
+                  </button>
+                )}
+
                 {/* Opción para descargar */}
                 <div className="relative">
                   <button

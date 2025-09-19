@@ -487,7 +487,7 @@ const CartPage: React.FC = () => {
 			const result = await clearCart();
 
 			if (result) {
-				// ✅ OPTIMIZADO: Solo invalidar cache
+				// ✅ INVALIDAR CACHE (clearCart() ya hace fetchCart internamente)
 				invalidateRelatedPages();
 
 				handleSuccess("Carrito vaciado exitosamente");

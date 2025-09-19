@@ -28,9 +28,6 @@ const OrderDetailClientPage: React.FC = () => {
 		setLoading(true);
 		try {
 			const orderDetail = await orderAdapter.getOrderDetails(id);
-			console.log("🛍️ Detalles de la orden recibidos:", orderDetail);
-			console.log("📦 Items de la orden:", orderDetail?.items);
-			console.log("🔢 Cantidad de items:", orderDetail?.items?.length);
 			
 			// Debuggear cada item individualmente
 			orderDetail?.items?.forEach((item, index) => {

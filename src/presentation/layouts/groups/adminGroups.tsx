@@ -14,6 +14,7 @@ import {
 	Briefcase,
 	ClipboardList,
 	CreditCard,
+	Minus,
 } from "lucide-react";
 
 interface adminGroups {
@@ -129,6 +130,11 @@ const adminGroups = [
 				path: "/admin/invoices",
 				label: "Facturas",
 				icon: <FileText className="w-5 h-5 mr-3" />,
+			},
+			{
+				path: "/admin/credit-notes",
+				label: "Notas de Crédito",
+				icon: <Minus className="w-5 h-5 mr-3" />,
 			},
 			{
 				path: "/admin/accounting",

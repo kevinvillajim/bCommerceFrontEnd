@@ -19,6 +19,7 @@ export interface RoleCheckResponse {
 		role: string;
 		is_seller: boolean;
 		is_admin: boolean;
+		is_payment_user: boolean;
 		seller_info?: {
 			id: number;
 			store_name: string;
@@ -28,6 +29,11 @@ export interface RoleCheckResponse {
 		admin_info?: {
 			id: number;
 			role: string;
+			permissions: string[];
+		} | null;
+		payment_info?: {
+			id: number;
+			status: string;
 			permissions: string[];
 		} | null;
 	};

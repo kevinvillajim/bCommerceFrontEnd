@@ -1,0 +1,104 @@
+
+> build
+> tsc && vite build
+
+src/core/services/DatafastService.ts(309,5): error TS2741: Property 'status' is missing in type '{ success: false; message: string; result_code: string; is_phase_1_error: true; }' but required in type 'DatafastVerifyPaymentResponse'.
+src/infrastructure/services/ExternalDeunaService.ts(3,1): error TS6133: 'ExternalPaymentData' is declared but its value is never read.
+src/infrastructure/services/ExternalDeunaService.ts(103,17): error TS18046: 'response' is of type 'unknown'.
+src/infrastructure/services/ExternalDeunaService.ts(104,18): error TS18046: 'response' is of type 'unknown'.
+src/infrastructure/services/ExternalDeunaService.ts(173,44): error TS6133: 'reject' is declared but its value is never read.
+src/presentation/components/admin/CertificateCard.tsx(98,9): error TS6133: 'isValid' is declared but its value is never read.
+src/presentation/components/admin/CertificateManager.tsx(92,25): error TS2345: Argument of type '{ id: any; alias: any; subject: any; issuer: any; validFrom: any; validTo: any; isActive: any; daysUntilExpiry: any; status: string; }[]' is not assignable to parameter of type 'SetStateAction<Certificate[]>'.
+  Type '{ id: any; alias: any; subject: any; issuer: any; validFrom: any; validTo: any; isActive: any; daysUntilExpiry: any; status: string; }[]' is not assignable to type 'Certificate[]'.
+    Type '{ id: any; alias: any; subject: any; issuer: any; validFrom: any; validTo: any; isActive: any; daysUntilExpiry: any; status: string; }' is not assignable to type 'Certificate'.
+      Types of property 'status' are incompatible.
+        Type 'string' is not assignable to type '"vigente" | "vencido" | "proximo_vencer"'.
+src/presentation/components/checkout/DatafastPaymentButtonProps.tsx(955,17): error TS18047: 'calculatedTotals' is possibly 'null'.
+src/presentation/components/checkout/DatafastPaymentButtonProps.tsx(956,12): error TS18047: 'calculatedTotals' is possibly 'null'.
+src/presentation/components/checkout/DatafastPaymentButtonProps.tsx(957,17): error TS18047: 'calculatedTotals' is possibly 'null'.
+src/presentation/components/checkout/DatafastPaymentButtonProps.tsx(958,14): error TS18047: 'calculatedTotals' is possibly 'null'.
+src/presentation/components/checkout/DatafastPaymentButtonProps.tsx(959,24): error TS18047: 'calculatedTotals' is possibly 'null'.
+src/presentation/components/checkout/QRPaymentForm.tsx(19,10): error TS6133: 'totalProp' is declared but its value is never read.
+src/presentation/components/external/DatafastExternalWidget.tsx(2,10): error TS6133: 'CheckCircle' is declared but its value is never read.
+src/presentation/components/external/DatafastExternalWidget.tsx(2,23): error TS6133: 'AlertTriangle' is declared but its value is never read.
+src/presentation/components/external/DatafastExternalWidget.tsx(58,21): error TS2345: Argument of type '"Formulario de pago cargado"' is not assignable to parameter of type 'ToastType'.
+src/presentation/components/external/DatafastExternalWidget.tsx(63,21): error TS2345: Argument of type '"Procesando pago..."' is not assignable to parameter of type 'ToastType'.
+src/presentation/components/external/DatafastExternalWidget.tsx(96,21): error TS2345: Argument of type '`Error: ${any}`' is not assignable to parameter of type 'ToastType'.
+src/presentation/components/external/DatafastExternalWidget.tsx(120,19): error TS2345: Argument of type '"Error cargando formulario de pago"' is not assignable to parameter of type 'ToastType'.
+src/presentation/components/external/DatafastExternalWidget.tsx(165,19): error TS2345: Argument of type '"Pago procesado exitosamente"' is not assignable to parameter of type 'ToastType'.
+src/presentation/components/external/DatafastExternalWidget.tsx(178,23): error TS2345: Argument of type '"Pago procesado exitosamente"' is not assignable to parameter of type 'ToastType'.
+src/presentation/components/external/DeunaExternalQR.tsx(1,38): error TS6133: 'useCallback' is declared but its value is never read.
+src/presentation/components/external/DeunaExternalQR.tsx(2,56): error TS6133: 'ExternalLink' is declared but its value is never read.
+src/presentation/components/external/DeunaExternalQR.tsx(110,19): error TS2345: Argument of type '"Código QR generado"' is not assignable to parameter of type 'ToastType'.
+src/presentation/components/external/DeunaExternalQR.tsx(124,38): error TS6133: 'orderId' is declared but its value is never read.
+src/presentation/components/external/DeunaExternalQR.tsx(152,19): error TS2345: Argument of type '"¡Pago completado exitosamente!"' is not assignable to parameter of type 'ToastType'.
+src/presentation/components/external/DeunaExternalQR.tsx(165,32): error TS6133: 'reason' is declared but its value is never read.
+src/presentation/components/external/DeunaExternalQR.tsx(175,17): error TS2345: Argument of type '"Pago cancelado"' is not assignable to parameter of type 'ToastType'.
+src/presentation/components/external/DeunaExternalQR.tsx(186,17): error TS2345: Argument of type '"Enlace copiado"' is not assignable to parameter of type 'ToastType'.
+src/presentation/components/external/DeunaExternalQR.tsx(190,17): error TS2345: Argument of type '"Error copiando enlace"' is not assignable to parameter of type 'ToastType'.
+src/presentation/components/external/ExternalDeunaPayment.tsx(2,56): error TS6133: 'ExternalLink' is declared but its value is never read.
+src/presentation/components/external/ExternalDeunaPayment.tsx(98,19): error TS2345: Argument of type '"Código QR generado"' is not assignable to parameter of type 'ToastType'.
+src/presentation/components/external/ExternalDeunaPayment.tsx(136,19): error TS2345: Argument of type '"¡Pago completado exitosamente!"' is not assignable to parameter of type 'ToastType'.
+src/presentation/components/external/ExternalDeunaPayment.tsx(149,32): error TS6133: 'reason' is declared but its value is never read.
+src/presentation/components/external/ExternalDeunaPayment.tsx(158,17): error TS2345: Argument of type '"Pago cancelado"' is not assignable to parameter of type 'ToastType'.
+src/presentation/components/external/ExternalDeunaPayment.tsx(169,17): error TS2345: Argument of type '"Enlace copiado"' is not assignable to parameter of type 'ToastType'.
+src/presentation/components/external/ExternalDeunaPayment.tsx(173,17): error TS2345: Argument of type '"Error copiando enlace"' is not assignable to parameter of type 'ToastType'.
+src/presentation/components/external/ExternalDeunaPayment.tsx(189,17): error TS2345: Argument of type '"Simulación de pago enviada"' is not assignable to parameter of type 'ToastType'.
+src/presentation/components/external/ExternalDeunaPayment.tsx(192,17): error TS2345: Argument of type '"Error simulando pago"' is not assignable to parameter of type 'ToastType'.
+src/presentation/contexts/AuthContext.tsx(237,35): error TS2339: Property 'is_payment_user' does not exist on type '{ user_id: number; role: string; is_seller: boolean; is_admin: boolean; seller_info?: any; admin_info?: any; }'.
+src/presentation/contexts/AuthContext.tsx(240,33): error TS2339: Property 'payment_info' does not exist on type '{ user_id: number; role: string; is_seller: boolean; is_admin: boolean; seller_info?: any; admin_info?: any; }'.
+src/presentation/contexts/AuthContext.tsx(306,35): error TS2339: Property 'is_payment_user' does not exist on type '{ user_id: number; role: string; is_seller: boolean; is_admin: boolean; seller_info?: any; admin_info?: any; }'.
+src/presentation/contexts/AuthContext.tsx(309,33): error TS2339: Property 'payment_info' does not exist on type '{ user_id: number; role: string; is_seller: boolean; is_admin: boolean; seller_info?: any; admin_info?: any; }'.
+src/presentation/contexts/CartContext.tsx(32,11): error TS6196: 'CartNotification' is declared but never used.
+src/presentation/pages/admin/AdminAccountingPage.tsx(416,4): error TS2322: Type '{ account_id: number; debit_amount: string; credit_amount: string; notes: string; }[]' is not assignable to type 'AccountingEntryCreationData[]'.
+  Type '{ account_id: number; debit_amount: string; credit_amount: string; notes: string; }' is not assignable to type 'AccountingEntryCreationData'.
+    Types of property 'debit_amount' are incompatible.
+      Type 'string' is not assignable to type 'number'.
+src/presentation/pages/admin/AdminAccountingPage.tsx(685,37): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
+src/presentation/pages/admin/AdminAccountingPage.tsx(689,37): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
+src/presentation/pages/admin/AdminAccountingPage.tsx(1675,43): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
+src/presentation/pages/admin/AdminAccountingPage.tsx(1676,61): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
+src/presentation/pages/admin/AdminAccountingPage.tsx(1680,43): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
+src/presentation/pages/admin/AdminAccountingPage.tsx(1681,61): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
+src/presentation/pages/admin/AdminAccountingPage.tsx(1699,64): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
+src/presentation/pages/admin/AdminAccountingPage.tsx(1707,64): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
+src/presentation/pages/admin/AdminAccountingPage.tsx(1716,64): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
+src/presentation/pages/admin/AdminAccountingPage.tsx(1720,64): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
+src/presentation/pages/admin/AdminInvoicesPage.tsx(197,35): error TS2339: Property 'response' does not exist on type '{}'.
+src/presentation/pages/admin/AdminInvoicesPage.tsx(753,42): error TS2322: Type '"customer.name"' is not assignable to type 'keyof AdminInvoice'.
+src/presentation/pages/admin/AdminInvoicesPage.tsx(753,59): error TS2322: Type '"customer.identification"' is not assignable to type 'keyof AdminInvoice'.
+src/presentation/pages/admin/AdminInvoicesPage.tsx(1125,29): error TS2741: Property 'currency' is missing in type '{ id: number; invoice_number: string; customer: { identification: string; identification_type: string; identification_type_label: string; name: string; email: string; address: string; phone: string; }; ... 11 more ...; order: { ...; } | undefined; }' but required in type 'AdminInvoice'.
+src/presentation/pages/admin/ExternalPayments.tsx(413,90): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
+src/presentation/pages/admin/ExternalPayments.tsx(512,63): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
+src/presentation/pages/CheckoutPage.tsx(558,40): error TS18047: 'cart' is possibly 'null'.
+src/presentation/pages/CheckoutPage.tsx(597,66): error TS2345: Argument of type '{ shippingData: ShippingData; billingData: BillingData; items: CartItem[]; totals: CalculatedTotals; sessionId: string; discountCode: string | undefined; discountInfo: { ...; } | undefined; }' is not assignable to parameter of type 'StoreCheckoutDataRequest'.
+  Types of property 'totals' are incompatible.
+    Type 'CalculatedTotals' is missing the following properties from type 'OrderTotals': subtotal, tax, discount
+src/presentation/pages/CheckoutPage.tsx(644,8): error TS6133: '_processCheckout' is declared but its value is never read.
+src/presentation/pages/DatafastResultPage.tsx(114,21): error TS2345: Argument of type '"¡Pago procesado exitosamente!"' is not assignable to parameter of type 'ToastType'.
+src/presentation/pages/DatafastResultPage.tsx(140,25): error TS2345: Argument of type '"¡Pago procesado exitosamente!"' is not assignable to parameter of type 'ToastType'.
+src/presentation/pages/DatafastResultPage.tsx(154,21): error TS2345: Argument of type 'string' is not assignable to parameter of type 'ToastType'.
+src/presentation/pages/Payment/CreateLink.tsx(142,71): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
+src/presentation/pages/Payment/MyLinks.tsx(256,90): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
+src/presentation/pages/Payment/MyLinks.tsx(360,63): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
+src/presentation/pages/PublicPayment/PaymentPage.tsx(3,60): error TS6133: 'Clock' is declared but its value is never read.
+src/presentation/pages/PublicPayment/PaymentPage.tsx(69,53): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/presentation/pages/PublicPayment/PaymentPage.tsx(126,17): error TS2345: Argument of type '"Por favor completa todos los campos obligatorios"' is not assignable to parameter of type 'ToastType'.
+src/presentation/pages/PublicPayment/PaymentPage.tsx(158,23): error TS2345: Argument of type '"Error: No se recibió URL del widget"' is not assignable to parameter of type 'ToastType'.
+src/presentation/pages/PublicPayment/PaymentPage.tsx(165,19): error TS2345: Argument of type 'string' is not assignable to parameter of type 'ToastType'.
+src/presentation/pages/PublicPayment/PaymentPage.tsx(231,15): error TS2345: Argument of type '"¡Pago procesado exitosamente!"' is not assignable to parameter of type 'ToastType'.
+src/presentation/pages/PublicPayment/PaymentPage.tsx(237,15): error TS2345: Argument of type '`Error: ${string}`' is not assignable to parameter of type 'ToastType'.
+src/presentation/pages/PublicPayment/PaymentPage.tsx(245,15): error TS2345: Argument of type '"Pago cancelado"' is not assignable to parameter of type 'ToastType'.
+src/presentation/pages/PublicPayment/PaymentPage.tsx(259,32): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
+src/presentation/pages/PublicPayment/PaymentPage.tsx(275,13): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/presentation/pages/PublicPayment/PaymentPage.tsx(276,32): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
+src/presentation/pages/PublicPayment/PaymentPage.tsx(318,80): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
+src/presentation/pages/PublicPayment/PaymentResult.tsx(247,75): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.
+src/presentation/pages/seller/SellerOrdersPage.tsx(12,2): error TS6133: 'CheckCircle' is declared but its value is never read.
+src/routes/PaymentRoute.tsx(21,67): error TS6133: 'user' is declared but its value is never read.
+src/utils/ExternalToCheckoutDataConverter.ts(27,7): error TS2322: Type 'string' is not assignable to type 'number'.
+src/utils/ExternalToCheckoutDataConverter.ts(30,11): error TS2322: Type 'string' is not assignable to type 'number'.
+src/utils/ExternalToCheckoutDataConverter.ts(43,9): error TS2353: Object literal may only specify known properties, and 'address' does not exist in type 'ShippingData'.
+src/utils/ExternalToCheckoutDataConverter.ts(50,9): error TS2353: Object literal may only specify known properties, and 'subtotal' does not exist in type 'CalculatedTotals'.

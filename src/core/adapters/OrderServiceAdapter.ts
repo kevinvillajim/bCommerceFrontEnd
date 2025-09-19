@@ -314,7 +314,8 @@ export class OrderServiceAdapter {
 					paymentId: response.paymentId,
 					paymentMethod: response.payment_method as string,
 					paymentStatus: response.paymentStatus,
-					createdAt: response.createdAt,
+					createdAt: response.createdAt?.replace(/Z$/, '') || response.createdAt,
+					created_at: response.created_at?.replace(/Z$/, '') || response.created_at,
 					updatedAt: response.updatedAt,
 					orderNumber: response.orderNumber,
 					shippingData: response.shippingData,
@@ -453,7 +454,7 @@ export class OrderServiceAdapter {
 		return {
 			id: String(order.id),
 			orderNumber: order.orderNumber,
-			date: order.date || order.createdAt || new Date().toISOString(),
+			date: (order.date || order.createdAt || new Date().toISOString()).replace(/Z$/, ''),
 			customer: {
 				id: order.userId,
 				name: order.user_name || "Cliente",

@@ -293,9 +293,7 @@ export const API_ENDPOINTS = {
     BLOCK_USER: (id: number) => `/admin/users/${id}/block`,
     UNBLOCK_USER: (id: number) => `/admin/users/${id}/unblock`,
     RESET_PASSWORD: (id: number) => `/admin/users/${id}/reset-password`,
-    MAKE_ADMIN: (id: number) => `/admin/users/${id}/make-admin`,
-    MAKE_SELLER: (id: number) => `/admin/users/${id}/make-seller`,
-    MAKE_PAYMENT_USER: (id: number) => `/admin/users/${id}/make-payment`,
+    CHANGE_USER_ROLE: (id: number) => `/admin/users/${id}/change-role`,
     DELETE_USER: (id: number) => `/admin/users/${id}`,
 
     DASHBOARD: "/admin/dashboard",

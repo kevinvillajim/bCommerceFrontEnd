@@ -1,27 +1,31 @@
-import ApiClient from '../api/ApiClient';
+import ApiClient from '../api/apiClient';
 import { API_ENDPOINTS } from '../../constants/apiEndpoints';
+import axiosInstance from '../api/axiosConfig';
 
 // Tipos para las respuestas de earnings
+interface DateRangeParams {
+  start_date?: string;
+  end_date?: string;
+}
+
 export interface EarningsStats {
   total_earnings: number;
   pending_payments: number;
-  sales_this_month: number;
+  sales_this_period: number;
   sales_growth: number;
-  commissions_this_month: number;
+  commissions_this_period: number;
   commissions_percentage: number;
-  net_earnings_this_month: number;
+  net_earnings_this_period: number;
   earnings_growth: number;
   period: {
+    label: string;
     start_date: string;
     end_date: string;
-    current_month: {
+    previous_period: {
       start: string;
       end: string;
     };
-    last_month: {
-      start: string;
-      end: string;
-    };
+    has_custom_dates: boolean;
   };
 }
 
@@ -86,10 +90,23 @@ class SellerEarningsService {
   /**
    * Obtener desglose mensual de earnings
    */
-  static async getMonthlyBreakdown(): Promise<MonthlyEarnings[]> {
+  static async getMonthlyBreakdown(params?: DateRangeParams): Promise<MonthlyEarnings[]> {
     try {
       const url = API_ENDPOINTS.SELLER.EARNINGS.MONTHLY;
-      const response = await ApiClient.get<MonthlyEarningsApiResponse>(url);
+
+      // Preparar parámetros de consulta
+      const queryParams: [string, string][] = [];
+      if (params?.start_date) {
+        queryParams.push(['start_date', params.start_date]);
+      }
+      if (params?.end_date) {
+        queryParams.push(['end_date', params.end_date]);
+      }
+
+      const response = await ApiClient.get<MonthlyEarningsApiResponse>(
+        url,
+        Object.fromEntries(queryParams)
+      );
 
       if (!response.success) {
         throw new Error(response.message || 'Error al obtener desglose mensual');
@@ -192,24 +209,18 @@ class SellerEarningsService {
   static async downloadPdf(filePath: string): Promise<Blob> {
     try {
       const url = API_ENDPOINTS.SELLER.EARNINGS.DOWNLOAD_PDF;
-      const response = await fetch(url + `?file_path=${encodeURIComponent(filePath)}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
+      const response = await axiosInstance.get(url, {
+        params: { file_path: filePath },
+        responseType: 'blob'
       });
 
-      if (!response.ok) {
-        throw new Error('Error al descargar el archivo PDF');
-      }
-
-      return await response.blob();
+      return response.data;
     } catch (error: any) {
       console.error('Error downloading PDF:', error);
       throw new Error(error.message || 'Error al descargar el archivo PDF');
     }
   }
+
 }
 
 export default SellerEarningsService;
-export { EarningsStats, MonthlyEarnings };

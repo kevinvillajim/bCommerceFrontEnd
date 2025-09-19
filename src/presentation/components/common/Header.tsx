@@ -211,11 +211,15 @@ const Header: React.FC<HeaderProps> = memo(({
 						<ThemeToggle />
 
 						{/* 🎆 BOTÓN CONDICIONAL SELLER/ADMIN */}
-						{isAuthenticated && (user?.role === 'seller' || user?.role === 'admin') && (
+						{isAuthenticated && (user?.role === 'seller' || user?.role === 'admin' || user?.role === 'payment') && (
 						 <div className="flex items-center space-x-4">
 						 {/* Botón ir a Dashboard */}
 						 <Link
-						   to={user?.role === 'admin' ? '/admin/dashboard' : '/seller/dashboard'}
+						   to={
+						   	user?.role === 'admin' ? '/admin/dashboard' :
+						   	user?.role === 'seller' ? '/seller/dashboard' :
+						   	user?.role === 'payment' ? '/payment/dashboard' : '/seller/dashboard'
+						   }
 						  className="px-3 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm font-medium shadow-sm"
 						 >
 						 Ir a Dashboard
@@ -415,9 +419,13 @@ const Header: React.FC<HeaderProps> = memo(({
 					{/* Mobile Menu Button */}
 					<div className="sm:hidden flex items-center space-x-4">
 					{/* 🎆 BOTÓN DASHBOARD MÓVIL - Solo para seller/admin */}
-					{isAuthenticated && (user?.role === 'seller' || user?.role === 'admin') && (
+					{isAuthenticated && (user?.role === 'seller' || user?.role === 'admin' || user?.role === 'payment') && (
 					<Link
-					to={user?.role === 'admin' ? '/admin/dashboard' : '/seller/dashboard'}
+					to={
+						user?.role === 'admin' ? '/admin/dashboard' :
+						user?.role === 'seller' ? '/seller/dashboard' :
+						user?.role === 'payment' ? '/payment/dashboard' : '/seller/dashboard'
+					}
 					className="px-2 py-1 bg-primary-600 text-white rounded text-xs font-medium"
 					>
 					 Dashboard

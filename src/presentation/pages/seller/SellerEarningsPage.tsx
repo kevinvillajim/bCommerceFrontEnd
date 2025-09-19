@@ -43,7 +43,9 @@ const SellerEarningsPage: React.FC = () => {
       );
 
       // Cargar desglose mensual
-      const monthlyBreakdown = await SellerEarningsService.getMonthlyBreakdown();
+      const monthlyBreakdown = await SellerEarningsService.getMonthlyBreakdown(
+        dateRange.start ? { start_date: dateRange.start, end_date: dateRange.end } : undefined
+      );
 
       setStats(earningsData);
       setMonthlyData(monthlyBreakdown);
@@ -65,13 +67,19 @@ const SellerEarningsPage: React.FC = () => {
           : undefined
       );
 
-      // Crear un link temporal y hacer click automáticamente
+      // Descargar PDF directamente
+      const blob = await SellerEarningsService.downloadPdf(exportData.file_path);
+
+      // Crear enlace temporal para descarga automática
       const link = document.createElement('a');
-      link.href = exportData.download_url;
+      link.href = URL.createObjectURL(blob);
       link.download = exportData.filename;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+
+      // Limpiar URL del blob
+      URL.revokeObjectURL(link.href);
 
     } catch (error: any) {
       console.error('Error exporting PDF:', error);
@@ -87,8 +95,10 @@ const SellerEarningsPage: React.FC = () => {
 		if (!monthlySales || monthlySales.length === 0) return null;
 
 		const data = monthlySales;
-		// Encontrar el valor máximo para escalar correctamente las barras
-		const maxSales = Math.max(...data.map((item) => item.sales));
+		// Encontrar el valor máximo entre todas las métricas para escalar correctamente las barras
+		const maxValue = Math.max(
+			...data.map((item) => Math.max(item.sales, item.commissions, item.net))
+		);
 
 		return (
 			<div className="mt-4">
@@ -122,10 +132,10 @@ const SellerEarningsPage: React.FC = () => {
 					{/* Etiquetas eje Y (valores) */}
 					<div className="flex h-full">
 						<div className="w-12 h-full flex flex-col justify-between text-xs text-gray-500 pr-2">
-							<span>{formatCurrency(maxSales)}</span>
-							<span>{formatCurrency(maxSales * 0.75)}</span>
-							<span>{formatCurrency(maxSales * 0.5)}</span>
-							<span>{formatCurrency(maxSales * 0.25)}</span>
+							<span>{formatCurrency(maxValue)}</span>
+							<span>{formatCurrency(maxValue * 0.75)}</span>
+							<span>{formatCurrency(maxValue * 0.5)}</span>
+							<span>{formatCurrency(maxValue * 0.25)}</span>
 							<span>{formatCurrency(0)}</span>
 						</div>
 
@@ -143,11 +153,11 @@ const SellerEarningsPage: React.FC = () => {
 								<div className="absolute inset-0 flex items-end">
 									{data.map((item, index) => {
 										const salesHeight =
-											maxSales > 0 ? (item.sales / maxSales) * 100 : 0;
+											maxValue > 0 ? (item.sales / maxValue) * 100 : 0;
 										const commissionHeight =
-											maxSales > 0 ? (item.commissions / maxSales) * 100 : 0;
+											maxValue > 0 ? (item.commissions / maxValue) * 100 : 0;
 										const netHeight =
-											maxSales > 0 ? (item.net / maxSales) * 100 : 0;
+											maxValue > 0 ? (item.net / maxValue) * 100 : 0;
 
 										return (
 											<div
@@ -228,17 +238,17 @@ const SellerEarningsPage: React.FC = () => {
 			iconColor: "text-green-600",
 		},
 		{
-			title: "Ventas este mes",
-			value: formatCurrency(stats.sales_this_month),
+			title: "Ventas este período",
+			value: formatCurrency(stats.sales_this_period),
 			change: stats.sales_growth,
-			text: `${Math.abs(stats.sales_growth)}% respecto al mes anterior`,
+			text: `${Math.abs(stats.sales_growth)}% respecto al período anterior`,
 			icon: TrendingUp,
 			iconBgColor: "bg-blue-50",
 			iconColor: "text-blue-600",
 		},
 		{
-			title: "Comisiones este mes",
-			value: formatCurrency(stats.commissions_this_month),
+			title: "Comisiones este período",
+			value: formatCurrency(stats.commissions_this_period),
 			change: 0,
 			text: `${stats.commissions_percentage}% de comisión`,
 			icon: CreditCard,
@@ -246,10 +256,10 @@ const SellerEarningsPage: React.FC = () => {
 			iconColor: "text-red-600",
 		},
 		{
-			title: "Ganancias netas este mes",
-			value: formatCurrency(stats.net_earnings_this_month),
+			title: "Ganancias netas este período",
+			value: formatCurrency(stats.net_earnings_this_period),
 			change: stats.earnings_growth,
-			text: `${Math.abs(stats.earnings_growth)}% respecto al mes anterior`,
+			text: `${Math.abs(stats.earnings_growth)}% respecto al período anterior`,
 			icon: Wallet,
 			iconBgColor: "bg-indigo-50",
 			iconColor: "text-indigo-600",
@@ -359,36 +369,15 @@ const SellerEarningsPage: React.FC = () => {
 						<div className="flex justify-between items-center mb-4">
 							<h2 className="text-lg font-medium text-gray-900 flex items-center">
 								<BarChart2 size={20} className="mr-2" />
-								Ventas Mensuales
+								Ventas por Período
 							</h2>
 							<div className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-								Últimos 12 meses
+								{dateRange.start && dateRange.end ? 'Período personalizado' : 'Últimos 12 meses'}
 							</div>
 						</div>
 						{renderSalesChart(monthlyData)}
 					</div>
 
-					{/* Información de pagos pendientes */}
-					<div className="bg-white rounded-lg shadow-sm p-6">
-						<div className="flex justify-between items-center mb-4">
-							<h2 className="text-lg font-medium text-gray-900 flex items-center">
-								<CreditCard className="w-5 h-5 mr-2" />
-								Pagos Pendientes
-							</h2>
-							<span className="bg-amber-100 text-amber-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-								{formatCurrency(stats.pending_payments)}
-							</span>
-						</div>
-
-						<div className="text-center py-8">
-							<p className="text-gray-500 mb-2">
-								Las ganancias de tus ventas completadas se procesan automáticamente.
-							</p>
-							<p className="text-sm text-gray-400">
-								Los pagos pendientes se transfieren cada 7 días hábiles.
-							</p>
-						</div>
-					</div>
 
 					{/* Tabla de ventas mensuales */}
 					<div className="bg-white rounded-lg shadow-sm overflow-hidden">

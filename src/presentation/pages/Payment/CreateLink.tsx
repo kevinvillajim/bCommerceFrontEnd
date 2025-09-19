@@ -139,7 +139,7 @@ const CreateLink: React.FC = () => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Monto</label>
-                <p className="text-gray-900 font-medium">${createdLink.amount.toFixed(2)} USD</p>
+                <p className="text-gray-900 font-medium">${parseFloat(createdLink.amount).toFixed(2)} USD</p>
               </div>
             </div>
 

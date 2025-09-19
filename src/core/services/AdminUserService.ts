@@ -69,43 +69,25 @@ export class AdminUserService {
 		return response.data;
 	}
 
-	/**
-	 * Actualiza rol de usuario a administrador
-	 * @param userId ID del usuario a promover
-	 * @returns true si se actualizó correctamente
-	 */
-	async makeAdmin(userId: number): Promise<boolean> {
-		const response = await axiosInstance.put(
-			API_ENDPOINTS.ADMIN.MAKE_ADMIN(userId)
-		);
-		return response.data.success;
-	}
 
 	/**
-	 * Actualiza rol de usuario a usuario de pagos
-	 * @param userId ID del usuario a promover
-	 * @returns true si se actualizó correctamente
+	 * Cambia el rol de un usuario de manera centralizada
+	 * @param userId ID del usuario
+	 * @param role Nuevo rol ('customer', 'seller', 'admin', 'payment')
+	 * @param storeData Datos de la tienda (requerido solo para seller)
+	 * @returns true si se cambió correctamente
 	 */
-	async makePaymentUser(userId: number): Promise<boolean> {
-		const response = await axiosInstance.put(
-			API_ENDPOINTS.ADMIN.MAKE_PAYMENT_USER(userId)
-		);
-		return response.data.success;
-	}
-
-	/**
-	 * Convierte un usuario en vendedor
-	 * @param userId ID del usuario a convertir
-	 * @param storeData Datos de la tienda
-	 * @returns true si se creó correctamente
-	 */
-	async makeSeller(
+	async changeUserRole(
 		userId: number,
-		storeData: {store_name: string; description?: string}
+		role: 'customer' | 'seller' | 'admin' | 'payment',
+		storeData?: {store_name: string; description?: string}
 	): Promise<boolean> {
-		const response = await axiosInstance.post(
-			API_ENDPOINTS.ADMIN.MAKE_SELLER(userId),
-			storeData
+		const response = await axiosInstance.put(
+			API_ENDPOINTS.ADMIN.CHANGE_USER_ROLE(userId),
+			{
+				role,
+				...storeData
+			}
 		);
 		return response.data.success;
 	}

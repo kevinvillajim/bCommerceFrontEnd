@@ -8,6 +8,7 @@ const DashboardLayout = lazy(
 );
 const SellerLayout = lazy(() => import("../presentation/layouts/SellerLayout"));
 const AdminLayout = lazy(() => import("../presentation/layouts/AdminLayout"));
+const PaymentLayout = lazy(() => import("../presentation/layouts/PaymentLayout"));
 
 //Public Pages
 const HomePage = lazy(() => import("../presentation/pages/HomePage"));
@@ -126,6 +127,9 @@ const AdminFeedbackPage = lazy(
 const AdminInvoicesPage = lazy(
 	() => import("../presentation/pages/admin/AdminInvoicesPage")
 );
+const AdminCreditNotesPage = lazy(
+	() => import("../presentation/pages/admin/AdminCreditNotesPage")
+);
 const AdminAccountingPage = lazy(
 	() => import("../presentation/pages/admin/AdminAccountingPage")
 );
@@ -172,12 +176,23 @@ const AdminEditCategoryPage = lazy(()=> import("../presentation/pages/admin/Admi
 const GoogleAuthSuccessPage = lazy(()=> import("../presentation/pages/GoogleAuthSuccessPage"));
 const RatingDetailPage = lazy(() => import("../presentation/pages/RatingDetailPage"));
 
+// Payment Pages (External Payments System)
+const PaymentDashboard = lazy(() => import("../presentation/pages/Payment/PaymentDashboard"));
+const CreatePaymentLink = lazy(() => import("../presentation/pages/Payment/CreateLink"));
+const MyPaymentLinks = lazy(() => import("../presentation/pages/Payment/MyLinks"));
+const ExternalPaymentsPage = lazy(() => import("../presentation/pages/admin/ExternalPayments"));
+
+// Public Payment Pages
+const PaymentPage = lazy(() => import("../presentation/pages/PublicPayment/PaymentPage"));
+const PaymentResult = lazy(() => import("../presentation/pages/PublicPayment/PaymentResult"));
+
 //Route Guards
 import PrivateRoute from "./PrivateRoute";
 import PublicRoute from "./PublicRoute";
 import SellerRoute from "./SellerRoute";
 import AdminRoute from "./AdminRoute";
 import AuthRoute from "./AuthRoute";
+import PaymentRoute from "./PaymentRoute";
 import AboutUs from "@/presentation/pages/AboutUsPage";
 
 
@@ -427,6 +442,32 @@ const appRoutes: RouteObject[] = [
 					</PublicRoute>
 				),
 			},
+
+			// Public Payment Pages (External Payments)
+			{
+				path: "pay/:linkCode",
+				element: (
+					<PublicRoute>
+						<PaymentPage />
+					</PublicRoute>
+				),
+			},
+			{
+				path: "pay/:linkCode/result",
+				element: (
+					<PublicRoute>
+						<PaymentResult />
+					</PublicRoute>
+				),
+			},
+			{
+				path: "payment-result",
+				element: (
+					<PublicRoute>
+						<PaymentResult />
+					</PublicRoute>
+				),
+			},
 		],
 	},
 	{
@@ -638,6 +679,10 @@ const appRoutes: RouteObject[] = [
 				element: <AdminInvoicesPage />,
 			},
 			{
+				path: "credit-notes",
+				element: <AdminCreditNotesPage />,
+			},
+			{
 				path: "accounting",
 				element: <AdminAccountingPage />,
 			},
@@ -649,6 +694,39 @@ const appRoutes: RouteObject[] = [
 			{
 				path: "logs",
 				element: <AdminLogViewerPage />,
+			},
+			// External Payments (Admin View)
+			{
+				path: "external-payments",
+				element: <ExternalPaymentsPage />,
+			},
+		],
+	},
+
+	// Payment System Routes (Independent)
+	{
+		path: "/payment",
+		element: (
+			<PaymentRoute>
+				<PaymentLayout />
+			</PaymentRoute>
+		),
+		children: [
+			{
+				index: true,
+				element: <PaymentDashboard />,
+			},
+			{
+				path: "dashboard",
+				element: <PaymentDashboard />,
+			},
+			{
+				path: "create",
+				element: <CreatePaymentLink />,
+			},
+			{
+				path: "links",
+				element: <MyPaymentLinks />,
 			},
 		],
 	},

@@ -1,6 +1,7 @@
 // src/presentation/components/shipping/ShippingFromModal.tsx
 import React, { useState, useEffect } from "react";
 import { X, Truck, Package, CheckCircle } from "lucide-react";
+import { COURIER_CONFIG, generateTrackingNumber } from "../../../constants/courierConfig";
 
 export interface ShippingFormData {
 	tracking_number: string;
@@ -35,31 +36,6 @@ const ShippingFromModal: React.FC<ShippingFromModalProps> = ({
 
 	const [errors, setErrors] = useState<Record<string, string>>({});
 
-	const generateTrackingNumber = (company: string): string => {
-		const timestamp = Date.now().toString();
-		const random = Math.random().toString(36).substring(2, 8).toUpperCase();
-
-		switch (company) {
-			case "Correos Express":
-				return `CE${timestamp.slice(-8)}${random}`;
-			case "SEUR":
-				return `SEUR${timestamp.slice(-6)}${random.slice(0, 4)}`;
-			case "MRW":
-				return `MRW${timestamp.slice(-7)}${random.slice(0, 3)}`;
-			case "DHL":
-				return `DHL${timestamp.slice(-8)}${random}`;
-			case "FedEx":
-				return `FDX${timestamp.slice(-8)}${random}`;
-			case "UPS":
-				return `1Z${random}${timestamp.slice(-6)}`;
-			case "Nacex":
-				return `NCX${timestamp.slice(-8)}${random}`;
-			case "GLS":
-				return `GLS${timestamp.slice(-8)}${random}`;
-			default:
-				return `TRK${timestamp.slice(-8)}${random}`;
-		}
-	};
 
 	useEffect(() => {
 		if (isOpen) {
@@ -205,14 +181,11 @@ const ShippingFromModal: React.FC<ShippingFromModalProps> = ({
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                   disabled={isLoading}
                 >
-                  <option value="Correos Express">📦 Correos Express</option>
-                  <option value="SEUR">🚚 SEUR</option>
-                  <option value="MRW">📮 MRW</option>
-                  <option value="DHL">✈️ DHL</option>
-                  <option value="FedEx">📦 FedEx</option>
-                  <option value="UPS">📦 UPS</option>
-                  <option value="Nacex">🚛 Nacex</option>
-                  <option value="GLS">📦 GLS</option>
+                  {COURIER_CONFIG.map((courier) => (
+                    <option key={courier.value} value={courier.value}>
+                      {courier.name}
+                    </option>
+                  ))}
                 </select>
                 {errors.shipping_company && (
                   <p className="mt-1 text-sm text-red-600">

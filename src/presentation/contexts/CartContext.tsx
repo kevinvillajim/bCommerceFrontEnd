@@ -682,8 +682,9 @@ export const CartProvider: React.FC<CartProviderProps> = ({children}) => {
 			setLoading(true);
 			const response = await cartService.clearCart();
 			if (response && response.status === "success") {
-				// ✅ OPTIMIZADO: Solo invalidar cache, no refetch (el context se actualiza automáticamente)
+				// ✅ INVALIDAR CACHE Y ACTUALIZAR ESTADO
 				invalidateCartCache();
+				await fetchCart(); // Actualizar estado del carrito
 				return true;
 			}
 			throw new Error(response?.message || "No se pudo vaciar el carrito");
