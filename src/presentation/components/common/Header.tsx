@@ -69,8 +69,8 @@ const Header: React.FC<HeaderProps> = memo(({
 
 	// ✅ OBTENER CONFIGURACIÓN DINÁMICA DE ENVÍO (Sistema Unificado)
 	const { config: shippingConfig, loading: shippingLoading } = useShippingConfig();
-	const freeThreshold = shippingConfig?.free_threshold || 50;
-	const shippingEnabled = shippingConfig?.enabled || true;
+	const freeThreshold = shippingConfig?.free_threshold ?? 50;
+	const shippingEnabled = shippingConfig?.enabled ?? true;
 
 	const {cartItemCount, favoriteCount, notificationCount} = counters;
 

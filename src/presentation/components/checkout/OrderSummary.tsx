@@ -14,9 +14,9 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({cart}) => {
 	
 	// ✅ OBTENER CONFIGURACIÓN DINÁMICA DE ENVÍO (Sistema Unificado)
 	const { config: shippingConfig } = useShippingConfig();
-	const freeThreshold = shippingConfig?.free_threshold || 50;
-	const defaultCost = shippingConfig?.default_cost || 5;
-	const shippingEnabled = shippingConfig?.enabled || true;
+	const freeThreshold = shippingConfig?.free_threshold ?? 50;
+	const defaultCost = shippingConfig?.default_cost ?? 5;
+	const shippingEnabled = shippingConfig?.enabled ?? true;
 	
 	// Si no hay carrito o está vacío
 	if (!cart || cart.items.length === 0) {
