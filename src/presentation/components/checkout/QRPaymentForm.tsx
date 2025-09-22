@@ -9,14 +9,12 @@ import type { CheckoutData } from "../../../types/checkout";
 import { CheckCircle, XCircle, Clock, RefreshCw, Copy, ExternalLink, Smartphone, Zap } from "lucide-react";
 
 interface QRPaymentFormProps {
-  total?: number;
   checkoutData?: CheckoutData; // ✅ NUEVO: Objeto temporal con datos validados
   onPaymentSuccess?: (paymentData: any) => void;
   onPaymentError?: (error: string) => void;
 }
 
 const QRPaymentForm: React.FC<QRPaymentFormProps> = ({
-  total,
   checkoutData,
   onPaymentSuccess,
   onPaymentError

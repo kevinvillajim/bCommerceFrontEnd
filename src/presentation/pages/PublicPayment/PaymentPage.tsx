@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { CreditCard, DollarSign, User, FileText, Calendar, Clock, AlertTriangle, XCircle, CheckCircle } from 'lucide-react';
+import { CreditCard, DollarSign, User, FileText, Calendar, AlertTriangle, XCircle, CheckCircle } from 'lucide-react';
 import { ApiClient } from '../../../infrastructure/api/apiClient';
 import { API_ENDPOINTS } from '../../../constants/apiEndpoints';
 import { useToast } from '../../components/UniversalToast';
@@ -74,7 +74,7 @@ const PaymentPage: React.FC = () => {
         message?: string;
         data?: PaymentLinkData;
         error_code?: string;
-      }>(API_ENDPOINTS.EXTERNAL_PAYMENT.PUBLIC.SHOW(linkCode));
+      }>(API_ENDPOINTS.EXTERNAL_PAYMENT.PUBLIC.SHOW(linkCode!));
 
       if (response.success && response.data) {
         setLinkData(response.data);
@@ -291,7 +291,7 @@ const PaymentPage: React.FC = () => {
       <div className="min-h-screen bg-gray-50 py-8 px-4">
         <div className="max-w-2xl mx-auto">
           <ExternalDeunaPayment
-            linkCode={linkCode}
+            linkCode={linkCode!}
             amount={linkData.amount}
             customerName={linkData.customer_name}
             customerData={customerData}

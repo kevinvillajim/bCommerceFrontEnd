@@ -84,9 +84,9 @@ const CertificateManager: React.FC<CertificateManagerProps> = ({ onCertificateCh
           validTo: cert.valid_to,
           isActive: cert.is_active,
           daysUntilExpiry: cert.status?.daysRemaining || 0,
-          status: cert.status?.valid ?
+          status: (cert.status?.valid ?
             (cert.status.daysRemaining <= 30 ? 'proximo_vencer' : 'vigente') :
-            'vencido'
+            'vencido') as 'vigente' | 'vencido' | 'proximo_vencer'
         }));
 
         setCertificates(mappedCertificates);

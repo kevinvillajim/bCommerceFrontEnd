@@ -194,7 +194,7 @@ const AdminInvoicesPage: React.FC = () => {
       showToast(NotificationType.SUCCESS, 'Reintento de factura iniciado correctamente');
       fetchData(); // Recargar datos
     } catch (error) {
-      const errorMessage = error?.response?.data?.error || 'Error al reintentar la factura';
+      const errorMessage = (error as any)?.response?.data?.error || 'Error al reintentar la factura';
       showToast(NotificationType.ERROR, errorMessage);
     } finally {
       setActionLoading(prev => ({...prev, [invoiceId]: false}));
@@ -750,7 +750,7 @@ const AdminInvoicesPage: React.FC = () => {
       <Table
         data={invoices}
         columns={columns}
-        searchFields={["invoice_number", "customer.name", "customer.identification"]}
+        searchFields={["invoice_number", "customer_name", "customer_identification"]}
         loading={loading}
         emptyMessage="No se encontraron facturas"
         pagination={{
@@ -1126,9 +1126,12 @@ const AdminInvoicesPage: React.FC = () => {
                         id: selectedInvoice.id,
                         invoice_number: selectedInvoice.invoice_number,
                         customer: selectedInvoice.customer,
+                        customer_name: selectedInvoice.customer.name,
+                        customer_identification: selectedInvoice.customer.identification,
                         total_amount: selectedInvoice.total_amount,
                         subtotal: selectedInvoice.subtotal,
                         tax_amount: selectedInvoice.tax_amount,
+                        currency: 'USD',
                         status: selectedInvoice.status,
                         status_label: selectedInvoice.status_label,
                         status_color: selectedInvoice.status_color,

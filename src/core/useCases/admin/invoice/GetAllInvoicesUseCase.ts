@@ -22,11 +22,15 @@ export interface AdminInvoice {
   customer: {
     identification: string;
     identification_type: string;
+    identification_type_label: string;
     name: string;
     email: string;
     address: string;
     phone: string;
   };
+  // Propiedades planas para búsqueda
+  customer_name: string;
+  customer_identification: string;
   subtotal: number;
   tax_amount: number;
   total_amount: number;

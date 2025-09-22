@@ -16,6 +16,7 @@ export interface SriCreditNoteRequest {
     razonSocial: string;
     direccion?: string;
     email?: string;
+    telefono?: string;
   };
   detalles: SriCreditNoteDetail[];
   informacionAdicional?: {

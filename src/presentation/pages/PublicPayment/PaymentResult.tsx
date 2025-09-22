@@ -244,7 +244,7 @@ const PaymentResult: React.FC = () => {
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Monto:</span>
-                <span className="font-medium text-green-600">${result.amount.toFixed(2)} USD</span>
+                <span className="font-medium text-green-600">${Number(result.amount).toFixed(2)} USD</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Método:</span>

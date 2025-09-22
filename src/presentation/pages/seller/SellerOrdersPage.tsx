@@ -9,7 +9,6 @@ import {
 	Truck,
 	Package,
 	BarChart2,
-	CheckCircle,
 } from "lucide-react";
 import Table from "../../components/dashboard/Table";
 import {formatCurrency} from "../../../utils/formatters/formatCurrency";

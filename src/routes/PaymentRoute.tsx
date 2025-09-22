@@ -18,7 +18,7 @@ const PaymentRoute: React.FC<PaymentRouteProps> = ({
 	children,
 	redirectPath = routes.LOGIN,
 }) => {
-	const { isAuthenticated, roleInfo, isLoadingRole, isInitialized, user } = useAuth();
+	const { isAuthenticated, roleInfo, isLoadingRole, isInitialized } = useAuth();
 	const location = useLocation();
 
 	// Esperar a que termine la inicialización

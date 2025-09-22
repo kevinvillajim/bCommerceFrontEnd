@@ -4,7 +4,6 @@ import {
 	ShoppingBag,
 	User,
 	Calendar,
-	MapPin,
 	Truck,
 	Clock,
 	CreditCard,

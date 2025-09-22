@@ -415,8 +415,8 @@ const AdminAccountingPage: React.FC = () => {
 			type: transaction.type,
 			entries: transaction.entries.map(entry => ({
 				account_id: entry.account_id,
-				debit_amount: entry.debit_amount.toString(),
-				credit_amount: entry.credit_amount.toString(),
+				debit_amount: entry.debit_amount,
+				credit_amount: entry.credit_amount,
 				notes: entry.notes || '',
 			})),
 		});
@@ -682,11 +682,11 @@ const AdminAccountingPage: React.FC = () => {
 	// Calcular totales para la transacción actual
 	const calculateTotals = () => {
 		const totalDebit = newTransaction.entries.reduce(
-			(sum, entry) => sum + parseFloat(entry.debit_amount || 0),
+			(sum, entry) => sum + Number(entry.debit_amount || 0),
 			0
 		);
 		const totalCredit = newTransaction.entries.reduce(
-			(sum, entry) => sum + parseFloat(entry.credit_amount || 0),
+			(sum, entry) => sum + Number(entry.credit_amount || 0),
 			0
 		);
 
@@ -1672,13 +1672,13 @@ const AdminAccountingPage: React.FC = () => {
                                 : `Cuenta ID: ${entry.account_id}`}
                             </td>
                             <td className="px-4 py-3 text-sm text-right text-gray-900">
-                              {parseFloat(entry.debit_amount) > 0
-                                ? formatCurrency(parseFloat(entry.debit_amount))
+                              {Number(entry.debit_amount) > 0
+                                ? formatCurrency(Number(entry.debit_amount))
                                 : ""}
                             </td>
                             <td className="px-4 py-3 text-sm text-right text-gray-900">
-                              {parseFloat(entry.credit_amount) > 0
-                                ? formatCurrency(parseFloat(entry.credit_amount))
+                              {Number(entry.credit_amount) > 0
+                                ? formatCurrency(Number(entry.credit_amount))
                                 : ""}
                             </td>
                             <td className="px-4 py-3 text-sm text-gray-500">
@@ -1696,7 +1696,7 @@ const AdminAccountingPage: React.FC = () => {
                         <td className="px-4 py-3 text-sm text-right text-gray-900">
                           {formatCurrency(
                             selectedTransaction.entries.reduce(
-                              (sum, entry) => sum + parseFloat(entry.debit_amount || 0),
+                              (sum, entry) => sum + Number(entry.debit_amount || 0),
                               0
                             )
                           )}
@@ -1704,7 +1704,7 @@ const AdminAccountingPage: React.FC = () => {
                         <td className="px-4 py-3 text-sm text-right text-gray-900">
                           {formatCurrency(
                             selectedTransaction.entries.reduce(
-                              (sum, entry) => sum + parseFloat(entry.credit_amount || 0),
+                              (sum, entry) => sum + Number(entry.credit_amount || 0),
                               0
                             )
                           )}
@@ -1713,11 +1713,11 @@ const AdminAccountingPage: React.FC = () => {
                           {(() => {
                             // Calcular balance localmente para verificar
                             const totalDebits = selectedTransaction.entries.reduce(
-                              (sum, entry) => sum + parseFloat(entry.debit_amount || 0),
+                              (sum, entry) => sum + Number(entry.debit_amount || 0),
                               0
                             );
                             const totalCredits = selectedTransaction.entries.reduce(
-                              (sum, entry) => sum + parseFloat(entry.credit_amount || 0),
+                              (sum, entry) => sum + Number(entry.credit_amount || 0),
                               0
                             );
                             const isBalanced = Math.abs(totalDebits - totalCredits) < 0.01;

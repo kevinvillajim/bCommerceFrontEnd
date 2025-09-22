@@ -27,13 +27,6 @@ import { NotificationType } from '../types/NotificationTypes';
 // Re-exportar para mantener compatibilidad con archivos existentes
 export { NotificationType };
 
-// Interface mantenida para compatibilidad futura si se necesita
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-interface CartNotification {
-	id: string;
-	type: NotificationType;
-	message: string;
-}
 
 // ✅ NUEVO: Interfaz para manejar códigos de descuento
 interface DiscountCode {

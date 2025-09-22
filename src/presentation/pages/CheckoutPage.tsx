@@ -559,7 +559,7 @@ const CheckoutPage: React.FC = () => {
 					identification: (useSameAddress ? shippingAddress : billingAddress).identification || "",
 					same_as_shipping: useSameAddress,
 				},
-				items: combineCartWithCalculations(cart.items, checkoutCalculations.checkoutItems),
+				items: combineCartWithCalculations(cart?.items || [], checkoutCalculations.checkoutItems),
 				totals: {
 					subtotal_original: checkoutCalculations.totals.originalSubtotal,
 					subtotal_with_discounts: checkoutCalculations.totals.subtotal,
@@ -643,9 +643,9 @@ const CheckoutPage: React.FC = () => {
 		}
 	};
 
-	// ✅ FUNCIÓN MANTENIDA: Para procesamiento directo cuando sea necesario (legacy)
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	const _processCheckout = async () => {
+	// ✅ FUNCIÓN MANTENIDA: Fallback para procesamiento directo en emergencias
+	// @ts-ignore - Legacy function mantenida como fallback, no se usa pero se preserva
+	const legacyProcessCheckout = async () => {
 		console.log("🛒 CheckoutPage.processCheckout INICIADO CON DESCUENTOS POR VOLUMEN");
 
 		const stockValidation = validateCartStock();
@@ -1195,7 +1195,6 @@ const CheckoutPage: React.FC = () => {
 
 							{paymentMethod === "deuna" && (
 								<QRPaymentForm
-									total={validatedCheckoutData?.totals?.final_total}
 									checkoutData={validatedCheckoutData}
 									onPaymentSuccess={async (paymentData) => {
 										console.log('✅ DeUna payment successful, processing completion:', paymentData);

@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { CheckCircle, XCircle, Clock, RefreshCw, Copy, ExternalLink, Smartphone, Zap } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { CheckCircle, XCircle, Clock, RefreshCw, Copy, Smartphone, Zap } from 'lucide-react';
 import { useToast } from '../../components/UniversalToast';
 import { NotificationType } from '../../types/NotificationTypes';
 
@@ -124,7 +124,7 @@ const DeunaExternalQR: React.FC<DeunaExternalQRProps> = ({
   const startPollingPaymentStatus = (orderId: string) => {
     const pollInterval = setInterval(async () => {
       try {
-        console.log('🔍 Verificando estado del pago externo...');
+        console.log('🔍 Verificando estado del pago externo para order:', orderId);
 
         // Simulate status check - in real implementation this would call the backend
         // For now, we'll use a mock status check
@@ -164,7 +164,7 @@ const DeunaExternalQR: React.FC<DeunaExternalQRProps> = ({
 
   const cancelPayment = async (reason = 'Usuario canceló') => {
     try {
-      console.log('🚫 Cancelando pago externo...');
+      console.log('🚫 Cancelando pago externo:', reason);
       setIsPolling(false);
 
       if (pollingRef.current) {

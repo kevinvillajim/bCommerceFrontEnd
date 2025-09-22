@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle, XCircle, Clock, RefreshCw, Copy, ExternalLink, Smartphone, Zap } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, RefreshCw, Copy, Smartphone, Zap } from 'lucide-react';
 import { useToast } from '../../components/UniversalToast';
 import { NotificationType } from '../../types/NotificationTypes';
 import { ExternalDeunaService } from '../../../infrastructure/services/ExternalDeunaService';
@@ -148,7 +148,7 @@ const ExternalDeunaPayment: React.FC<ExternalDeunaPaymentProps> = ({
 
   const cancelPayment = async (reason = 'Usuario canceló') => {
     try {
-      console.log('🚫 Cancelando pago externo...');
+      console.log('🚫 Cancelando pago externo:', reason);
       setIsPolling(false);
 
       if (pollingRef.current) {

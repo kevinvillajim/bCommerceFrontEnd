@@ -1,6 +1,7 @@
 import ApiClient from "../../infrastructure/api/apiClient";
 import {API_ENDPOINTS} from "../../constants/apiEndpoints";
 import {extractErrorMessage} from "../../utils/errorHandler";
+import type {CalculatedTotals} from "../../types/checkout";
 
 export interface DatafastCheckoutRequest {
 	// ✅ SINCRONIZADO CON PHP: Refleja exactamente las validaciones del backend
@@ -118,10 +119,14 @@ export interface StoreCheckoutDataRequest {
 	shippingData: ShippingData;      // ✅ TIPADO FUERTE
 	billingData: BillingData;        // ✅ TIPADO FUERTE
 	items: CartItem[];               // ✅ TIPADO FUERTE - min:1 validado en PHP
-	totals: OrderTotals;             // ✅ TIPADO FUERTE
+	totals: CalculatedTotals;        // ✅ TIPADO FUERTE - Cambio de OrderTotals a CalculatedTotals
 	sessionId: string;               // required|string|max:100
 	discountCode?: string | null;    // sometimes|string|nullable
-	discountInfo?: DiscountInfo[];   // ✅ TIPADO FUERTE - array de descuentos
+	discountInfo?: {
+		code: string;
+		discount_percentage: number;
+		discount_amount: number;
+	};   // ✅ TIPADO FUERTE - información de descuento (alineado con CheckoutData)
 }
 
 // ✅ ESTANDARIZADO: Response de almacenamiento de checkout

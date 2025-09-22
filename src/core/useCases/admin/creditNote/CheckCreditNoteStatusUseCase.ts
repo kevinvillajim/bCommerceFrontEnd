@@ -2,6 +2,11 @@ import type { CreditNoteRepository } from '../../../domain/repositories/CreditNo
 
 export interface CreditNoteStatusCheck {
   success: boolean;
+  credit_note_id: number;
+  current_status: string;
+  sri_status: any;
+  sri_access_key: string;
+  sri_authorization_number?: string;
   data: {
     credit_note_id: number;
     current_status: string;

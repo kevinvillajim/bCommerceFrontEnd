@@ -16,8 +16,23 @@ export interface RoleCheckResponse {
 		role: string;
 		is_seller: boolean;
 		is_admin: boolean;
-		seller_info?: any;
-		admin_info?: any;
+		is_payment_user: boolean;
+		seller_info?: {
+			id: number;
+			store_name: string;
+			status: string;
+			verification_level: string;
+		} | null;
+		admin_info?: {
+			id: number;
+			role: string;
+			permissions: string[];
+		} | null;
+		payment_info?: {
+			id: number;
+			status: string;
+			permissions: string[];
+		} | null;
 	};
 }
 
@@ -100,8 +115,10 @@ export class OptimizedRoleService {
 								role: secureData.role,
 								is_admin: secureData.isAdmin,
 								is_seller: secureData.isSeller,
+								is_payment_user: false,
 								seller_info: secureData.sellerInfo,
 								admin_info: secureData.adminInfo,
+								payment_info: null,
 							},
 						};
 
