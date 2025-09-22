@@ -167,7 +167,7 @@ const DatafastPaymentButton: React.FC<DatafastPaymentButtonProps> = ({
 			});
 
 			// ✅ AUTO-EXTRACCIÓN SILENCIOSA: No mostrar notificaciones innecesarias
-			const extractionResult = extractCedulaFromRUC(checkoutData.shippingData.identification);
+			extractCedulaFromRUC(checkoutData.shippingData.identification);
 		}
 	}, [checkoutData, showNotification]);
 

@@ -95,7 +95,6 @@ const CertificateCard: React.FC<CertificateCardProps> = ({
   // Determinar estado visual
   const isExpired = certificate.status === 'vencido';
   const isExpiringSoon = certificate.status === 'proximo_vencer';
-  const isValid = certificate.status === 'vigente';
 
   // Clases CSS dinámicas
   const cardClasses = `

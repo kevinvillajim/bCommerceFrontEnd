@@ -410,7 +410,7 @@ const ExternalPayments: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <DollarSign className="h-4 w-4 text-gray-400 mr-1" />
-                        <span className="text-sm font-medium text-gray-900">${parseFloat(link.amount).toFixed(2)}</span>
+                        <span className="text-sm font-medium text-gray-900">${link.amount.toFixed(2)}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -509,7 +509,7 @@ const ExternalPayments: React.FC = () => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700">Monto</label>
-                    <p className="text-gray-900">${parseFloat(selectedLink.amount).toFixed(2)} USD</p>
+                    <p className="text-gray-900">${selectedLink.amount.toFixed(2)} USD</p>
                   </div>
                 </div>
 

@@ -107,7 +107,7 @@ const DeunaExternalQR: React.FC<DeunaExternalQRProps> = ({
         setPaymentData(result.data);
         setIsPolling(true);
         startPollingPaymentStatus(result.data.order_id);
-        showToast('Código QR generado', NotificationType.SUCCESS);
+        showToast(NotificationType.SUCCESS, 'Código QR generado');
       } else {
         throw new Error(result.message || 'Error generando código QR');
       }
@@ -149,7 +149,7 @@ const DeunaExternalQR: React.FC<DeunaExternalQRProps> = ({
     switch (status) {
       case 'completed':
         setIsPolling(false);
-        showToast('¡Pago completado exitosamente!', NotificationType.SUCCESS);
+        showToast(NotificationType.SUCCESS, '¡Pago completado exitosamente!');
         onSuccess?.(paymentData);
         break;
       case 'failed':
@@ -172,7 +172,7 @@ const DeunaExternalQR: React.FC<DeunaExternalQRProps> = ({
       }
 
       // In real implementation, call cancel endpoint
-      showToast('Pago cancelado', NotificationType.INFO);
+      showToast(NotificationType.INFO, 'Pago cancelado');
       onCancel?.();
     } catch (error) {
       console.error('Error cancelando pago:', error);
@@ -183,11 +183,11 @@ const DeunaExternalQR: React.FC<DeunaExternalQRProps> = ({
     try {
       await navigator.clipboard.writeText(text);
       setCopySuccess(true);
-      showToast('Enlace copiado', NotificationType.SUCCESS);
+      showToast(NotificationType.SUCCESS, 'Enlace copiado');
       setTimeout(() => setCopySuccess(false), 2000);
     } catch (err) {
       console.error('Error copiando al portapapeles:', err);
-      showToast('Error copiando enlace', NotificationType.ERROR);
+      showToast(NotificationType.ERROR, 'Error copiando enlace');
     }
   };
 

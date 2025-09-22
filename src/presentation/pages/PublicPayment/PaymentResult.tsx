@@ -7,7 +7,7 @@ import { API_ENDPOINTS } from '../../../constants/apiEndpoints';
 interface PaymentResultData {
   payment_method: string;
   transaction_id: string;
-  amount: number;
+  amount: number | string;
   customer_name: string;
   paid_at: string;
 }
@@ -244,7 +244,7 @@ const PaymentResult: React.FC = () => {
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Monto:</span>
-                <span className="font-medium text-green-600">${parseFloat(result.amount).toFixed(2)} USD</span>
+                <span className="font-medium text-green-600">${result.amount.toFixed(2)} USD</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Método:</span>

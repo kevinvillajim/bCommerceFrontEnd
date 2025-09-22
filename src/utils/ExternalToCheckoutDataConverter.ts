@@ -21,41 +21,59 @@ export class ExternalToCheckoutDataConverter {
    */
   static convertToCheckoutData(externalData: ExternalPaymentData): CheckoutData {
     const sessionId = `external_${externalData.linkCode}_${Date.now()}`;
+    const now = new Date().toISOString();
 
     return {
+      userId: 0, // External user ID
       sessionId,
-      userId: 'external_user',
       items: [
         {
-          product_id: 'external_payment',
+          product_id: 0,
           name: externalData.description || 'Pago Externo',
           quantity: 1,
           price: externalData.amount,
-          image: null,
-          weight: 0,
-          category: 'external',
+          subtotal: externalData.amount,
         }
       ],
       shippingData: {
         name: externalData.customerName,
         email: externalData.customerData.email,
         phone: externalData.customerData.phone,
-        address: externalData.customerData.address,
+        street: externalData.customerData.address,
         city: externalData.customerData.city,
+        state: '',
+        country: 'EC',
         postal_code: externalData.customerData.postal_code,
-        shipping_instructions: '',
+        identification: '',
       },
-      paymentMethod: 'deuna',
+      billingData: {
+        name: externalData.customerName,
+        email: externalData.customerData.email,
+        phone: externalData.customerData.phone,
+        street: externalData.customerData.address,
+        city: externalData.customerData.city,
+        state: '',
+        country: 'EC',
+        postal_code: externalData.customerData.postal_code,
+        identification: '',
+        same_as_shipping: true,
+      },
       totals: {
-        subtotal: externalData.amount,
-        shipping: 0,
-        tax: 0,
-        discount: 0,
+        subtotal_original: externalData.amount,
+        subtotal_with_discounts: externalData.amount,
+        seller_discounts: 0,
+        volume_discounts: 0,
+        coupon_discount: 0,
+        total_discounts: 0,
+        iva_amount: 0,
+        shipping_cost: 0,
+        free_shipping: true,
+        free_shipping_threshold: 0,
         final_total: externalData.amount,
       },
-      validatedAt: new Date().toISOString(),
-      isExternal: true,
-      externalLinkCode: externalData.linkCode,
+      timestamp: now,
+      validatedAt: now,
+      expiresAt: new Date(Date.now() + 30 * 60 * 1000).toISOString(), // 30 minutes
     };
   }
 

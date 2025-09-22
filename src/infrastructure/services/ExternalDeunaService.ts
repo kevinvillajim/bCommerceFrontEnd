@@ -1,6 +1,5 @@
 // src/infrastructure/services/ExternalDeunaService.ts
 import { ApiClient } from "../api/apiClient";
-import type { ExternalPaymentData } from "../../utils/ExternalToCheckoutDataConverter";
 
 export interface ExternalDeunaResponse {
   success: boolean;
@@ -98,10 +97,11 @@ export class ExternalDeunaService {
       const response = await ApiClient.get(`/pay/${linkCode}`);
 
       console.log('ExternalDeunaService: Status checked successfully', response);
+      const data = (response as any).data;
       return {
         success: true,
-        status: response.data?.status || 'pending',
-        paid_at: response.data?.paid_at,
+        status: data?.status || 'pending',
+        paid_at: data?.paid_at,
       };
 
     } catch (error: any) {
@@ -170,7 +170,7 @@ export class ExternalDeunaService {
       cancel: () => {
         cancelled = true;
       },
-      promise: new Promise<void>((resolve, reject) => {
+      promise: new Promise<void>((resolve) => {
         // This promise resolves when polling is done or cancelled
         const checkCompletion = () => {
           if (cancelled || attempts >= maxAttempts) {

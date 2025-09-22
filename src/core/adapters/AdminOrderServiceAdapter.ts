@@ -147,10 +147,11 @@ export class AdminOrderServiceAdapter {
 	private async getSellerInfo(sellerId: number): Promise<{name: string; email?: string; store_name?: string} | null> {
 		try {
 			const response = await ApiClient.get(`/admin/sellers/${sellerId}`);
+			const data = (response as any).data;
 			return {
-				name: response.data?.name || response.data?.store_name || "Vendedor",
-				email: response.data?.email,
-				store_name: response.data?.store_name
+				name: data?.name || data?.store_name || "Vendedor",
+				email: data?.email,
+				store_name: data?.store_name
 			};
 		} catch (error) {
 			console.log(`No se pudo obtener info del seller ${sellerId}:`, error);

@@ -308,6 +308,7 @@ export class DatafastService {
 			if (response.status !== "success" && response.result_code === "800.900.300") { // ✅ CORREGIDO: Cambiar response.success por response.status
 				return {
 					success: false,
+					status: 'error',
 					message:
 						'No se completó un pago real. Este es el comportamiento esperado en Fase 1 de pruebas. Use "Simular Pago Exitoso" para probar el flujo completo.',
 					result_code: response.result_code,

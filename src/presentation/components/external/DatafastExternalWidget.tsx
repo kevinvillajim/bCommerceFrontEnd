@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
+import { XCircle } from 'lucide-react';
 import { useToast } from '../../components/UniversalToast';
 import { NotificationType } from '../../types/NotificationTypes';
 
@@ -55,12 +55,12 @@ const DatafastExternalWidget: React.FC<DatafastExternalWidgetProps> = ({
         onReady: function () {
           console.log('✅ Widget externo Datafast listo!');
           setWidgetLoaded(true);
-          showToast('Formulario de pago cargado', NotificationType.SUCCESS);
+          showToast(NotificationType.SUCCESS, 'Formulario de pago cargado');
         },
         onBeforeSubmitCard: function (data: any) {
           console.log('🔄 Procesando pago externo...', data);
           setIsProcessing(true);
-          showToast('Procesando pago...', NotificationType.INFO);
+          showToast(NotificationType.INFO, 'Procesando pago...');
           return true;
         },
         onAfterSubmitCard: function (data: any) {
@@ -93,7 +93,7 @@ const DatafastExternalWidget: React.FC<DatafastExternalWidgetProps> = ({
           const errorMessage = error.message || error.code || 'Error desconocido';
           setError(errorMessage);
           setIsProcessing(false);
-          showToast(`Error: ${errorMessage}`, NotificationType.ERROR);
+          showToast(NotificationType.ERROR, `Error: ${errorMessage}`);
           onError?.(errorMessage);
         },
         style: 'card',
@@ -117,7 +117,7 @@ const DatafastExternalWidget: React.FC<DatafastExternalWidgetProps> = ({
       script.onerror = (error) => {
         console.error('❌ Error cargando script de widget externo:', error);
         setError('Error cargando formulario de pago');
-        showToast('Error cargando formulario de pago', NotificationType.ERROR);
+        showToast(NotificationType.ERROR, 'Error cargando formulario de pago');
       };
 
       document.head.appendChild(script);
@@ -162,7 +162,7 @@ const DatafastExternalWidget: React.FC<DatafastExternalWidgetProps> = ({
       if (result.success) {
         console.log('✅ Pago externo verificado exitosamente');
         verificationCompleted.current = true;
-        showToast('Pago procesado exitosamente', NotificationType.SUCCESS);
+        showToast(NotificationType.SUCCESS, 'Pago procesado exitosamente');
         onSuccess?.(result.data);
       } else {
         // ✅ MANEJO ESPECÍFICO ERROR 200.300.404: Misma lógica que DatafastResultPage
@@ -175,7 +175,7 @@ const DatafastExternalWidget: React.FC<DatafastExternalWidgetProps> = ({
           if (checkResult.wasSuccessful) {
             console.log('✅ Pago ya fue procesado exitosamente anteriormente');
             verificationCompleted.current = true;
-            showToast('Pago procesado exitosamente', NotificationType.SUCCESS);
+            showToast(NotificationType.SUCCESS, 'Pago procesado exitosamente');
             onSuccess?.(checkResult.data);
             return;
           }

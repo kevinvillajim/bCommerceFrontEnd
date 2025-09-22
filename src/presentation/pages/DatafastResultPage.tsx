@@ -111,7 +111,7 @@ const DatafastResultPage: React.FC = () => {
         setResult(paymentResult);
 
         if (paymentResult.success) {
-          showToast('¡Pago procesado exitosamente!', NotificationType.SUCCESS);
+          showToast(NotificationType.SUCCESS, '¡Pago procesado exitosamente!');
 
           // Limpiar localStorage después del éxito
           cleanupAfterSuccess();
@@ -137,7 +137,7 @@ const DatafastResultPage: React.FC = () => {
                 data: previousSuccess,
                 message: 'Pago procesado exitosamente'
               });
-              showToast('¡Pago procesado exitosamente!', NotificationType.SUCCESS);
+              showToast(NotificationType.SUCCESS, '¡Pago procesado exitosamente!');
 
               // Limpiar localStorage después del éxito
               cleanupAfterSuccess();
@@ -151,7 +151,7 @@ const DatafastResultPage: React.FC = () => {
             }
           }
 
-          showToast(paymentResult.message || 'Error procesando el pago', NotificationType.ERROR);
+          showToast(NotificationType.ERROR, paymentResult.message || 'Error procesando el pago');
         }
 
       } catch (error: any) {

@@ -137,7 +137,7 @@ const PaymentPage: React.FC = () => {
     if (!linkData || !linkCode) return;
 
     if (!validateForm()) {
-      showToast('Por favor completa todos los campos obligatorios', NotificationType.ERROR);
+      showToast(NotificationType.ERROR, 'Por favor completa todos los campos obligatorios');
       return;
     }
 
@@ -162,6 +162,11 @@ const PaymentPage: React.FC = () => {
       }>(endpoint, customerData);
 
       if (response.success && response.data) {
+        // ✅ CRITICAL FIX: Guardar transaction_id interno para verificación posterior
+        const transactionId = response.data.checkout_id || response.data.order_id || `external_${linkCode}_${Date.now()}`;
+        localStorage.setItem('datafast_transaction_id', transactionId);
+        console.log('🔧 Transaction ID guardado para external payment:', transactionId);
+
         if (method === 'datafast') {
           // Show embedded Datafast widget
           const widgetUrl = response.data.widget_url || response.data.redirect_url;
@@ -169,14 +174,14 @@ const PaymentPage: React.FC = () => {
             setWidgetUrl(widgetUrl);
             setShowDatafastWidget(true);
           } else {
-            showToast('Error: No se recibió URL del widget', NotificationType.ERROR);
+            showToast(NotificationType.ERROR, 'Error: No se recibió URL del widget');
           }
         } else {
           // Show embedded Deuna QR
           setShowDeunaQR(true);
         }
       } else {
-        showToast(response.message || 'Error iniciando el pago', NotificationType.ERROR);
+        showToast(NotificationType.ERROR, response.message || 'Error iniciando el pago');
       }
     } catch (err: any) {
       console.error('Error initiating payment:', err);
@@ -242,13 +247,13 @@ const PaymentPage: React.FC = () => {
 
   const handlePaymentSuccess = (data: any) => {
     console.log('✅ Pago completado:', data);
-    showToast('¡Pago procesado exitosamente!', NotificationType.SUCCESS);
+    showToast(NotificationType.SUCCESS, '¡Pago procesado exitosamente!');
     // Could redirect to success page or show success message
   };
 
   const handlePaymentError = (error: string) => {
     console.error('❌ Error en pago:', error);
-    showToast(`Error: ${error}`, NotificationType.ERROR);
+    showToast(NotificationType.ERROR, `Error: ${error}`);
     setShowDatafastWidget(false);
     setShowDeunaQR(false);
   };
@@ -256,7 +261,7 @@ const PaymentPage: React.FC = () => {
   const handlePaymentCancel = () => {
     setShowDatafastWidget(false);
     setShowDeunaQR(false);
-    showToast('Pago cancelado', NotificationType.INFO);
+    showToast(NotificationType.INFO, 'Pago cancelado');
   };
 
   if (!linkData) return null;
@@ -270,7 +275,7 @@ const PaymentPage: React.FC = () => {
         <div className="max-w-2xl mx-auto">
           <DatafastExternalWidget
             widgetUrl={widgetUrl}
-            amount={parseFloat(linkData.amount)}
+            amount={linkData.amount}
             customerName={linkData.customer_name}
             onSuccess={handlePaymentSuccess}
             onError={handlePaymentError}
@@ -287,7 +292,7 @@ const PaymentPage: React.FC = () => {
         <div className="max-w-2xl mx-auto">
           <ExternalDeunaPayment
             linkCode={linkCode}
-            amount={parseFloat(linkData.amount)}
+            amount={linkData.amount}
             customerName={linkData.customer_name}
             customerData={customerData}
             onSuccess={handlePaymentSuccess}
@@ -329,7 +334,7 @@ const PaymentPage: React.FC = () => {
                 <DollarSign className="h-5 w-5 text-gray-400 mr-3" />
                 <span className="text-gray-600">Monto:</span>
               </div>
-              <span className="text-2xl font-bold text-green-600">${parseFloat(linkData.amount).toFixed(2)} USD</span>
+              <span className="text-2xl font-bold text-green-600">${linkData.amount.toFixed(2)} USD</span>
             </div>
 
             {linkData.description && (

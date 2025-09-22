@@ -16,7 +16,7 @@ interface QRPaymentFormProps {
 }
 
 const QRPaymentForm: React.FC<QRPaymentFormProps> = ({
-  total: totalProp,
+  total,
   checkoutData,
   onPaymentSuccess,
   onPaymentError

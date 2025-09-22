@@ -78,6 +78,9 @@ export interface OrderDetail extends Order {
 	customerName?: string;
 	customerEmail?: string;
 	paymentMethod?: string;
+	seller_name?: string;
+	seller_email?: string;
+	seller_store_name?: string;
 	shippingAddress?: {
 		address: string;
 		city: string;

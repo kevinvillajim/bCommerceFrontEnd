@@ -95,7 +95,7 @@ const ExternalDeunaPayment: React.FC<ExternalDeunaPaymentProps> = ({
         setPaymentData(response.data);
         setIsPolling(true);
         startPollingPaymentStatus();
-        showToast('Código QR generado', NotificationType.SUCCESS);
+        showToast(NotificationType.SUCCESS, 'Código QR generado');
       } else {
         throw new Error(response.message || 'Error generando código QR');
       }
@@ -133,7 +133,7 @@ const ExternalDeunaPayment: React.FC<ExternalDeunaPaymentProps> = ({
     switch (status) {
       case 'completed':
         setIsPolling(false);
-        showToast('¡Pago completado exitosamente!', NotificationType.SUCCESS);
+        showToast(NotificationType.SUCCESS, '¡Pago completado exitosamente!');
         onSuccess?.(paymentData);
         break;
       case 'failed':
@@ -155,7 +155,7 @@ const ExternalDeunaPayment: React.FC<ExternalDeunaPaymentProps> = ({
         pollingRef.current.cancel();
       }
 
-      showToast('Pago cancelado', NotificationType.INFO);
+      showToast(NotificationType.INFO, 'Pago cancelado');
       onCancel?.();
     } catch (error) {
       console.error('Error cancelando pago:', error);
@@ -166,11 +166,11 @@ const ExternalDeunaPayment: React.FC<ExternalDeunaPaymentProps> = ({
     try {
       await navigator.clipboard.writeText(text);
       setCopySuccess(true);
-      showToast('Enlace copiado', NotificationType.SUCCESS);
+      showToast(NotificationType.SUCCESS, 'Enlace copiado');
       setTimeout(() => setCopySuccess(false), 2000);
     } catch (err) {
       console.error('Error copiando al portapapeles:', err);
-      showToast('Error copiando enlace', NotificationType.ERROR);
+      showToast(NotificationType.ERROR, 'Error copiando enlace');
     }
   };
 
@@ -186,10 +186,10 @@ const ExternalDeunaPayment: React.FC<ExternalDeunaPaymentProps> = ({
     try {
       console.log('🧪 Simulando pago exitoso...');
       await ExternalDeunaService.simulateWebhook(linkCode, paymentData.payment_id);
-      showToast('Simulación de pago enviada', NotificationType.INFO);
+      showToast(NotificationType.INFO, 'Simulación de pago enviada');
     } catch (error) {
       console.error('Error simulando pago:', error);
-      showToast('Error simulando pago', NotificationType.ERROR);
+      showToast(NotificationType.ERROR, 'Error simulando pago');
     }
   };
 
